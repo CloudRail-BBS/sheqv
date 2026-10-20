@@ -1,0 +1,34 @@
+# 依赖与产物
+node_modules
+web/node_modules
+web/.next
+web/.dist
+web/.rel
+web/.out*
+web/.dev*
+web/.sh*
+web/tsconfig.tsbuildinfo
+
+# 运行时数据（含账号、帖子、赞助快照、会话密钥）
+web/.data
+web/backups
+
+# 机密
+.env
+.env.local
+.env.*.local
+!.env.example
+web/.env
+web/.env.local
+web/.env.*.local
+!web/.env.example
+
+# 本地杂项
+.shots
+*.log
+.DS_Store
+Thumbs.db
+
+# 工作台项目数据（不属于代码）
+.workbuddy
+*.genie

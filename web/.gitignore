@@ -1,0 +1,25 @@
+node_modules
+
+# 构建产物（每个目录对应一次实验，避免删除守卫）
+.dist
+.next
+.rel
+.out
+.out2
+.out3
+.dev
+.dev2
+tsconfig.tsbuildinfo
+
+# 运行时数据与备份
+.data
+backups
+
+# 机密配置
+.env
+.env.local
+.env.*.local
+
+# 本地杂项
+.shots
+*.log

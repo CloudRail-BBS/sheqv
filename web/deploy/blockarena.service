@@ -1,0 +1,46 @@
+[Unit]
+Description=BlockArena Web (self-hosted)
+Documentation=file:///srv/blockarena/web/docs/自托管部署.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blockarena
+Group=blockarena
+WorkingDirectory=/srv/blockarena/web
+
+# 变量集中放这里，内容参考 .env.example
+EnvironmentFile=/etc/blockarena/web.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# 用 standalone 产物启动；若你保留了完整 node_modules，也可改成 `npm start`
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+
+# 优雅退出：先 SIGTERM，15 秒后才 SIGKILL
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# 加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# 唯一可写目录：数据卷
+ReadWritePaths=/srv/blockarena/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryMax=1G
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=blockarena
+
+[Install]
+WantedBy=multi-user.target

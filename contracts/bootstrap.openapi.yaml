@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: 端能力契约 · Bootstrap
+  version: 1.0.0
+  description: |
+    三端（web / android / ios）共用的启动配置与能力协商接口。
+    `runtime` 只有 web / android / ios 三种；移动形态由 `form`（desktop / mobile）表达，
+    只影响布局。`isWeChat` 是唯一的能力修正因子。客户端不得自行覆盖判定结果，
+    `capabilities` 为服务端可下调、不可上调的能力表。
+
+servers:
+  - url: https://api.example.com
+    description: prod
+  - url: https://api-staging.example.com
+    description: staging
+
+paths:
+  /api/v1/bootstrap:
+    get:
+      operationId: getBootstrap
+      summary: 拉取启动配置与端能力表
+      description: |
+        客户端冷启动、回前台超过 ttl、切账号后各调用一次。
+        返回体参与 ETag 协商，未变更返回 304。
+      parameters:
+        - name: X-Client-Platform
+          in: header
+          required: true
+          description: 分发渠道，编译期常量。web 包恒为 web。
+          schema:
+            $ref: '#/components/schemas/Platform'
+        - name: X-Client-Runtime
+          in: header
+          required: false
+          description: |
+            运行环境（web / android / ios）。客户端上报值仅用于埋点纠偏，
+            服务端以自身 UA 解析结果为准；移动形态见响应体的 form 字段。
+          schema:
+            $ref: '#/components/schemas/Runtime'
+        - name: X-Client-Version
+          in: header
+          required: true
+          description: 语义化版本，Web 端为构建号（如 2026.10.20-1）
+          schema:
+            type: string
+            example: 1.8.2
+        - name: X-Client-Channel
+          in: header
+          required: false
+          description: 分发渠道：appstore / huawei / xiaomi / oppo / vivo / web
+          schema:
+            type: string
+            example: appstore
+        - name: X-Device-Id
+          in: header
+          required: false
+          description: 设备标识，用于会话绑定与推送 token 关联
+          schema:
+            type: string
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 正常返回
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=300
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapResponse'
+        '304':
+          description: 客户端缓存的 etag 仍有效，沿用本地缓存
+        '426':
+          description: |
+            版本低于 minVersion。返回 upgrade 段，客户端进入强制升级页。
+            仅 android / ios 会收到；Web 端不参与版本门槛（刷新即最新）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpgradeRequired'
+        '429':
+          description: 启动接口限流（按 IP + deviceId）
+        '503':
+          description: |
+            服务端不可用。客户端必须回落到本地默认能力表（capabilities.ts / DEFAULT_CAPABILITIES），
+            禁止白屏或用空表启动。
+
+  /api/v1/share/wechat-signature:
+    get:
+      operationId: getWechatJsSignature
+      summary: 微信 JS-SDK 签名
+      description: |
+        仅当 capabilities.share.wechatJsSdk 为 true 且当前处于微信内置浏览器时调用。
+        签名有效期 7200s，客户端需按 url（去掉 hash）缓存并提前 5 分钟刷新。
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: 当前页面完整 URL（不含 # 之后部分），必须与 JS 安全域名一致
+          schema:
+            type: string
+        - name: jsApiList
+          in: query
+          required: false
+          description: 逗号分隔，缺省为 updateAppMessageShareData,updateTimelineShareData
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 签名成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatSignature'
+        '403':
+          description: 域名未在公众号 JS 安全域名白名单内
+
+components:
+  schemas:
+    Platform:
+      type: string
+      enum: [web, android, ios]
+
+    Runtime:
+      type: string
+      enum: [web, android, ios]
+      description: 单一 web 端后 runtime 只有三种；移动形态由 form 表达，不再有 h5
+
+    Form:
+      type: string
+      enum: [desktop, mobile]
+      description: 视口形态。同一个 web 端在窄屏下为 mobile，仅影响布局，不改变能力
+
+    Capabilities:
+      type: object
+      additionalProperties: false
+      description: 键名与 capabilities.ts 的 interface 一一对应；新增键必须先发客户端版本，再开始下发
+      properties:
+        auth:
+          type: object
+          additionalProperties: false
+          properties:
+            password: { type: boolean }
+            sms: { type: boolean }
+            wechatWebAuth: { type: boolean }
+            wechatQr: { type: boolean }
+            apple: { type: boolean }
+            google: { type: boolean }
+        content:
+          type: object
+          additionalProperties: false
+          properties:
+            richEditor: { type: boolean }
+            localDraft: { type: boolean }
+            editHistory: { type: boolean }
+            attachmentUpload: { type: boolean }
+            groupChat: { type: boolean }
+        media:
+          type: object
+          additionalProperties: false
+          properties:
+            presign: { type: boolean }
+            multipart: { type: boolean }
+            resumable: { type: boolean, description: H5 恒为 false，刷新即失效 }
+            cameraCapture: { type: boolean }
+            videoExternalOnly: { type: boolean }
+        resource:
+          type: object
+          additionalProperties: false
+          properties:
+            directDownload: { type: boolean, description: H5 恒为 false，服务端下发 false 时也不得改 true }
+            externalBrowserHint: { type: boolean }
+        realtime:
+          type: object
+          additionalProperties: false
+          properties:
+            wsForeground: { type: boolean }
+            backgroundPush: { type: boolean }
+            catchupOnResume: { type: boolean }
+        share:
+          type: object
+          additionalProperties: false
+          properties:
+            wechatJsSdk: { type: boolean }
+            wechatLaunchApp: { type: boolean }
+            universalLink: { type: boolean }
+            nativeShareSheet: { type: boolean }
+            qrPoster: { type: boolean }
+        match:
+          type: object
+          additionalProperties: false
+          properties:
+            evidenceImageUpload: { type: boolean }
+            evidenceVideoUpload: { type: boolean }
+            arbitration: { type: boolean, description: 恒为 false，仲裁是角色能力而非端能力 }
+        admin:
+          type: object
+          additionalProperties: false
+          properties:
+            console: { type: boolean, description: false 时 /admin/** 返回 403 且不下发后台代码包 }
+        compliance:
+          type: object
+          additionalProperties: false
+          properties:
+            minorMode: { type: boolean }
+            privacyExport: { type: boolean }
+
+    Limits:
+      type: object
+      additionalProperties: false
+      description: 数值配额。客户端与本地默认表取较小值，服务端可下调不可上调。
+      properties:
+        maxUploadBytes: { type: integer, format: int64 }
+        chunkConcurrency: { type: integer }
+        imagesPerPost: { type: integer }
+        attachmentBytes: { type: integer, format: int64 }
+        evidenceImageBytes: { type: integer, format: int64 }
+        evidenceVideoBytes: { type: integer, format: int64, description: 0 表示该端不允许上传录像 }
+
+    Features:
+      type: object
+      description: 功能开关，键必须在 flag 注册表中登记，禁止临时拼键名
+      additionalProperties: { type: boolean }
+
+    ClientContext:
+      type: object
+      additionalProperties: false
+      properties:
+        platform:
+          $ref: '#/components/schemas/Platform'
+        runtime:
+          $ref: '#/components/schemas/Runtime'
+        runtimeSource:
+          type: string
+          enum: [native, forced, ssr, wechat, ua-ch, ua-regex, coarse-pointer, default]
+          description: 服务端最终采用的判定来源，客户端据此上报 mismatch
+        version: { type: string }
+        channel: { type: string }
+        serverTime:
+          type: string
+          format: date-time
+
+    UpgradePolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        policy:
+          type: string
+          enum: [none, recommend, force]
+        minVersion: { type: string }
+        latestVersion: { type: string }
+        title: { type: string }
+        message: { type: string }
+        downloadUrl: { type: string }
+
+    ReviewMode:
+      type: object
+      additionalProperties: false
+      description: 商店审核期形态，只对 App 生效，Web 端忽略
+      properties:
+        mode:
+          type: string
+          enum: [normal, readonly, ugc_disabled]
+        reason: { type: string }
+
+    Endpoints:
+      type: object
+      additionalProperties: false
+      properties:
+        apiBase: { type: string }
+        wsUrl: { type: string }
+        cdnBase: { type: string }
+        shortLinkBase: { type: string }
+
+    BootstrapResponse:
+      type: object
+      required: [client, capabilities, limits]
+      additionalProperties: false
+      properties:
+        client:
+          $ref: '#/components/schemas/ClientContext'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+        limits:
+          $ref: '#/components/schemas/Limits'
+        features:
+          $ref: '#/components/schemas/Features'
+        upgrade:
+          $ref: '#/components/schemas/UpgradePolicy'
+        review:
+          $ref: '#/components/schemas/ReviewMode'
+        endpoints:
+          $ref: '#/components/schemas/Endpoints'
+        notice:
+          type: object
+          additionalProperties: false
+          description: 顶部公告条，无内容时为 null
+          properties:
+            id: { type: string }
+            text: { type: string }
+            level:
+              type: string
+              enum: [info, warning]
+            link: { type: string }
+        ttl:
+          type: integer
+          description: 客户端缓存秒数，默认 300
+
+    UpgradeRequired:
+      type: object
+      required: [upgrade]
+      additionalProperties: false
+      properties:
+        upgrade:
+          $ref: '#/components/schemas/UpgradePolicy'
+        client:
+          $ref: '#/components/schemas/ClientContext'
+
+    WechatSignature:
+      type: object
+      required: [appId, timestamp, nonceStr, signature]
+      additionalProperties: false
+      properties:
+        appId: { type: string }
+        timestamp: { type: integer }
+        nonceStr: { type: string }
+        signature: { type: string }
+        jsApiList:
+          type: array
+          items: { type: string }
+        expiresIn:
+          type: integer
+          description: 秒，默认 7200

@@ -1,0 +1,24 @@
+# 更省事的替代方案：Caddy 自动申请与续期证书
+# 放到 /etc/caddy/Caddyfile，改域名后 systemctl reload caddy
+
+arena.example.com {
+	encode gzip
+
+	# 大文件上传（与 2GB 配额对齐）
+	request_body {
+		max_size 2100MB
+	}
+
+	@static path /_next/static/*
+	header @static Cache-Control "public, max-age=31536000, immutable"
+
+	# 健康检查只允许本机
+	@health path /api/health
+	respond @health "not found" 404
+
+	reverse_proxy 127.0.0.1:3000 {
+		# 上传走流式，避免 Caddy 先把整个文件缓冲到磁盘
+		flush_interval -1
+		header_up X-Real-IP {remote_host}
+	}
+}

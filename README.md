@@ -1,0 +1,104 @@
+# 方块竞技场 · BlockArena
+
+Minecraft / Roblox 玩家社区 + 赛事确权平台。
+
+核心闭环：**公会 → 战队 → 约战 → 名单快照 → 双方提交 → 确认 / 争议 → 仲裁 → 战绩**。
+只有双方确认或仲裁裁定的比赛才计入战绩。
+
+自托管部署，不依赖任何托管平台。
+
+---
+
+## 技术栈
+
+| 层 | 选型 |
+|---|---|
+| 框架 | Next.js 15（App Router）+ React 19 + TypeScript |
+| 样式 | 手写 CSS，**零 UI 依赖**，深色/浅色双主题（CSS 变量） |
+| 存储 | 文件型 JSON（`$DATA_DIR/*.json`），原子写 + 进程内串行 |
+| 账号 | scrypt 密码哈希 + HMAC 签名会话 Cookie，无状态 |
+| 人机验证 | GeeTest v4（注册 / 登录，服务端二次校验） |
+| 部署 | Docker（standalone 产物）/ systemd，反代用 nginx 或 Caddy |
+
+---
+
+## 快速开始
+
+### Docker（推荐）
+
+```bash
+cd web
+cp .env.example .env          # 必改 PUBLIC_BASE_URL；建议配 GEETEST_ID / GEETEST_KEY
+docker compose up -d --build
+curl -s localhost:3000/api/health
+```
+
+打开 `http://localhost:3000/register` 注册**第一个账号**——它会自动成为管理员。
+站点没有默认管理员，也没有内置账号。
+
+### 本地开发
+
+```bash
+cd web
+npm install
+npm run dev                   # http://localhost:3000
+```
+
+完整步骤见 [`docs/自托管部署.md`](docs/自托管部署.md)。
+
+---
+
+## 已实现
+
+- **账号**：注册 / 登录 / 退出、首个用户即管理员、scrypt 哈希、签名会话
+- **人机验证**：GeeTest v4，注册与登录强制（未配置时跳过并提示）
+- **社区**：发帖、评论、点赞、搜索、通知、空状态引导
+- **公约**：诚信 / 社区两份，版本变更自动失效，未签限制落在服务端渲染分支
+- **赞助**：爱发电名单同步 + 官网公开榜 `/sponsors`
+- **后台**：公约管理、赞助管理、按角色鉴权
+- **端能力**：32 个能力键 + 6 个配额，服务端 UA 判定，微信内自动降级
+- **主题**：深色 / 浅色，cookie 驱动 SSR，首屏不闪
+
+## 尚未实现
+
+登录方式只有账号密码；**手机号 / 邮箱 / 微信 / Apple / 扫码登录均未实现**。
+资源上传只有配额校验，没有落地通道；私信、举报审核、仲裁流程仍是设计稿。
+资源 / 公会 / 战队 / 约战数据来自 `web/src/lib/data.ts` 的演示数据（后台暂无对应管理界面）。
+
+---
+
+## 目录
+
+```
+├─ web/                        应用主体
+│  ├─ src/app/                 路由（App Router）
+│  ├─ src/components/          客户端组件
+│  ├─ src/lib/                 能力判定 / 账号 / 存储 / 爱发电
+│  ├─ Dockerfile               standalone 多阶段构建
+│  ├─ docker-compose.yml       单服务 + 数据卷 + healthcheck
+│  ├─ deploy/                  nginx / Caddy / systemd / 备份脚本
+│  └─ scripts/                 smoke.sh（冒烟）、selfhost-check.sh（部署体检）
+├─ contracts/                  端能力契约（32 键 + OpenAPI）
+├─ docs/
+│  ├─ 开发文档.md              结构、请求时序、加能力键、排障
+│  └─ 自托管部署.md            Docker / systemd / 反代 / 备份 / 安全清单
+└─ 功能清单-v3-单一Web端.md     产品功能矩阵
+```
+
+---
+
+## 验证
+
+```bash
+cd web
+bash scripts/smoke.sh http://localhost:3000                       # 功能回归
+ADMIN_TOKEN=xxx bash scripts/selfhost-check.sh https://你的域名    # 部署体检
+```
+
+冒烟脚本建议对**空数据目录**跑一次，可以完整验证"第一个注册用户成为管理员"。
+
+---
+
+## 许可
+
+未声明 License。转载或二次分发前请先联系仓库维护者。

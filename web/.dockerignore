@@ -1,0 +1,28 @@
+# 依赖与产物
+node_modules
+.dist
+.next
+.rel
+.out
+.out2
+.out3
+.dev
+.dev2
+tsconfig.tsbuildinfo
+
+# 运行时数据（不进镜像，容器里挂卷）
+.data
+
+# 机密：绝不进构建上下文
+.env
+.env.*
+!.env.example
+
+# 本地杂项
+.git
+.gitignore
+.shots
+*.log
+npm-debug.log*
+.DS_Store
+README.md

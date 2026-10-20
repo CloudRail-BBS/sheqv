@@ -1,0 +1,50 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blockarena/web:2026.10.20
+    container_name: blockarena-web
+    restart: unless-stopped
+
+    # 变量从 .env 读；容器内 DATA_DIR 强制为卷挂载点
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+      PORT: "3000"
+
+    # 只绑本机，由 nginx / Caddy 对外；想直接暴露改成 "3000:3000"
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    volumes:
+      - blockarena-data:/data
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  blockarena-data:
+    name: blockarena-data
