@@ -16,7 +16,7 @@ arena.example.com {
 	@health path /api/health
 	respond @health "not found" 404
 
-	reverse_proxy 127.0.0.1:3000 {
+	reverse_proxy 127.0.0.1:8900 {
 		# 上传走流式，避免 Caddy 先把整个文件缓冲到磁盘
 		flush_interval -1
 		header_up X-Real-IP {remote_host}

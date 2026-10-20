@@ -8,7 +8,7 @@
 # 数据目录非空时，该条断言自动降级为"后注册的一定是成员"。
 set -uo pipefail
 
-BASE="${1:-http://localhost:3000}"
+BASE="${1:-http://localhost:8900}"
 BASE="${BASE%/}"
 
 UA_DESK='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'

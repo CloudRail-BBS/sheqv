@@ -13,7 +13,7 @@ WorkingDirectory=/srv/blockarena/web
 # 变量集中放这里，内容参考 .env.example
 EnvironmentFile=/etc/blockarena/web.env
 Environment=NODE_ENV=production
-Environment=PORT=3000
+Environment=PORT=8900
 
 # 用 standalone 产物启动；若你保留了完整 node_modules，也可改成 `npm start`
 ExecStart=/usr/bin/node server.js

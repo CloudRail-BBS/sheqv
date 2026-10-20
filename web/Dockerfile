@@ -20,7 +20,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=8900 \
     HOSTNAME=0.0.0.0 \
     DATA_DIR=/data \
     TZ=Asia/Shanghai
@@ -36,7 +36,7 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
-EXPOSE 3000
+EXPOSE 8900
 VOLUME ["/data"]
 
 # tini 负责回收僵尸进程与转发 SIGTERM，容器 stop 能优雅退出
@@ -44,4 +44,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8900)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

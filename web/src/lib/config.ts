@@ -26,7 +26,7 @@ function trimBase(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
-const baseUrl = trimBase(envOr('PUBLIC_BASE_URL', 'http://localhost:3000'));
+const baseUrl = trimBase(envOr('PUBLIC_BASE_URL', 'http://localhost:8900'));
 
 /** http(s) → ws(s)，用于推导默认 WS 地址 */
 function wsFrom(httpUrl: string): string {

@@ -30,10 +30,10 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 cd web
 cp .env.example .env          # 必改 PUBLIC_BASE_URL；建议配 GEETEST_ID / GEETEST_KEY
 docker compose up -d --build
-curl -s localhost:3000/api/health
+curl -s localhost:8900/api/health
 ```
 
-打开 `http://localhost:3000/register` 注册**第一个账号**——它会自动成为管理员。
+打开 `http://localhost:8900/register` 注册**第一个账号**——它会自动成为管理员。
 站点没有默认管理员，也没有内置账号。
 
 ### 本地开发
@@ -41,7 +41,7 @@ curl -s localhost:3000/api/health
 ```bash
 cd web
 npm install
-npm run dev                   # http://localhost:3000
+npm run dev                   # http://localhost:8900（默认端口 8900）
 ```
 
 完整步骤见 [`docs/自托管部署.md`](docs/自托管部署.md)。
@@ -91,7 +91,7 @@ npm run dev                   # http://localhost:3000
 
 ```bash
 cd web
-bash scripts/smoke.sh http://localhost:3000                       # 功能回归
+bash scripts/smoke.sh http://localhost:8900                       # 功能回归
 ADMIN_TOKEN=xxx bash scripts/selfhost-check.sh https://你的域名    # 部署体检
 ```
 

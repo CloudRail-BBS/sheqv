@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev -p 8900",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
-    "start:standalone": "node ${NEXT_DIST_DIR:-.dist}/standalone/server.js",
+    "start": "node scripts/start.mjs",
+    "start:standalone": "node scripts/start.mjs --standalone",
     "smoke": "bash scripts/smoke.sh",
     "check:selfhost": "bash scripts/selfhost-check.sh",
     "typecheck": "tsc --noEmit"

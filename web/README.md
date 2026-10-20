@@ -8,13 +8,13 @@ Next.js 15（App Router）+ React 19 + TypeScript，**零 UI 依赖**（手写 C
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000
+npm run dev            # http://localhost:8900（默认端口 8900，改端口见下）
 ```
 
 冒烟（68 项断言，覆盖视口判定 / 微信约束 / 主题 / 轮播 / bootstrap / 注册登录 / 首个管理员 / 权限边界 / 公约 / 后台 CRUD）：
 
 ```bash
-bash scripts/smoke.sh http://localhost:3000
+bash scripts/smoke.sh http://localhost:8900
 ```
 
 ## 自托管
@@ -24,7 +24,7 @@ bash scripts/smoke.sh http://localhost:3000
 ```bash
 cp .env.example .env          # 必改 PUBLIC_BASE_URL；GEETEST_ID/KEY 建议配
 docker compose up -d --build
-curl -s localhost:3000/api/health
+curl -s localhost:8900/api/health
 
 # 打开 /register 注册第一个账号 —— 它会自动成为管理员
 ```
@@ -48,6 +48,9 @@ $DATA_DIR/agreements.json   后台新增的公约
 **文件存储只支持单实例**——要多副本先把 `lib/json-store.ts` 换成数据库。
 
 关键环境变量：`PUBLIC_BASE_URL`、`ADMIN_TOKEN`、`DATA_DIR`、`SITE_NAME`、`CDN_BASE`、`ENABLE_DEV_CONSOLE`，全部见 `.env.example`。
+
+端口：默认 **8900**（`dev` / `start` / Docker / compose / systemd / 反代示例全部一致）。
+临时改端口用 `PORT=9000 npm start`；`npm run dev` 的端口写在 `package.json` 的 dev 脚本里。
 
 ## 页面
 

@@ -2,13 +2,13 @@
 # 自托管部署体检：部署完跑一遍，确认不是"起来了但不可用"
 #
 #   bash scripts/selfhost-check.sh https://arena.example.com
-#   ADMIN_TOKEN=xxx bash scripts/selfhost-check.sh http://127.0.0.1:3000
+#   ADMIN_TOKEN=xxx bash scripts/selfhost-check.sh http://127.0.0.1:8900
 #
 # 退出码非 0 表示有失败项。
 
 set -uo pipefail
 
-BASE="${1:-http://127.0.0.1:3000}"
+BASE="${1:-http://127.0.0.1:8900}"
 BASE="${BASE%/}"
 PASS=0
 FAIL=0
