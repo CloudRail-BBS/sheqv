@@ -1063,9 +1063,19 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 /* ── 账号：注册 / 登录 / 顶栏用户 ─────────── */
 
-.auth-wrap { max-width: 420px; margin: 24px auto 0; }
+/* width:100% 必须写：auto 外边距会让 flex 子项按内容收缩，只给 max-width 撑不开 */
+.auth-wrap { width: 100%; max-width: 440px; margin: 24px auto 0; }
 .auth-card { display: flex; flex-direction: column; }
 .auth-card .field { margin-top: 12px; }
+
+/* 桌面端把表单放宽：单列 520px 以内仍好读，输入框不至于窄得放不下提示 */
+@media (min-width: 861px) {
+  .auth-wrap { max-width: 528px; margin-top: 36px; }
+  .auth-card { padding: 22px 26px; }
+  .auth-socials { flex-direction: row; flex-wrap: wrap; }
+  .auth-social { flex: 1 1 0; min-width: 0; }
+  .auth-or { flex: 1 0 100%; }
+}
 
 .gt-wrap { margin-top: 12px; }
 /* 不给 flex：GeeTest 注入的是块级组件，flex 会把它压成 0 宽 */

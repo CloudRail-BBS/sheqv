@@ -21,6 +21,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2026.10.21.4',
+    date: '2026-10-21',
+    title: '登录与注册页加宽',
+    items: [
+      { tag: '样式', text: '桌面端登录、注册表单宽度由内容自适应改为 528px，输入框与提示不再拥挤' },
+      { tag: '样式', text: '同时开启 GitHub 与 CNKD 登录时，两个按钮并排一行，分隔线单独成行' },
+      { tag: '修复', text: 'auto 外边距让表单按内容收缩、max-width 不生效的问题' },
+    ],
+  },
+  {
     version: '2026.10.21.3',
     date: '2026-10-21',
     title: '多渠道登录、徽章系统、页脚与文案可配',
