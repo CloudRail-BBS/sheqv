@@ -1,5 +1,6 @@
 import type { CapabilityState, Capabilities, Limits } from './capabilities';
 import { config } from './config';
+import { wsFrom } from './base-url';
 
 /** 与 contracts/bootstrap.openapi.yaml 的 BootstrapResponse 对齐 */
 export interface BootstrapResponse {
@@ -42,6 +43,7 @@ const FEATURES: Record<string, boolean> = {
 export function buildBootstrap(
   state: CapabilityState,
   meta: { version?: string; channel?: string; now?: Date } = {},
+  baseUrl = '',
 ): BootstrapResponse {
   return {
     client: {
@@ -59,12 +61,13 @@ export function buildBootstrap(
     features: FEATURES,
     upgrade: { policy: 'none' },
     review: { mode: 'normal' },
+    // 对外地址由调用方按「后台设置 → 环境变量 → 请求头」算好后传入，
+    // 不再写死 example 域名，也不要求部署者配 PUBLIC_BASE_URL
     endpoints: {
-      // 全部来自环境变量；自托管默认同源，不留 example 域名
       apiBase: config.endpoints.apiBase,
-      wsUrl: config.endpoints.wsUrl,
-      cdnBase: config.endpoints.cdnBase,
-      shortLinkBase: config.endpoints.shortLinkBase,
+      wsUrl: baseUrl ? `${wsFrom(baseUrl)}/ws` : '',
+      cdnBase: baseUrl,
+      shortLinkBase: baseUrl ? `${baseUrl}/s` : '',
     },
     notice: state.isWeChat
       ? {

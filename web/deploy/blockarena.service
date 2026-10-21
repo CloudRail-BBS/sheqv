@@ -10,7 +10,7 @@ User=blockarena
 Group=blockarena
 WorkingDirectory=/srv/blockarena/web
 
-# 变量集中放这里，内容参考 .env.example
+# 只需 DATA_DIR / PORT；业务配置在后台「站点设置」里改
 EnvironmentFile=/etc/blockarena/web.env
 Environment=NODE_ENV=production
 Environment=PORT=8900

@@ -7,12 +7,12 @@ services:
     container_name: blockarena-web
     restart: unless-stopped
 
-    # 变量从 .env 读；容器内 DATA_DIR 强制为卷挂载点
-    env_file:
-      - .env
+    # 不需要 .env：业务配置（站点名 / 人机验证 / 爱发电 / 注册开关）在
+    # 后台「站点设置」里改，改完立即生效。这里只给进程级参数。
     environment:
       DATA_DIR: /data
       PORT: "8900"
+      TZ: Asia/Shanghai
 
     # 只绑本机，由 nginx / Caddy 对外；想直接暴露改成 "8900:8900"
     ports:

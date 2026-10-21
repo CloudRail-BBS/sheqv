@@ -26,18 +26,16 @@ function trimBase(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
-const baseUrl = trimBase(envOr('PUBLIC_BASE_URL', 'http://localhost:8900'));
-
-/** http(s) → ws(s)，用于推导默认 WS 地址 */
-function wsFrom(httpUrl: string): string {
-  return httpUrl.replace(/^http/i, 'ws');
-}
+const baseUrl = trimBase(env('PUBLIC_BASE_URL'));
 
 export const config = {
   /** 站点名，出现在标题与品牌位 */
   siteName: envOr('SITE_NAME', '方块竞技场'),
 
-  /** 对外可访问的根地址：反代后必须填真实域名，否则短链/分享会错 */
+  /**
+   * 对外根地址的**默认值**（可空）。
+   * 实际值由 lib/base-url.ts 决定：后台设置 > 本项 > 请求头推导。
+   */
   publicBaseUrl: baseUrl,
 
   /** 应用版本，写进 bootstrap 的 client.version */
@@ -96,13 +94,8 @@ export const config = {
   endpoints: {
     /** 前端调用的 API 前缀，默认同源 */
     apiBase: envOr('API_BASE', '/api'),
-    /** 实时通道；未配置时按 PUBLIC_BASE_URL 推导，不再是 example 域名 */
-    wsUrl: envOr('WS_URL', `${wsFrom(baseUrl)}/ws`),
-    /** 静态资源/CDN 前缀；自托管默认同源 */
-    cdnBase: trimBase(envOr('CDN_BASE', baseUrl)),
-    /** 短链前缀 */
-    shortLinkBase: trimBase(envOr('SHORT_LINK_BASE', `${baseUrl}/s`)),
   },
+
 
   /** 部署拓扑提示：反代后需要信任 X-Forwarded-* 才能拿到真实 IP/协议 */
   trustProxy: envFlag('TRUST_PROXY', true),

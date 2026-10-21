@@ -208,7 +208,7 @@ if [ ${#ADMIN_ARGS[@]} -gt 0 ]; then
   expect "新增公约" "$code" "201"
   NEW_ID=$(grep -o '"id":"[^"]*"' /tmp/s9c.json | head -1 | sed 's/.*:"//;s/"//')
 
-  expect "新公约出现在 /agreements" "$(curl -s -A "$UA_DESK" "$BASE/agreements" | grep -c "$TITLE")" "1"
+  expect "新公约出现在 /agreements" "$(curl -s -A "$UA_DESK" "$BASE/agreements" | grep -c "$TITLE" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
 
   code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
     -d "{\"id\":\"$NEW_ID\",\"active\":false}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/agreements")

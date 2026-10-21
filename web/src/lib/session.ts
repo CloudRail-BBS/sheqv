@@ -72,13 +72,30 @@ export async function verifySessionToken(token?: string | null): Promise<{ userI
   return { userId };
 }
 
-/** 统一 Cookie 属性：https 部署才带 Secure */
-export function sessionCookieOptions() {
+/**
+ * 统一 Cookie 属性：只有当前请求确实走 https 才带 Secure。
+ * 不用 PUBLIC_BASE_URL 判断——反代后那个变量经常没配或配错，
+ * 按请求 proto 判断既准又不需要任何配置。
+ */
+export function sessionCookieOptions(req?: { headers: Headers; url?: string }) {
+  let secure = false;
+  if (req) {
+    const proto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+    if (proto) secure = proto === 'https';
+    else if (req.url) {
+      try {
+        secure = new URL(req.url).protocol === 'https:';
+      } catch {
+        secure = false;
+      }
+    }
+  }
+
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
     path: '/',
     maxAge: SESSION_TTL,
-    secure: config.publicBaseUrl.startsWith('https://'),
+    secure,
   };
 }

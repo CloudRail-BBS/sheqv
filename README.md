@@ -17,7 +17,7 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 | 样式 | 手写 CSS，**零 UI 依赖**；深色为黑白灰阶，浅色为独立色值（CSS 变量） |
 | 存储 | 文件型 JSON（`$DATA_DIR/*.json`），原子写 + 进程内串行 |
 | 账号 | scrypt 密码哈希 + HMAC 签名会话 Cookie，无状态 |
-| 配置 | `$DATA_DIR/settings.json` 覆盖环境变量，后台改完立即生效 |
+| 配置 | 全部在后台 `/admin/settings`，存 `$DATA_DIR/settings.json`；无需 `.env` |
 | 人机验证 | GeeTest v4（注册 / 登录，服务端二次校验） |
 | 部署 | Docker（standalone 产物）/ systemd，反代用 nginx 或 Caddy |
 
@@ -29,13 +29,15 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 
 ```bash
 cd web
-cp .env.example .env          # 必改 PUBLIC_BASE_URL；建议配 GEETEST_ID / GEETEST_KEY
-docker compose up -d --build
+docker compose up -d --build     # 不需要 .env
 curl -s localhost:8900/api/health
 ```
 
 打开 `http://localhost:8900/register` 注册**第一个账号**——它会自动成为管理员。
 站点没有默认管理员，也没有内置账号。
+
+之后所有配置都在 `/admin/settings` 里改：站点名、GeeTest 人机验证、爱发电、开放注册、对外地址。
+**改完立即生效，不需要 `.env`，也不用重启。**
 
 ### 本地开发
 

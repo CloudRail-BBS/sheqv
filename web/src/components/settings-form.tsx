@@ -10,7 +10,7 @@ interface Props {
   settings: SiteSettings;
   overrides: Partial<Record<Key, string | boolean>>;
   /** 只读展示：这些必须留在环境变量里 */
-  runtime: { publicBaseUrl: string; dataDir: string; port: string };
+  runtime: { effectiveBaseUrl: string; dataDir: string; port: string };
 }
 
 export function SettingsForm({ settings, overrides, runtime }: Props) {
@@ -29,6 +29,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         siteName: form.siteName,
+        publicBaseUrl: form.publicBaseUrl,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
         afdianUserId: form.afdianUserId,
@@ -80,7 +81,29 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </label>
         {isOverride('siteName') && (
           <button className="btn btn-sm btn-ghost" style={{ marginTop: 6 }} onClick={() => resetKey('siteName')}>
-            恢复环境变量
+            恢复默认
+          </button>
+        )}
+
+        <label className="field" style={{ marginTop: 12, maxWidth: 460 }}>
+          <span>
+            对外地址（可留空）
+            {isOverride('publicBaseUrl') && <em className="ovr">已被后台覆盖</em>}
+          </span>
+          <input
+            className="input mono"
+            value={form.publicBaseUrl}
+            onChange={(e) => setForm({ ...form, publicBaseUrl: e.target.value })}
+            placeholder={`留空则按请求自动推导，当前为 ${runtime.effectiveBaseUrl}`}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
+          留空时按访问者的 Host 与 X-Forwarded-Proto 推导，通常不需要填。
+          只有在反代改写了 Host、或一个站点对应多个域名时才需要固定成主域名。
+        </p>
+        {isOverride('publicBaseUrl') && (
+          <button className="btn btn-sm btn-ghost" style={{ marginTop: 6 }} onClick={() => resetKey('publicBaseUrl')}>
+            清空（改为自动推导）
           </button>
         )}
       </div>
@@ -197,13 +220,13 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
       <div className="card card-pad" style={{ marginTop: 12 }}>
         <h3 style={{ fontSize: 13 }}>只能改环境变量的项</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
-          这几项在进程启动前就要确定，或属于密钥，放后台会有风险，所以只在 `.env` 里改：
+          下面这些属于进程启动参数或密钥，不适合放后台（改了也不生效，或者会把密钥写进数据卷）：
         </p>
         <div className="rail-list" style={{ marginTop: 10 }}>
           <div className="rail-item" style={{ paddingLeft: 0, paddingRight: 0 }}>
-            <span>对外地址 PUBLIC_BASE_URL</span>
+            <span>当前生效的对外地址</span>
             <span className="mono small" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
-              {runtime.publicBaseUrl}
+              {runtime.effectiveBaseUrl}
             </span>
           </div>
           <div className="rail-item" style={{ paddingLeft: 0, paddingRight: 0 }}>
@@ -221,7 +244,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
           <div className="rail-item" style={{ paddingLeft: 0, paddingRight: 0 }}>
             <span>会话密钥 SESSION_SECRET / 应急口令 ADMIN_TOKEN</span>
             <span className="mono small" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
-              仅环境变量
+              不配则自动生成 / 关闭
             </span>
           </div>
         </div>

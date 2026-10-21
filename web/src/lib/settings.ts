@@ -14,6 +14,7 @@ import { config } from './config';
  */
 export interface SiteSettings {
   siteName: string;
+  /** 对外地址；留空则按请求头推导（推荐留空） */
   publicBaseUrl: string;
   geetestId: string;
   geetestKey: string;

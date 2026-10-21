@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { buildCapabilities } from '@/lib/capabilities';
 import { buildBootstrap, etagOf } from '@/lib/bootstrap';
+import { getBaseUrl } from '@/lib/base-url';
 
 /**
  * GET /api/v1/bootstrap
@@ -9,7 +10,7 @@ import { buildBootstrap, etagOf } from '@/lib/bootstrap';
  *  - 支持 If-None-Match → 304
  *  - 返回 capabilities / limits / features / notice / ttl
  */
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const forced =
     process.env.NODE_ENV !== 'production' ? req.cookies.get('__runtime')?.value ?? null : null;
 
@@ -19,10 +20,16 @@ export function GET(req: NextRequest) {
     forcedForm: forced,
   });
 
-  const payload = buildBootstrap(state, {
-    version: req.headers.get('x-client-version') ?? undefined,
-    channel: req.headers.get('x-client-channel') ?? undefined,
-  });
+  const baseUrl = await getBaseUrl(req);
+
+  const payload = buildBootstrap(
+    state,
+    {
+      version: req.headers.get('x-client-version') ?? undefined,
+      channel: req.headers.get('x-client-channel') ?? undefined,
+    },
+    baseUrl,
+  );
 
   const etag = etagOf(payload);
   const ifNoneMatch = req.headers.get('if-none-match');

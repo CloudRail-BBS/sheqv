@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const { token, maxAge } = await issueSessionToken(user.id);
 
     const res = NextResponse.json({ ok: true, user, becameAdmin }, { status: 201 });
-    res.cookies.set(SESSION_COOKIE, token, { ...sessionCookieOptions(), maxAge });
+    res.cookies.set(SESSION_COOKIE, token, { ...sessionCookieOptions(req), maxAge });
     return res;
   } catch (e) {
     if (e instanceof Error && e.message === 'USERNAME_TAKEN') {

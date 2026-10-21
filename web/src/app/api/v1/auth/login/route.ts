@@ -33,6 +33,6 @@ export async function POST(req: NextRequest) {
 
   const { token, maxAge } = await issueSessionToken(user.id);
   const res = NextResponse.json({ ok: true, user });
-  res.cookies.set(SESSION_COOKIE, token, { ...sessionCookieOptions(), maxAge });
+  res.cookies.set(SESSION_COOKIE, token, { ...sessionCookieOptions(req), maxAge });
   return res;
 }

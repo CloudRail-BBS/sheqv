@@ -16,15 +16,13 @@ web/.*/
 web/.data
 web/backups
 
-# 机密
+# 机密（项目不再提供 .env.example，配置走后台）
 .env
 .env.local
 .env.*.local
-!.env.example
 web/.env
 web/.env.local
 web/.env.*.local
-!web/.env.example
 
 # 本地杂项
 .shots

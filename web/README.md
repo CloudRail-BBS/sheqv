@@ -22,8 +22,7 @@ bash scripts/smoke.sh http://localhost:8900
 **本项目按自部署设计**，不依赖任何托管平台。完整步骤见 [`../docs/自托管部署.md`](../docs/自托管部署.md)。
 
 ```bash
-cp .env.example .env          # 必改 PUBLIC_BASE_URL；GEETEST_ID/KEY 建议配
-docker compose up -d --build
+docker compose up -d --build     # 不需要 .env
 curl -s localhost:8900/api/health
 
 # 打开 /register 注册第一个账号 —— 它会自动成为管理员
@@ -47,7 +46,8 @@ $DATA_DIR/agreements.json   后台新增的公约
 写入用「临时文件 + rename」，进程内串行化；断电不会留半个 JSON。
 **文件存储只支持单实例**——要多副本先把 `lib/json-store.ts` 换成数据库。
 
-关键环境变量：`PUBLIC_BASE_URL`、`ADMIN_TOKEN`、`DATA_DIR`、`SITE_NAME`、`CDN_BASE`、`ENABLE_DEV_CONSOLE`，全部见 `.env.example`。
+配置全部在后台 `/admin/settings`（站点名、GeeTest、爱发电、开放注册、对外地址），存 `$DATA_DIR/settings.json`，
+改完立即生效。**不需要 `.env`**；只有 `PORT` / `DATA_DIR` 这类进程参数走 compose 或命令行。
 
 端口：默认 **8900**（`dev` / `start` / Docker / compose / systemd / 反代示例全部一致）。
 临时改端口用 `PORT=9000 npm start`；`npm run dev` 的端口写在 `package.json` 的 dev 脚本里。
@@ -149,7 +149,8 @@ UA ──► detectRuntime ──► { runtime, form, isWeChat }
 src/
   middleware.ts              # 透出 x-runtime / x-form / x-wechat，不再按端拦截
   lib/
-    config.ts                # 环境变量入口（PUBLIC_BASE_URL / ADMIN_TOKEN / DATA_DIR…）
+    config.ts                # 启动期参数（PORT / DATA_DIR / 密钥）；业务配置见 settings.ts
+    base-url.ts              # 对外地址：后台设置 > env > 请求头推导
     json-store.ts            # 文件存储公共件：原子写 + 进程内串行
     admin-auth.ts            # 后台口令鉴权（Bearer / httpOnly Cookie）
     capabilities.ts          # 判定 + fail-closed 合并 + 32 键默认表
@@ -184,7 +185,7 @@ src/
     api/v1/admin/{users,posts,announcements,slides,settings,agreements,sponsors,afdian}/…
 ```
 
-根目录另有 `Dockerfile`、`docker-compose.yml`、`.env.example`、`.dockerignore`、`deploy/`。
+根目录另有 `Dockerfile`、`docker-compose.yml`、`.dockerignore`、`deploy/`（不含 `.env`，配置在后台）。
 
 ## 验证
 

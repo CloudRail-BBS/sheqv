@@ -3,6 +3,7 @@ import { AdminDenied } from '@/components/admin-denied';
 import { AdminNav } from '@/components/admin-nav';
 import { getOverrides, getSettings } from '@/lib/settings';
 import { config } from '@/lib/config';
+import { getBaseUrl } from '@/lib/base-url';
 import { SettingsForm } from '@/components/settings-form';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,11 @@ export default async function AdminSettingsPage() {
     );
   }
 
-  const [settings, overrides] = await Promise.all([getSettings(), getOverrides()]);
+  const [settings, overrides, effectiveBaseUrl] = await Promise.all([
+    getSettings(),
+    getOverrides(),
+    getBaseUrl(),
+  ]);
 
   return (
     <div className="col-main">
@@ -35,7 +40,7 @@ export default async function AdminSettingsPage() {
       <SettingsForm
         settings={settings}
         overrides={overrides}
-        runtime={{ publicBaseUrl: config.publicBaseUrl, dataDir: config.dataDir, port: process.env.PORT || '8900' }}
+        runtime={{ effectiveBaseUrl, dataDir: config.dataDir, port: process.env.PORT || '8900' }}
       />
     </div>
   );
