@@ -10,6 +10,9 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getSettings } from '@/lib/settings';
 import { getNotifications, flatten } from '@/lib/notifications';
 import { NotificationBell } from '@/components/notification-bell';
+import { UserBadge } from '@/components/user-badge';
+import { BrandMark } from '@/components/brand-mark';
+import { badgeOf } from '@/lib/badges';
 
 export const metadata: Metadata = {
   title: '方块竞技场 · BlockArena',
@@ -44,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <header className="topbar">
             <div className="topbar-in">
               <Link href="/" className="brand">
-                <span className="brand-mark">{(settings.siteName || '方块竞技场').slice(0, 1)}</span>
+                <BrandMark settings={settings} />
                 {settings.siteName}
               </Link>
 
@@ -84,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <Link href="/me" className="user-chip hide-mobile">
                     <span className="user-dot">{user.nickname.slice(0, 1)}</span>
                     <span className="user-name">{user.nickname}</span>
-                    {user.isAdmin && <span className="mini-admin">管理员</span>}
+                    <UserBadge badge={badgeOf(user)} size="sm" />
                   </Link>
                 ) : (
                   <div className="row hide-mobile" style={{ gap: 6 }}>

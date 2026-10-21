@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteSettings } from '@/lib/settings';
+import { BrandMark } from './brand-mark';
 
 type Key = keyof SiteSettings;
 
@@ -29,6 +30,8 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         siteName: form.siteName,
+        logoText: form.logoText,
+        logoImage: form.logoImage,
         publicBaseUrl: form.publicBaseUrl,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
@@ -84,6 +87,39 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             恢复默认
           </button>
         )}
+
+        <div className="logo-edit">
+          <div className="logo-fields">
+            <label className="field" style={{ width: 150 }}>
+              <span>站点标识文字</span>
+              <input
+                className="input"
+                value={form.logoText}
+                onChange={(e) => setForm({ ...form, logoText: Array.from(e.target.value).slice(0, 2).join('') })}
+                placeholder="1–2 字"
+                maxLength={2}
+              />
+            </label>
+            <label className="field" style={{ flex: 1, minWidth: 220 }}>
+              <span>标识图片地址（可选）</span>
+              <input
+                className="input mono"
+                value={form.logoImage}
+                onChange={(e) => setForm({ ...form, logoImage: e.target.value })}
+                placeholder="https://…/logo.png 或 /logo.png"
+              />
+            </label>
+          </div>
+
+          <div className="logo-preview">
+            <span className="small muted">预览</span>
+            <BrandMark settings={form} />
+          </div>
+        </div>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
+          标识文字留空时取站点名首字；填了图片地址就用图片。建议正方形，尺寸 64×64 以上。
+          图片会随页面直接加载，请使用可公开访问的地址。
+        </p>
 
         <label className="field" style={{ marginTop: 12, maxWidth: 460 }}>
           <span>
@@ -220,8 +256,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
       <div className="card card-pad" style={{ marginTop: 12 }}>
         <h3 style={{ fontSize: 13 }}>留在 .env 里的项（进程参数与密钥）</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
-          下面这些要么改了必须重启进程，要么不该写进数据卷，所以只在
-          <code>web/.env</code>（systemd 则是 <code>/etc/blockarena/web.env</code>）里改：
+          下面这些属于进程启动参数或密钥，改完需要重启服务：
         </p>
         <div className="rail-list" style={{ marginTop: 10 }}>
           <div className="rail-item" style={{ paddingLeft: 0, paddingRight: 0 }}>
@@ -250,11 +285,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
           </div>
         </div>
         <p className="small muted" style={{ marginTop: 10, lineHeight: 1.75 }}>
-          环境变量仍可当默认值：上面那些项在后台留空时会回落到同名变量，方便「配置即代码」。
-          但后台一旦填了，就以后台为准。
-        </p>
-        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
-          GeeTest KEY 与爱发电 token 会以明文存进 <code>$DATA_DIR/settings.json</code>，备份时注意保护该文件。
+          密钥以明文保存在数据目录的设置文件里，备份或共享数据目录时请一并保护。
         </p>
       </div>
     </>

@@ -99,9 +99,12 @@ export function Sidebar({ adminVisible, form }: Props) {
         )}
       </div>
 
-      <div className="side-cta">
-        当前形态 <b>{form === 'mobile' ? '移动' : '桌面'}</b> · 同一套页面
-        <br />
+      <Link href="/sponsors" className="side-sponsor">
+        <Ico>{I.heart}</Ico>
+        支持我们
+      </Link>
+
+      <div className="side-cta" data-form={form}>
         社区规则 · 发帖前请阅读
       </div>
     </aside>

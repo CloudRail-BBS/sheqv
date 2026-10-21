@@ -27,6 +27,6 @@ export async function POST(req: NextRequest) {
   if (invalid) return NextResponse.json({ error: 'invalid_input', message: invalid }, { status: 422 });
 
   // 作者只能来自会话，不接受客户端传入——否则谁都能冒充别人发帖
-  const post = await addPost({ ...body, author: user.nickname, guild: '个人' });
+  const post = await addPost({ ...body, author: user.nickname, authorId: user.id, guild: '个人' });
   return NextResponse.json({ ok: true, post }, { status: 201 });
 }

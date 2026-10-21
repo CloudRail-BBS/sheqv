@@ -5,7 +5,8 @@ import { listPosts } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
-import { countUsers } from '@/lib/users';
+import { countUsers, getBadgeMap } from '@/lib/users';
+import { resolveBadge } from '@/lib/badges';
 import { getSettings } from '@/lib/settings';
 import { listAnnouncements } from '@/lib/announcement-store';
 import { listSlides } from '@/lib/slide-store';
@@ -23,12 +24,13 @@ export default async function HomePage() {
   const posts = await listPosts();
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
-  const [userTotal, stats, settings, news, slides] = await Promise.all([
+  const [userTotal, stats, settings, news, slides, badges] = await Promise.all([
     countUsers(),
     forumStats(),
     getSettings(),
     listAnnouncements({ publishedOnly: true, limit: 3 }),
     listSlides({ activeOnly: true }),
+    getBadgeMap(),
   ]);
   const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
   const sponsorUrl = await afdianPageUrl();
@@ -90,7 +92,7 @@ export default async function HomePage() {
         )}
 
         {posts.slice(0, 3).map((f) => (
-          <PostCard key={f.id} item={f} />
+          <PostCard key={f.id} item={f} badge={resolveBadge(badges, { id: f.authorId, name: f.author })} />
         ))}
 
         {live && (
@@ -131,7 +133,7 @@ export default async function HomePage() {
         )}
 
         {posts.slice(3, 9).map((f) => (
-          <PostCard key={f.id} item={f} />
+          <PostCard key={f.id} item={f} badge={resolveBadge(badges, { id: f.authorId, name: f.author })} />
         ))}
 
         <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
@@ -271,17 +273,14 @@ export default async function HomePage() {
           </div>
 
           {sponsors.count === 0 ? (
-            <p className="small muted" style={{ lineHeight: 1.7 }}>
-              还没有赞助记录。
-              {sponsorUrl && (
-                <>
-                  {' '}
-                  <a href={sponsorUrl} target="_blank" rel="noreferrer noopener" style={{ color: 'var(--accent)' }}>
-                    去爱发电支持
-                  </a>
-                </>
-              )}
-            </p>
+            <>
+              <p className="small muted" style={{ lineHeight: 1.7 }}>
+                还没有赞助记录。赞助用于服务器与赛事奖品，名单公开可查。
+              </p>
+              <Link href="/sponsors" className="btn btn-sm" style={{ width: '100%', marginTop: 8 }}>
+                了解赞助
+              </Link>
+            </>
           ) : (
             <>
               <div className="rail-list">
@@ -321,10 +320,9 @@ export default async function HomePage() {
                     href={sponsorUrl}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="small"
-                    style={{ color: 'var(--accent)' }}
+                    className="btn btn-sm"
                   >
-                    支持 →
+                    去支持
                   </a>
                 )}
               </div>

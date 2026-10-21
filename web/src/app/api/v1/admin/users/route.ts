@@ -9,6 +9,7 @@ import {
   updateUser,
   type Role,
 } from '@/lib/users';
+import { normalizeTitle } from '@/lib/badges';
 
 /**
  * 后台用户管理。
@@ -40,13 +41,13 @@ export async function GET(req: NextRequest) {
   });
 }
 
-/** PATCH —— { id, role?, banned? } */
+/** PATCH —— { id, role?, banned?, title? } */
 export async function PATCH(req: NextRequest) {
   const g = await guard(req);
   if ('error' in g) return g.error;
 
   const body = (await req.json().catch(() => null)) as
-    | { id?: string; role?: Role; banned?: boolean }
+    | { id?: string; role?: Role; banned?: boolean; title?: string | null }
     | null;
 
   if (!body?.id) return NextResponse.json({ error: 'missing_id' }, { status: 400 });
@@ -54,7 +55,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_role' }, { status: 422 });
   }
 
-  if (g.me?.id === body.id) {
+  // 自己的头衔可以自己改（走 /api/v1/me 也行），但角色与封禁不能自操作
+  const self = g.me?.id === body.id;
+  if (self && (body.role !== undefined || body.banned !== undefined)) {
     return NextResponse.json(
       { error: 'self_forbidden', message: '不能修改自己的角色或封禁自己' },
       { status: 403 },
@@ -63,6 +66,17 @@ export async function PATCH(req: NextRequest) {
 
   const before = (await listUsers()).find((u) => u.id === body.id);
   if (!before) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  let title: string | null | undefined;
+  if (body.title !== undefined) {
+    // 保留字按「改完之后的角色」判断：正在被提为管理员的人可以直接用「管理员」
+    const nextIsAdmin = (body.role ?? before.role) === 'admin';
+    const checked = normalizeTitle(body.title, nextIsAdmin);
+    if (!checked.ok) {
+      return NextResponse.json({ error: 'invalid_title', message: checked.message }, { status: 422 });
+    }
+    title = checked.value || null;
+  }
 
   const losingAdmin =
     before.role === 'admin' && !before.banned && (body.role === 'member' || body.banned === true);
@@ -73,7 +87,7 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const user = await updateUser(body.id, { role: body.role, banned: body.banned });
+  const user = await updateUser(body.id, { role: body.role, banned: body.banned, title });
   return user ? NextResponse.json({ ok: true, user }) : NextResponse.json({ error: 'not_found' }, { status: 404 });
 }
 

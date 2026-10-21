@@ -4,13 +4,17 @@ import { getPost } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { PostActions } from '@/components/post-actions';
+import { getBadgeMap } from '@/lib/users';
+import { resolveBadge } from '@/lib/badges';
+import { UserBadge } from '@/components/user-badge';
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const post = await getPost(id);
   if (!post) notFound();
 
-  const [signed, user] = await Promise.all([isCommunitySigned(), getCurrentUser()]);
+  const [signed, user, badges] = await Promise.all([isCommunitySigned(), getCurrentUser(), getBadgeMap()]);
+  const postBadge = resolveBadge(badges, { id: post.authorId, name: post.author });
 
   return (
     <div className="cols">
@@ -27,6 +31,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <div>
               <div className="post-meta">
                 <b>{post.author}</b>
+                <UserBadge badge={postBadge} />
                 <span className="sep">·</span>
                 {post.guild}
                 {post.pinned && <span className="post-pin">置顶</span>}
@@ -67,7 +72,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <div key={c.id} className="rail-item" style={{ padding: '12px 16px', alignItems: 'flex-start' }}>
                 <span className="post-avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 8 }}>{c.author.slice(0, 1)}</span>
                 <div style={{ minWidth: 0 }}>
-                  <div className="small" style={{ fontWeight: 550 }}>{c.author}</div>
+                  <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
+                    {c.author}
+                    <UserBadge badge={resolveBadge(badges, { id: c.authorId, name: c.author })} size="sm" />
+                  </div>
                   <div className="small dim" style={{ lineHeight: 1.7 }}>{c.body}</div>
                 </div>
               </div>
@@ -82,7 +90,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           <div className="row" style={{ gap: 10 }}>
             <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>{post.author.slice(0, 1)}</span>
             <div>
-              <div className="small" style={{ fontWeight: 550 }}>{post.author}</div>
+              <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
+                {post.author}
+                <UserBadge badge={postBadge} size="sm" />
+              </div>
               <div className="small muted">{post.guild}公会</div>
             </div>
           </div>

@@ -9,9 +9,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * 这里拿到的票据本身不代表通过，只代表"人机交互完成"。
  *
  * 线上踩过的坑都在这处理了：
- *  - gt4.js 在 CDN 上，被墙/超时会白屏 → 多源回退 + 6s 超时 + 可重试按钮
- *  - initGeetest4 静默失败（域名未登记）→ 3s 看门狗检查容器是否真的渲染出节点
- *  - 只配 ID 没配 KEY 时服务端会跳过校验 → 那种情况下父组件不传 captchaId，这里不渲染
+ *  - gt4.js 在 CDN 上，被墙/超时会白屏 → 多源回退 + 6s 超时 + 可重试
+ *  - initGeetest4 静默失败（域名未登记）→ 4s 看门狗检查容器里有没有真实节点
+ *  - 容器用 flex 居中会把注入的组件压成 0 宽 → 这里只给块级容器，布局交给 GeeTest
  */
 
 export interface CaptchaPayload {
@@ -21,10 +21,20 @@ export interface CaptchaPayload {
   gen_time: string;
 }
 
+interface GtInstance {
+  appendTo: (el: HTMLElement) => void;
+  onSuccess: (fn: () => void) => void;
+  onError?: (fn: () => void) => void;
+  onClose?: (fn: () => void) => void;
+  getValidate: () => CaptchaPayload | null;
+  reset?: () => void;
+  destroy?: () => void;
+}
+
 interface Props {
   captchaId: string;
   onChange: (payload: CaptchaPayload | null) => void;
-  /** 换值即重建实例，用于提交失败后重置 */
+  /** 换值即重置实例，用于提交失败后重来 */
   resetKey: number;
 }
 
@@ -84,6 +94,7 @@ function loadGt4(): Promise<void> {
 
 export function Geetest({ captchaId, onChange, resetKey }: Props) {
   const box = useRef<HTMLDivElement>(null);
+  const inst = useRef<GtInstance | null>(null);
   const changeRef = useRef(onChange);
   changeRef.current = onChange;
 
@@ -109,36 +120,37 @@ export function Geetest({ captchaId, onChange, resetKey }: Props) {
 
         const init = (
           window as unknown as {
-            initGeetest4: (
-              cfg: Record<string, unknown>,
-              cb: (captcha: {
-                appendTo: (el: HTMLElement) => void;
-                onSuccess: (fn: () => void) => void;
-                onError?: (fn: () => void) => void;
-                onClose?: (fn: () => void) => void;
-                getValidate: () => CaptchaPayload | null;
-              }) => void,
-            ) => void;
+            initGeetest4: (cfg: Record<string, unknown>, cb: (captcha: GtInstance) => void) => void;
           }
         ).initGeetest4;
 
-        init({ captchaId, product: 'bind', hideBar: ['close'], language: 'zho' }, (captcha) => {
+        if (typeof init !== 'function') {
+          setStatus('failed');
+          return;
+        }
+
+        // float 是内联滑块，比 bind 的按钮 + 弹窗更稳，也不会被父容器的 overflow 裁掉
+        init({ captchaId, product: 'float', hideBar: ['close'], language: 'zho' }, (captcha) => {
           if (disposed || !box.current) return;
-          captcha.appendTo(box.current);
+          inst.current = captcha;
 
-          // 看门狗：初始化回调跑完了，容器里却没有任何节点 → 多半是 ID 无效或域名未登记
-          watchdog = setTimeout(() => {
-            if (disposed || !box.current) return;
-            if (box.current.childElementCount === 0) setStatus('failed');
-          }, 3000);
+          try {
+            captcha.appendTo(box.current);
+          } catch {
+            setStatus('failed');
+            return;
+          }
 
-          captcha.onSuccess(() => {
-            const v = captcha.getValidate();
-            changeRef.current(v ?? null);
-          });
+          captcha.onSuccess(() => changeRef.current(captcha.getValidate() ?? null));
           captcha.onError?.(() => changeRef.current(null));
           captcha.onClose?.(() => changeRef.current(null));
           setStatus('ready');
+
+          // 看门狗：回调跑完了容器里却没有节点 → 多半是 ID 无效或域名未登记
+          watchdog = setTimeout(() => {
+            if (disposed || !box.current) return;
+            if (box.current.childElementCount === 0) setStatus('failed');
+          }, 4000);
         });
       })
       .catch(() => {
@@ -148,18 +160,40 @@ export function Geetest({ captchaId, onChange, resetKey }: Props) {
     return () => {
       disposed = true;
       if (watchdog) clearTimeout(watchdog);
+      try {
+        inst.current?.destroy?.();
+      } catch {
+        // 组件卸载时忽略
+      }
+      inst.current = null;
     };
-  }, [captchaId, resetKey, attempt]);
+  }, [captchaId, attempt]);
+
+  // 提交失败后重置：优先复用实例，实例不可用才重建
+  useEffect(() => {
+    if (resetKey === 0) return;
+    changeRef.current(null);
+    const c = inst.current;
+    if (c?.reset) {
+      try {
+        c.reset();
+        return;
+      } catch {
+        // 落到重建
+      }
+    }
+    setAttempt((n) => n + 1);
+  }, [resetKey]);
 
   if (status === 'failed') {
     return (
       <div className="gt-fallback">
         <div>
-          <b>人机验证加载失败</b>
-          <p>多半是网络访问不到 static.geetest.com，或该域名未在 GeeTest 后台登记。</p>
+          <b>验证没有加载出来</b>
+          <p>检查一下网络，或稍后再试。</p>
         </div>
         <button type="button" className="btn btn-sm" onClick={retry}>
-          重试
+          重新加载
         </button>
       </div>
     );
@@ -167,8 +201,8 @@ export function Geetest({ captchaId, onChange, resetKey }: Props) {
 
   return (
     <div className="gt-wrap">
-      <div ref={box} className="gt-box" data-gt={captchaId} />
-      {status === 'loading' && <span className="gt-hint">正在加载人机验证…</span>}
+      <div ref={box} className="gt-box" data-gt={captchaId} aria-live="polite" />
+      {status === 'loading' && <span className="gt-hint">正在准备验证…</span>}
     </div>
   );
 }

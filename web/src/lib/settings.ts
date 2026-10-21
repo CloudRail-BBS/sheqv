@@ -14,6 +14,10 @@ import { config } from './config';
  */
 export interface SiteSettings {
   siteName: string;
+  /** 站点标识文字（1–2 字）；留空用站点名首字 */
+  logoText: string;
+  /** 站点标识图片地址（http(s) 或站内路径）；填了优先于文字 */
+  logoImage: string;
   /** 对外地址；留空则按请求头推导（推荐留空） */
   publicBaseUrl: string;
   geetestId: string;
@@ -35,6 +39,8 @@ const FILE = dataFile('settings.json');
 function envDefaults(): SiteSettings {
   return {
     siteName: config.siteName,
+    logoText: '',
+    logoImage: '',
     publicBaseUrl: config.publicBaseUrl,
     geetestId: config.geetest.id,
     geetestKey: config.geetest.key,
@@ -49,6 +55,8 @@ function envDefaults(): SiteSettings {
 /** 只保留认识的键，避免写进乱七八糟的值 */
 const KEYS: (keyof SiteSettings)[] = [
   'siteName',
+  'logoText',
+  'logoImage',
   'publicBaseUrl',
   'geetestId',
   'geetestKey',

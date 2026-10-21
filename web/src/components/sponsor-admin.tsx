@@ -102,12 +102,12 @@ export function SponsorAdmin({ items, configured, syncedAt, pageUrl }: Props) {
             <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
               {configured ? (
                 <>
-                  已配置 <code className="mono">AFDIAN_USER_ID</code> 与 <code className="mono">AFDIAN_TOKEN</code>。
+                  已绑定爱发电账号，可随时同步。
                   上次同步：{syncedAt ? new Date(syncedAt).toLocaleString('zh-CN') : '从未'}
                 </>
               ) : (
                 <>
-                  未配置 <code className="mono">AFDIAN_USER_ID</code> / <code className="mono">AFDIAN_TOKEN</code>，
+                  还没有绑定爱发电账号，
                   同步不可用。手动录入仍然可以用于线下支持。
                 </>
               )}

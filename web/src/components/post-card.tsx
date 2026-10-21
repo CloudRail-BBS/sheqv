@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { FeedItem } from '@/lib/data';
+import type { BadgeInfo } from '@/lib/badges';
+import { UserBadge } from './user-badge';
 
 type Item = FeedItem & { href?: string };
 
-export function PostCard({ item }: { item: Item }) {
+export function PostCard({ item, badge }: { item: Item; badge?: BadgeInfo }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(item.likes);
   const [saved, setSaved] = useState(false);
@@ -30,6 +32,7 @@ export function PostCard({ item }: { item: Item }) {
         <div>
           <div className="post-meta">
             <b>{item.author}</b>
+            <UserBadge badge={badge} />
             <span className="sep">·</span>
             {item.guild}
             {item.pinned && <span className="post-pin">置顶</span>}

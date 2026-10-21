@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { badgeOf, TITLE_MAX } from '@/lib/badges';
+import { UserBadge } from './user-badge';
 
 export interface AdminUserRow {
   id: string;
@@ -12,6 +14,7 @@ export interface AdminUserRow {
   lastLoginAt?: number;
   notifReadAt?: number;
   banned?: boolean;
+  title?: string;
 }
 
 const day = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 10) : '—');
@@ -20,6 +23,9 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  /** 正在编辑头衔的用户 id */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
 
   async function patch(id: string, body: Record<string, unknown>) {
     setBusyId(id);
@@ -33,9 +39,10 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
     setBusyId(null);
     if (!res?.ok) {
       setErr(data?.message ?? '操作失败');
-      return;
+      return false;
     }
     router.refresh();
+    return true;
   }
 
   async function remove(id: string) {
@@ -66,6 +73,7 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
               <th>昵称</th>
               <th>用户名</th>
               <th>角色</th>
+              <th style={{ width: 170 }}>头衔</th>
               <th>注册</th>
               <th>最后登录</th>
               <th>状态</th>
@@ -88,6 +96,50 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
                     <span className={'badge ' + (u.role === 'admin' ? 'badge-live' : 'badge-ghost')}>
                       {u.role === 'admin' ? '管理员' : '成员'}
                     </span>
+                  </td>
+                  <td>
+                    {editing === u.id ? (
+                      <div className="row" style={{ gap: 5 }}>
+                        <input
+                          className="input"
+                          style={{ height: 28, width: 92, fontSize: 12 }}
+                          value={draft}
+                          maxLength={TITLE_MAX}
+                          autoFocus
+                          placeholder={u.role === 'admin' ? '管理员' : '选填'}
+                          onChange={(e) => setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              patch(u.id, { title: draft.trim() || null }).then((ok) => ok && setEditing(null));
+                            }
+                            if (e.key === 'Escape') setEditing(null);
+                          }}
+                        />
+                        <button
+                          className="btn btn-sm"
+                          disabled={busyId === u.id}
+                          onClick={() =>
+                            patch(u.id, { title: draft.trim() || null }).then((ok) => ok && setEditing(null))
+                          }
+                        >
+                          存
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="row" style={{ gap: 6 }}>
+                        <UserBadge badge={badgeOf({ role: u.role, title: u.title })} size="sm" />
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => {
+                            setEditing(u.id);
+                            setDraft(u.title ?? '');
+                          }}
+                        >
+                          {u.title ? '改' : '设置'}
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="mono small muted">{day(u.createdAt)}</td>
                   <td className="mono small muted">{day(u.lastLoginAt)}</td>
@@ -132,6 +184,7 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
 
       <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
         规则：不能修改自己的角色、封禁或删除自己；任何操作后必须至少保留一个可用管理员。
+        头衔留空会回落默认（管理员显示「管理员」，普通用户不显示）。
         封禁立即生效——该账号的现有会话会被判为无效，不只是隐藏按钮。
       </p>
     </>

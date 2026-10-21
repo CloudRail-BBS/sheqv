@@ -17,7 +17,7 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 | 样式 | 手写 CSS，**零 UI 依赖**；深色为黑白灰阶，浅色为独立色值（CSS 变量） |
 | 存储 | 文件型 JSON（`$DATA_DIR/*.json`），原子写 + 进程内串行 |
 | 账号 | scrypt 密码哈希 + HMAC 签名会话 Cookie，无状态 |
-| 配置 | 业务配置在后台 `/admin/settings`；进程参数与密钥在 `.env` |
+| 配置 | 业务配置在后台 `/admin/settings`（含站点名与 Logo）；进程参数与密钥在 `.env` |
 | 人机验证 | GeeTest v4（注册 / 登录，服务端二次校验） |
 | 部署 | Docker（standalone 产物）/ systemd，反代用 nginx 或 Caddy |
 

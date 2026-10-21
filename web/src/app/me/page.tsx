@@ -4,6 +4,9 @@ import { listPosts } from '@/lib/forum-store';
 import { listActive } from '@/lib/agreement-store';
 import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
+import { TitleEditor } from '@/components/title-editor';
+import { UserBadge } from '@/components/user-badge';
+import { badgeOf } from '@/lib/badges';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,9 +53,7 @@ export default async function MePage() {
           <div style={{ minWidth: 0 }}>
             <div className="row" style={{ gap: 7 }}>
               <span className="me-name">{user.nickname}</span>
-              <span className={'badge ' + (user.isAdmin ? 'badge-live' : 'badge-ghost')}>
-                {user.isAdmin ? '管理员' : '成员'}
-              </span>
+              <UserBadge badge={badgeOf(user)} />
             </div>
             <div className="me-sub">
               @{user.username} · 注册于 {joined}
@@ -66,6 +67,14 @@ export default async function MePage() {
             )}
             <LogoutButton />
           </div>
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="between" style={{ marginBottom: 8 }}>
+            <h3 style={{ fontSize: 13 }}>头衔</h3>
+            <span className="small muted">显示在帖子与评论的作者名后面</span>
+          </div>
+          <TitleEditor current={user.title ?? ''} isAdmin={user.isAdmin} />
         </div>
 
         <div className="me-stats">
@@ -159,7 +168,7 @@ export default async function MePage() {
             </div>
           </div>
           <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
-            忘记密码时可由管理员在服务器上编辑 <code className="mono">$DATA_DIR/users.json</code> 重置。
+            忘记密码请联系管理员重置。
           </p>
         </div>
       </aside>

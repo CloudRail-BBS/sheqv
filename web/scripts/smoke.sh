@@ -318,6 +318,29 @@ if [ "$A_IS_ADMIN" = "1" ]; then
   expect "删除帖子" "$code" "200"
   expect "首页不再出现" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c "$PT")" "0"
   expect "重复删除返回 404" "$(curl -s -b "ba_session=$CK_A" -X DELETE -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/posts?id=$PID")" "404"
+
+  echo "== 12.5 头衔 =="
+  code=$(curl -s -X PATCH -H 'content-type: application/json' -d '{"title":"路人甲"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/me")
+  expect "未登录改头衔" "$code" "401"
+
+  code=$(curl -s -b "ba_session=$CK_B" -X PATCH -H 'content-type: application/json' \
+    -d '{"title":"官方"}' -o /tmp/s125a.json -w '%{http_code}' "$BASE/api/v1/me")
+  expect "成员用保留头衔被拒" "$code" "422"
+  expect "保留字错误码" "$(jget error /tmp/s125a.json)" "invalid_title"
+
+  code=$(curl -s -b "ba_session=$CK_B" -X PATCH -H 'content-type: application/json' \
+    -d '{"title":"搬砖工"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/me")
+  expect "成员自定义头衔" "$code" "200"
+  expect "/me 显示自定义头衔" "$(curl -s -b "ba_session=$CK_B" "$BASE/me" | grep -c '搬砖工' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -b "ba_session=$CK_A" -X PATCH -H 'content-type: application/json' \
+    -d '{"title":"服主"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/me")
+  expect "管理员自定义头衔" "$code" "200"
+  expect "管理员徽标为暖色样式" "$(curl -s -b "ba_session=$CK_A" "$BASE/me" | grep -c 'data-kind="admin"' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -b "ba_session=$CK_A" -X PATCH -H 'content-type: application/json' \
+    -d "{\"id\":\"$B_ID\",\"title\":\"记录员\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/users")
+  expect "后台改他人头衔" "$code" "200"
 fi
 
 if [ "$A_IS_ADMIN" = "1" ]; then
@@ -355,11 +378,40 @@ print(next((str(a['published']).lower() for a in d['items'] if a['title']=='$AN_
   curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
     -d "{\"id\":\"$SL_ID\",\"bgColor\":\"#1b1b1e\"}" -o /dev/null
 
-  OLD_NAME=$(curl -s "${ADMIN_ARGS[@]}" "$BASE/api/v1/admin/settings" | grep -o '"siteName":"[^"]*"' | head -1 | sed 's/.*:"//;s/"//')
   code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
     -d '{"siteName":"冒烟站点名"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
   expect "后台改站点名" "$code" "200"
   expect "顶栏显示新站名" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c '冒烟站点名' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  echo "== 13.1 站点标识 =="
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"logoText":"AB"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "改标识文字" "$code" "200"
+  expect "顶栏用自定义标识" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c '>AB</span>' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"logoText":"ABC"}' -o /tmp/s131a.json -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "标识超过两个字被拒" "$code" "422"
+  expect "标识错误码" "$(jget error /tmp/s131a.json)" "invalid_logo"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"logoImage":"javascript:alert(1)"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "非法图片地址被拒" "$code" "422"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"logoImage":"/logo-smoke.png"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "图片标识保存" "$code" "200"
+  expect "顶栏渲染图片标识" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c 'data-kind="image"' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  expect "图片地址已生效" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c 'logo-smoke.png' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"logoImage"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除图片标识" "$code" "200"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"logoText"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除文字标识" "$code" "200"
+  sleep 0.4
+  expect "标识已恢复默认" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c 'logo-smoke.png')" "0"
 
   code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
     -d '{"allowRegister":false}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
@@ -371,10 +423,15 @@ print(next((str(a['published']).lower() for a in d['items'] if a['title']=='$AN_
   expect "错误码" "$(jget error /tmp/s13d.json)" "register_closed"
   expect "注册页提示暂停" "$(curl -s -A "$UA_DESK" "$BASE/register" | grep -c '暂停注册' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
 
-  curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' -d '{"allowRegister":true}' -o /dev/null
+  # 收尾：把测试改动清干净，避免污染真实数据目录
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"allowRegister":true}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "恢复开放注册" "$code" "200"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"siteName"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除测试站名" "$code" "200"
   sleep 0.4
-  curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
-    -d "{\"siteName\":\"$OLD_NAME\"}" -o /dev/null
+  expect "站名已复原" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c '冒烟站点名')" "0"
 fi
 
 echo "== 14. 退出登录 =="

@@ -1,5 +1,6 @@
 import { randomBytes, scrypt as _scrypt, timingSafeEqual } from 'node:crypto';
 import { dataFile, readJson, serialize, writeJsonAtomic } from './json-store';
+import { badgeOf, type BadgeMap } from './badges';
 
 /**
  * 用户存储。
@@ -25,6 +26,8 @@ export interface UserRecord {
   notifReadAt?: number;
   /** 封禁：登录被拒、在线会话视为无效 */
   banned?: boolean;
+  /** 自定义头衔；空 = 用角色默认文案（管理员显示「管理员」，普通用户不显示） */
+  title?: string;
 }
 
 /** 对外暴露的用户信息（不含哈希） */
@@ -37,6 +40,7 @@ export interface PublicUser {
   createdAt: number;
   notifReadAt?: number;
   banned?: boolean;
+  title?: string;
 }
 
 interface Store {
@@ -102,6 +106,7 @@ export function toPublic(u: UserRecord): PublicUser {
     createdAt: u.createdAt,
     notifReadAt: u.notifReadAt,
     banned: u.banned,
+    title: u.title,
   };
 }
 
@@ -223,10 +228,13 @@ export async function markNotificationsRead(userId: string, at = Date.now()): Pr
   return next;
 }
 
-/** 后台改角色 / 封禁。返回更新后的用户，找不到返回 null */
+/**
+ * 改角色 / 封禁 / 头衔。返回更新后的用户，找不到返回 null。
+ * `title: null` 表示清除头衔（回落角色默认文案）。
+ */
 export async function updateUser(
   id: string,
-  patch: { role?: Role; banned?: boolean },
+  patch: { role?: Role; banned?: boolean; title?: string | null },
 ): Promise<PublicUser | null> {
   let out: PublicUser | null = null;
   await serialize(async () => {
@@ -235,10 +243,31 @@ export async function updateUser(
     if (!target) return;
     if (patch.role) target.role = patch.role;
     if (typeof patch.banned === 'boolean') target.banned = patch.banned;
+    if (patch.title !== undefined) {
+      const next = (patch.title ?? '').trim();
+      if (next) target.title = next;
+      else delete target.title;
+    }
     await writeJsonAtomic(FILE, store);
     out = toPublic(target);
   });
   return out;
+}
+
+/**
+ * 一次性取出所有用户的徽标，供列表页批量渲染。
+ * 同时用 id 和昵称做键：帖子现在会存 authorId，早期帖子只有昵称。
+ */
+export async function getBadgeMap(): Promise<BadgeMap> {
+  const users = (await read()).users;
+  const map: BadgeMap = {};
+  for (const u of users) {
+    const info = badgeOf(u);
+    if (!info) continue;
+    map[`id:${u.id}`] = info;
+    map[`name:${u.nickname}`] = info;
+  }
+  return map;
 }
 
 /** 删除用户（后台用；调用方需自己保证不会删掉最后一个管理员） */

@@ -39,8 +39,8 @@ export default async function LoginPage() {
         <div className="card rail-card">
           <div className="rail-title">忘记密码</div>
           <p className="small muted" style={{ lineHeight: 1.8 }}>
-            当前版本没有自助找回。管理员可在服务器上删除 <code className="mono">$DATA_DIR/users.json</code>
-            中的对应用户重新注册；若忘记的是唯一管理员，整份文件删除后会回到"首个注册即管理员"的状态。
+            当前版本不支持自助找回密码。请联系站点管理员重置；忘记的是管理员账号时，
+            可由运维人员协助恢复。
           </p>
         </div>
       </aside>

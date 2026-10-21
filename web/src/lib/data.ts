@@ -104,6 +104,8 @@ export const PLAYERS: PlayerItem[] = [];
 export interface FeedItem {
   id: string;
   author: string;
+  /** 作者账号 id（老数据没有，回落到昵称匹配） */
+  authorId?: string;
   guild: string;
   time: string;
   title?: string;

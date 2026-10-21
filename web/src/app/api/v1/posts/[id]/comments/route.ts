@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (text.length < 2) return NextResponse.json({ error: 'invalid_input', message: '评论至少 2 个字' }, { status: 422 });
   if (text.length > 300) return NextResponse.json({ error: 'invalid_input', message: '评论不超过 300 字' }, { status: 422 });
 
-  const comment = await addComment(id, text, user.nickname);
+  const comment = await addComment(id, text, user.nickname, user.id);
   if (!comment) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   return NextResponse.json({ ok: true, comment }, { status: 201 });

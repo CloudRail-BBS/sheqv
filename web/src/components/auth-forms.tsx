@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Geetest, type CaptchaPayload } from './geetest';
 
 interface CommonProps {
-  /** 为空表示未配置 GeeTest，表单不渲染验证码 */
+  /** 为空表示站点没开人机验证，表单直接不渲染这一块 */
   captchaId: string;
 }
 
@@ -20,16 +20,6 @@ async function post(url: string, body: unknown) {
     | { ok?: boolean; error?: string; message?: string; becameAdmin?: boolean }
     | null;
   return { ok: res.ok, data };
-}
-
-function CaptchaNotice({ captchaId }: { captchaId: string }) {
-  if (captchaId) return null;
-  return (
-    <div className="hint-box" style={{ fontSize: 12 }}>
-      未配置人机验证（<code className="mono">GEETEST_ID</code> / <code className="mono">GEETEST_KEY</code>），
-      当前部署会跳过校验。公网部署请务必配置。
-    </div>
-  );
 }
 
 export function RegisterForm({ captchaId, isFirst }: CommonProps & { isFirst: boolean }) {
@@ -122,10 +112,11 @@ export function RegisterForm({ captchaId, isFirst }: CommonProps & { isFirst: bo
         />
       </label>
 
-      <div style={{ marginTop: 12 }}>
-        <CaptchaNotice captchaId={captchaId} />
-        {needCaptcha && <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />}
-      </div>
+      {needCaptcha && (
+        <div style={{ marginTop: 12 }}>
+          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
+        </div>
+      )}
 
       {err && (
         <p className="small" style={{ color: 'var(--danger)', marginTop: 10 }}>
@@ -212,10 +203,11 @@ export function LoginForm({ captchaId }: CommonProps) {
         />
       </label>
 
-      <div style={{ marginTop: 12 }}>
-        <CaptchaNotice captchaId={captchaId} />
-        {needCaptcha && <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />}
-      </div>
+      {needCaptcha && (
+        <div style={{ marginTop: 12 }}>
+          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
+        </div>
+      )}
 
       {err && (
         <p className="small" style={{ color: 'var(--danger)', marginTop: 10 }}>

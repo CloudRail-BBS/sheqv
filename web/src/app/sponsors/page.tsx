@@ -69,7 +69,7 @@ export default async function SponsorsPage() {
             <p>
               {configured
                 ? '管理员还没同步爱发电数据。赞助之后回来看看，或者催一下管理员。'
-                : '本站还没接入爱发电。部署者配置 AFDIAN_USER_ID 与 AFDIAN_TOKEN 后即可同步赞助名单。'}
+                : '本站还没有对外同步赞助名单。'}
             </p>
             {pageUrl && (
               <a className="btn btn-primary btn-sm" href={pageUrl} target="_blank" rel="noreferrer noopener">
@@ -159,7 +159,7 @@ export default async function SponsorsPage() {
           <div className="rail-item" style={{ marginTop: 10, paddingLeft: 0, paddingRight: 0 }}>
             <span className="small muted">数据来源</span>
             <span className="mono small" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
-              {configured ? 'afdian open api' : '未接入'}
+              {configured ? '自动同步' : '未同步'}
             </span>
           </div>
         </div>

@@ -50,7 +50,7 @@ export default async function RegisterPage() {
             </div>
             <div className="rule-row">
               <span className="n">3</span>
-              <span>注册与登录都要求通过人机验证（需部署者配置 GeeTest）</span>
+              <span>注册与登录都会做人机验证，防止机器人批量注册</span>
             </div>
           </div>
         </div>

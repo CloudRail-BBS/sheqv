@@ -11,6 +11,8 @@ const FILE = dataFile('forum.json');
 export interface CommentItem {
   id: string;
   author: string;
+  /** 作者账号 id，用于精确匹配头衔；早期评论没有这个字段 */
+  authorId?: string;
   body: string;
   at: number;
 }
@@ -18,6 +20,8 @@ export interface CommentItem {
 interface StoredPost {
   id: string;
   author: string;
+  /** 作者账号 id，用于精确匹配头衔；早期帖子没有这个字段 */
+  authorId?: string;
   guild: string;
   title: string;
   body: string;
@@ -91,6 +95,7 @@ export async function listPosts(): Promise<PostView[]> {
       return {
         id: p.id,
         author: p.author,
+        authorId: p.authorId,
         guild: p.guild,
         time: relTime(p.createdAt),
         title: p.title,
@@ -120,6 +125,8 @@ export interface NewPostInput {
   tags?: string[];
   /** 作者，取自当前登录账号；不传则视为匿名（接口层已拦截未登录） */
   author?: string;
+  /** 作者账号 id，接口层同样取自会话 */
+  authorId?: string;
   guild?: string;
 }
 
@@ -140,6 +147,7 @@ export async function addPost(input: NewPostInput): Promise<PostView> {
   const post: StoredPost = {
     id: `p${now.toString(36)}`,
     author: (input.author ?? '').trim() || '匿名',
+    authorId: input.authorId || undefined,
     guild: (input.guild ?? '').trim() || '个人',
     title: asText(input.title).trim(),
     body: asText(input.body).trim(),
@@ -159,6 +167,7 @@ export async function addComment(
   postId: string,
   body: string,
   author?: string,
+  authorId?: string,
 ): Promise<CommentItem | null> {
   const post = await getPost(postId);
   if (!post) return null;
@@ -166,6 +175,7 @@ export async function addComment(
   const comment: CommentItem = {
     id: `c${Date.now().toString(36)}`,
     author: (author ?? '').trim() || '匿名',
+    authorId: authorId || undefined,
     body: body.trim(),
     at: Date.now(),
   };
