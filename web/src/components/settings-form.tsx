@@ -32,6 +32,16 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         siteName: form.siteName,
         logoText: form.logoText,
         logoImage: form.logoImage,
+        githubClientId: form.githubClientId,
+        githubClientSecret: form.githubClientSecret,
+        cnkdClientId: form.cnkdClientId,
+        cnkdClientSecret: form.cnkdClientSecret,
+        footerText: form.footerText,
+        footerIcp: form.footerIcp,
+        footerLinks: form.footerLinks,
+        meGuestText: form.meGuestText,
+        loginHint: form.loginHint,
+        registerHint: form.registerHint,
         publicBaseUrl: form.publicBaseUrl,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
@@ -182,6 +192,75 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <h3 style={{ fontSize: 13 }}>第三方登录</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          ID 与 Secret 都填了才会在登录页出现对应按钮。回调地址必须与平台后台登记的**完全一致**。
+        </p>
+
+        <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
+          <label className="field">
+            <span>
+              GitHub Client ID
+              {isOverride('githubClientId') && <em className="ovr">已覆盖</em>}
+            </span>
+            <input
+              className="input mono"
+              value={form.githubClientId}
+              onChange={(e) => setForm({ ...form, githubClientId: e.target.value })}
+              placeholder="Iv1.xxxxxxxx"
+            />
+          </label>
+          <label className="field">
+            <span>
+              GitHub Client Secret
+              {isOverride('githubClientSecret') && <em className="ovr">已覆盖</em>}
+            </span>
+            <input
+              className="input mono"
+              type="password"
+              value={form.githubClientSecret}
+              onChange={(e) => setForm({ ...form, githubClientSecret: e.target.value })}
+              placeholder="仅服务端使用"
+            />
+          </label>
+        </div>
+        <p className="small muted" style={{ marginTop: 6, wordBreak: 'break-all' }}>
+          回调地址：<code>{runtime.effectiveBaseUrl}/api/v1/auth/oauth/github/callback</code>
+        </p>
+
+        <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 12 }}>
+          <label className="field">
+            <span>
+              CNKD Client ID
+              {isOverride('cnkdClientId') && <em className="ovr">已覆盖</em>}
+            </span>
+            <input
+              className="input mono"
+              value={form.cnkdClientId}
+              onChange={(e) => setForm({ ...form, cnkdClientId: e.target.value })}
+              placeholder="cnkd_xxxxxxxx"
+            />
+          </label>
+          <label className="field">
+            <span>
+              CNKD Client Secret
+              {isOverride('cnkdClientSecret') && <em className="ovr">已覆盖</em>}
+            </span>
+            <input
+              className="input mono"
+              type="password"
+              value={form.cnkdClientSecret}
+              onChange={(e) => setForm({ ...form, cnkdClientSecret: e.target.value })}
+              placeholder="仅服务端使用"
+            />
+          </label>
+        </div>
+        <p className="small muted" style={{ marginTop: 6, wordBreak: 'break-all' }}>
+          回调地址：<code>{runtime.effectiveBaseUrl}/api/v1/auth/oauth/cnkd/callback</code>
+        </p>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
         <h3 style={{ fontSize: 13 }}>爱发电赞助</h3>
         <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
           <label className="field">
@@ -251,6 +330,114 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             {msg.text}
           </span>
         )}
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <h3 style={{ fontSize: 13 }}>页面文案</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          留空则使用内置默认文案。支持换行，超过两行的内容建议写短一些。
+        </p>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            登录页提示
+            {isOverride('loginHint') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={2}
+            value={form.loginHint}
+            onChange={(e) => setForm({ ...form, loginHint: e.target.value })}
+            placeholder="登录后可发帖、评论、签署公约与进入后台。"
+            maxLength={200}
+            style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            注册页提示
+            {isOverride('registerHint') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={2}
+            value={form.registerHint}
+            onChange={(e) => setForm({ ...form, registerHint: e.target.value })}
+            placeholder="注册后即可发帖、评论与签署公约。"
+            maxLength={200}
+            style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
+          站点还没有账号时，注册页会强制显示「你是第一个注册的账号」这条提示，不受此项影响。
+        </p>
+
+        <label className="field" style={{ marginTop: 12, maxWidth: 520 }}>
+          <span>
+            「我的」未登录提示
+            {isOverride('meGuestText') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={3}
+            value={form.meGuestText}
+            onChange={(e) => setForm({ ...form, meGuestText: e.target.value })}
+            placeholder="留空显示默认文案：\n「我的」需要账号登录后才能查看。本站没有默认账号，第一个注册的用户会成为管理员。"
+            maxLength={300}
+            style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+          />
+        </label>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <h3 style={{ fontSize: 13 }}>页脚</h3>
+        <label className="field" style={{ marginTop: 10, maxWidth: 460 }}>
+          <span>
+            页脚文案
+            {isOverride('footerText') && <em className="ovr">已覆盖</em>}
+          </span>
+          <input
+            className="input"
+            value={form.footerText}
+            onChange={(e) => setForm({ ...form, footerText: e.target.value })}
+            placeholder={`留空显示「${form.siteName} · 玩家社区与赛事确权」`}
+            maxLength={60}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 320 }}>
+          <span>
+            备案号
+            {isOverride('footerIcp') && <em className="ovr">已覆盖</em>}
+          </span>
+          <input
+            className="input mono"
+            value={form.footerIcp}
+            onChange={(e) => setForm({ ...form, footerIcp: e.target.value })}
+            placeholder="京ICP备00000000号-1"
+            maxLength={40}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 460 }}>
+          <span>
+            自定义链接<em className="field-opt">每行「名称|地址」，最多 6 条</em>
+            {isOverride('footerLinks') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={3}
+            value={form.footerLinks}
+            onChange={(e) => setForm({ ...form, footerLinks: e.target.value })}
+            placeholder={'关于我们|/about\nGitHub|https://github.com/your-repo'}
+            style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
+          留空则使用默认链接（赞助者 / 公约 / 登录）。只接受站内路径与 http(s) 地址。
+        </p>
+
       </div>
 
       <div className="card card-pad" style={{ marginTop: 12 }}>

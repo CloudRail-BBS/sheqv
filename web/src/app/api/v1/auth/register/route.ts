@@ -47,6 +47,9 @@ export async function POST(req: NextRequest) {
     if (e instanceof Error && e.message === 'USERNAME_TAKEN') {
       return NextResponse.json({ error: 'username_taken', message: '该用户名已被占用' }, { status: 409 });
     }
+    if (e instanceof Error && e.message === 'EMAIL_TAKEN') {
+      return NextResponse.json({ error: 'email_taken', message: '该邮箱已被其他账号使用' }, { status: 409 });
+    }
     return NextResponse.json({ error: 'server_error' }, { status: 500 });
   }
 }

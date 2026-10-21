@@ -90,6 +90,11 @@ expect "未登录 /admin 显示登录引导" "$(grep -c '后台需要登录' /tm
 curl -s -A "$UA_DESK" "$BASE/me" -o /tmp/s6e.html
 expect "未登录 /me 显示登录引导" "$(grep -c '还没有登录' /tmp/s6e.html)" "1"
 
+code=$(curl -s -A "$UA_DESK" -o /tmp/cl.html -w '%{http_code}' "$BASE/changelog")
+expect "GET /changelog" "$code" "200"
+expect "更新日志含最新版本" "$(grep -c '2026.10.21.3' /tmp/cl.html | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+expect "更新日志含条目" "$(grep -c 'cl-row' /tmp/cl.html | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
 echo "== 6.5 404 语义（路由段不能有 loading.tsx，否则状态码会变 200） =="
 for u in "/announcements/a-missing" "/p/p-missing" "/resources/r-missing" "/matches/m-missing" "/totally-missing"; do
   expect "404 $u" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE$u")" "404"
@@ -434,7 +439,85 @@ print(next((str(a['published']).lower() for a in d['items'] if a['title']=='$AN_
   expect "站名已复原" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c '冒烟站点名')" "0"
 fi
 
-echo "== 14. 退出登录 =="
+if [ "$A_IS_ADMIN" = "1" ]; then
+  echo "== 14. 邮箱 / 徽章 / 页脚 / 第三方登录 =="
+  EM="smoke$STAMP@example.com"
+  EMU="smokemail$STAMP"
+  code=$(curl -s -X POST -H 'content-type: application/json' \
+    -d "{\"username\":\"$EMU\",\"nickname\":\"邮箱用户\",\"email\":\"$EM\",\"password\":\"$PW\"}" \
+    -o /tmp/s14a.json -w '%{http_code}' "$BASE/api/v1/auth/register")
+  expect "用邮箱注册" "$code" "201"
+
+  code=$(curl -s -X POST -H 'content-type: application/json' \
+    -d "{\"username\":\"other$STAMP\",\"nickname\":\"重名邮箱\",\"email\":\"$EM\",\"password\":\"$PW\"}" \
+    -o /tmp/s14b.json -w '%{http_code}' "$BASE/api/v1/auth/register")
+  expect "邮箱重复被拒" "$code" "409"
+  expect "邮箱重复错误码" "$(jget error /tmp/s14b.json)" "email_taken"
+
+  code=$(curl -s -X POST -H 'content-type: application/json' \
+    -d "{\"username\":\"$EM\",\"password\":\"$PW\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/login")
+  expect "用邮箱登录" "$code" "200"
+
+  expect "我的页展示徽章" "$(curl -s -b "ba_session=$CK_A" "$BASE/me" | grep -c 'bz-item' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  expect "徽章含创始成员" "$(curl -s -b "ba_session=$CK_A" "$BASE/me" | grep -c '创始成员' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  FT="冒烟页脚$STAMP"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"footerText\":\"$FT\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "设置页脚文案" "$code" "200"
+  expect "页脚已显示" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c "$FT" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"footerText"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除页脚文案" "$code" "200"
+  sleep 0.4
+  expect "页脚已复原" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c "$FT")" "0"
+
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/oauth/github")
+  expect "未配置时 GitHub 登录重定向" "$code" "307"
+  expect "重定向带 provider_disabled" \
+    "$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/api/v1/auth/oauth/github" | grep -c 'error=provider_disabled')" "1"
+  expect "未知 provider 被拒" \
+    "$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/api/v1/auth/oauth/weibo" | grep -c 'error=unknown_provider')" "1"
+
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/oauth/github/callback?code=x&state=y")
+  expect "未配置时回调被拒" "$code" "307"
+  expect "回调错误码 provider_disabled" \
+    "$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/api/v1/auth/oauth/github/callback?code=x&state=y" | grep -c 'error=provider_disabled')" "1"
+
+  GT="登录后可见·冒烟$STAMP"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"meGuestText\":\"$GT\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "设置我的页未登录提示" "$code" "200"
+  expect "提示已生效" "$(curl -s -A "$UA_DESK" "$BASE/me" | grep -c "$GT" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"meGuestText"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除我的页提示" "$code" "200"
+  sleep 0.4
+  expect "回落到默认文案" "$(curl -s -A "$UA_DESK" "$BASE/me" | grep -c '第一个注册的用户会成为管理员' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  LH="登录提示·冒烟$STAMP"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"loginHint\":\"$LH\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "设置登录页提示" "$code" "200"
+  expect "登录页提示已生效" "$(curl -s -A "$UA_DESK" "$BASE/login" | grep -c "$LH" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  RH="注册提示·冒烟$STAMP"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"registerHint\":\"$RH\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "设置注册页提示" "$code" "200"
+  expect "注册页提示已生效" "$(curl -s -A "$UA_DESK" "$BASE/register" | grep -c "$RH" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"loginHint"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除登录页提示" "$code" "200"
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"resetKey":"registerHint"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "清除注册页提示" "$code" "200"
+  sleep 0.6
+  expect "登录提示已复原" "$(curl -s -A "$UA_DESK" "$BASE/login" | grep -c '登录后可发帖' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+fi
+
+echo "== 15. 退出登录 =="
 code=$(curl -s -X POST -b "ba_session=$CK_A" -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/logout")
 expect "POST /auth/logout" "$code" "200"
 

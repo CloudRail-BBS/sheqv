@@ -92,6 +92,9 @@ export function Sidebar({ adminVisible, form }: Props) {
         <Link href="/agreements" className="side-item" data-active={on('/agreements')}>
           <Ico>{I.doc}</Ico>公约
         </Link>
+        <Link href="/changelog" className="side-item" data-active={on('/changelog')}>
+          <Ico>{I.layers}</Ico>更新日志
+        </Link>
         {adminVisible && (
           <Link href="/admin" className="side-item" data-active={on('/admin')}>
             <Ico>{I.cog}</Ico>管理后台

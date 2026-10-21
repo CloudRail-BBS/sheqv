@@ -7,6 +7,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
 import { countUsers, getBadgeMap } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
+import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { getSettings } from '@/lib/settings';
 import { listAnnouncements } from '@/lib/announcement-store';
 import { listSlides } from '@/lib/slide-store';
@@ -24,13 +25,14 @@ export default async function HomePage() {
   const posts = await listPosts();
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
-  const [userTotal, stats, settings, news, slides, badges] = await Promise.all([
+  const [userTotal, stats, settings, news, slides, badges, achievements] = await Promise.all([
     countUsers(),
     forumStats(),
     getSettings(),
     listAnnouncements({ publishedOnly: true, limit: 3 }),
     listSlides({ activeOnly: true }),
     getBadgeMap(),
+    getAchievementMap(),
   ]);
   const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
   const sponsorUrl = await afdianPageUrl();
@@ -92,7 +94,12 @@ export default async function HomePage() {
         )}
 
         {posts.slice(0, 3).map((f) => (
-          <PostCard key={f.id} item={f} badge={resolveBadge(badges, { id: f.authorId, name: f.author })} />
+          <PostCard
+            key={f.id}
+            item={f}
+            badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
+            achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
+          />
         ))}
 
         {live && (
@@ -133,7 +140,12 @@ export default async function HomePage() {
         )}
 
         {posts.slice(3, 9).map((f) => (
-          <PostCard key={f.id} item={f} badge={resolveBadge(badges, { id: f.authorId, name: f.author })} />
+          <PostCard
+            key={f.id}
+            item={f}
+            badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
+            achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
+          />
         ))}
 
         <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>

@@ -14,6 +14,19 @@ import { UserBadge } from '@/components/user-badge';
 import { BrandMark } from '@/components/brand-mark';
 import { badgeOf } from '@/lib/badges';
 
+/** 页脚自定义链接：每行「名称|地址」，只放行站内路径与 http(s) */
+function parseFooterLinks(raw: string): { label: string; href: string }[] {
+  const out: { label: string; href: string }[] = [];
+  for (const line of (raw || '').split('\n')) {
+    const [label, href] = line.split('|').map((v) => v.trim());
+    if (!label || !href) continue;
+    if (!/^(https?:\/\/|\/)/i.test(href)) continue;
+    out.push({ label, href });
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
 export const metadata: Metadata = {
   title: '方块竞技场 · BlockArena',
   description: 'Minecraft / Roblox 玩家社区与赛事确权平台',
@@ -31,6 +44,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [caps, theme, user] = await Promise.all([getRequestCaps(), getTheme(), getCurrentUser()]);
   const [feed, settings] = await Promise.all([getNotifications(user), getSettings()]);
+  const customLinks = parseFooterLinks(settings.footerLinks);
   const notes = flatten(feed);
 
   return (
@@ -110,16 +124,43 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           <footer className="footer">
             <div className="footer-in">
-              <span>{settings.siteName} · 玩家社区与赛事确权</span>
-              <span className="mono">自托管部署</span>
+              <span>{settings.footerText || `${settings.siteName} · 玩家社区与赛事确权`}</span>
+              {settings.footerIcp && (
+                <a
+                  className="mono"
+                  href="https://beian.miit.gov.cn"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {settings.footerIcp}
+                </a>
+              )}
               <span style={{ marginLeft: 'auto' }} className="row">
-                <Link href="/sponsors">赞助者</Link>
-                <Link href="/agreements" style={{ marginLeft: 12 }}>
-                  公约
-                </Link>
-                <Link href="/login" style={{ marginLeft: 12 }}>
-                  登录
-                </Link>
+                {customLinks.length > 0
+                  ? customLinks.map((l, i) => (
+                      <a
+                        key={l.href + l.label}
+                        href={l.href}
+                        style={{ marginLeft: i === 0 ? 0 : 12 }}
+                        {...(l.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
+                      >
+                        {l.label}
+                      </a>
+                    ))
+                  : (
+                    <>
+                      <Link href="/sponsors">赞助者</Link>
+                      <Link href="/agreements" style={{ marginLeft: 12 }}>
+                        公约
+                      </Link>
+                      <Link href="/changelog" style={{ marginLeft: 12 }}>
+                        更新日志
+                      </Link>
+                      <Link href="/login" style={{ marginLeft: 12 }}>
+                        登录
+                      </Link>
+                    </>
+                  )}
               </span>
             </div>
           </footer>

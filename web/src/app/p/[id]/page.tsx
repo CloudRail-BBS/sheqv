@@ -7,13 +7,20 @@ import { PostActions } from '@/components/post-actions';
 import { getBadgeMap } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { UserBadge } from '@/components/user-badge';
+import { getAchievementMap, findBadges } from '@/lib/achievements';
+import { AchievementChips } from '@/components/achievement-chips';
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const post = await getPost(id);
   if (!post) notFound();
 
-  const [signed, user, badges] = await Promise.all([isCommunitySigned(), getCurrentUser(), getBadgeMap()]);
+  const [signed, user, badges, achievements] = await Promise.all([
+    isCommunitySigned(),
+    getCurrentUser(),
+    getBadgeMap(),
+    getAchievementMap(),
+  ]);
   const postBadge = resolveBadge(badges, { id: post.authorId, name: post.author });
 
   return (
@@ -95,6 +102,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 <UserBadge badge={postBadge} size="sm" />
               </div>
               <div className="small muted">{post.guild}公会</div>
+              <AchievementChips
+                badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
+                size="sm"
+              />
             </div>
           </div>
           <Link href="/me" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }}>查看主页</Link>

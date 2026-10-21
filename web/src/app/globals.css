@@ -977,6 +977,90 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 .title-edit .input { height: 34px; }
 
+
+/* ── 登录 / 注册 ─────────────────────────── */
+
+.auth-brand { display: flex; align-items: center; gap: 10px; }
+.auth-brand .brand-mark { width: 38px; height: 38px; border-radius: 11px; font-size: 17px; }
+.auth-brand .brand-mark[data-len="2"] { font-size: 13px; }
+.auth-brand b { display: block; font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+.auth-brand span { font-size: 11.5px; color: var(--muted); }
+
+.auth-socials { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.auth-social {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel-2); font-size: 13px; font-weight: 550; color: var(--text-2);
+  transition: border-color 0.14s, color 0.14s, background 0.14s;
+}
+.auth-social:hover { color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft); }
+.auth-social svg { flex: none; }
+
+.auth-or { position: relative; text-align: center; margin-top: 4px; }
+.auth-or::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line-soft);
+}
+.auth-or span {
+  position: relative; padding: 0 8px; background: var(--panel);
+  font-size: 11px; color: var(--muted);
+}
+
+.field-opt { margin-left: 6px; font-style: normal; font-size: 10.5px; color: var(--muted); }
+.auth-link { color: var(--blue); margin-left: 4px; }
+.auth-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.auth-err {
+  color: var(--danger); background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.24); border-radius: 8px; padding: 7px 10px;
+}
+
+/* ── 徽章 ───────────────────────────────── */
+
+.bz-list { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.bz {
+  display: inline-flex; align-items: center; height: 16px; padding: 0 5px;
+  border-radius: 4px; border: 1px solid var(--line); background: var(--panel-3);
+  color: var(--text-2); font-size: 9.5px; font-weight: 600; line-height: 1; white-space: nowrap;
+}
+.bz[data-tone="blue"] { color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft); }
+.bz[data-tone="red"] { color: var(--danger); border-color: rgba(248, 113, 113, 0.28); background: rgba(248, 113, 113, 0.09); }
+.bz[data-tone="gray"] { color: var(--muted); }
+
+.bz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.bz-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border: 1px solid var(--line-soft); border-radius: 9px; opacity: 0.45;
+}
+.bz-item[data-earned="true"] { opacity: 1; border-color: var(--line); background: var(--panel-2); }
+.bz-item .bz { margin-left: 0; flex: none; }
+
+@media (max-width: 560px) {
+  .bz-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ── 更新日志 ───────────────────────────── */
+
+.cl-item { margin-bottom: 12px; }
+.cl-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
+.cl-title { font-size: 14.5px; }
+.cl-ver {
+  font-size: 10.5px; color: var(--blue); border: 1px solid var(--blue-line);
+  background: var(--blue-soft); border-radius: 5px; padding: 1px 6px;
+}
+.cl-date { font-size: 10.5px; color: var(--muted); margin-left: auto; }
+
+.cl-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.cl-row { display: flex; gap: 8px; font-size: 12.5px; color: var(--text-2); line-height: 1.65; }
+.cl-tag {
+  flex: none; height: 17px; padding: 0 5px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 600; line-height: 16px;
+  border: 1px solid var(--line); background: var(--panel-3); color: var(--muted);
+}
+.cl-tag[data-tag="功能"] { color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft); }
+.cl-tag[data-tag="修复"], .cl-tag[data-tag="安全"] {
+  color: var(--danger); border-color: rgba(248, 113, 113, 0.26); background: rgba(248, 113, 113, 0.08);
+}
+
 /* ── 账号：注册 / 登录 / 顶栏用户 ─────────── */
 
 .auth-wrap { max-width: 420px; margin: 24px auto 0; }

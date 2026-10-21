@@ -4,11 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { FeedItem } from '@/lib/data';
 import type { BadgeInfo } from '@/lib/badges';
+import type { EarnedBadge } from '@/lib/achievements';
 import { UserBadge } from './user-badge';
+import { AchievementChips } from './achievement-chips';
 
 type Item = FeedItem & { href?: string };
 
-export function PostCard({ item, badge }: { item: Item; badge?: BadgeInfo }) {
+export function PostCard({
+  item,
+  badge,
+  achievements,
+}: {
+  item: Item;
+  badge?: BadgeInfo;
+  achievements?: EarnedBadge[];
+}) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(item.likes);
   const [saved, setSaved] = useState(false);
@@ -38,6 +48,7 @@ export function PostCard({ item, badge }: { item: Item; badge?: BadgeInfo }) {
             {item.pinned && <span className="post-pin">置顶</span>}
           </div>
           <div className="post-meta">{item.time}</div>
+          <AchievementChips badges={achievements} size="sm" />
         </div>
         {item.kind === 'match' && (
           <Link href="/matches" className="badge badge-warn" style={{ marginLeft: 'auto' }}>

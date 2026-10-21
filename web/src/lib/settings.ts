@@ -25,6 +25,24 @@ export interface SiteSettings {
   afdianUserId: string;
   afdianToken: string;
   afdianPageUrl: string;
+  /** GitHub OAuth App */
+  githubClientId: string;
+  githubClientSecret: string;
+  /** CNKD 一证通行（OAuth 2.0 + PKCE） */
+  cnkdClientId: string;
+  cnkdClientSecret: string;
+  /** 页脚：一句话说明 */
+  footerText: string;
+  /** 页脚：备案号，填了会显示并链接到工信部 */
+  footerIcp: string;
+  /** 页脚：自定义链接，每行「名称|地址」 */
+  footerLinks: string;
+  /** 「我的」页未登录时的提示文案；留空用默认文案 */
+  meGuestText: string;
+  /** 登录页标题下的说明；留空用默认文案 */
+  loginHint: string;
+  /** 注册页标题下的说明；留空用默认文案（首个账号会有单独提示） */
+  registerHint: string;
   /** 关闭后注册接口直接拒绝，注册页显示"暂停注册" */
   allowRegister: boolean;
   /** 首页右栏是否显示最新公告 */
@@ -47,6 +65,16 @@ function envDefaults(): SiteSettings {
     afdianUserId: config.afdian.userId,
     afdianToken: config.afdian.token,
     afdianPageUrl: config.afdian.pageUrl,
+    githubClientId: '',
+    githubClientSecret: '',
+    cnkdClientId: '',
+    cnkdClientSecret: '',
+    footerText: '',
+    footerIcp: '',
+    footerLinks: '',
+    meGuestText: '',
+    loginHint: '',
+    registerHint: '',
     allowRegister: true,
     homeShowAnnouncements: true,
   };
@@ -63,6 +91,16 @@ const KEYS: (keyof SiteSettings)[] = [
   'afdianUserId',
   'afdianToken',
   'afdianPageUrl',
+  'githubClientId',
+  'githubClientSecret',
+  'cnkdClientId',
+  'cnkdClientSecret',
+  'footerText',
+  'footerIcp',
+  'footerLinks',
+  'meGuestText',
+  'loginHint',
+  'registerHint',
   'allowRegister',
   'homeShowAnnouncements',
 ];

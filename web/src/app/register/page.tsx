@@ -5,21 +5,54 @@ import { countUsers } from '@/lib/users';
 import { publicCaptchaId } from '@/lib/geetest';
 import { getSettings } from '@/lib/settings';
 import { RegisterForm } from '@/components/auth-forms';
+import { BrandMark } from '@/components/brand-mark';
 
 export const dynamic = 'force-dynamic';
 
-export default async function RegisterPage() {
+const ERRORS: Record<string, string> = {
+  register_closed: '站点暂时关闭了注册',
+  provider_disabled: '该登录方式尚未启用',
+  account_banned: '该账号已被封禁，请联系管理员',
+  account_inactive: 'CNKD 账号当前状态不可用于注册',
+  access_denied: '你取消了授权',
+  state_mismatch: '登录会话已过期，请重新发起',
+  missing_pkce: '登录会话已过期，请重新发起',
+  oauth_failed: '第三方登录失败，请稍后再试',
+};
+
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const user = await getCurrentUser();
   if (user) redirect('/me');
 
-  const [total, settings] = await Promise.all([countUsers(), getSettings()]);
+  const [total, settings, captchaId, sp] = await Promise.all([
+    countUsers(),
+    getSettings(),
+    publicCaptchaId(),
+    searchParams,
+  ]);
+
+  const code = sp.error ?? '';
+  const initialError = code ? (ERRORS[code] ?? '第三方登录失败，请稍后再试') : null;
+
+  const providers = {
+    github: Boolean(settings.githubClientId && settings.githubClientSecret),
+    cnkd: Boolean(settings.cnkdClientId && settings.cnkdClientSecret),
+  };
 
   return (
     <div className="cols">
       <div className="col-main">
         <div className="auth-wrap">
           {settings.allowRegister ? (
-            <RegisterForm captchaId={await publicCaptchaId()} isFirst={total === 0} />
+            <RegisterForm
+              captchaId={captchaId}
+              providers={providers}
+              logo={<BrandMark settings={settings} />}
+              siteName={settings.siteName}
+              hint={settings.registerHint}
+              initialError={initialError}
+              isFirst={total === 0}
+            />
           ) : (
             <div className="card card-pad">
               <h1 className="page-title" style={{ fontSize: 20 }}>
@@ -52,6 +85,12 @@ export default async function RegisterPage() {
               <span className="n">3</span>
               <span>注册与登录都会做人机验证，防止机器人批量注册</span>
             </div>
+            {(providers.github || providers.cnkd) && (
+              <div className="rule-row">
+                <span className="n">4</span>
+                <span>也可以直接用 GitHub / CNKD 登录，自动建号，无需另填密码</span>
+              </div>
+            )}
           </div>
         </div>
 

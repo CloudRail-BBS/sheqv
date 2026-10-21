@@ -7,11 +7,17 @@ import { LogoutButton } from '@/components/logout-button';
 import { TitleEditor } from '@/components/title-editor';
 import { UserBadge } from '@/components/user-badge';
 import { badgeOf } from '@/lib/badges';
+import { getSettings } from '@/lib/settings';
+import { getAchievementState } from '@/lib/achievements';
+import { AchievementChips } from '@/components/achievement-chips';
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_GUEST_TEXT =
+  '「我的」需要账号登录后才能查看。本站没有默认账号，第一个注册的用户会成为管理员。';
+
 export default async function MePage() {
-  const user = await getCurrentUser();
+  const [user, settings] = await Promise.all([getCurrentUser(), getSettings()]);
 
   if (!user) {
     return (
@@ -21,8 +27,8 @@ export default async function MePage() {
             <h1 className="page-title" style={{ fontSize: 19 }}>
               还没有登录
             </h1>
-            <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
-              「我的」需要账号登录后才能查看。本站没有默认账号，第一个注册的用户会成为管理员。
+            <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+              {settings.meGuestText || DEFAULT_GUEST_TEXT}
             </p>
             <div className="row" style={{ gap: 8, marginTop: 16 }}>
               <Link href="/login" className="btn btn-primary" style={{ flex: 1 }}>
@@ -38,7 +44,11 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements] = await Promise.all([listPosts(), listActive()]);
+  const [posts, agreements, achieved] = await Promise.all([
+    listPosts(),
+    listActive(),
+    getAchievementState(user),
+  ]);
   const sigs = await getSignatures(agreements);
   const mine = posts.filter((p) => p.author === user.nickname);
   const likes = mine.reduce((n, p) => n + p.likes, 0);
@@ -75,6 +85,33 @@ export default async function MePage() {
             <span className="small muted">显示在帖子与评论的作者名后面</span>
           </div>
           <TitleEditor current={user.title ?? ''} isAdmin={user.isAdmin} />
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="between" style={{ marginBottom: 10 }}>
+            <h3 style={{ fontSize: 13 }}>徽章</h3>
+            <span className="small muted">
+              已获得 {achieved.earned.length} / {achieved.all.length}
+            </span>
+          </div>
+          {achieved.earned.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <AchievementChips badges={achieved.earned} />
+            </div>
+          )}
+          <div className="bz-grid">
+            {achieved.all.map((b) => (
+              <div key={b.id} className="bz-item" data-earned={b.earned}>
+                <span className="bz" data-tone={b.tone}>
+                  {b.name}
+                </span>
+                <span className="small muted">{b.desc}</span>
+              </div>
+            ))}
+          </div>
+          <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
+            徽章由行为自动判定（发帖、评论、获赞、注册时长等），不需要申请。
+          </p>
         </div>
 
         <div className="me-stats">
@@ -156,6 +193,14 @@ export default async function MePage() {
                 {user.username}
               </span>
             </div>
+            {user.email && (
+              <div className="rail-item">
+                <span>邮箱</span>
+                <span className="mono small" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
+                  {user.email}
+                </span>
+              </div>
+            )}
             <div className="rail-item">
               <span>角色</span>
               <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>

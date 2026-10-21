@@ -73,6 +73,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/resources` `/resources/[id]` | 资源库；详情含版本日志与下载门禁 |
 | `/leaderboard` | 公会榜 / 战队榜 / 选手榜 |
 | `/announcements` | 公告：置顶优先，分类徽标，点击进 `/announcements/[id]` 详情 |
+| `/changelog` | 更新日志：按版本倒序，标签区分功能 / 修复 / 安全 / 样式 / 文档 |
 | `/sponsors` | 赞助者名单：累计金额 / 人数 / 前三名 / 完整列表（数据来自爱发电） |
 | `/agreements` | 公约签署：诚信公约 / 社区公约，含版本校验与签署凭证 |
 | `/p/[id]` | 帖子详情：正文、点赞、评论（需签社区公约） |
