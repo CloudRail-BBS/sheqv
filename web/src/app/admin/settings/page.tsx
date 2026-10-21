@@ -30,7 +30,7 @@ export default async function AdminSettingsPage() {
         <div>
           <h1 className="page-title">站点设置</h1>
           <p className="small muted" style={{ marginTop: 4 }}>
-            原本只能改环境变量的项，这里改完立即生效；环境变量仍作为默认值。
+            这些项原本要改 <code>.env</code> 再重启，现在改完立即生效；环境变量仍作为默认值。
           </p>
         </div>
       </div>

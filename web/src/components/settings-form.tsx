@@ -218,9 +218,10 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
       </div>
 
       <div className="card card-pad" style={{ marginTop: 12 }}>
-        <h3 style={{ fontSize: 13 }}>只能改环境变量的项</h3>
+        <h3 style={{ fontSize: 13 }}>留在 .env 里的项（进程参数与密钥）</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
-          下面这些属于进程启动参数或密钥，不适合放后台（改了也不生效，或者会把密钥写进数据卷）：
+          下面这些要么改了必须重启进程，要么不该写进数据卷，所以只在
+          <code>web/.env</code>（systemd 则是 <code>/etc/blockarena/web.env</code>）里改：
         </p>
         <div className="rail-list" style={{ marginTop: 10 }}>
           <div className="rail-item" style={{ paddingLeft: 0, paddingRight: 0 }}>
@@ -248,8 +249,12 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             </span>
           </div>
         </div>
-        <p className="small muted" style={{ marginTop: 10 }}>
-          GeeTest KEY 与爱发电 token 会以明文存进 `$DATA_DIR/settings.json`，备份时注意保护该文件。
+        <p className="small muted" style={{ marginTop: 10, lineHeight: 1.75 }}>
+          环境变量仍可当默认值：上面那些项在后台留空时会回落到同名变量，方便「配置即代码」。
+          但后台一旦填了，就以后台为准。
+        </p>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          GeeTest KEY 与爱发电 token 会以明文存进 <code>$DATA_DIR/settings.json</code>，备份时注意保护该文件。
         </p>
       </div>
     </>

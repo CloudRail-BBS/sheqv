@@ -10,8 +10,10 @@ User=blockarena
 Group=blockarena
 WorkingDirectory=/srv/blockarena/web
 
-# 只需 DATA_DIR / PORT；业务配置在后台「站点设置」里改
-EnvironmentFile=/etc/blockarena/web.env
+# 只放进程参数与密钥：DATA_DIR / PORT / SESSION_SECRET / ADMIN_TOKEN
+# 站点名、人机验证、爱发电等业务配置在后台「站点设置」里改，不要写进这个文件。
+# 前缀 - 表示文件不存在也能启动（会话密钥会自动生成）
+EnvironmentFile=-/etc/blockarena/web.env
 Environment=NODE_ENV=production
 Environment=PORT=8900
 

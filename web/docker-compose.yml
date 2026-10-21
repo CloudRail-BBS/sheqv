@@ -7,12 +7,18 @@ services:
     container_name: blockarena-web
     restart: unless-stopped
 
-    # 不需要 .env：业务配置（站点名 / 人机验证 / 爱发电 / 注册开关）在
-    # 后台「站点设置」里改，改完立即生效。这里只给进程级参数。
+    # 进程级参数与密钥从同目录 .env 读（可选，没有也能启动）。
+    # 站点名 / 人机验证 / 爱发电 / 注册开关不在这里 —— 去后台「站点设置」改。
+    # 改 .env 后必须 `docker compose up -d` 重建容器，restart 不重读环境变量。
     environment:
       DATA_DIR: /data
       PORT: "8900"
       TZ: Asia/Shanghai
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      APP_VERSION: ${APP_VERSION:-2026.10.20-1}
+      ENABLE_DEV_CONSOLE: ${ENABLE_DEV_CONSOLE:-}
 
     # 只绑本机，由 nginx / Caddy 对外；想直接暴露改成 "8900:8900"
     ports:

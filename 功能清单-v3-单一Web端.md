@@ -415,7 +415,7 @@
 | 十一、用户管理 | — | `app/admin/users` · `api/v1/admin/users` | 改自己角色 403；封禁后登录 403 且旧会话失效 |
 | 十一、帖子管理 | — | `app/admin/posts` · `api/v1/admin/posts` | 删除后首页消失；重复删除 404 |
 
-回归命令：`cd web && bash scripts/smoke.sh http://localhost:3000`（68 项断言）；部署后 `bash scripts/selfhost-check.sh https://你的域名`。
+回归命令：`cd web && bash scripts/smoke.sh http://localhost:8900`（113 项断言）；部署后 `bash scripts/selfhost-check.sh https://你的域名`。
 
 ---
 
@@ -452,8 +452,8 @@
 | 账号体系 | `/admin/users` | 角色、封禁、删除；不能锁死最后一个管理员 |
 
 **这些以前都要改环境变量并重启**，现在改后台立即生效；`settings.json` 只存被改过的键，
-清掉即回落环境变量。**项目不再提供 `.env`**：`PORT` / `DATA_DIR` 由 compose 给默认值，
-会话密钥自动生成，首个注册账号即管理员。
+清掉即回落环境变量。`.env` 继续保留，但只装**进程参数与密钥**（`PORT` / `DATA_DIR` /
+`SESSION_SECRET` / `ADMIN_TOKEN`），模板见 `.env.example`。
 
 对外地址默认按请求头自动推导（反代透传 `Host` 与 `X-Forwarded-Proto` 即可），
 Cookie 的 `Secure` 也直接看请求协议——所以"零配置"也能正确工作。

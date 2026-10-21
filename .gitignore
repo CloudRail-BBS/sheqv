@@ -16,13 +16,15 @@ web/.*/
 web/.data
 web/backups
 
-# 机密（项目不再提供 .env.example，配置走后台）
+# 机密：真正的 .env 永不入库，只提交模板
 .env
 .env.local
 .env.*.local
 web/.env
 web/.env.local
 web/.env.*.local
+!.env.example
+!web/.env.example
 
 # 本地杂项
 .shots

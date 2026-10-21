@@ -11,7 +11,7 @@ npm install
 npm run dev            # http://localhost:8900（默认端口 8900，改端口见下）
 ```
 
-冒烟（68 项断言，覆盖视口判定 / 微信约束 / 主题 / 轮播 / bootstrap / 注册登录 / 首个管理员 / 权限边界 / 公约 / 后台 CRUD）：
+冒烟（113 项断言，覆盖视口判定 / 微信约束 / 主题 / 轮播 / bootstrap / 404 语义 / 注册登录 / 首个管理员 / 权限边界 / 公约 / 站内信 / 后台用户与帖子 / 公告 / 站点设置）：
 
 ```bash
 bash scripts/smoke.sh http://localhost:8900
@@ -22,7 +22,8 @@ bash scripts/smoke.sh http://localhost:8900
 **本项目按自部署设计**，不依赖任何托管平台。完整步骤见 [`../docs/自托管部署.md`](../docs/自托管部署.md)。
 
 ```bash
-docker compose up -d --build     # 不需要 .env
+cp .env.example .env             # 可选：只填端口/密钥
+docker compose up -d --build
 curl -s localhost:8900/api/health
 
 # 打开 /register 注册第一个账号 —— 它会自动成为管理员
@@ -39,15 +40,22 @@ curl -s localhost:8900/api/health
 需要持久化的只有一个目录（`DATA_DIR`，默认 `./.data`，容器内 `/data`）：
 
 ```
-$DATA_DIR/forum.json        新帖 / 评论 / 点赞
-$DATA_DIR/agreements.json   后台新增的公约
+$DATA_DIR/users.json          账号（scrypt 哈希）+ 角色 / 封禁 / 已读水位
+$DATA_DIR/forum.json          帖子 / 评论 / 点赞
+$DATA_DIR/agreements.json     公约
+$DATA_DIR/sponsors.json       赞助者快照（爱发电同步 + 手动录入）
+$DATA_DIR/settings.json       后台改过的配置项
+$DATA_DIR/announcements.json  公告
+$DATA_DIR/slides.json         首页轮播
+$DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密钥
 ```
 
 写入用「临时文件 + rename」，进程内串行化；断电不会留半个 JSON。
 **文件存储只支持单实例**——要多副本先把 `lib/json-store.ts` 换成数据库。
 
-配置全部在后台 `/admin/settings`（站点名、GeeTest、爱发电、开放注册、对外地址），存 `$DATA_DIR/settings.json`，
-改完立即生效。**不需要 `.env`**；只有 `PORT` / `DATA_DIR` 这类进程参数走 compose 或命令行。
+业务配置全部在后台 `/admin/settings`（站点名、GeeTest、爱发电、开放注册、对外地址），存 `$DATA_DIR/settings.json`，
+改完立即生效。**进程参数与密钥**（`PORT` / `DATA_DIR` / `SESSION_SECRET` / `ADMIN_TOKEN`）放 `.env`，
+模板见 `.env.example`。
 
 端口：默认 **8900**（`dev` / `start` / Docker / compose / systemd / 反代示例全部一致）。
 临时改端口用 `PORT=9000 npm start`；`npm run dev` 的端口写在 `package.json` 的 dev 脚本里。
@@ -185,11 +193,11 @@ src/
     api/v1/admin/{users,posts,announcements,slides,settings,agreements,sponsors,afdian}/…
 ```
 
-根目录另有 `Dockerfile`、`docker-compose.yml`、`.dockerignore`、`deploy/`（不含 `.env`，配置在后台）。
+根目录另有 `Dockerfile`、`docker-compose.yml`、`.env.example`、`.dockerignore`、`deploy/`。
 
 ## 验证
 
-`bash scripts/smoke.sh` → 68/68：
+`bash scripts/smoke.sh` → 113/113：
 
 - 桌面 `form=desktop`、iPhone `form=mobile`，两者 `runtime=web`
 - iPhone 非微信**可直下**；微信内改为「预览 · 收藏」
