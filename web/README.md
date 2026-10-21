@@ -155,18 +155,33 @@ src/
     capabilities.ts          # 判定 + fail-closed 合并 + 32 键默认表
     bootstrap.ts             # 响应组装 + ETag（排除 serverTime）
     request-caps.ts           # 每请求解析一次；读取 theme cookie
-    data.ts                  # 演示数据
+    data.ts                  # 类型定义（数据已清空，等真实数据源）
+    settings.ts              # 运行时设置（settings.json 覆盖 env）
+    announcement-store.ts    # 公告
+    slide-store.ts           # 首页轮播
   components/
     carousel.tsx theme-toggle.tsx sidebar.tsx tabbar.tsx
     post-card.tsx download-gate.tsx upload-panel.tsx match-actions.tsx
     cap-provider.tsx bootstrap-probe.tsx force-switch.tsx resource-card.tsx
     auth-forms.tsx geetest.tsx admin-denied.tsx logout-button.tsx
     composer.tsx sign-agreement.tsx agreement-admin.tsx sponsor-admin.tsx
+    announcement-admin.tsx slide-admin.tsx settings-form.tsx
+    notification-bell.tsx admin-nav.tsx admin-users.tsx admin-posts.tsx
+    empty-state.tsx page-skeleton.tsx
   app/
-    page.tsx guilds/ teams/ matches/ resources/ leaderboard/ announcements/ me/ admin/ dev/capabilities/
+    layout.tsx error.tsx not-found.tsx globals.css
+    (home)/page.tsx                  # 首页（放在路由组里，loading 才不会波及详情页）
+    resources/(list)/page.tsx        # 列表放 (list) 组；resources/[id] 单独一段
+    matches/(list)/page.tsx          # 同上，+ matches/[id]
+    announcements/(list)/page.tsx    # 同上，+ announcements/[id]
+    p/[id]/                          # 帖子详情（无 loading）
+    guilds/ teams/ leaderboard/ me/ notifications/ sponsors/ search/ agreements/
+    login/ register/
+    admin/{page,users,posts,announcements,slides,sponsors,agreements,settings}/
+    dev/capabilities/                # 生产 404（ENABLE_DEV_CONSOLE=1 才开）
     api/health/route.ts
-    api/v1/bootstrap/route.ts
-    api/v1/admin/login/route.ts
+    api/v1/{bootstrap,auth,posts,notifications,announcements,sponsors}/…
+    api/v1/admin/{users,posts,announcements,slides,settings,agreements,sponsors,afdian}/…
 ```
 
 根目录另有 `Dockerfile`、`docker-compose.yml`、`.env.example`、`.dockerignore`、`deploy/`。

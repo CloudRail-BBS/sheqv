@@ -90,6 +90,12 @@ expect "未登录 /admin 显示登录引导" "$(grep -c '后台需要登录' /tm
 curl -s -A "$UA_DESK" "$BASE/me" -o /tmp/s6e.html
 expect "未登录 /me 显示登录引导" "$(grep -c '还没有登录' /tmp/s6e.html)" "1"
 
+echo "== 6.5 404 语义（路由段不能有 loading.tsx，否则状态码会变 200） =="
+for u in "/announcements/a-missing" "/p/p-missing" "/resources/r-missing" "/matches/m-missing" "/totally-missing"; do
+  expect "404 $u" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE$u")" "404"
+done
+expect "404 页含自定义文案" "$(curl -s "$BASE/announcements/a-missing" | grep -c '404 · 没有这个页面' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
 echo "== 7. 注册与首个管理员 =="
 initialized=$(curl -s "$BASE/api/v1/auth/state" | grep -o '"initialized":[a-z]*' | sed 's/.*://')
 [ -z "$initialized" ] && initialized=unknown
@@ -338,8 +344,7 @@ import sys,json
 d=json.load(sys.stdin)
 print(next((str(a['published']).lower() for a in d['items'] if a['title']=='$AN_TITLE'), 'missing'))
 ")" "false"
-  # Next 在流式渲染开始后才 notFound() 时状态码可能已是 200，这里断言页面内容
-  expect "不存在的公告显示 404 页" "$(curl -s "$BASE/announcements/a-not-exist" | grep -c '404 · 没有这个页面' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  expect "草稿则 404（状态码）" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/announcements/$AN_ID")" "404"
   expect "删除公告" "$(curl -s -X DELETE "${ADMIN_ARGS[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/announcements?id=$AN_ID")" "200"
 
   SL_ID=$(curl -s "${ADMIN_ARGS[@]}" "$BASE/api/v1/admin/slides" | grep -o '"id":"[^"]*"' | head -1 | sed 's/.*:"//;s/"//')
