@@ -20,6 +20,7 @@ export default async function AdminSponsorsPage() {
 
   const snap = await getSnapshot(true);
   const visible = snap.sponsors.filter((s) => !s.hidden).length;
+  const [configured, pageUrl] = await Promise.all([afdianConfigured(), afdianPageUrl()]);
 
   return (
     <div className="col-main">
@@ -51,9 +52,9 @@ export default async function AdminSponsorsPage() {
       <div style={{ marginTop: 12 }}>
         <SponsorAdmin
           items={snap.sponsors}
-          configured={afdianConfigured()}
+          configured={configured}
           syncedAt={snap.syncedAt}
-          pageUrl={afdianPageUrl()}
+          pageUrl={pageUrl}
         />
       </div>
     </div>

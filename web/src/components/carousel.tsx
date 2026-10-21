@@ -3,56 +3,25 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
-interface Slide {
-  kicker: string;
-  title: string;
-  desc: string;
-  cta: string;
-  href: string;
-  tone: 'green' | 'blue' | 'amber';
-}
+import type { Slide } from '@/lib/slide-store';
 
-const SLIDES: Slide[] = [
-  {
-    kicker: '从这里开始',
-    title: '注册一个账号，就能发帖、评论与签署公约',
-    desc: '第一个注册的账号自动成为管理员。本站没有内置账号，社区内容全部来自真实用户。',
-    cta: '注册账号',
-    href: '/register',
-    tone: 'green',
-  },
-  {
-    kicker: '社区规则',
-    title: '发帖前先看一眼两份公约',
-    desc: '《社区公约》管发言，《诚信公约》管比赛。公约升版后需要重新签署，旧签名自动失效。',
-    cta: '阅读公约',
-    href: '/agreements',
-    tone: 'amber',
-  },
-  {
-    kicker: '支持我们',
-    title: '服务器与赛事奖品来自赞助',
-    desc: '赞助名单公开可查，金额与时间直接读爱发电的接口，不投放广告也不卖榜单位置。',
-    cta: '查看赞助者',
-    href: '/sponsors',
-    tone: 'blue',
-  },
-];
-
-export function Carousel() {
+export function Carousel({ slides }: { slides: Slide[] }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const startX = useRef<number | null>(null);
-  const count = SLIDES.length;
+  const count = slides.length;
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || count <= 1) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const t = setInterval(() => setI((v) => (v + 1) % count), 5600);
     return () => clearInterval(t);
   }, [paused, count]);
 
   const go = (n: number) => setI((n + count) % count);
+
+  // 后台把轮播全删了就不占位，首页直接跳过这一块
+  if (count === 0) return null;
 
   return (
     <section
@@ -75,8 +44,17 @@ export function Carousel() {
       }}
     >
       <div className="slides" style={{ transform: `translateX(-${i * 100}%)` }}>
-        {SLIDES.map((s) => (
-          <article key={s.title} className={'slide tone-' + s.tone} aria-hidden={SLIDES[i] !== s}>
+        {slides.map((s) => (
+          <article
+            key={s.id}
+            className="slide"
+            aria-hidden={slides[i] !== s}
+            data-tone={s.textTone}
+            data-has-image={Boolean(s.bgImage)}
+            style={{
+              background: s.bgImage ? `url("${s.bgImage}") center / cover no-repeat` : s.bgColor,
+            }}
+          >
             <span className="kicker">{s.kicker}</span>
             <h2>{s.title}</h2>
             <p>{s.desc}</p>
@@ -102,9 +80,9 @@ export function Carousel() {
       </button>
 
       <div className="dots">
-        {SLIDES.map((s, n) => (
+        {slides.map((s, n) => (
           <button
-            key={s.title}
+            key={s.id}
             className="cd"
             data-on={n === i}
             aria-label={`第 ${n + 1} 张`}

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createUser, validateRegister, type RegisterInput } from '@/lib/users';
 import { verifyCaptcha, type CaptchaPayload } from '@/lib/geetest';
 import { SESSION_COOKIE, issueSessionToken, sessionCookieOptions } from '@/lib/session';
+import { getSettings } from '@/lib/settings';
 
 /**
  * POST /api/v1/auth/register
@@ -15,6 +16,14 @@ export async function POST(req: NextRequest) {
     | null;
 
   if (!body) return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+
+  const settings = await getSettings();
+  if (!settings.allowRegister) {
+    return NextResponse.json(
+      { error: 'register_closed', message: '站点暂时关闭了注册' },
+      { status: 403 },
+    );
+  }
 
   const invalid = validateRegister(body);
   if (invalid) return NextResponse.json({ error: 'invalid_input', message: invalid }, { status: 422 });

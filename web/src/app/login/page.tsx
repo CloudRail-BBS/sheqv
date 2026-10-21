@@ -30,7 +30,7 @@ export default async function LoginPage() {
               </Link>
             </div>
           ) : (
-            <LoginForm captchaId={publicCaptchaId()} />
+            <LoginForm captchaId={await publicCaptchaId()} />
           )}
         </div>
       </div>

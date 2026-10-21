@@ -12,8 +12,8 @@ export const metadata = {
 
 export default async function SponsorsPage() {
   const [snap, user] = await Promise.all([getSnapshot(), getCurrentUser()]);
-  const configured = afdianConfigured();
-  const pageUrl = afdianPageUrl();
+  const [configured, pageUrl] = await Promise.all([afdianConfigured(), afdianPageUrl()]);
+  
 
   const top = snap.sponsors.slice(0, 3);
   const rest = snap.sponsors.slice(3);

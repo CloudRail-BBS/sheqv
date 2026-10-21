@@ -6,6 +6,9 @@ import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
 import { countUsers } from '@/lib/users';
+import { getSettings } from '@/lib/settings';
+import { listAnnouncements } from '@/lib/announcement-store';
+import { listSlides } from '@/lib/slide-store';
 import { forumStats } from '@/lib/forum-store';
 import { afdianPageUrl } from '@/lib/afdian';
 import { Composer } from '@/components/composer';
@@ -20,16 +23,22 @@ export default async function HomePage() {
   const posts = await listPosts();
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
-  const [userTotal, stats] = await Promise.all([countUsers(), forumStats()]);
+  const [userTotal, stats, settings, news, slides] = await Promise.all([
+    countUsers(),
+    forumStats(),
+    getSettings(),
+    listAnnouncements({ publishedOnly: true, limit: 3 }),
+    listSlides({ activeOnly: true }),
+  ]);
   const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
-  const sponsorUrl = afdianPageUrl();
+  const sponsorUrl = await afdianPageUrl();
   const communitySigned = await isCommunitySigned();
   const live = MATCHES[0] ?? null;
 
   return (
     <div className="cols">
       <div className="col-main">
-        <Carousel />
+        <Carousel slides={slides} />
 
         <div id="composer">
           <Composer nickname={user?.nickname ?? null} signed={communitySigned} />
@@ -221,6 +230,37 @@ export default async function HomePage() {
               ))}
           </div>
         </div>
+
+        {settings.homeShowAnnouncements && (
+          <div className="card rail-card">
+            <div className="between" style={{ marginBottom: 10 }}>
+              <div className="rail-title" style={{ margin: 0 }}>最新公告</div>
+              <Link href="/announcements" className="small" style={{ color: 'var(--blue)' }}>
+                全部
+              </Link>
+            </div>
+            {news.length === 0 ? (
+              <p className="small muted" style={{ lineHeight: 1.7 }}>
+                还没有公告。管理员可以在后台「公告」里发布。
+              </p>
+            ) : (
+              <div className="rail-list">
+                {news.map((a) => (
+                  <Link key={a.id} href={`/announcements/${a.id}`} className="rail-item">
+                    <span
+                      style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                      {a.title}
+                    </span>
+                    <span className="mono small muted" style={{ marginLeft: 'auto' }}>
+                      {new Date(a.createdAt).toISOString().slice(5, 10)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="card rail-card">
           <div className="between" style={{ marginBottom: 10 }}>

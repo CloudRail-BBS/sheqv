@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/lib/current-user';
+import { getSettings } from '@/lib/settings';
 import { getNotifications, flatten } from '@/lib/notifications';
 import { NotificationBell } from '@/components/notification-bell';
 
@@ -26,7 +27,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [caps, theme, user] = await Promise.all([getRequestCaps(), getTheme(), getCurrentUser()]);
-  const feed = await getNotifications(user);
+  const [feed, settings] = await Promise.all([getNotifications(user), getSettings()]);
   const notes = flatten(feed);
 
   return (
@@ -43,8 +44,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <header className="topbar">
             <div className="topbar-in">
               <Link href="/" className="brand">
-                <span className="brand-mark">B</span>
-                方块竞技场
+                <span className="brand-mark">{(settings.siteName || '方块竞技场').slice(0, 1)}</span>
+                {settings.siteName}
               </Link>
 
               <form action="/search" className="search">
@@ -106,7 +107,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           <footer className="footer">
             <div className="footer-in">
-              <span>方块竞技场 · 玩家社区与赛事确权</span>
+              <span>{settings.siteName} · 玩家社区与赛事确权</span>
               <span className="mono">自托管部署</span>
               <span style={{ marginLeft: 'auto' }} className="row">
                 <Link href="/sponsors">赞助者</Link>

@@ -186,7 +186,7 @@ if [ "$A_IS_ADMIN" = "1" ]; then
   expect "管理员会话可读后台接口" "$(curl -s "${ADMIN_ARGS[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/agreements")" "200"
 
   curl -s -A "$UA_DESK" -b "ba_session=$CK_A" "$BASE/admin" -o /tmp/s9b.html
-  expect "管理员可进 /admin" "$(grep -c '管理后台' /tmp/s9b.html)" "1"
+  expect "管理员可进 /admin" "$(has '管理后台' /tmp/s9b.html)" "yes"
 elif [ -n "${ADMIN_TOKEN:-}" ]; then
   ADMIN_ARGS=(-H "Authorization: Bearer $ADMIN_TOKEN")
   expect "应急口令可读后台接口" "$(curl -s "${ADMIN_ARGS[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/agreements")" "200"
@@ -314,7 +314,65 @@ if [ "$A_IS_ADMIN" = "1" ]; then
   expect "重复删除返回 404" "$(curl -s -b "ba_session=$CK_A" -X DELETE -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/posts?id=$PID")" "404"
 fi
 
-echo "== 13. 退出登录 =="
+if [ "$A_IS_ADMIN" = "1" ]; then
+  echo "== 13. 公告 / 轮播 / 站点设置 =="
+  code=$(curl -s -X POST -H 'content-type: application/json' -d '{"title":"未授权","body":"x"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/announcements")
+  expect "未登录发布公告" "$code" "401"
+
+  AN_TITLE="冒烟公告$STAMP"
+  code=$(curl -s -X POST "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"title\":\"$AN_TITLE\",\"body\":\"这条用于验证公告链路。\",\"kind\":\"系统\",\"pinned\":true}" \
+    -o /tmp/s13a.json -w '%{http_code}' "$BASE/api/v1/admin/announcements")
+  expect "发布公告" "$code" "201"
+  AN_ID=$(grep -o '"id":"a[^"]*"' /tmp/s13a.json | head -1 | sed 's/.*:"//;s/"//')
+
+  expect "公告列表出现" "$(curl -s -A "$UA_DESK" "$BASE/announcements" | grep -c "$AN_TITLE" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  expect "公告详情可访问" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/announcements/$AN_ID")" "200"
+  expect "首页右栏出现公告" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c "$AN_TITLE" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"id\":\"$AN_ID\",\"published\":false}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/announcements")
+  expect "转草稿" "$code" "200"
+  expect "草稿 published=false" "$(curl -s "${ADMIN_ARGS[@]}" "$BASE/api/v1/admin/announcements" | python -c "
+import sys,json
+d=json.load(sys.stdin)
+print(next((str(a['published']).lower() for a in d['items'] if a['title']=='$AN_TITLE'), 'missing'))
+")" "false"
+  # Next 在流式渲染开始后才 notFound() 时状态码可能已是 200，这里断言页面内容
+  expect "不存在的公告显示 404 页" "$(curl -s "$BASE/announcements/a-not-exist" | grep -c '404 · 没有这个页面' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  expect "删除公告" "$(curl -s -X DELETE "${ADMIN_ARGS[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/announcements?id=$AN_ID")" "200"
+
+  SL_ID=$(curl -s "${ADMIN_ARGS[@]}" "$BASE/api/v1/admin/slides" | grep -o '"id":"[^"]*"' | head -1 | sed 's/.*:"//;s/"//')
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"id\":\"$SL_ID\",\"bgColor\":\"#123456\"}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/slides")
+  expect "改轮播背景色" "$code" "200"
+  expect "首页出现该背景色" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c '#123456' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"id\":\"$SL_ID\",\"bgColor\":\"#1b1b1e\"}" -o /dev/null
+
+  OLD_NAME=$(curl -s "${ADMIN_ARGS[@]}" "$BASE/api/v1/admin/settings" | grep -o '"siteName":"[^"]*"' | head -1 | sed 's/.*:"//;s/"//')
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"siteName":"冒烟站点名"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "后台改站点名" "$code" "200"
+  expect "顶栏显示新站名" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c '冒烟站点名' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d '{"allowRegister":false}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/settings")
+  expect "关闭注册" "$code" "200"
+  sleep 0.4
+  code=$(curl -s -X POST -H 'content-type: application/json' \
+    -d "{\"username\":\"closed$STAMP\",\"nickname\":\"关闭注册\",\"password\":\"Closed2026pw\"}" -o /tmp/s13d.json -w '%{http_code}' "$BASE/api/v1/auth/register")
+  expect "关闭注册后拒绝" "$code" "403"
+  expect "错误码" "$(jget error /tmp/s13d.json)" "register_closed"
+  expect "注册页提示暂停" "$(curl -s -A "$UA_DESK" "$BASE/register" | grep -c '暂停注册' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+
+  curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' -d '{"allowRegister":true}' -o /dev/null
+  sleep 0.4
+  curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
+    -d "{\"siteName\":\"$OLD_NAME\"}" -o /dev/null
+fi
+
+echo "== 14. 退出登录 =="
 code=$(curl -s -X POST -b "ba_session=$CK_A" -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/logout")
 expect "POST /auth/logout" "$code" "200"
 

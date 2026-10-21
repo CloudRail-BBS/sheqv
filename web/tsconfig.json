@@ -33,10 +33,11 @@
     "**/*.tsx",
     ".devv2/types/**/*.ts",
     ".devv3/types/**/*.ts",
+    ".devv4/types/**/*.ts",
     ".next/types/**/*.ts",
     ".sh8/types/**/*.ts",
     "next-env.d.ts",
-    ".devv4/types/**/*.ts"
+    ".devv5/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

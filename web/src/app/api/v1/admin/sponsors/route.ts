@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     syncedAt: snap.syncedAt,
     totalAmount: snap.totalAmount,
     count: snap.count,
-    afdian: { configured: afdianConfigured(), pageUrl: afdianPageUrl() },
+    afdian: { configured: await afdianConfigured(), pageUrl: await afdianPageUrl() },
   });
 }
 

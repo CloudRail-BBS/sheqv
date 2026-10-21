@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { countUsers } from '@/lib/users';
 import { publicCaptchaId } from '@/lib/geetest';
+import { getSettings } from '@/lib/settings';
 import { RegisterForm } from '@/components/auth-forms';
 
 export const dynamic = 'force-dynamic';
@@ -11,13 +12,27 @@ export default async function RegisterPage() {
   const user = await getCurrentUser();
   if (user) redirect('/me');
 
-  const total = await countUsers();
+  const [total, settings] = await Promise.all([countUsers(), getSettings()]);
 
   return (
     <div className="cols">
       <div className="col-main">
         <div className="auth-wrap">
-          <RegisterForm captchaId={publicCaptchaId()} isFirst={total === 0} />
+          {settings.allowRegister ? (
+            <RegisterForm captchaId={await publicCaptchaId()} isFirst={total === 0} />
+          ) : (
+            <div className="card card-pad">
+              <h1 className="page-title" style={{ fontSize: 20 }}>
+                暂停注册
+              </h1>
+              <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
+                管理员暂时关闭了新账号注册。已有账号仍可正常登录。
+              </p>
+              <a href="/login" className="btn btn-primary" style={{ width: '100%', marginTop: 16 }}>
+                去登录
+              </a>
+            </div>
+          )}
         </div>
       </div>
 

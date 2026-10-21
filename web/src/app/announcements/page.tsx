@@ -1,24 +1,22 @@
 import Link from 'next/link';
-import { getRequestCaps } from '@/lib/request-caps';
-import { ANNOUNCEMENTS } from '@/lib/data';
+import { listAnnouncements, type AnnouncementKind } from '@/lib/announcement-store';
 import { EmptyState } from '@/components/empty-state';
 
-const KIND_STYLE: Record<string, string> = {
+export const dynamic = 'force-dynamic';
+
+const KIND_CLASS: Record<AnnouncementKind, string> = {
   规则: 'badge badge-warn',
-  版本: 'badge badge-mc',
-  活动: 'badge badge-rw',
+  版本: 'badge badge-live',
+  活动: 'badge badge-ghost',
   系统: 'badge',
 };
 
+const fmt = (ts: number) => new Date(ts).toISOString().slice(0, 10);
+
 export default async function AnnouncementsPage() {
-  const caps = await getRequestCaps();
-  const sorted = [...ANNOUNCEMENTS].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
-  const counts = {
-    规则: ANNOUNCEMENTS.filter((a) => a.kind === '规则').length,
-    版本: ANNOUNCEMENTS.filter((a) => a.kind === '版本').length,
-    活动: ANNOUNCEMENTS.filter((a) => a.kind === '活动').length,
-    系统: ANNOUNCEMENTS.filter((a) => a.kind === '系统').length,
-  };
+  const items = await listAnnouncements({ publishedOnly: true });
+  const pinned = items.filter((a) => a.pinned);
+  const rest = items.filter((a) => !a.pinned);
 
   return (
     <div className="cols">
@@ -27,83 +25,60 @@ export default async function AnnouncementsPage() {
           <div>
             <h1 className="page-title">公告</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              规则、版本、活动与系统通知。涉及确权的规则变更会同步到约战页。
+              赛季规则、版本更新与仲裁结果都在这里，由管理员在后台发布。
             </p>
           </div>
-          <button className="btn btn-sm btn-ghost">全部已读</button>
+          <span className="badge">{items.length} 条</span>
         </div>
 
-        <div className="row wrap" style={{ gap: 6 }}>
-          {['全部', '规则', '版本', '活动', '系统'].map((f, i) => (
-            <button key={f} className="chip" data-on={i === 0}>
-              {f}
-              {f !== '全部' && (
-                <span className="mono" style={{ marginLeft: 6, opacity: 0.7 }}>
-                  {counts[f as keyof typeof counts]}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {sorted.length === 0 && (
-          <EmptyState title="还没有公告" desc="赛季规则、版本更新与仲裁结果都会发在这里。" icon="bell" />
+        {items.length === 0 ? (
+          <div style={{ marginTop: 12 }}>
+            <EmptyState
+              title="还没有公告"
+              desc="管理员登录后台，在「公告」里发布第一条之后，这里会按置顶与时间排序展示。"
+              actionHref="/admin/announcements"
+              actionLabel="去后台发布"
+              icon="bell"
+            />
+          </div>
+        ) : (
+          <div className="card" style={{ overflow: 'hidden', marginTop: 12 }}>
+            {[...pinned, ...rest].map((a) => (
+              <Link key={a.id} href={`/announcements/${a.id}`} className="an-item">
+                <div className="an-row">
+                  <span className={KIND_CLASS[a.kind]}>{a.kind}</span>
+                  {a.pinned && <span className="badge badge-warn">置顶</span>}
+                  <span className="an-title">{a.title}</span>
+                  <span className="mono small muted" style={{ marginLeft: 'auto', flex: 'none' }}>
+                    {fmt(a.createdAt)}
+                  </span>
+                </div>
+                <p className="an-excerpt">{a.body.slice(0, 90)}</p>
+              </Link>
+            ))}
+          </div>
         )}
-
-        {sorted.map((a) => (
-          <article key={a.id} className="card an-item">
-            <div className="an-title">
-              {a.pinned && <span className="post-pin">置顶</span>}
-              <span className={KIND_STYLE[a.kind]}>{a.kind}</span>
-              {a.title}
-            </div>
-            <p className="an-body">{a.body}</p>
-            <div className="an-meta">
-              <span className="mono">{a.date}</span>
-              <span>·</span>
-              <span>{a.views.toLocaleString('zh-CN')} 次阅读</span>
-              <span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>展开全文</span>
-            </div>
-          </article>
-        ))}
       </div>
 
       <aside className="rail">
         <div className="card rail-card">
-          <div className="rail-title">分类</div>
-          <div className="rail-list">
-            {Object.entries(counts).map(([k, v]) => (
-              <div key={k} className="rail-item">
-                <span className={KIND_STYLE[k]}>{k}</span>
-                <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
-                  {v}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card rail-card">
-          <div className="rail-title">订阅方式</div>
-          <p className="small muted" style={{ lineHeight: 1.75 }}>
-            {caps.capabilities.realtime.backgroundPush
-              ? '系统推送已开启，规则变更会即时推送到设备。'
-              : '当前形态只有站内通知：公告更新不会主动提醒，可在首页红点查看。'}
-            {caps.isWeChat && ' 微信内不会收到任何推送。'}
+          <div className="rail-title">怎么看公告</div>
+          <p className="small muted" style={{ lineHeight: 1.8 }}>
+            置顶的排在最上面；分类只有规则 / 版本 / 活动 / 系统四种。
+            公告由管理员在后台维护，改完立即生效，不需要重新部署。
           </p>
-          <Link href="/me" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 10 }}>
-            去我的 · 通知偏好
-          </Link>
         </div>
-
         <div className="card rail-card">
-          <div className="rail-title">重要公告</div>
+          <div className="rail-title">相关</div>
           <div className="rail-list">
-            {ANNOUNCEMENTS.filter((a) => a.kind === '规则').map((a) => (
-              <div key={a.id} className="rail-item">
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</span>
-              </div>
-            ))}
+            <Link href="/agreements" className="rail-item">
+              <span>公约</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span>
+            </Link>
+            <Link href="/matches" className="rail-item">
+              <span>约战</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span>
+            </Link>
           </div>
         </div>
       </aside>

@@ -64,7 +64,7 @@ $DATA_DIR/agreements.json   后台新增的公约
 | `/matches` `/matches/[id]` | 约战列表；详情含分局、时间线、确认/争议 |
 | `/resources` `/resources/[id]` | 资源库；详情含版本日志与下载门禁 |
 | `/leaderboard` | 公会榜 / 战队榜 / 选手榜 |
-| `/announcements` | 公告：分类筛选 + 置顶 + 阅读数 |
+| `/announcements` | 公告：置顶优先，分类徽标，点击进 `/announcements/[id]` 详情 |
 | `/sponsors` | 赞助者名单：累计金额 / 人数 / 前三名 / 完整列表（数据来自爱发电） |
 | `/agreements` | 公约签署：诚信公约 / 社区公约，含版本校验与签署凭证 |
 | `/p/[id]` | 帖子详情：正文、点赞、评论（需签社区公约） |
@@ -74,6 +74,9 @@ $DATA_DIR/agreements.json   后台新增的公约
 | `/admin` | 管理后台（仅管理员账号可进；未登录显示登录引导，非管理员显示 403） |
 | `/admin/users` | 用户管理：改角色、封禁 / 解封、删除（不能动自己或最后一个管理员） |
 | `/admin/posts` | 帖子管理：筛选、删除（连带评论与点赞） |
+| `/admin/announcements` | 公告管理：发布 / 编辑 / 置顶 / 转草稿 / 删除 |
+| `/admin/slides` | 轮播管理：文案、链接、背景色或背景图、文字明暗、排序 |
+| `/admin/settings` | 站点设置：站点名、GeeTest、爱发电、开放注册、首页公告开关（立即生效） |
 | `/admin/agreements` | 公约管理：新增 / 停用 / 删除，内置两份锁定 |
 | `/admin/sponsors` | 赞助管理：同步爱发电、手动录入、隐藏 / 删除 |
 | `/dev/capabilities` | 端能力台：4 列能力矩阵 + 配额 + bootstrap 实测（生产默认 404） |

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { config } from './config';
+import { getSettings } from './settings';
 
 /**
  * 爱发电（afdian.com）开放 API 客户端。
@@ -47,13 +48,15 @@ export class AfdianError extends Error {
   }
 }
 
-export function afdianConfigured(): boolean {
-  return Boolean(config.afdian.userId && config.afdian.token);
+export async function afdianConfigured(): Promise<boolean> {
+  const s = await getSettings();
+  return Boolean(s.afdianUserId && s.afdianToken);
 }
 
 /** 公开主页地址：没配就用 user_id 拼一个默认值 */
-export function afdianPageUrl(): string {
-  return config.afdian.pageUrl || (config.afdian.userId ? `https://afdian.com/a/${config.afdian.userId}` : '');
+export async function afdianPageUrl(): Promise<string> {
+  const s = await getSettings();
+  return s.afdianPageUrl || (s.afdianUserId ? `https://afdian.com/a/${s.afdianUserId}` : '');
 }
 
 export function signParams(params: string, ts: string, userId: string, token: string): string {
@@ -61,11 +64,13 @@ export function signParams(params: string, ts: string, userId: string, token: st
 }
 
 async function request<T>(path: string, params: Record<string, unknown>): Promise<T> {
-  if (!afdianConfigured()) {
-    throw new AfdianError('not_configured', '未配置 AFDIAN_USER_ID / AFDIAN_TOKEN');
-  }
+  const settings = await getSettings();
+  const userId = settings.afdianUserId;
+  const token = settings.afdianToken;
 
-  const { userId, token } = config.afdian;
+  if (!userId || !token) {
+    throw new AfdianError('not_configured', '未配置爱发电 user_id / token（可在后台「站点设置」填写）');
+  }
   const body = JSON.stringify(params);
   const ts = String(Math.floor(Date.now() / 1000));
 

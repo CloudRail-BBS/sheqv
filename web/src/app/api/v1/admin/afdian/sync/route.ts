@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  if (!afdianConfigured()) {
+  if (!(await afdianConfigured())) {
     return NextResponse.json(
       {
         error: 'afdian_not_configured',
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       totalCount,
       saved: saved.count,
       totalAmount: saved.total,
-      pageUrl: afdianPageUrl(),
+      pageUrl: await afdianPageUrl(),
     });
   } catch (e) {
     const err = e instanceof AfdianError ? e : null;

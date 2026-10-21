@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { config } from './config';
+import { getSettings } from './settings';
 
 /**
  * GeeTest v4（行为验证）服务端二次校验。
@@ -20,9 +21,10 @@ export type CaptchaResult =
   | { ok: true; skipped: boolean }
   | { ok: false; reason: string };
 
-/** id 与 key 同时存在才算启用 */
-export function captchaEnabled(): boolean {
-  return Boolean(config.geetest.id && config.geetest.key);
+/** id 与 key 同时存在才算启用（后台设置 > 环境变量） */
+export async function captchaEnabled(): Promise<boolean> {
+  const s = await getSettings();
+  return Boolean(s.geetestId && s.geetestKey);
 }
 
 /**
@@ -30,14 +32,17 @@ export function captchaEnabled(): boolean {
  * 只有 id + key 都在才返回——否则前端渲染了验证码、服务端却跳过校验，
  * 用户会以为"验了但没生效"，不如干脆不显示。
  */
-export function publicCaptchaId(): string {
-  return captchaEnabled() ? config.geetest.id : '';
+export async function publicCaptchaId(): Promise<string> {
+  const s = await getSettings();
+  return s.geetestId && s.geetestKey ? s.geetestId : '';
 }
 
 export async function verifyCaptcha(payload?: CaptchaPayload | null): Promise<CaptchaResult> {
-  if (!captchaEnabled()) return { ok: true, skipped: true };
+  const settings = await getSettings();
+  const { geetestId: id, geetestKey: key } = settings;
+  if (!id || !key) return { ok: true, skipped: true };
 
-  const { id, key, bypassOnError } = config.geetest;
+  const { bypassOnError } = config.geetest;
   const lot = payload?.lot_number?.trim();
   const output = payload?.captcha_output?.trim();
   const passToken = payload?.pass_token?.trim();
