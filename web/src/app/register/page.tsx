@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { countUsers } from '@/lib/users';
-import { config } from '@/lib/config';
+import { publicCaptchaId } from '@/lib/geetest';
 import { RegisterForm } from '@/components/auth-forms';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export default async function RegisterPage() {
     <div className="cols">
       <div className="col-main">
         <div className="auth-wrap">
-          <RegisterForm captchaId={config.geetest.id} isFirst={total === 0} />
+          <RegisterForm captchaId={publicCaptchaId()} isFirst={total === 0} />
         </div>
       </div>
 

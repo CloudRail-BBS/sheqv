@@ -19,7 +19,11 @@ import { findById, type PublicUser } from './users';
 async function resolve(token?: string | null): Promise<PublicUser | null> {
   const { userId } = (await verifySessionToken(token)) ?? {};
   if (!userId) return null;
-  return findById(userId);
+
+  const user = await findById(userId);
+  // 被封禁的账号：会话直接视为无效，不靠前端隐藏按钮
+  if (!user || user.banned) return null;
+  return user;
 }
 
 export const getCurrentUser = cache(async (): Promise<PublicUser | null> => {

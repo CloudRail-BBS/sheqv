@@ -66,7 +66,8 @@ export const config = {
    * id + key 都配了才启用；只配一半视为未配置（否则服务端会拒掉所有注册）。
    */
   geetest: {
-    id: env('GEETEST_ID'),
+    // 兼容只配了 NEXT_PUBLIC_GEETEST_ID 的常见写法，否则前端拿不到 ID 就永远不显示验证码
+    id: env('GEETEST_ID') || env('NEXT_PUBLIC_GEETEST_ID'),
     key: env('GEETEST_KEY'),
     /** GeeTest 官方"宕机模式"：校验接口不可达时放行，默认关（失败即拒绝） */
     bypassOnError: envFlag('GEETEST_BYPASS_ON_ERROR', false),

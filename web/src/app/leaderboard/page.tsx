@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { GUILDS, PLAYERS, TEAMS } from '@/lib/data';
+import { EmptyState } from '@/components/empty-state';
 
 const TREND = {
   up: { cls: 'trend-up', mark: '↑' },
@@ -52,6 +53,10 @@ export default async function LeaderboardPage() {
             </Link>
           </div>
           <div className="podium">
+            {guilds.length === 0 && (
+              <EmptyState title="榜单还没有数据" desc="有第一场比赛并完成确认后，这里会自动生成排名。" icon="users" />
+            )}
+
             {guilds.map((g, i) => (
               <div key={g.tag} className={'card pcard' + (i === 0 ? ' top' : '')}>
                 <span className="rk">#{i + 1}</span>
@@ -87,7 +92,11 @@ export default async function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {teams.map((t, i) => (
+                {teams.length === 0 && (
+              <EmptyState title="榜单还没有数据" desc="有第一场比赛并完成确认后，这里会自动生成排名。" icon="sword" />
+            )}
+
+            {teams.map((t, i) => (
                   <tr key={t.id}>
                     <td>
                       <span className={'rk-badge ' + rankCls(i)}>{i + 1}</span>
@@ -132,7 +141,11 @@ export default async function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {players.map((p, i) => (
+                {players.length === 0 && (
+              <EmptyState title="榜单还没有数据" desc="有第一场比赛并完成确认后，这里会自动生成排名。" icon="trophy" />
+            )}
+
+            {players.map((p, i) => (
                   <tr key={p.id}>
                     <td>
                       <span className={'rk-badge ' + rankCls(i)}>{i + 1}</span>

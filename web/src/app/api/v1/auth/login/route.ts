@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_credentials', message: '用户名或密码不正确' }, { status: 401 });
   }
 
+  if (user.banned) {
+    return NextResponse.json({ error: 'account_banned', message: '该账号已被封禁，请联系管理员' }, { status: 403 });
+  }
+
   const { token, maxAge } = await issueSessionToken(user.id);
   const res = NextResponse.json({ ok: true, user });
   res.cookies.set(SESSION_COOKIE, token, { ...sessionCookieOptions(), maxAge });

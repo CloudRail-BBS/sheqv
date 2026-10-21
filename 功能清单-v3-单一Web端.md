@@ -411,6 +411,9 @@
 | 一、首个管理员 | — | `lib/users.ts` `createUser()` | 空数据目录下第一个注册用户 `role=admin`，第二个 `member` |
 | 一、人机验证 | — | `lib/geetest.ts` · `components/geetest.tsx` | 配了 ID/KEY 时缺票据返回 403；未配置时跳过并提示 |
 | 二十一、赞助者 | — | `app/sponsors` · `lib/afdian.ts` · `lib/sponsor-store.ts` | 手动录入后出现在 /sponsors；隐藏后消失；未配置时同步返回 400 |
+| 七、站内信 | — | `components/notification-bell.tsx` · `lib/notifications.ts` · `api/v1/notifications` | 未读计数、全部已读后归零、匿名 loggedIn=false |
+| 十一、用户管理 | — | `app/admin/users` · `api/v1/admin/users` | 改自己角色 403；封禁后登录 403 且旧会话失效 |
+| 十一、帖子管理 | — | `app/admin/posts` · `api/v1/admin/posts` | 删除后首页消失；重复删除 404 |
 
 回归命令：`cd web && bash scripts/smoke.sh http://localhost:3000`（68 项断言）；部署后 `bash scripts/selfhost-check.sh https://你的域名`。
 
@@ -439,7 +442,15 @@
 
 ---
 
-## 二十一、赞助者（爱发电）
+## 二十一、视觉：黑白为主
+
+深色主题不再是"绿黑"，改为**中性灰阶**：背景 #0a0a0b → #1d1d21，强调色直接用近白 #f4f4f5，
+主按钮为白底黑字（浅色主题反过来是黑底白字）。唯一保留的彩色是 `--danger`（#f87171 / #dc2626），
+因为删除、封禁、错误必须有可识别的语义色，把危险也做成灰色会让人误点。
+
+浅色主题同步中性化，避免"深色是黑白、浅色又变绿"的割裂。
+
+## 二十二、赞助者（爱发电）
 
 赞助是这个小站唯一的收入来源，所以做成**公开可查**的名单，而不是一段"感谢打赏"的文案。
 

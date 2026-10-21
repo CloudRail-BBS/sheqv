@@ -46,16 +46,16 @@ export function Sidebar({ adminVisible, form }: Props) {
           <Ico>{I.home}</Ico>首页
         </Link>
         <Link href="/guilds" className="side-item" data-active={on('/guilds')}>
-          <Ico>{I.shield}</Ico>公会<span className="cnt">318</span>
+          <Ico>{I.shield}</Ico>公会
         </Link>
         <Link href="/teams" className="side-item" data-active={on('/teams')}>
-          <Ico>{I.users}</Ico>战队<span className="cnt">906</span>
+          <Ico>{I.users}</Ico>战队
         </Link>
         <Link href="/matches" className="side-item" data-active={on('/matches')}>
-          <Ico>{I.sword}</Ico>约战<span className="cnt">42</span>
+          <Ico>{I.sword}</Ico>约战
         </Link>
         <Link href="/resources" className="side-item" data-active={on('/resources')}>
-          <Ico>{I.box}</Ico>资源库<span className="cnt">2.1k</span>
+          <Ico>{I.box}</Ico>资源库
         </Link>
         <Link href="/leaderboard" className="side-item" data-active={on('/leaderboard')}>
           <Ico>{I.chart}</Ico>排行榜
@@ -65,16 +65,16 @@ export function Sidebar({ adminVisible, form }: Props) {
       <div className="side-group">
         <div className="side-label">分区</div>
         <Link href="/resources" className="side-item">
-          <Ico>{I.grid}</Ico>Minecraft<span className="cnt">1.3k</span>
+          <Ico>{I.grid}</Ico>Minecraft
         </Link>
         <Link href="/resources" className="side-item">
-          <Ico>{I.grid}</Ico>Roblox<span className="cnt">842</span>
+          <Ico>{I.grid}</Ico>Roblox
         </Link>
         <Link href="/resources" className="side-item">
-          <Ico>{I.layers}</Ico>整合包<span className="cnt">216</span>
+          <Ico>{I.layers}</Ico>整合包
         </Link>
         <Link href="/resources" className="side-item">
-          <Ico>{I.tool}</Ico>工具<span className="cnt">97</span>
+          <Ico>{I.tool}</Ico>工具
         </Link>
       </div>
 
@@ -84,7 +84,7 @@ export function Sidebar({ adminVisible, form }: Props) {
           <Ico>{I.user}</Ico>我的
         </Link>
         <Link href="/announcements" className="side-item" data-active={on('/announcements')}>
-          <Ico>{I.bell}</Ico>公告<span className="cnt">6</span>
+          <Ico>{I.bell}</Ico>公告
         </Link>
         <Link href="/sponsors" className="side-item" data-active={on('/sponsors')}>
           <Ico>{I.heart}</Ico>赞助者
@@ -97,9 +97,6 @@ export function Sidebar({ adminVisible, form }: Props) {
             <Ico>{I.cog}</Ico>管理后台
           </Link>
         )}
-        <Link href="/dev/capabilities" className="side-item" data-active={on('/dev/capabilities')}>
-          <Ico>{I.code}</Ico>端能力台
-        </Link>
       </div>
 
       <div className="side-cta">

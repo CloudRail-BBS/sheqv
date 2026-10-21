@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getAdminGate } from '@/lib/admin-auth';
 import { AdminDenied } from '@/components/admin-denied';
+import { AdminNav } from '@/components/admin-nav';
 import { getSnapshot, formatAmount } from '@/lib/sponsor-store';
 import { afdianConfigured, afdianPageUrl } from '@/lib/afdian';
 import { SponsorAdmin } from '@/components/sponsor-admin';
@@ -28,6 +29,7 @@ export default async function AdminSponsorsPage() {
         <span>赞助管理</span>
       </div>
 
+      <AdminNav />
       <div className="between" style={{ alignItems: 'flex-end' }}>
         <div>
           <h1 className="page-title">赞助管理</h1>

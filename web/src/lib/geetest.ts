@@ -25,8 +25,13 @@ export function captchaEnabled(): boolean {
   return Boolean(config.geetest.id && config.geetest.key);
 }
 
-export function captchaId(): string {
-  return config.geetest.id;
+/**
+ * 可以下发给浏览器的 captcha id。
+ * 只有 id + key 都在才返回——否则前端渲染了验证码、服务端却跳过校验，
+ * 用户会以为"验了但没生效"，不如干脆不显示。
+ */
+export function publicCaptchaId(): string {
+  return captchaEnabled() ? config.geetest.id : '';
 }
 
 export async function verifyCaptcha(payload?: CaptchaPayload | null): Promise<CaptchaResult> {

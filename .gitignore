@@ -9,6 +9,9 @@ web/.dev*
 web/.sh*
 web/tsconfig.tsbuildinfo
 
+# 构建/实验产物：web 下所有隐藏目录（.next/.dist/.b1/.dev* 等）
+web/.*/
+
 # 运行时数据（含账号、帖子、赞助快照、会话密钥）
 web/.data
 web/backups

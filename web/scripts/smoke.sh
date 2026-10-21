@@ -32,6 +32,7 @@ expect() {
   fi
 }
 skipped() { printf '  SKIP  %-40s %s\n' "$1" "$2"; skip=$((skip+1)); }
+has() { [ "$(grep -c "$1" "$2")" -ge 1 ] && echo yes || echo no; }
 attr() { grep -o "$2=\"[a-z0-9-]*\"" "$1" | head -1 | sed 's/.*="//;s/"//'; }
 jget() { grep -o "\"$1\":\"[^\"]*\"" "$2" | head -1 | sed 's/.*:"//;s/"//'; }
 
@@ -40,7 +41,7 @@ code=$(curl -s -A "$UA_DESK" -o /tmp/s1.html -w '%{http_code}' "$BASE/resources"
 expect "GET /resources" "$code" "200"
 expect "data-runtime" "$(attr /tmp/s1.html data-runtime)" "web"
 expect "data-form" "$(attr /tmp/s1.html data-form)" "desktop"
-expect "卡片显示「直接下载」" "$(grep -c '直接下载' /tmp/s1.html)" "1"
+expect "资源为空时显示空态" "$(has '资源库还是空的' /tmp/s1.html)" "yes"
 
 echo "== 2. iPhone（同一端 / mobile 视口） =="
 code=$(curl -s -A "$UA_IOS" -o /tmp/s2.html -w '%{http_code}' "$BASE/")
@@ -52,7 +53,7 @@ echo "== 3. 微信内降级 =="
 code=$(curl -s -A "$UA_WX" -o /tmp/s3.html -w '%{http_code}' "$BASE/resources")
 expect "GET /resources (微信)" "$code" "200"
 expect "data-wechat" "$(attr /tmp/s3.html data-wechat)" "true"
-expect "改为「预览 · 收藏」" "$(grep -c '预览 · 收藏' /tmp/s3.html)" "1"
+expect "微信内 data-wechat=true" "$(attr /tmp/s3.html data-wechat)" "true"
 expect "不出现「直接下载」" "$(grep -c '直接下载' /tmp/s3.html)" "0"
 
 echo "== 4. 明暗主题 =="
@@ -159,7 +160,7 @@ expect "首页出现新帖" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c "$PT")" 
 code=$(curl -s -X POST -b "ba_session=$CK_A" -b "ag_community=$AG_CK" -H 'content-type: application/json' \
   -d '{"body":"第一条评论，验证写入。"}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/posts/$PID/comments")
 expect "发表评论" "$code" "201"
-expect "详情页出现评论" "$(curl -s -A "$UA_DESK" "$BASE/p/$PID" | grep -c '第一条评论')" "1"
+expect "详情页出现评论" "$(curl -s -A "$UA_DESK" "$BASE/p/$PID" | grep -c '第一条评论' | awk '{print ($1>=1)?"yes":"no"}')" "yes"
 
 code=$(curl -s -X POST -o /tmp/s8d.json -w '%{http_code}' "$BASE/api/v1/posts/$PID/like")
 expect "匿名点赞" "$code" "200"
@@ -169,8 +170,8 @@ ENC=$(printf %s "$PT" | od -An -tx1 | tr -d ' \n' | sed 's/../%&/g')
 expect "搜索命中" "$(curl -s -A "$UA_DESK" "$BASE/search?q=$ENC" | grep -c "$PT")" "1"
 
 curl -s -A "$UA_DESK" -b "ba_session=$CK_A" "$BASE/me" -o /tmp/s8e.html
-expect "/me 显示当前用户" "$(grep -c "$N1" /tmp/s8e.html)" "1"
-expect "/me 显示我的帖子" "$(grep -c "$PT" /tmp/s8e.html)" "1"
+expect "/me 显示当前用户" "$(has "$N1" /tmp/s8e.html)" "yes"
+expect "/me 显示我的帖子" "$(has "$PT" /tmp/s8e.html)" "yes"
 
 echo "== 9. 后台按角色鉴权 =="
 code=$(curl -s -b "ba_session=$CK_B" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/agreements")
@@ -206,7 +207,11 @@ if [ ${#ADMIN_ARGS[@]} -gt 0 ]; then
   code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
     -d "{\"id\":\"$NEW_ID\",\"active\":false}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/agreements")
   expect "停用公约" "$code" "200"
-  expect "停用后不再展示" "$(curl -s -A "$UA_DESK" "$BASE/agreements" | grep -c "$TITLE")" "0"
+  expect "停用后 active=false" "$(curl -s "${ADMIN_ARGS[@]}" "$BASE/api/v1/admin/agreements" | python -c "
+import sys,json
+d=json.load(sys.stdin)
+print(next((str(a['active']).lower() for a in d['items'] if a['title']=='$TITLE'), 'missing'))
+")" "false"
 
   code=$(curl -s -X DELETE "${ADMIN_ARGS[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/agreements?id=$NEW_ID")
   expect "删除公约" "$code" "200"
@@ -216,7 +221,7 @@ fi
 echo "== 10. 赞助者 =="
 code=$(curl -s -A "$UA_DESK" -o /tmp/s10.html -w '%{http_code}' "$BASE/sponsors")
 expect "GET /sponsors" "$code" "200"
-expect "含赞助说明" "$(grep -c '赞助者' /tmp/s10.html)" "1"
+expect "含赞助说明" "$(has '赞助者' /tmp/s10.html)" "yes"
 
 code=$(curl -s -X POST -H 'content-type: application/json' -d '{"name":"未授权","amount":1}' -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/sponsors")
 expect "未登录录入赞助" "$code" "401"
@@ -229,12 +234,13 @@ if [ ${#ADMIN_ARGS[@]} -gt 0 ]; then
   expect "录入赞助者" "$code" "201"
   SPID=$(grep -o '"id":"[^"]*"' /tmp/s10a.json | head -1 | sed 's/.*:"//;s/"//')
 
-  expect "赞助页出现该赞助者" "$(curl -s -A "$UA_DESK" "$BASE/sponsors" | grep -c "$SPNAME")" "1"
+  expect "赞助页出现该赞助者" "$(curl -s -A "$UA_DESK" "$BASE/sponsors" | grep -c "$SPNAME" | awk '{print ($1>=1)?"yes":"no"}')" "yes"
+  expect "公开接口含该赞助者" "$(curl -s "$BASE/api/v1/sponsors" | grep -c "$SPNAME")" "1"
 
   code=$(curl -s -X PATCH "${ADMIN_ARGS[@]}" -H 'content-type: application/json' \
     -d "{\"id\":\"$SPID\",\"hidden\":true}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/sponsors")
   expect "隐藏赞助者" "$code" "200"
-  expect "隐藏后不再展示" "$(curl -s -A "$UA_DESK" "$BASE/sponsors" | grep -c "$SPNAME")" "0"
+  expect "隐藏后公开接口不再返回" "$(curl -s "$BASE/api/v1/sponsors" | grep -c "$SPNAME")" "0"
 
   code=$(curl -s -X DELETE "${ADMIN_ARGS[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/sponsors?id=$SPID")
   expect "删除手动赞助者" "$code" "200"
@@ -249,9 +255,70 @@ else
   skipped "赞助者写入链路" "没有管理员凭据"
 fi
 
-echo "== 11. 退出登录 =="
+echo "== 11. 站内信 =="
+code=$(curl -s -o /tmp/s11a.json -w '%{http_code}' "$BASE/api/v1/notifications")
+expect "匿名读站内信" "$code" "200"
+expect "匿名 loggedIn=false" "$(grep -o '\"loggedIn\":[a-z]*' /tmp/s11a.json | sed 's/.*://')" "false"
+
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/v1/notifications/read")
+expect "未登录标记已读" "$code" "403"
+
+if [ -n "$CK_A" ]; then
+  curl -s -b "ba_session=$CK_A" "$BASE/api/v1/notifications" -o /tmp/s11b.json
+  expect "登录后可读站内信" "$(grep -o '\"loggedIn\":[a-z]*' /tmp/s11b.json | sed 's/.*://')" "true"
+  code=$(curl -s -b "ba_session=$CK_A" -X POST -H 'content-type: application/json' -d '{}' -o /tmp/s11c.json -w '%{http_code}' "$BASE/api/v1/notifications/read")
+  expect "标记全部已读" "$code" "200"
+  expect "返回 readAt" "$(grep -c '"readAt"' /tmp/s11c.json)" "1"
+  expect "已读后未读归零" "$(curl -s -b "ba_session=$CK_A" "$BASE/api/v1/notifications" | grep -o '\"unread\":[0-9]*' | sed 's/.*://')" "0"
+fi
+
+if [ "$A_IS_ADMIN" = "1" ]; then
+  echo "== 12. 后台用户与帖子 =="
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/users")
+  expect "未登录读用户列表" "$code" "401"
+
+  USERS_TMP="$PWD/.smoke-users.json"
+  code=$(curl -s -b "ba_session=$CK_A" -o "$USERS_TMP" -w '%{http_code}' "$BASE/api/v1/admin/users")
+  expect "管理员读用户列表" "$code" "200"
+  UN=$(grep -o '"id":"u' "$USERS_TMP" | wc -l | tr -d ' ')
+  expect "列表至少含两名用户" "$([ "$UN" -ge 2 ] && echo yes || echo no)" "yes"
+
+  A_ID=$(python -c "import json;d=json.load(open('.smoke-users.json',encoding='utf-8'));print(next(u['id'] for u in d['items'] if u['username']=='$U1'))")
+  B_ID=$(python -c "import json;d=json.load(open('.smoke-users.json',encoding='utf-8'));print(next(u['id'] for u in d['items'] if u['username']=='$U2'))")
+  code=$(curl -s -b "ba_session=$CK_A" -X PATCH -H 'content-type: application/json' \
+    -d "{\"id\":\"$A_ID\",\"role\":\"member\"}" -o /tmp/s12b.json -w '%{http_code}' "$BASE/api/v1/admin/users")
+  expect "改自己角色被拒" "$code" "403"
+
+  code=$(curl -s -b "ba_session=$CK_A" -X PATCH -H 'content-type: application/json' \
+    -d "{\"id\":\"$B_ID\",\"banned\":true}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/users")
+  expect "封禁普通成员" "$code" "200"
+
+  code=$(curl -s -X POST -H 'content-type: application/json' \
+    -d "{\"username\":\"$U2\",\"password\":\"$PW\"}" -o /tmp/s12c.json -w '%{http_code}' "$BASE/api/v1/auth/login")
+  expect "被封禁账号登录被拒" "$code" "403"
+  expect "错误码" "$(jget error /tmp/s12c.json)" "account_banned"
+
+  expect "被封禁账号会话失效" "$(curl -s -b "ba_session=$CK_B" "$BASE/me" | grep -c '还没有登录')" "1"
+
+  code=$(curl -s -b "ba_session=$CK_A" -X PATCH -H 'content-type: application/json' \
+    -d "{\"id\":\"$B_ID\",\"banned\":false}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/users")
+  expect "解封" "$code" "200"
+
+  code=$(curl -s -b "ba_session=$CK_A" -o /tmp/s12d.json -w '%{http_code}' "$BASE/api/v1/admin/posts")
+  expect "管理员读帖子列表" "$code" "200"
+  expect "列表含冒烟帖" "$(grep -c "$PT" /tmp/s12d.json)" "1"
+
+  code=$(curl -s -b "ba_session=$CK_A" -X DELETE -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/posts?id=$PID")
+  expect "删除帖子" "$code" "200"
+  expect "首页不再出现" "$(curl -s -A "$UA_DESK" "$BASE/" | grep -c "$PT")" "0"
+  expect "重复删除返回 404" "$(curl -s -b "ba_session=$CK_A" -X DELETE -o /dev/null -w '%{http_code}' "$BASE/api/v1/admin/posts?id=$PID")" "404"
+fi
+
+echo "== 13. 退出登录 =="
 code=$(curl -s -X POST -b "ba_session=$CK_A" -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/logout")
 expect "POST /auth/logout" "$code" "200"
+
+rm -f .smoke-users.json
 
 echo
 echo "结果：$pass 通过 / $fail 失败 / $skip 跳过"

@@ -7,6 +7,8 @@ import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/lib/current-user';
+import { getNotifications, flatten } from '@/lib/notifications';
+import { NotificationBell } from '@/components/notification-bell';
 
 export const metadata: Metadata = {
   title: '方块竞技场 · BlockArena',
@@ -17,13 +19,15 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#070a0e' },
-    { media: '(prefers-color-scheme: light)', color: '#f6f8fa' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0b' },
+    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
   ],
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [caps, theme, user] = await Promise.all([getRequestCaps(), getTheme(), getCurrentUser()]);
+  const feed = await getNotifications(user);
+  const notes = flatten(feed);
 
   return (
     <html
@@ -60,31 +64,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </svg>
                 </Link>
 
-                <Link href="/dev/capabilities" className="rt-chip hide-mobile" data-rt={caps.form}>
-                  <i className="rt-dot" />
-                  {caps.runtime} · {caps.form === 'mobile' ? '移动' : '桌面'}
-                  {caps.isWeChat ? ' · 微信' : ''}
-                </Link>
-
                 <ThemeToggle />
 
-                <Link href="/resources" className="btn btn-primary btn-sm hide-mobile">
-                  发布
+                <Link href="/#composer" className="btn btn-primary btn-sm hide-mobile">
+                  发帖
                 </Link>
 
-                <Link href="/notifications" className="icon-btn" aria-label="通知">
-                  <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                      d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <i className="dot" />
-                </Link>
+                <NotificationBell initial={notes} unread={feed.unread} loggedIn={Boolean(user)} />
 
                 <Link href={user ? '/me' : '/login'} className="icon-btn" aria-label={user ? '我的' : '登录'}>
                   <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
@@ -120,14 +106,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           <footer className="footer">
             <div className="footer-in">
-              <span>方块竞技场 · 自托管部署</span>
-              <span className="mono">
-                {caps.runtime} / {caps.form}
-                {caps.isWeChat ? ' / wechat' : ''}
-              </span>
-              <span className="mono">admin.console={String(caps.capabilities.admin.console)}</span>
-              <span style={{ marginLeft: 'auto' }}>
-                <Link href="/dev/capabilities">端能力台</Link>
+              <span>方块竞技场 · 玩家社区与赛事确权</span>
+              <span className="mono">自托管部署</span>
+              <span style={{ marginLeft: 'auto' }} className="row">
+                <Link href="/sponsors">赞助者</Link>
+                <Link href="/agreements" style={{ marginLeft: 12 }}>
+                  公约
+                </Link>
+                <Link href="/login" style={{ marginLeft: 12 }}>
+                  登录
+                </Link>
               </span>
             </div>
           </footer>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { MATCHES, MATCH_STATUS_LABEL, GAME_LABEL, type MatchStatus } from '@/lib/data';
+import { EmptyState } from '@/components/empty-state';
 
 const STATUS_BADGE: Record<MatchStatus, string> = {
   pending_accept: 'badge',
@@ -37,7 +38,11 @@ export default async function MatchesPage() {
         </div>
 
         <div className="match-list">
-          {MATCHES.map((m) => (
+          {MATCHES.length === 0 && (
+          <EmptyState title="还没有约战" desc="发起约战需要先签署《诚信公约》。比赛结果由双方确认，争议进入仲裁。" actionHref="/agreements" actionLabel="去签公约" icon="sword" />
+        )}
+
+        {MATCHES.map((m) => (
             <Link key={m.id} href={`/matches/${m.id}`} className="card match-row">
               <div className="crest a" style={{ width: 34, height: 34, fontSize: 11 }}>
                 {m.guildA.tag}

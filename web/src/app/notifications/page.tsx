@@ -1,10 +1,13 @@
 import Link from 'next/link';
-import { listNotifications } from '@/lib/forum-store';
-import { MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
+import { getCurrentUser } from '@/lib/current-user';
+import { getNotifications, timeAgo } from '@/lib/notifications';
+import { MarkAllRead } from '@/components/notification-bell';
+
+export const dynamic = 'force-dynamic';
 
 export default async function NotificationsPage() {
-  const notes = await listNotifications();
-  const pending = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed');
+  const user = await getCurrentUser();
+  const feed = await getNotifications(user);
 
   return (
     <div className="cols">
@@ -12,39 +15,67 @@ export default async function NotificationsPage() {
         <div className="between" style={{ alignItems: 'flex-end' }}>
           <div>
             <h1 className="page-title">通知</h1>
-            <p className="small muted" style={{ marginTop: 4 }}>评论、待确认与争议都会在这里；Web 无系统推送。</p>
+            <p className="small muted" style={{ marginTop: 4 }}>
+              评论、待确认与争议都会在这里；Web 无系统推送。顶栏铃铛可以直接快速查看。
+            </p>
           </div>
-          <button className="btn btn-sm btn-ghost">全部已读</button>
+          <div className="row" style={{ gap: 8 }}>
+            {feed.unread > 0 && <span className="badge badge-warn">{feed.unread} 条未读</span>}
+            <MarkAllRead disabled={feed.unread === 0 || !user} />
+          </div>
         </div>
 
         <div className="card" style={{ overflow: 'hidden' }}>
           <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
             <h3 style={{ fontSize: 13 }}>待我确认</h3>
-            <span className="badge badge-warn">{pending.length} 场</span>
+            <span className="badge badge-warn">{feed.pending.length} 场</span>
           </div>
-          {pending.map((m) => (
-            <Link key={m.id} href={`/matches/${m.id}`} className="rail-item" style={{ padding: '12px 16px' }}>
-              <span className={'badge ' + (m.status === 'disputed' ? 'badge-danger' : 'badge-warn')}>
-                {MATCH_STATUS_LABEL[m.status]}
-              </span>
-              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</span>
-              <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>{m.guildA.score} : {m.guildB.score}</span>
-            </Link>
-          ))}
+          {feed.pending.length === 0 ? (
+            <p className="small muted" style={{ padding: '18px 16px' }}>
+              没有待确认的比赛。
+            </p>
+          ) : (
+            feed.pending.map((m) => (
+              <Link key={m.id} href={m.href} className="rail-item" style={{ padding: '12px 16px' }}>
+                <span className="badge badge-warn">{m.badge}</span>
+                <span className="n-title" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.title}
+                </span>
+                <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
+                  {m.text}
+                </span>
+              </Link>
+            ))
+          )}
         </div>
 
         <div className="card" style={{ overflow: 'hidden' }}>
           <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
             <h3 style={{ fontSize: 13 }}>评论</h3>
-            <span className="badge">{notes.length} 条</span>
+            <span className="badge">{feed.comments.length} 条</span>
           </div>
-          {notes.length === 0 ? (
-            <p className="small muted" style={{ padding: '18px 16px' }}>还没有新评论。去社区发个帖子试试。</p>
+          {feed.comments.length === 0 ? (
+            <p className="small muted" style={{ padding: '18px 16px' }}>
+              还没有新评论。去社区发个帖子试试。
+            </p>
           ) : (
-            notes.map((n) => (
-              <Link key={n.id} href={n.href} className="rail-item" style={{ padding: '12px 16px' }}>
-                <span className="badge badge-live">评论</span>
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.text}</span>
+            feed.comments.map((n) => (
+              <Link
+                key={n.id}
+                href={n.href}
+                className="rail-item"
+                data-unread={n.unread}
+                style={{ padding: '12px 16px' }}
+              >
+                <span className={'badge ' + (n.unread ? 'badge-live' : 'badge-ghost')}>
+                  {n.unread ? '新' : '评论'}
+                </span>
+                <span className="n-title" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {n.text}
+                </span>
+                <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)', flex: 'none' }}>
+                  {timeAgo(n.at)}
+                </span>
               </Link>
             ))
           )}
@@ -53,17 +84,28 @@ export default async function NotificationsPage() {
 
       <aside className="rail">
         <div className="card rail-card">
-          <div className="rail-title">推送说明</div>
+          <div className="rail-title">未读怎么算</div>
           <p className="small muted" style={{ lineHeight: 1.75 }}>
-            当前形态没有系统推送，通知只在这里与首页红点出现。重要比赛建议安装 App。
+            只统计别人在你帖子下的评论；点「全部标为已读」后，此前的评论不再算未读。
+            待确认比赛属于「待处理」，不随已读消失。
+            {!user && ' 登录后未读状态会跟着账号走，换设备也一致。'}
           </p>
         </div>
         <div className="card rail-card">
           <div className="rail-title">快捷入口</div>
           <div className="rail-list">
-            <Link href="/matches" className="rail-item"><span>我的约战</span><span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span></Link>
-            <Link href="/announcements" className="rail-item"><span>公告</span><span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span></Link>
-            <Link href="/me" className="rail-item"><span>我的主页</span><span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span></Link>
+            <Link href="/matches" className="rail-item">
+              <span>我的约战</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span>
+            </Link>
+            <Link href="/announcements" className="rail-item">
+              <span>公告</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span>
+            </Link>
+            <Link href="/me" className="rail-item">
+              <span>我的主页</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--blue)' }}>→</span>
+            </Link>
           </div>
         </div>
       </aside>

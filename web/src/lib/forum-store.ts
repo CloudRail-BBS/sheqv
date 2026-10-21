@@ -185,22 +185,62 @@ export async function likePost(postId: string): Promise<number | null> {
 }
 
 /** 通知：我的帖子下的新评论 + 待我确认的比赛 */
-export async function listNotifications() {
+export interface NotificationItem {
+  id: string;
+  kind: 'comment';
+  author: string;
+  text: string;
+  at: number;
+  href: string;
+}
+
+/**
+ * 评论通知：别人在我的帖子下的评论。
+ * 用一次读盘建 postId→title 的索引，避免逐条 getPost 造成 O(n) 次文件读。
+ */
+export async function listNotifications(excludeAuthor?: string): Promise<NotificationItem[]> {
   const store = await read();
-  const items: { id: string; kind: 'comment' | 'match'; text: string; at: number; href: string }[] = [];
+  const titleOf = new Map(store.posts.map((p) => [p.id, p.title]));
+  const items: NotificationItem[] = [];
 
   for (const [postId, list] of Object.entries(store.comments)) {
-    const post = await getPost(postId);
     for (const c of list) {
+      if (excludeAuthor && c.author === excludeAuthor) continue;
       items.push({
         id: c.id,
         kind: 'comment',
-        text: `${c.author} 评论了《${post?.title ?? '你的帖子'}》：${c.body.slice(0, 24)}`,
+        author: c.author,
+        text: `${c.author} 评论了《${titleOf.get(postId) ?? '你的帖子'}》：${c.body.slice(0, 40)}`,
         at: c.at,
         href: `/p/${postId}`,
       });
     }
   }
 
-  return items.sort((a, b) => b.at - a.at).slice(0, 20);
+  return items.sort((a, b) => b.at - a.at);
+}
+
+/** 后台概览用的计数 */
+export async function forumStats(): Promise<{ posts: number; comments: number; likes: number }> {
+  const store = await read();
+  return {
+    posts: store.posts.length,
+    comments: Object.values(store.comments).reduce((n, list) => n + list.length, 0),
+    likes: Object.values(store.likes).reduce((n, v) => n + v, 0),
+  };
+}
+
+/** 后台删除帖子：连同评论与点赞一起清掉，避免留下孤儿数据 */
+export async function deletePost(id: string): Promise<boolean> {
+  return serialize(async () => {
+    const store = await read();
+    const before = store.posts.length;
+    store.posts = store.posts.filter((p) => p.id !== id);
+    if (store.posts.length === before) return false;
+
+    delete store.comments[id];
+    delete store.likes[id];
+    await writeJsonAtomic(FILE, store);
+    return true;
+  });
 }

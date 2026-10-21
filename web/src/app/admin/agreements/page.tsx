@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { listAgreements } from '@/lib/agreement-store';
 import { getAdminGate } from '@/lib/admin-auth';
 import { AdminDenied } from '@/components/admin-denied';
+import { AdminNav } from '@/components/admin-nav';
 import { AgreementAdmin } from '@/components/agreement-admin';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,7 @@ export default async function AdminAgreementsPage() {
         <span>公约管理</span>
       </div>
 
+      <AdminNav />
       <div className="between" style={{ alignItems: 'flex-end' }}>
         <div>
           <h1 className="page-title">公约管理</h1>

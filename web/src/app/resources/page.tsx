@@ -3,6 +3,7 @@ import { RESOURCES } from '@/lib/data';
 import { ResourceCard } from '@/components/resource-card';
 import { UploadPanel } from '@/components/upload-panel';
 import { formatBytes } from '@/lib/capabilities';
+import { EmptyState } from '@/components/empty-state';
 
 const FILTERS = ['全部', 'Minecraft', 'Roblox', '地图', '整合包', '材质', '存档', '工具'];
 
@@ -31,7 +32,11 @@ export default async function ResourcesPage() {
         </div>
 
         <div className="res-grid">
-          {RESOURCES.map((r) => (
+          {RESOURCES.length === 0 && (
+          <EmptyState title="资源库还是空的" desc="还没有人上传地图、整合包或材质。接入上传通道后，这里会按游戏与分类展示。" actionHref="/" actionLabel="去社区看看" icon="box" />
+        )}
+
+        {RESOURCES.map((r) => (
             <ResourceCard key={r.id} item={r} directDownload={caps.capabilities.resource.directDownload} />
           ))}
         </div>

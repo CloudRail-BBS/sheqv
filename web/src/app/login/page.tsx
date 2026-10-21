@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { countUsers } from '@/lib/users';
-import { config } from '@/lib/config';
+import { publicCaptchaId } from '@/lib/geetest';
 import { LoginForm } from '@/components/auth-forms';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,7 @@ export default async function LoginPage() {
               </Link>
             </div>
           ) : (
-            <LoginForm captchaId={config.geetest.id} />
+            <LoginForm captchaId={publicCaptchaId()} />
           )}
         </div>
       </div>

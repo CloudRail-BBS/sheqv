@@ -5,6 +5,8 @@ import { listPosts } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
+import { countUsers } from '@/lib/users';
+import { forumStats } from '@/lib/forum-store';
 import { afdianPageUrl } from '@/lib/afdian';
 import { Composer } from '@/components/composer';
 import { PostCard } from '@/components/post-card';
@@ -18,9 +20,11 @@ export default async function HomePage() {
   const posts = await listPosts();
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
+  const [userTotal, stats] = await Promise.all([countUsers(), forumStats()]);
+  const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
   const sponsorUrl = afdianPageUrl();
   const communitySigned = await isCommunitySigned();
-  const live = MATCHES[0];
+  const live = MATCHES[0] ?? null;
 
   return (
     <div className="cols">
@@ -80,40 +84,42 @@ export default async function HomePage() {
           <PostCard key={f.id} item={f} />
         ))}
 
-        <div className="card mcard">
-          <div className="mcard-top">
-            <span className="badge badge-warn">{MATCH_STATUS_LABEL[live.status]}</span>
-            <span className="badge">{live.format}</span>
-            <span className="small muted" style={{ marginLeft: 'auto' }}>
-              {live.deadline}
-            </span>
-          </div>
-          <div className="mcard-teams">
-            <span className="t">
-              <span className="crest a" style={{ width: 30, height: 30, fontSize: 11, borderRadius: 8 }}>
-                {live.guildA.tag}
+        {live && (
+          <div className="card mcard">
+            <div className="mcard-top">
+              <span className="badge badge-warn">{MATCH_STATUS_LABEL[live.status]}</span>
+              <span className="badge">{live.format}</span>
+              <span className="small muted" style={{ marginLeft: 'auto' }}>
+                {live.deadline}
               </span>
-              {live.guildA.name}
-            </span>
-            <span className="sc">
-              {live.guildA.score} : {live.guildB.score}
-            </span>
-            <span className="t">
-              {live.guildB.name}
-              <span className="crest b" style={{ width: 30, height: 30, fontSize: 11, borderRadius: 8 }}>
-                {live.guildB.tag}
+            </div>
+            <div className="mcard-teams">
+              <span className="t">
+                <span className="crest a" style={{ width: 30, height: 30, fontSize: 11, borderRadius: 8 }}>
+                  {live.guildA.tag}
+                </span>
+                {live.guildA.name}
               </span>
-            </span>
+              <span className="sc">
+                {live.guildA.score} : {live.guildB.score}
+              </span>
+              <span className="t">
+                {live.guildB.name}
+                <span className="crest b" style={{ width: 30, height: 30, fontSize: 11, borderRadius: 8 }}>
+                  {live.guildB.tag}
+                </span>
+              </span>
+            </div>
+            <div className="between">
+              <span className="small muted">
+                双方已提交 · 比分一致的自动确认，不一致进入争议
+              </span>
+              <Link href={`/matches/${live.id}`} className="btn btn-sm btn-ghost">
+                进入比赛
+              </Link>
+            </div>
           </div>
-          <div className="between">
-            <span className="small muted">
-              双方已提交 · 比分一致的自动确认，不一致进入争议
-            </span>
-            <Link href={`/matches/${live.id}`} className="btn btn-sm btn-ghost">
-              进入比赛
-            </Link>
-          </div>
-        </div>
+        )}
 
         {posts.slice(3, 9).map((f) => (
           <PostCard key={f.id} item={f} />
@@ -129,20 +135,20 @@ export default async function HomePage() {
           <div className="rail-title">社区概览</div>
           <div className="mini-stats">
             <div className="mini-stat">
-              <b>1,284</b>
-              <span>在线</span>
+              <b>{userTotal}</b>
+              <span>注册用户</span>
             </div>
             <div className="mini-stat">
-              <b>96</b>
-              <span>今日新帖</span>
+              <b>{stats.posts}</b>
+              <span>帖子</span>
             </div>
             <div className="mini-stat">
-              <b>42</b>
-              <span>本周约战</span>
+              <b>{stats.comments}</b>
+              <span>评论</span>
             </div>
             <div className="mini-stat">
-              <b>7</b>
-              <span>待我确认</span>
+              <b>{pendingCount}</b>
+              <span>待确认</span>
             </div>
           </div>
         </div>
@@ -181,6 +187,11 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="rail-list">
+            {TEAMS.length === 0 && (
+              <p className="small muted" style={{ padding: '4px 0' }}>
+                还没有战队数据。
+              </p>
+            )}
             {[...TEAMS]
               .sort((a, b) => b.winRate - a.winRate)
               .slice(0, 3)

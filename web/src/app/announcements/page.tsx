@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { ANNOUNCEMENTS } from '@/lib/data';
+import { EmptyState } from '@/components/empty-state';
 
 const KIND_STYLE: Record<string, string> = {
   规则: 'badge badge-warn',
@@ -44,6 +45,10 @@ export default async function AnnouncementsPage() {
             </button>
           ))}
         </div>
+
+        {sorted.length === 0 && (
+          <EmptyState title="还没有公告" desc="赛季规则、版本更新与仲裁结果都会发在这里。" icon="bell" />
+        )}
 
         {sorted.map((a) => (
           <article key={a.id} className="card an-item">

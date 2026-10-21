@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { GAME_LABEL, TEAMS } from '@/lib/data';
+import { EmptyState } from '@/components/empty-state';
 
 export default async function TeamsPage() {
   const caps = await getRequestCaps();
@@ -24,6 +25,10 @@ export default async function TeamsPage() {
           <button className="feed-tab">招募中</button>
           <span className="sort">{TEAMS.length} 支</span>
         </div>
+
+        {TEAMS.length === 0 && (
+          <EmptyState title="还没有战队" desc="战队是约战的最小单位。名单锁定后，替补必须在快照内。" actionHref="/guilds" actionLabel="先看公会" icon="sword" />
+        )}
 
         {TEAMS.map((t) => (
           <div key={t.id} className="card team-card">

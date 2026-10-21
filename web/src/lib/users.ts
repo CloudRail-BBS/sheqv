@@ -21,6 +21,10 @@ export interface UserRecord {
   role: Role;
   createdAt: number;
   lastLoginAt?: number;
+  /** 站内信已读到的时间戳（毫秒）；这之后的评论算未读 */
+  notifReadAt?: number;
+  /** 封禁：登录被拒、在线会话视为无效 */
+  banned?: boolean;
 }
 
 /** 对外暴露的用户信息（不含哈希） */
@@ -31,6 +35,8 @@ export interface PublicUser {
   role: Role;
   isAdmin: boolean;
   createdAt: number;
+  notifReadAt?: number;
+  banned?: boolean;
 }
 
 interface Store {
@@ -94,6 +100,8 @@ export function toPublic(u: UserRecord): PublicUser {
     role: u.role,
     isAdmin: u.role === 'admin',
     createdAt: u.createdAt,
+    notifReadAt: u.notifReadAt,
+    banned: u.banned,
   };
 }
 
@@ -198,4 +206,55 @@ export async function authenticate(username: string, password: string): Promise<
   });
 
   return toPublic({ ...record, lastLoginAt: Date.now() });
+}
+
+/** 把站内信标记为已读（只往后推进，不回退） */
+export async function markNotificationsRead(userId: string, at = Date.now()): Promise<number> {
+  let next = at;
+  await serialize(async () => {
+    const store = await read();
+    const target = store.users.find((u) => u.id === userId);
+    if (!target) return;
+    const prev = target.notifReadAt ?? 0;
+    next = Math.max(prev, at);
+    target.notifReadAt = next;
+    await writeJsonAtomic(FILE, store);
+  });
+  return next;
+}
+
+/** 后台改角色 / 封禁。返回更新后的用户，找不到返回 null */
+export async function updateUser(
+  id: string,
+  patch: { role?: Role; banned?: boolean },
+): Promise<PublicUser | null> {
+  let out: PublicUser | null = null;
+  await serialize(async () => {
+    const store = await read();
+    const target = store.users.find((u) => u.id === id);
+    if (!target) return;
+    if (patch.role) target.role = patch.role;
+    if (typeof patch.banned === 'boolean') target.banned = patch.banned;
+    await writeJsonAtomic(FILE, store);
+    out = toPublic(target);
+  });
+  return out;
+}
+
+/** 删除用户（后台用；调用方需自己保证不会删掉最后一个管理员） */
+export async function removeUser(id: string): Promise<boolean> {
+  let found = false;
+  await serialize(async () => {
+    const store = await read();
+    const next = store.users.filter((u) => u.id !== id);
+    if (next.length === store.users.length) return;
+    found = true;
+    store.users = next;
+    await writeJsonAtomic(FILE, store);
+  });
+  return found;
+}
+
+export async function countAdmins(): Promise<number> {
+  return (await read()).users.filter((u) => u.role === 'admin' && !u.banned).length;
 }

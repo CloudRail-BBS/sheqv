@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { GUILDS, MATCHES, TEAMS } from '@/lib/data';
+import { EmptyState } from '@/components/empty-state';
 
 export default async function GuildsPage() {
   const caps = await getRequestCaps();
@@ -27,7 +28,11 @@ export default async function GuildsPage() {
         </div>
 
         <div className="gcard-grid">
-          {GUILDS.map((g) => (
+          {GUILDS.length === 0 && (
+          <EmptyState title="还没有公会" desc="公会由玩家自行创建，创建后可以招募成员、约战并参与排行榜。" actionHref="/register" actionLabel="注册后创建" icon="users" />
+        )}
+
+        {GUILDS.map((g) => (
             <div key={g.tag} className="card gcard">
               <div className="gcard-top">
                 <div className="crest a">{g.tag}</div>
