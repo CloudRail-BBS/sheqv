@@ -21,8 +21,9 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 | 人机验证 | GeeTest v4（注册 / 登录，服务端二次校验） |
 | 部署 | Docker（standalone 产物）/ systemd，反代用 nginx 或 Caddy |
 
-> **后端语言规划**：将迁移到 Rust（axum + SQLite），当前后端仍是 Next.js Route Handlers + JSON 文件。
-> 迁移范围、兼容红线、六阶段与回滚方案见 [`docs/Rust后端迁移方案.md`](docs/Rust后端迁移方案.md)。
+> **架构规划**：前后端分离——前端保留 Next.js，后端迁移到 Rust（axum），数据库改为 PostgreSQL 18。
+> 当前仍是 Next.js Route Handlers + JSON 文件。分离范围、兼容红线、七阶段与回滚方案见
+> [`docs/前后端分离方案.md`](docs/前后端分离方案.md)。
 
 ---
 
