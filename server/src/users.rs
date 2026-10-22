@@ -503,6 +503,142 @@ fn new_id() -> String {
     out
 }
 
+/* ── 第三方身份 ─────────────────────────── */
+
+/// 按 `(provider, sub)` 找人。**sub 是唯一键**，不能用昵称（对方允许改名）。
+pub async fn find_by_identity(
+    pool: &PgPool,
+    provider: &str,
+    sub: &str,
+) -> Result<Option<UserRow>, sqlx::Error> {
+    sqlx::query_as::<_, UserRow>(&format!(
+        "SELECT {cols} FROM users u
+           JOIN identities i ON i.user_id = u.id
+          WHERE i.provider = $1 AND i.sub = $2",
+        cols = COLUMNS
+            .split(", ")
+            .map(|c| format!("u.{c}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    ))
+    .bind(provider)
+    .bind(sub)
+    .fetch_optional(pool)
+    .await
+}
+
+/// 用户名只能用小写字母数字与 `_-`；第三方昵称可能带空格与中文，需要兜底
+fn username_from(login: &str) -> String {
+    let base: String = login
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-')
+        .take(16)
+        .collect();
+    if base.chars().count() >= 3 {
+        base
+    } else {
+        format!("user{:06}", rand::random::<u32>() % 1_000_000)
+    }
+}
+
+/// 第三方建号：没有密码（`password_hash=''`），只能走第三方登录。
+/// 已绑定时直接返回；并发下另一个回调刚建好也能兜住（唯一键冲突后重查）。
+pub async fn upsert_social(
+    pool: &PgPool,
+    provider: &str,
+    profile: &crate::oauth::Profile,
+) -> Result<(PublicUser, bool), sqlx::Error> {
+    if let Some(row) = find_by_identity(pool, provider, &profile.sub).await? {
+        return Ok((row.to_public(), false));
+    }
+
+    let mut tx = pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtext('arena:first-user'))")
+        .execute(&mut *tx)
+        .await?;
+
+    let again: Option<String> =
+        sqlx::query_scalar("SELECT user_id FROM identities WHERE provider = $1 AND sub = $2")
+            .bind(provider)
+            .bind(&profile.sub)
+            .fetch_optional(&mut *tx)
+            .await?;
+    if let Some(user_id) = again {
+        tx.commit().await?;
+        if let Some(row) = find_by_id(pool, &user_id).await? {
+            return Ok((row.to_public(), false));
+        }
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    // 用户名去重
+    let wanted = username_from(&profile.login);
+    let mut username = wanted.clone();
+    let mut n = 2;
+    loop {
+        let taken: Option<String> =
+            sqlx::query_scalar("SELECT id FROM users WHERE lower(username) = lower($1)")
+                .bind(&username)
+                .fetch_optional(&mut *tx)
+                .await?;
+        if taken.is_none() {
+            break;
+        }
+        username = format!("{}{}", wanted, n).chars().take(20).collect();
+        n += 1;
+    }
+
+    let nick_base: String = profile
+        .display_name
+        .as_deref()
+        .unwrap_or(&profile.login)
+        .trim()
+        .chars()
+        .take(16)
+        .collect();
+    let nickname = if nick_base.chars().count() >= 2 {
+        nick_base
+    } else {
+        format!("{nick_base}玩家")
+    };
+
+    let total: i64 = sqlx::query_scalar("SELECT count(*) FROM users")
+        .fetch_one(&mut *tx)
+        .await?;
+    let id = new_id();
+
+    sqlx::query(
+        "INSERT INTO users (id, username, nickname, password_hash, role, created_at)
+         VALUES ($1,$2,$3,'',$4,now())",
+    )
+    .bind(&id)
+    .bind(&username)
+    .bind(&nickname)
+    .bind(if total == 0 { "admin" } else { "member" })
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO identities (provider, sub, user_id, login, avatar)
+         VALUES ($1,$2,$3,$4,$5)",
+    )
+    .bind(provider)
+    .bind(&profile.sub)
+    .bind(&id)
+    .bind(&profile.login)
+    .bind(&profile.avatar)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    let row = find_by_id(pool, &id)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)?;
+    Ok((row.to_public(), true))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

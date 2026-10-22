@@ -3,14 +3,15 @@
 前后端分离后的后端服务：axum 0.8 + sqlx 0.8 + PostgreSQL 18。
 设计文档见 [`../docs/前后端分离方案.md`](../docs/前后端分离方案.md)。
 
-**当前进度：Phase 0–3 已完成**
+**当前进度：Phase 0–4 已完成**
 
 - Phase 0：健康检查、迁移、连接池、会话密钥加载
 - Phase 1：注册 / 登录 / 退出 / `auth/state`、`PATCH /me`（头衔）、GeeTest 服务端校验、
   站点设置（表 > 环境变量 > 默认）、首个用户的并发安全（advisory lock）
 - Phase 2：帖子 / 评论 / 点赞、公约与签署（表 + 旧 Cookie 双认）、站内信聚合
 - Phase 3：后台八组（用户 / 帖子 / 设置 / 公约 / 公告 / 轮播 / 赞助 / 爱发电），三条防锁死规则事务化
-- 剩余：Phase 4 OAuth、Phase 5 前端切换、Phase 6 运维
+- Phase 4：GitHub / CNKD 第三方登录（state + PKCE S256、回调换 token、`(provider, sub)` 建号）
+- 剩余：Phase 5 前端切换、Phase 6 运维
 
 ## 已实现接口
 
@@ -39,6 +40,8 @@
 | GET/POST/PATCH/DELETE | `/api/v1/admin/slides` | 轮播 CRUD（href/颜色白名单） |
 | GET/POST/PATCH/DELETE | `/api/v1/admin/sponsors` | 快照 / 手动录入 / 隐藏 / 删除 |
 | POST | `/api/v1/admin/afdian/sync` | 拉取爱发电并覆盖快照 |
+| GET | `/api/v1/auth/oauth/{provider}` | 生成 state + PKCE，写一次性 Cookie，302 到平台 |
+| GET | `/api/v1/auth/oauth/{provider}/callback` | 校验 state → 换 token → 取资料 → 建号/登录 → 302 `/me` |
 
 ## 本地运行
 
@@ -81,6 +84,7 @@ bash scripts/smoke-content.sh http://127.0.0.1:8080
 | 脚本 | 断言数 | 覆盖 |
 |---|---|---|
 | `smoke-auth.sh` | 23 | 健康检查、匿名状态、注册、重名 409、弱密码 422、会话识别、错误密码 401、正确登录、改头衔、保留字拦截、登出清 Cookie |
+| `smoke-oauth.sh` | 11 | 未配置/未知 provider、授权跳转与 PKCE、Cookie 属性、state 不匹配、平台拒绝 |
 | `smoke-admin.sh` | 48 | 鉴权三态、防锁死（改自己/最后一个管理员）、设置改与恢复、删帖、公告、轮播、赞助、内置公约锁定、未配爱发电 |
 | `smoke-content.sh` | 36 | 公约列表与签署、未签公约 403、匿名发帖 403、发帖校验、点赞计数器、评论校验、站内信未读与已读、签署状态 |
 

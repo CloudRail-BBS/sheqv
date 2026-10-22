@@ -26,6 +26,7 @@ pub mod db;
 pub mod errors;
 pub mod forum;
 pub mod notifications;
+pub mod oauth;
 pub mod routes;
 pub mod settings;
 pub mod slides;

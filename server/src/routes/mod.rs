@@ -4,6 +4,7 @@ pub mod auth;
 pub mod health;
 pub mod me;
 pub mod notifications;
+pub mod oauth;
 pub mod posts;
 
 use axum::Router;
@@ -19,6 +20,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/logout", post(auth::logout))
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
+        .route("/api/v1/auth/oauth/{provider}", get(oauth::start))
+        .route(
+            "/api/v1/auth/oauth/{provider}/callback",
+            get(oauth::callback),
+        )
         .route("/api/v1/posts", get(posts::list).post(posts::create))
         .route("/api/v1/posts/{id}/comments", post(posts::comment))
         .route("/api/v1/posts/{id}/like", post(posts::like))
