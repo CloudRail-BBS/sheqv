@@ -14,6 +14,15 @@ pub struct Config {
     pub admin_token: Option<String>,
     pub public_base_url: Option<String>,
     pub app_version: String,
+    /// GeeTest：id + key 都在才启用
+    pub geetest_id: String,
+    pub geetest_key: String,
+    /// 官方"宕机模式"：校验接口不可达时放行，默认关（失败即拒绝）
+    pub geetest_bypass_on_error: bool,
+    pub site_name: String,
+    pub afdian_user_id: String,
+    pub afdian_token: String,
+    pub afdian_page_url: String,
     /// 只在显式配置时生效；缺省走 `$DATA_DIR/.session-secret`
     session_secret_env: Option<String>,
 }
@@ -43,9 +52,22 @@ impl Config {
             port,
             data_dir,
             admin_token: non_empty("ADMIN_TOKEN"),
-            public_base_url: non_empty("PUBLIC_BASE_URL"),
+            public_base_url: non_empty("PUBLIC_BASE_URL")
+                .map(|u| u.trim_end_matches('/').to_string()),
             app_version: non_empty("APP_VERSION")
                 .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string()),
+            // 兼容只配了 NEXT_PUBLIC_GEETEST_ID 的老部署
+            geetest_id: non_empty("GEETEST_ID")
+                .or_else(|| non_empty("NEXT_PUBLIC_GEETEST_ID"))
+                .unwrap_or_default(),
+            geetest_key: non_empty("GEETEST_KEY").unwrap_or_default(),
+            geetest_bypass_on_error: flag("GEETEST_BYPASS_ON_ERROR", false),
+            site_name: non_empty("SITE_NAME").unwrap_or_else(|| "方块竞技场".to_string()),
+            afdian_user_id: non_empty("AFDIAN_USER_ID").unwrap_or_default(),
+            afdian_token: non_empty("AFDIAN_TOKEN").unwrap_or_default(),
+            afdian_page_url: non_empty("AFDIAN_PAGE_URL")
+                .map(|u| u.trim_end_matches('/').to_string())
+                .unwrap_or_default(),
             session_secret_env: non_empty("SESSION_SECRET"),
         })
     }
@@ -76,6 +98,17 @@ impl Config {
 
 fn non_empty(name: &str) -> Option<String> {
     env::var(name).ok().filter(|v| !v.trim().is_empty())
+}
+
+fn flag(name: &str, fallback: bool) -> bool {
+    match env::var(name) {
+        Ok(v) => match v.trim().to_ascii_lowercase().as_str() {
+            "" => fallback,
+            "1" | "true" | "yes" | "on" => true,
+            _ => false,
+        },
+        Err(_) => fallback,
+    }
 }
 
 fn random_hex(len: usize) -> String {

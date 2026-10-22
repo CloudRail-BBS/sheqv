@@ -1,15 +1,23 @@
 //! 方块竞技场后端（axum + PostgreSQL）。
 //!
 //! 模块划分：
-//! - `config`  进程参数与密钥（环境变量），业务配置后续从 `settings` 表读
-//! - `db`      连接池与迁移
-//! - `auth`    密码哈希、会话签名（必须与 Node 版逐字节兼容）
-//! - `routes`  HTTP 接口
-//! - `errors`  错误码与中文文案的唯一出口
+//! - `config`       进程参数与密钥（环境变量）
+//! - `settings`     业务配置（表 > 环境变量 > 默认）
+//! - `db`           连接池与迁移
+//! - `auth`         密码哈希、会话签名（必须与 Node 版逐字节兼容）
+//! - `current_user` 会话 Cookie → 当前用户（提取器）
+//! - `users`        用户仓库与注册校验
+//! - `captcha`      GeeTest v4 服务端校验
+//! - `routes`       HTTP 接口
+//! - `errors`       错误码与中文文案的唯一出口
 
 pub mod auth;
+pub mod captcha;
 pub mod config;
+pub mod current_user;
 pub mod db;
 pub mod errors;
 pub mod routes;
+pub mod settings;
 pub mod state;
+pub mod users;

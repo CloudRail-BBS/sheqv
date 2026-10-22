@@ -13,6 +13,7 @@ web/tsconfig.tsbuildinfo
 server/target
 server/data
 server/.env
+server/.smoke
 
 # 构建/实验产物：web 下所有隐藏目录（.next/.dist/.b1/.dev* 等）
 web/.*/

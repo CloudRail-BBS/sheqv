@@ -41,6 +41,15 @@ impl ApiError {
         Self::with_message(StatusCode::UNAUTHORIZED, "unauthorized", "需要登录后操作")
     }
 
+    /// 未登录（与 Node 版 `need_login` 对齐）
+    pub fn need_login() -> Self {
+        Self::with_message(StatusCode::UNAUTHORIZED, "need_login", "请先登录")
+    }
+
+    pub fn invalid_input(message: impl Into<String>) -> Self {
+        Self::with_message(StatusCode::UNPROCESSABLE_ENTITY, "invalid_input", message)
+    }
+
     pub fn forbidden() -> Self {
         Self::with_message(StatusCode::FORBIDDEN, "forbidden", "没有权限")
     }

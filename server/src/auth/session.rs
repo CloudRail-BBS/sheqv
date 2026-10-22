@@ -5,6 +5,7 @@
 //! 2. 结果是 **URL-safe 无填充** base64（Node 的 `digest('base64url')`）；
 //! 3. 过期判断用秒级时间戳，`exp < now` 即失效。
 
+use axum::http::{HeaderMap, header};
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64URL;
 use hmac::{Hmac, Mac};
@@ -56,10 +57,55 @@ pub fn verify_token(secret: &[u8], token: &str, now_secs: i64) -> Option<String>
     }
 }
 
+/* ── Cookie ─────────────────────────────── */
+
+/// 从 `Cookie` 头里取一个值（同名多个时取第一个）
+pub fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
+    for raw in headers.get_all(header::COOKIE) {
+        let Ok(text) = raw.to_str() else { continue };
+        for part in text.split(';') {
+            let part = part.trim();
+            if let Some((k, v)) = part.split_once('=')
+                && k == name
+            {
+                return Some(v.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// `Secure` 只看当前请求是否真的走 https（反代透传 `x-forwarded-proto`），不信配置
+pub fn is_secure(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .map(|v| v.trim().eq_ignore_ascii_case("https"))
+        .unwrap_or(false)
+}
+
+pub fn set_cookie(token: &str, secure: bool) -> String {
+    let mut out = format!(
+        "{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={SESSION_TTL_SECS}"
+    );
+    if secure {
+        out.push_str("; Secure");
+    }
+    out
+}
+
+pub fn clear_cookie(secure: bool) -> String {
+    let mut out = format!("{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
+    if secure {
+        out.push_str("; Secure");
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
     const SECRET: &[u8] = b"unit-secret";
 
     #[test]

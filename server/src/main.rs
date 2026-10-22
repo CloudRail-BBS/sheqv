@@ -31,6 +31,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn serve() -> anyhow::Result<()> {
+    // 出站 HTTPS 用 ring 作为 rustls 的 CryptoProvider（aws-lc 需要 cmake/nasm，多机环境常缺）
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let cfg = Config::from_env()?;
 
     let pool = db::connect(&cfg.database_url)
@@ -40,6 +43,11 @@ async fn serve() -> anyhow::Result<()> {
     db::migrate(&pool).await.context("执行数据库迁移失败")?;
 
     let session_secret = cfg.load_session_secret()?;
+    let http = reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+        .context("初始化 HTTP 客户端失败")?;
+
     tracing::info!(
         port = cfg.port,
         version = %cfg.app_version,
@@ -51,6 +59,7 @@ async fn serve() -> anyhow::Result<()> {
         pool,
         cfg: Arc::new(cfg.clone()),
         session_secret: Arc::new(session_secret),
+        http,
         started_at: Instant::now(),
     };
 

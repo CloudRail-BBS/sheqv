@@ -3,8 +3,23 @@
 前后端分离后的后端服务：axum 0.8 + sqlx 0.8 + PostgreSQL 18。
 设计文档见 [`../docs/前后端分离方案.md`](../docs/前后端分离方案.md)。
 
-**当前进度：Phase 0（骨架与数据库）已完成** —— 健康检查、迁移、连接池、会话密钥加载、密码/会话兼容层与兼容性测试。
-业务接口从 Phase 1 开始（注册 / 登录 / 会话）。
+**当前进度：Phase 0 + Phase 1 已完成**
+
+- Phase 0：健康检查、迁移、连接池、会话密钥加载
+- Phase 1：注册 / 登录 / 退出 / `auth/state`、`PATCH /me`（头衔）、GeeTest 服务端校验、
+  站点设置（表 > 环境变量 > 默认）、首个用户的并发安全（advisory lock）
+- 业务接口（帖子 / 公约 / 公告 / 赞助 / 后台 / OAuth）从 Phase 2 起
+
+## 已实现接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/health` | 探活：DB + 数据目录，失败 503 |
+| GET | `/api/v1/auth/state` | `{initialized, userCount, user}`，`Cache-Control: no-store` |
+| POST | `/api/v1/auth/register` | 首个用户自动 admin；写 `ba_session` Cookie |
+| POST | `/api/v1/auth/login` | 用户名或邮箱 + 密码 |
+| POST | `/api/v1/auth/logout` | 清 Cookie（`Max-Age=0`） |
+| PATCH | `/api/v1/me` | 只开放头衔，保留字对普通用户拦截 |
 
 ## 本地运行
 
@@ -35,10 +50,16 @@ curl -s localhost:8080/api/health | jq
 cargo test                     # 单元测试 + 兼容性 fixture，不需要数据库
 cargo clippy --all-targets     # 静态检查
 cargo fmt --check
+
+# 账号链路端到端（需要服务已启动，且指向测试库）
+bash scripts/smoke-auth.sh http://127.0.0.1:8080
 ```
 
 `tests/compat.rs` 里的常量是用**现有 Node 实现真实生成**的密码哈希与会话 token。
 这些用例是切换后端的准入门槛：不过就不许上线。
+
+`scripts/smoke-auth.sh` 覆盖 23 项断言：健康检查、匿名状态、注册、重名 409、弱密码 422、
+会话识别、错误密码 401、正确登录、改头衔、保留字拦截、登出清 Cookie。**会写测试账号**，只对测试库跑。
 
 ## 约定
 
@@ -54,10 +75,15 @@ cargo fmt --check
 src/
 ├─ main.rs            装配、中间件、优雅停机、healthcheck 子命令
 ├─ config.rs          环境变量、会话密钥加载、数据目录可写性
+├─ settings.rs        站点设置（表 > 环境变量 > 默认，只存改过的键）
 ├─ db.rs              连接池参数、迁移
 ├─ errors.rs          错误码与中文文案
-├─ auth/              password（scrypt 兼容）、session（HMAC Cookie 兼容）
-└─ routes/            health 等
+├─ auth/              password（scrypt 兼容）、session（HMAC Cookie + Cookie 头）
+├─ current_user.rs    CurrentUser / MaybeUser 提取器
+├─ users.rs           用户仓库、注册校验、头衔规则
+├─ captcha.rs         GeeTest v4 服务端校验
+└─ routes/            health / auth / me
 migrations/           0001_init.sql（全量 schema）
 tests/compat.rs       跨语言兼容性 fixture
+scripts/smoke-auth.sh 账号链路端到端断言
 ```
