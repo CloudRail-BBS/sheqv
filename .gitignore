@@ -9,6 +9,11 @@ web/.dev*
 web/.sh*
 web/tsconfig.tsbuildinfo
 
+# Rust 后端
+server/target
+server/data
+server/.env
+
 # 构建/实验产物：web 下所有隐藏目录（.next/.dist/.b1/.dev* 等）
 web/.*/
 
@@ -28,6 +33,7 @@ web/.env.*.local
 
 # 本地杂项
 .shots
+.tmp-*/
 *.log
 .DS_Store
 Thumbs.db

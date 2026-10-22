@@ -1,0 +1,104 @@
+# 前后端分离后的目标编排（当前 Next 单体版仍用 web/docker-compose.yml）
+#
+#   nginx ─┬─ /api/*  → api:8080 → db:5432
+#          └─ 其余     → web:8900 → （内网）api:8080
+#
+# 用法：
+#   cp server/.env.example server/.env   # 至少改 POSTGRES_PASSWORD
+#   docker compose -f docker-compose.split.yml up -d --build
+#
+# 注意：web 侧要到 Phase 5 才会真正调用 api；在此之前它仍走自己的 Route Handlers，
+# 所以现在起这个编排只用于验证 api + db。
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: blockarena-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: arena
+      POSTGRES_USER: arena
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 里设置 POSTGRES_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arena -d arena"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # 不发布端口：只在容器网络内可达，运维用 `docker compose exec db psql`
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256mb
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: blockarena/api:2026.10.22
+    container_name: blockarena-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://arena:${POSTGRES_PASSWORD}@db:5432/arena
+      PORT: "8080"
+      DATA_DIR: /data
+      TZ: Asia/Shanghai
+      RUST_LOG: info,arena_api=info
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      APP_VERSION: ${APP_VERSION:-2026.10.22}
+    volumes:
+      # 只放 .session-secret：迁移期间必须沿用 Node 版已有的密钥
+      - session-secret:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/arena-api", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: blockarena/web:2026.10.22
+    container_name: blockarena-web
+    restart: unless-stopped
+    environment:
+      # Phase 5 起页面通过内网取数；现在留好变量便于提前验证连通性
+      API_BASE: http://api:8080
+      PORT: "8900"
+      TZ: Asia/Shanghai
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # 对外由 nginx 承载；想直接访问就改成 "8900:8900"
+      - "127.0.0.1:8900:8900"
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+volumes:
+  pgdata:
+    name: blockarena-pgdata
+  session-secret:
+    name: blockarena-session-secret
