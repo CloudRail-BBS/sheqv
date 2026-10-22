@@ -34,6 +34,7 @@ web/.env.*.local
 
 # 本地杂项
 .shots
+.tmp-*
 .tmp-*/
 *.log
 .DS_Store
