@@ -70,9 +70,10 @@ pub struct UserRow {
     pub title: Option<String>,
     pub badges: Value,
     pub notif_read_at: Option<DateTime<Utc>>,
+    pub last_login_at: Option<DateTime<Utc>>,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at";
+const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at";
 
 /// 对外暴露的用户信息（不含哈希）
 #[derive(Debug, Clone, Serialize)]

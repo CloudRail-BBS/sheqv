@@ -48,6 +48,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "hmac 0.12.1",
+ "md-5",
  "rand 0.9.5",
  "reqwest",
  "rustls",

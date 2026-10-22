@@ -13,6 +13,7 @@ base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 hmac = "0.12"
+md-5 = "0.10"
 rand = "0.9"
 reqwest = { version = "0.13", default-features = false, features = [
     "rustls-no-provider",

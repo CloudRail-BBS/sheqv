@@ -14,7 +14,10 @@
 //! - `routes`       HTTP 接口
 //! - `errors`       错误码与中文文案的唯一出口
 
+pub mod admin_auth;
+pub mod afdian;
 pub mod agreements;
+pub mod announcements;
 pub mod auth;
 pub mod captcha;
 pub mod config;
@@ -25,5 +28,7 @@ pub mod forum;
 pub mod notifications;
 pub mod routes;
 pub mod settings;
+pub mod slides;
+pub mod sponsors;
 pub mod state;
 pub mod users;

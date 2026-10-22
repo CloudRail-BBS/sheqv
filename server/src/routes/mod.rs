@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod agreements;
 pub mod auth;
 pub mod health;
@@ -26,5 +27,48 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agreements/sign", post(agreements::sign))
         .route("/api/v1/notifications", get(notifications::list))
         .route("/api/v1/notifications/read", post(notifications::read))
+        .route(
+            "/api/v1/admin/users",
+            get(admin::list_users)
+                .patch(admin::patch_user)
+                .delete(admin::delete_user),
+        )
+        .route(
+            "/api/v1/admin/posts",
+            get(admin::list_posts).delete(admin::delete_post),
+        )
+        .route(
+            "/api/v1/admin/settings",
+            get(admin::get_settings).patch(admin::patch_settings),
+        )
+        .route(
+            "/api/v1/admin/agreements",
+            get(admin::list_agreements)
+                .post(admin::create_agreement)
+                .patch(admin::patch_agreement)
+                .delete(admin::delete_agreement),
+        )
+        .route(
+            "/api/v1/admin/announcements",
+            get(admin::list_announcements)
+                .post(admin::create_announcement)
+                .patch(admin::patch_announcement)
+                .delete(admin::delete_announcement),
+        )
+        .route(
+            "/api/v1/admin/slides",
+            get(admin::list_slides)
+                .post(admin::create_slide)
+                .patch(admin::patch_slide)
+                .delete(admin::delete_slide),
+        )
+        .route(
+            "/api/v1/admin/sponsors",
+            get(admin::get_sponsors)
+                .post(admin::create_sponsor)
+                .patch(admin::patch_sponsor)
+                .delete(admin::delete_sponsor),
+        )
+        .route("/api/v1/admin/afdian/sync", post(admin::sync_afdian))
         .with_state(state)
 }

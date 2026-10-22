@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::http::StatusCode;
+use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use serde_json::json;
 
@@ -14,6 +14,8 @@ pub struct ApiError {
     pub status: StatusCode,
     pub code: &'static str,
     pub message: Option<String>,
+    /// 少数接口需要额外响应头（如后台 401 的 WWW-Authenticate）
+    pub headers: Vec<(HeaderName, String)>,
 }
 
 impl ApiError {
@@ -22,6 +24,7 @@ impl ApiError {
             status,
             code,
             message: None,
+            headers: Vec::new(),
         }
     }
 
@@ -34,6 +37,7 @@ impl ApiError {
             status,
             code,
             message: Some(message.into()),
+            headers: Vec::new(),
         }
     }
 
@@ -68,10 +72,24 @@ impl ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let mut body = json!({ "error": self.code });
-        if let Some(msg) = self.message {
+        if let Some(msg) = &self.message {
             body["message"] = json!(msg);
         }
-        (self.status, Json(body)).into_response()
+
+        let mut res = (self.status, Json(body)).into_response();
+        for (name, value) in self.headers {
+            if let Ok(v) = value.parse() {
+                res.headers_mut().insert(name, v);
+            }
+        }
+        if !res.headers().contains_key(header::CONTENT_TYPE) {
+            // Json 已设置，这里只是兜底
+            res.headers_mut().insert(
+                header::CONTENT_TYPE,
+                "application/json".parse().expect("固定值"),
+            );
+        }
+        res
     }
 }
 
