@@ -684,3 +684,34 @@ mod tests {
         assert_ne!(id, new_id());
     }
 }
+
+/// 命令行初始化管理员（空站首次部署 / 管理员账号丢失时用）。
+///
+/// 与注册共用校验与哈希；唯一区别是**强制** `role='admin'`，
+/// 不依赖"第一个注册的人"这条规则，避免公网可达时被人抢注。
+pub async fn create_admin(
+    pool: &PgPool,
+    username: &str,
+    nickname: &str,
+    password: &str,
+) -> Result<PublicUser, CreateError> {
+    let input = RegisterInput {
+        username: username.to_string(),
+        nickname: nickname.to_string(),
+        password: password.to_string(),
+        email: String::new(),
+    };
+
+    let (user, _) = create(pool, &input).await?;
+    if user.role != Role::Admin {
+        sqlx::query("UPDATE users SET role = 'admin' WHERE id = $1")
+            .bind(&user.id)
+            .execute(pool)
+            .await?;
+    }
+
+    find_by_id(pool, &user.id)
+        .await?
+        .map(|r| r.to_public())
+        .ok_or_else(|| CreateError::Db(sqlx::Error::RowNotFound))
+}

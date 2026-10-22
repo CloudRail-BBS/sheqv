@@ -24,8 +24,9 @@ async fn main() -> anyhow::Result<()> {
     match cmd.as_str() {
         "serve" => serve().await,
         "healthcheck" => healthcheck().await,
+        "create-admin" => create_admin().await,
         other => {
-            anyhow::bail!("未知子命令 {other}（可用：serve | healthcheck）");
+            anyhow::bail!("未知子命令 {other}（可用：serve | healthcheck | create-admin）");
         }
     }
 }
@@ -85,6 +86,57 @@ async fn serve() -> anyhow::Result<()> {
 
     tracing::info!("已优雅退出");
     Ok(())
+}
+
+/// `arena-api create-admin --username <u> --password <p> [--nickname <n>]`
+///
+/// 空站首次部署用它建管理员，避免「谁先注册谁是管理员」被抢注。
+async fn create_admin() -> anyhow::Result<()> {
+    let mut username = String::new();
+    let mut password = String::new();
+    let mut nickname = String::new();
+
+    let mut args = std::env::args().skip(2);
+    while let Some(flag) = args.next() {
+        let mut value = || args.next().unwrap_or_default();
+        match flag.as_str() {
+            "--username" => username = value(),
+            "--password" => password = value(),
+            "--nickname" => nickname = value(),
+            other => anyhow::bail!("未知参数 {other}"),
+        }
+    }
+
+    if username.is_empty() || password.is_empty() {
+        anyhow::bail!(
+            "用法：create-admin --username <用户名> --password <密码> [--nickname <昵称>]"
+        );
+    }
+    if nickname.is_empty() {
+        nickname = username.clone();
+    }
+
+    let cfg = Config::from_env()?;
+    let pool = db::connect(&cfg.database_url)
+        .await
+        .context("连接 PostgreSQL 失败")?;
+    db::migrate(&pool).await.context("执行数据库迁移失败")?;
+    arena_api::agreements::ensure_builtin(&pool)
+        .await
+        .context("写入内置公约失败")?;
+
+    match arena_api::users::create_admin(&pool, &username, &nickname, &password).await {
+        Ok(user) => {
+            println!("已创建管理员：{}（{}）", user.username, user.id);
+            Ok(())
+        }
+        Err(arena_api::users::CreateError::UsernameTaken) => {
+            anyhow::bail!("用户名 {username} 已存在")
+        }
+        Err(arena_api::users::CreateError::EmailTaken) => anyhow::bail!("邮箱已被占用"),
+        Err(arena_api::users::CreateError::Invalid(msg)) => anyhow::bail!("参数不合法：{msg}"),
+        Err(arena_api::users::CreateError::Db(err)) => Err(anyhow::Error::from(err)),
+    }
 }
 
 async fn healthcheck() -> anyhow::Result<()> {

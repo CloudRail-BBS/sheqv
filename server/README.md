@@ -65,6 +65,17 @@ curl -s localhost:8080/api/health | jq
 |---|---|
 | `arena-api serve`（默认） | 启动 HTTP 服务；启动时执行内嵌迁移，失败即退出 |
 | `arena-api healthcheck` | 探一次 `/api/health`，给 Docker healthcheck 用（镜像里不装 curl） |
+| `arena-api create-admin --username <u> --password <p> [--nickname <n>]` | 空库首次部署建管理员；重复执行会报"用户名已存在" |
+
+## 空库首次部署
+
+```bash
+createdb arena                      # 或由 compose 的 POSTGRES_DB 自动建
+cargo run -- create-admin --username ops --password '<强密码>' --nickname 运维
+cargo run -- serve                  # 起来之后用这个账号登录，再决定是否开放注册
+```
+
+不依赖「第一个注册的人当管理员」——那样在公网可达时容易被人抢注。
 
 ## 测试
 
