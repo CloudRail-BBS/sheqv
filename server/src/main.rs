@@ -41,6 +41,10 @@ async fn serve() -> anyhow::Result<()> {
         .context("连接 PostgreSQL 失败：检查 DATABASE_URL 与网络")?;
     // 迁移失败直接退出：宁可不可用，也不要带着旧 schema 提供服务
     db::migrate(&pool).await.context("执行数据库迁移失败")?;
+    // 内置公约是数据不是代码：首次启动写入，之后由后台管理
+    arena_api::agreements::ensure_builtin(&pool)
+        .await
+        .context("写入内置公约失败")?;
 
     let session_secret = cfg.load_session_secret()?;
     let http = reqwest::Client::builder()

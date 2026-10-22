@@ -7,16 +7,22 @@
 //! - `auth`         密码哈希、会话签名（必须与 Node 版逐字节兼容）
 //! - `current_user` 会话 Cookie → 当前用户（提取器）
 //! - `users`        用户仓库与注册校验
+//! - `forum`        帖子 / 评论 / 点赞
+//! - `agreements`   公约与签署
+//! - `notifications` 站内信聚合
 //! - `captcha`      GeeTest v4 服务端校验
 //! - `routes`       HTTP 接口
 //! - `errors`       错误码与中文文案的唯一出口
 
+pub mod agreements;
 pub mod auth;
 pub mod captcha;
 pub mod config;
 pub mod current_user;
 pub mod db;
 pub mod errors;
+pub mod forum;
+pub mod notifications;
 pub mod routes;
 pub mod settings;
 pub mod state;

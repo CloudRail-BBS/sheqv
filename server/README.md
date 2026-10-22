@@ -3,12 +3,13 @@
 前后端分离后的后端服务：axum 0.8 + sqlx 0.8 + PostgreSQL 18。
 设计文档见 [`../docs/前后端分离方案.md`](../docs/前后端分离方案.md)。
 
-**当前进度：Phase 0 + Phase 1 已完成**
+**当前进度：Phase 0 + 1 + 2 已完成**
 
 - Phase 0：健康检查、迁移、连接池、会话密钥加载
 - Phase 1：注册 / 登录 / 退出 / `auth/state`、`PATCH /me`（头衔）、GeeTest 服务端校验、
   站点设置（表 > 环境变量 > 默认）、首个用户的并发安全（advisory lock）
-- 业务接口（帖子 / 公约 / 公告 / 赞助 / 后台 / OAuth）从 Phase 2 起
+- Phase 2：帖子 / 评论 / 点赞、公约与签署（表 + 旧 Cookie 双认）、站内信聚合
+- 剩余：Phase 3 后台、Phase 4 OAuth、Phase 5 前端切换、Phase 6 运维
 
 ## 已实现接口
 
@@ -20,6 +21,15 @@
 | POST | `/api/v1/auth/login` | 用户名或邮箱 + 密码 |
 | POST | `/api/v1/auth/logout` | 清 Cookie（`Max-Age=0`） |
 | PATCH | `/api/v1/me` | 只开放头衔，保留字对普通用户拦截 |
+| GET | `/api/v1/posts` | 帖子列表（含评论、相对时间） |
+| POST | `/api/v1/posts` | 需登录 + 社区公约；作者取自会话 |
+| POST | `/api/v1/posts/{id}/like` | 匿名可点、可重复（计数器语义） |
+| POST | `/api/v1/posts/{id}/comments` | 需登录 + 社区公约，2–300 字 |
+| GET | `/api/v1/agreements` | 生效中的公约 |
+| GET | `/api/v1/agreements/signatures` | 当前账号的签署状态 |
+| POST | `/api/v1/agreements/sign` | 写 `signatures` 表 + 兼容旧 `ag_*` Cookie |
+| GET | `/api/v1/notifications` | 评论通知 + 未读数（`no-store`） |
+| POST | `/api/v1/notifications/read` | 推进已读水位（只进不退） |
 
 ## 本地运行
 
@@ -52,14 +62,19 @@ cargo clippy --all-targets     # 静态检查
 cargo fmt --check
 
 # 账号链路端到端（需要服务已启动，且指向测试库）
-bash scripts/smoke-auth.sh http://127.0.0.1:8080
+bash scripts/smoke-auth.sh    http://127.0.0.1:8080
+bash scripts/smoke-content.sh http://127.0.0.1:8080
 ```
 
 `tests/compat.rs` 里的常量是用**现有 Node 实现真实生成**的密码哈希与会话 token。
 这些用例是切换后端的准入门槛：不过就不许上线。
 
-`scripts/smoke-auth.sh` 覆盖 23 项断言：健康检查、匿名状态、注册、重名 409、弱密码 422、
-会话识别、错误密码 401、正确登录、改头衔、保留字拦截、登出清 Cookie。**会写测试账号**，只对测试库跑。
+| 脚本 | 断言数 | 覆盖 |
+|---|---|---|
+| `smoke-auth.sh` | 23 | 健康检查、匿名状态、注册、重名 409、弱密码 422、会话识别、错误密码 401、正确登录、改头衔、保留字拦截、登出清 Cookie |
+| `smoke-content.sh` | 36 | 公约列表与签署、未签公约 403、匿名发帖 403、发帖校验、点赞计数器、评论校验、站内信未读与已读、签署状态 |
+
+两个脚本都会写测试数据，**只对测试库跑**。
 
 ## 约定
 

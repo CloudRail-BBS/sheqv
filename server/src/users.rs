@@ -451,16 +451,27 @@ pub async fn set_title(
 
 /// 推进站内信已读水位（只往后，不回退），返回新的水位毫秒
 pub async fn mark_notifications_read(pool: &PgPool, id: &str) -> Result<i64, sqlx::Error> {
-    let now = Utc::now();
+    mark_notifications_read_at(pool, id, Utc::now().timestamp_millis()).await
+}
+
+/// 指定时刻推进已读水位；早于当前水位时无效（GREATEST 保证不回退）
+pub async fn mark_notifications_read_at(
+    pool: &PgPool,
+    id: &str,
+    at_ms: i64,
+) -> Result<i64, sqlx::Error> {
+    let at = DateTime::from_timestamp_millis(at_ms).unwrap_or_else(Utc::now);
+
     let next: Option<DateTime<Utc>> = sqlx::query_scalar(
         "UPDATE users SET notif_read_at = GREATEST(COALESCE(notif_read_at, to_timestamp(0)), $2)
          WHERE id = $1 RETURNING notif_read_at",
     )
     .bind(id)
-    .bind(now)
+    .bind(at)
     .fetch_optional(pool)
     .await?;
-    Ok(next.unwrap_or(now).timestamp_millis())
+
+    Ok(next.map(|t| t.timestamp_millis()).unwrap_or(at_ms))
 }
 
 /// `u` + base36 毫秒时间戳 + 4 位随机 base36（与 Node 版同构，长度不固定）
