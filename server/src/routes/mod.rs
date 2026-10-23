@@ -7,6 +7,7 @@ pub mod me;
 pub mod notifications;
 pub mod oauth;
 pub mod posts;
+pub mod public;
 pub mod sponsors;
 
 use axum::Router;
@@ -30,6 +31,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/posts", get(posts::list).post(posts::create))
         .route("/api/v1/posts/{id}/comments", post(posts::comment))
         .route("/api/v1/posts/{id}/like", post(posts::like))
+        .route("/api/v1/settings", get(public::settings))
+        .route("/api/v1/announcements", get(public::announcements))
+        .route("/api/v1/slides", get(public::slides))
         .route("/api/v1/sponsors", get(sponsors::list))
         .route("/api/v1/achievements", get(achievements::map))
         .route("/api/v1/achievements/{userId}", get(achievements::one))
