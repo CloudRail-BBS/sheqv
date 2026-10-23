@@ -30,8 +30,6 @@ pub struct PostView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author_id: Option<String>,
     pub guild: String,
-    /// 相对时间（与 Node 版同文案），前端直接渲染
-    pub time: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     pub body: String,
@@ -67,26 +65,11 @@ struct CommentRow {
     created_at: DateTime<Utc>,
 }
 
-pub fn rel_time(created: DateTime<Utc>, now: DateTime<Utc>) -> String {
-    let minutes = (now - created).num_minutes().max(0);
-    if minutes < 1 {
-        return "刚刚".to_string();
-    }
-    if minutes < 60 {
-        return format!("{minutes} 分钟前");
-    }
-    let hours = minutes / 60;
-    if hours < 24 {
-        return format!("{hours} 小时前");
-    }
-    format!("{} 天前", hours / 24)
-}
-
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
         u.nickname AS author, p.created_at, p.like_count
    FROM posts p JOIN users u ON u.id = p.author_id";
 
-fn to_view(row: PostRow, comments: Vec<CommentView>, now: DateTime<Utc>) -> PostView {
+fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
     let tags = row
         .tags
         .as_array()
@@ -103,7 +86,6 @@ fn to_view(row: PostRow, comments: Vec<CommentView>, now: DateTime<Utc>) -> Post
         author: row.author,
         author_id: Some(row.author_id),
         guild: row.guild,
-        time: rel_time(row.created_at, now),
         title: row.title.filter(|t| !t.is_empty()),
         body: row.body,
         tags,
@@ -117,7 +99,6 @@ fn to_view(row: PostRow, comments: Vec<CommentView>, now: DateTime<Utc>) -> Post
 
 /// 列表：新的在前。评论一次查完再按 postId 分组，避免 N+1。
 pub async fn list(pool: &PgPool) -> Result<Vec<PostView>, sqlx::Error> {
-    let now = Utc::now();
     let rows: Vec<PostRow> = sqlx::query_as(&format!("{POST_SQL} ORDER BY p.created_at DESC"))
         .fetch_all(pool)
         .await?;
@@ -146,7 +127,7 @@ pub async fn list(pool: &PgPool) -> Result<Vec<PostView>, sqlx::Error> {
         .into_iter()
         .map(|row| {
             let list = grouped.remove(&row.id).unwrap_or_default();
-            to_view(row, list, now)
+            to_view(row, list)
         })
         .collect())
 }
@@ -179,7 +160,7 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
         })
         .collect();
 
-    Ok(Some(to_view(row, views, Utc::now())))
+    Ok(Some(to_view(row, views)))
 }
 
 pub fn validate_post(title: &str, body: &str) -> Option<&'static str> {
@@ -204,7 +185,7 @@ pub struct NewPost<'a> {
 }
 
 pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<String, sqlx::Error> {
-    let id = short_id('p');
+    let id = crate::ids::next('p');
     let tags = Value::Array(input.tags.into_iter().take(3).map(Value::String).collect());
 
     sqlx::query(
@@ -237,7 +218,7 @@ pub async fn add_comment(
         return Ok(None);
     }
 
-    let id = short_id('c');
+    let id = crate::ids::next('c');
     let (created_at, author): (DateTime<Utc>, String) = sqlx::query_as(
         "WITH ins AS (
              INSERT INTO comments (id, post_id, author_id, body, created_at)
@@ -292,22 +273,4 @@ pub async fn stats(pool: &PgPool) -> Result<(i64, i64, i64), sqlx::Error> {
         .fetch_one(pool)
         .await?;
     Ok((posts, comments, likes))
-}
-
-/// `p` / `c` + base36 毫秒（与 Node 版同构）
-fn short_id(prefix: char) -> String {
-    const ALPHABET: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-    let mut n = Utc::now().timestamp_millis().max(0) as u64;
-    let mut buf = Vec::new();
-    while n > 0 {
-        buf.push(ALPHABET[(n % 36) as usize]);
-        n /= 36;
-    }
-    buf.reverse();
-    let mut out = String::with_capacity(buf.len() + 1);
-    out.push(prefix);
-    for b in buf {
-        out.push(b as char);
-    }
-    out
 }

@@ -3,7 +3,6 @@
 //! `href` 与颜色都做白名单校验——这些值会直接进 `style` 与 `href`，
 //! 不做校验等于给自己开一个 XSS 口子。
 
-use chrono::Utc;
 use serde::Serialize;
 use sqlx::PgPool;
 
@@ -136,7 +135,7 @@ pub async fn list(pool: &PgPool, only_active: bool) -> Result<Vec<Slide>, sqlx::
 }
 
 pub async fn create(pool: &PgPool, input: Input<'_>) -> Result<Slide, sqlx::Error> {
-    let id = format!("s{}", Utc::now().timestamp_millis().max(0));
+    let id = crate::ids::next('s');
     sqlx::query(
         "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",

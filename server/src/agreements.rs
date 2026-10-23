@@ -272,7 +272,7 @@ pub fn validate(input: &NewAgreement) -> Option<&'static str> {
 }
 
 pub async fn create(pool: &PgPool, input: &NewAgreement) -> Result<Agreement, sqlx::Error> {
-    let id = format!("c{}", Utc::now().timestamp_millis().max(0));
+    let id = crate::ids::next('c');
     let short: String = input.title.trim().chars().take(2).collect();
     let clauses = serde_json::to_value(&input.clauses).unwrap_or_else(|_| Value::Array(vec![]));
 

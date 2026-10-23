@@ -6,7 +6,6 @@
 //! * 登录失败不区分「无此用户」与「密码错」，且用户不存在时也走一次哈希，避免时间侧信道。
 
 use chrono::{DateTime, Utc};
-use rand::RngCore;
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::PgPool;
@@ -361,7 +360,7 @@ pub async fn create(
         .fetch_one(&mut *tx)
         .await?;
     let became_admin = total == 0;
-    let id = new_id();
+    let id = crate::ids::next('u');
 
     let inserted = sqlx::query(
         "INSERT INTO users (id, username, nickname, password_hash, email, role, created_at)
@@ -475,34 +474,6 @@ pub async fn mark_notifications_read_at(
     Ok(next.map(|t| t.timestamp_millis()).unwrap_or(at_ms))
 }
 
-/// `u` + base36 毫秒时间戳 + 4 位随机 base36（与 Node 版同构，长度不固定）
-fn new_id() -> String {
-    const ALPHABET: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-    let mut n = Utc::now().timestamp_millis().max(0) as u64;
-    let mut ts = Vec::new();
-    while n > 0 {
-        ts.push(ALPHABET[(n % 36) as usize]);
-        n /= 36;
-    }
-    if ts.is_empty() {
-        ts.push(b'0');
-    }
-    ts.reverse();
-
-    let mut rnd = [0u8; 4];
-    rand::rng().fill_bytes(&mut rnd);
-
-    let mut out = String::with_capacity(1 + ts.len() + 4);
-    out.push('u');
-    for b in ts {
-        out.push(b as char);
-    }
-    for b in rnd {
-        out.push(ALPHABET[(b % 36) as usize] as char);
-    }
-    out
-}
-
 /* ── 第三方身份 ─────────────────────────── */
 
 /// 按 `(provider, sub)` 找人。**sub 是唯一键**，不能用昵称（对方允许改名）。
@@ -606,7 +577,7 @@ pub async fn upsert_social(
     let total: i64 = sqlx::query_scalar("SELECT count(*) FROM users")
         .fetch_one(&mut *tx)
         .await?;
-    let id = new_id();
+    let id = crate::ids::next('u');
 
     sqlx::query(
         "INSERT INTO users (id, username, nickname, password_hash, role, created_at)
@@ -637,6 +608,37 @@ pub async fn upsert_social(
         .await?
         .ok_or(sqlx::Error::RowNotFound)?;
     Ok((row.to_public(), true))
+}
+
+/// 命令行初始化管理员（空站首次部署 / 管理员账号丢失时用）。
+///
+/// 与注册共用校验与哈希；唯一区别是**强制** `role='admin'`，
+/// 不依赖"第一个注册的人"这条规则，避免公网可达时被人抢注。
+pub async fn create_admin(
+    pool: &PgPool,
+    username: &str,
+    nickname: &str,
+    password: &str,
+) -> Result<PublicUser, CreateError> {
+    let input = RegisterInput {
+        username: username.to_string(),
+        nickname: nickname.to_string(),
+        password: password.to_string(),
+        email: String::new(),
+    };
+
+    let (user, _) = create(pool, &input).await?;
+    if user.role != Role::Admin {
+        sqlx::query("UPDATE users SET role = 'admin' WHERE id = $1")
+            .bind(&user.id)
+            .execute(pool)
+            .await?;
+    }
+
+    find_by_id(pool, &user.id)
+        .await?
+        .map(|r| r.to_public())
+        .ok_or_else(|| CreateError::Db(sqlx::Error::RowNotFound))
 }
 
 #[cfg(test)]
@@ -677,41 +679,10 @@ mod tests {
 
     #[test]
     fn ids_look_like_node() {
-        let id = new_id();
+        let id = crate::ids::next('u');
         assert!(id.starts_with('u'));
         assert!(id.len() >= 6);
         assert!(id.chars().all(|c| c.is_ascii_alphanumeric()));
-        assert_ne!(id, new_id());
+        assert_ne!(id, crate::ids::next('u'));
     }
-}
-
-/// 命令行初始化管理员（空站首次部署 / 管理员账号丢失时用）。
-///
-/// 与注册共用校验与哈希；唯一区别是**强制** `role='admin'`，
-/// 不依赖"第一个注册的人"这条规则，避免公网可达时被人抢注。
-pub async fn create_admin(
-    pool: &PgPool,
-    username: &str,
-    nickname: &str,
-    password: &str,
-) -> Result<PublicUser, CreateError> {
-    let input = RegisterInput {
-        username: username.to_string(),
-        nickname: nickname.to_string(),
-        password: password.to_string(),
-        email: String::new(),
-    };
-
-    let (user, _) = create(pool, &input).await?;
-    if user.role != Role::Admin {
-        sqlx::query("UPDATE users SET role = 'admin' WHERE id = $1")
-            .bind(&user.id)
-            .execute(pool)
-            .await?;
-    }
-
-    find_by_id(pool, &user.id)
-        .await?
-        .map(|r| r.to_public())
-        .ok_or_else(|| CreateError::Db(sqlx::Error::RowNotFound))
 }

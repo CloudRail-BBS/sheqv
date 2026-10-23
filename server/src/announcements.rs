@@ -105,7 +105,7 @@ pub async fn create(
     pinned: bool,
     published: bool,
 ) -> Result<Announcement, sqlx::Error> {
-    let id = format!("n{}", Utc::now().timestamp_millis().max(0));
+    let id = crate::ids::next('n');
     sqlx::query(
         "INSERT INTO announcements (id, title, body, kind, pinned, published) VALUES ($1,$2,$3,$4,$5,$6)",
     )

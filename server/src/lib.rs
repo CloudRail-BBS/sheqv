@@ -25,6 +25,7 @@ pub mod current_user;
 pub mod db;
 pub mod errors;
 pub mod forum;
+pub mod ids;
 pub mod notifications;
 pub mod oauth;
 pub mod routes;

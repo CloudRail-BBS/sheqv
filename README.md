@@ -22,8 +22,8 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 | 部署 | Docker（standalone 产物）/ systemd，反代用 nginx 或 Caddy |
 
 > **架构规划**：前后端分离——前端保留 Next.js，后端迁移到 Rust（axum），数据库改为 PostgreSQL 18。
-> 当前**功能**仍由 Next.js Route Handlers + JSON 文件提供；`server/` 已落地 Phase 0 骨架
-> （健康检查、迁移、连接池、密码/会话兼容层）。分离范围、兼容红线、七阶段与回滚方案见
+> 当前**功能**仍由 Next.js Route Handlers + JSON 文件提供；`server/` 已落地 Phase 0–4
+> （身份会话、内容、公约、站内信、后台八组、GitHub/CNKD 登录）。分离范围、兼容红线、七阶段与回滚方案见
 > [`docs/前后端分离方案.md`](docs/前后端分离方案.md)。
 
 ---

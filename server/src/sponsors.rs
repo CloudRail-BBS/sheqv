@@ -59,7 +59,7 @@ impl Row {
             id: self.id,
             name: self.name,
             avatar: self.avatar,
-            amount: (self.amount * 100.0).round() / 100.0,
+            amount: round2(self.amount),
             plan_title: self.plan_title,
             first_at: self.first_at.map(|t| t.timestamp()),
             last_pay_at: self.last_pay_at.map(|t| t.timestamp()),
@@ -71,6 +71,12 @@ impl Row {
 
 const COLS: &str =
     "id, name, avatar, amount::float8 AS amount, plan_title, first_at, last_pay_at, source, hidden";
+
+/// 两位小数 + 归一 `-0.0`：空名单求和会得到负零，序列化出来是 `-0.0`，页面上很难看
+fn round2(v: f64) -> f64 {
+    let r = (v * 100.0).round() / 100.0;
+    if r == 0.0 { 0.0 } else { r }
+}
 
 pub async fn snapshot(
     pool: &PgPool,
@@ -93,7 +99,7 @@ pub async fn snapshot(
     .flatten();
 
     let sponsors: Vec<Sponsor> = rows.into_iter().map(Row::view).collect();
-    let total = (sponsors.iter().map(|s| s.amount).sum::<f64>() * 100.0).round() / 100.0;
+    let total = round2(sponsors.iter().map(|s| s.amount).sum::<f64>());
 
     Ok(Snapshot {
         count: sponsors.len(),
@@ -157,7 +163,7 @@ pub async fn replace_from_afdian(
     .fetch_one(pool)
     .await?;
 
-    Ok((list.len(), (total * 100.0).round() / 100.0))
+    Ok((list.len(), round2(total)))
 }
 
 #[derive(Debug)]
@@ -181,7 +187,7 @@ pub async fn add_manual(
         return Err(ManualError::InvalidAmount);
     }
 
-    let id = format!("m{}", Utc::now().timestamp_millis().max(0));
+    let id = crate::ids::next('m');
     let now = Utc::now();
 
     let row: Row = sqlx::query_as(&format!(

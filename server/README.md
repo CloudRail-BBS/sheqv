@@ -32,6 +32,7 @@
 | POST | `/api/v1/agreements/sign` | 写 `signatures` 表 + 兼容旧 `ag_*` Cookie |
 | GET | `/api/v1/notifications` | 评论通知 + 未读数（`no-store`） |
 | POST | `/api/v1/notifications/read` | 推进已读水位（只进不退） |
+| GET | `/api/v1/sponsors` | 公开赞助名单（只含展示中的，`no-store`） |
 | GET/PATCH/DELETE | `/api/v1/admin/users` | 列表 / 改角色·封禁·头衔 / 删除；三条防锁死规则 |
 | GET/DELETE | `/api/v1/admin/posts` | 列表 / 删帖（级联评论与点赞） |
 | GET/PATCH | `/api/v1/admin/settings` | 读（含 overrides）/ 改 / `resetKey` 回落 |
@@ -99,7 +100,17 @@ bash scripts/smoke-content.sh http://127.0.0.1:8080
 | `smoke-admin.sh` | 48 | 鉴权三态、防锁死（改自己/最后一个管理员）、设置改与恢复、删帖、公告、轮播、赞助、内置公约锁定、未配爱发电 |
 | `smoke-content.sh` | 36 | 公约列表与签署、未签公约 403、匿名发帖 403、发帖校验、点赞计数器、评论校验、站内信未读与已读、签署状态 |
 
-两个脚本都会写测试数据，**只对测试库跑**。
+以上脚本都会写测试数据，**只对测试库跑**；`cargo test` 另有 15 个用例（11 单元 + 4 跨语言 fixture）。
+
+## 已知缺口（切换前要处理）
+
+| 项 | 现状 |
+|---|---|
+| 搜索 | 只建了 `pg_trgm` 索引，**没有 `/api/v1/search` 接口** |
+| 徽章判定 | 规则还在前端 `lib/achievements.ts`，Rust 未实现 |
+| 公会 / 战队 / 约战 | 仍是前端 mock，未落库（不阻塞切换） |
+| 真实 OAuth | 只测了本地分支，没连过 GitHub / CNKD 真实平台 |
+| 相对时间 | 后端只返 `createdAt`（毫秒），`time` 由前端算 |
 
 ## 约定
 
