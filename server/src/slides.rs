@@ -222,3 +222,25 @@ pub async fn remove(pool: &PgPool, id: &str) -> Result<bool, sqlx::Error> {
         .rows_affected();
     Ok(n > 0)
 }
+
+/// 新站没有任何轮播时写入一条引导文案。
+/// 后台一旦新增/删除，这条也按普通数据对待（不会被"顶回来"）。
+pub async fn ensure_default(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM slides")
+        .fetch_one(pool)
+        .await?;
+    if count > 0 {
+        return Ok(());
+    }
+
+    sqlx::query(
+        "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord)
+         VALUES ('s-welcome', '从这里开始', '注册一个账号，就能发帖、评论与签署公约',
+                 '第一个注册的账号自动成为管理员。本站没有内置账号，社区内容全部来自真实用户。',
+                 '注册账号', '/register', '#1b1b1e', '', 'light', true, 1)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}

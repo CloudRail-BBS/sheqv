@@ -35,8 +35,8 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const initialError = code ? (ERRORS[code] ?? '第三方登录失败，请稍后再试') : null;
 
   const providers = {
-    github: Boolean(settings.githubClientId && settings.githubClientSecret),
-    cnkd: Boolean(settings.cnkdClientId && settings.cnkdClientSecret),
+    github: Boolean(settings.githubEnabled),
+    cnkd: Boolean(settings.cnkdEnabled),
   };
 
   return (

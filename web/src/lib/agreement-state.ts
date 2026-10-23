@@ -1,7 +1,11 @@
-import { cookies } from 'next/headers';
-import type { NextRequest } from 'next/server';
-import { cookieName, isSigValid, parseSig, type Agreement } from './agreements';
-import { getAgreement } from './agreement-store';
+import { apiGetOr } from './api-client';
+import { listActive } from './agreement-store';
+import type { Agreement } from './agreements';
+
+/**
+ * 签署状态。**以数据库为准**（`signatures` 表），旧的 `ag_*` Cookie 只由后端在
+ * 发帖门槛处兜底，页面渲染不再依赖它。
+ */
 
 export interface SignatureState {
   id: string;
@@ -13,31 +17,40 @@ export interface SignatureState {
   stale: boolean;
 }
 
+type Signed = { id: string; version: string; at: number };
+
+async function signedList(): Promise<Map<string, Signed>> {
+  const d = await apiGetOr<{ items: Signed[] }>('/api/v1/agreements/signatures', { items: [] });
+  return new Map(d.items.map((i) => [i.id, i]));
+}
+
 export async function getSignatures(list: Agreement[]): Promise<Record<string, SignatureState>> {
-  const c = await cookies();
+  const signed = await signedList();
   const out: Record<string, SignatureState> = {};
 
   for (const a of list) {
-    const raw = c.get(cookieName(a.id))?.value;
-    const sig = parseSig(raw);
+    const hit = signed.get(a.id);
     out[a.id] = {
       id: a.id,
       title: a.title,
       version: a.version,
-      signed: isSigValid(raw, a.version),
-      at: sig?.at ?? null,
-      stale: !!sig && sig.version !== a.version,
+      signed: hit?.version === a.version,
+      at: hit?.at ?? null,
+      stale: Boolean(hit) && hit!.version !== a.version,
     };
   }
   return out;
 }
 
-/** 任意公约是否已按当前版本签署 */
 export async function isSigned(id: string): Promise<boolean> {
-  const c = await cookies();
-  const a = await getAgreement(id);
-  if (!a || !a.active) return false;
-  return isSigValid(c.get(cookieName(a.id))?.value, a.version);
+  const a = await getAgreementFor(id);
+  if (!a) return false;
+  return (await signedList()).get(a.id)?.version === a.version;
+}
+
+async function getAgreementFor(id: string): Promise<Agreement | null> {
+  const list = await listActive();
+  return list.find((a) => a.id === id) ?? null;
 }
 
 /** 比赛确权固定依赖内置的诚信公约 */
@@ -48,16 +61,4 @@ export async function isTrustSigned(): Promise<boolean> {
 /** 发帖 / 评论 / 上传 依赖社区公约 */
 export async function isCommunitySigned(): Promise<boolean> {
   return isSigned('community');
-}
-
-/* ── Route Handler 专用：直接读 req.cookies，避开 RSC 上下文 ── */
-
-export async function isSignedFrom(req: NextRequest, id: string): Promise<boolean> {
-  const a = await getAgreement(id);
-  if (!a || !a.active) return false;
-  return isSigValid(req.cookies.get(cookieName(a.id))?.value, a.version);
-}
-
-export async function isCommunitySignedFrom(req: NextRequest): Promise<boolean> {
-  return isSignedFrom(req, 'community');
 }

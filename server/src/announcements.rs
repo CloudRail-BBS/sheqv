@@ -64,11 +64,15 @@ pub fn validate(title: &str, body: &str) -> Option<&'static str> {
 }
 
 pub fn normalize_kind(kind: &str) -> String {
-    if KINDS.contains(&kind.trim()) {
-        kind.trim().to_string()
-    } else {
-        "system".to_string()
+    // 同时接受前端的中文标签：库里统一存英文，出口再由前端映射回中文
+    match kind.trim() {
+        "rule" | "规则" => "rule",
+        "version" | "版本" => "version",
+        "activity" | "活动" => "activity",
+        "system" | "系统" => "system",
+        _ => "system",
     }
+    .to_string()
 }
 
 pub async fn list(pool: &PgPool) -> Result<Vec<Announcement>, sqlx::Error> {

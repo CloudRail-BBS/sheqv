@@ -29,10 +29,15 @@ pub fn router(state: AppState) -> Router {
             get(oauth::callback),
         )
         .route("/api/v1/posts", get(posts::list).post(posts::create))
+        .route("/api/v1/posts/{id}", get(public::post))
         .route("/api/v1/posts/{id}/comments", post(posts::comment))
         .route("/api/v1/posts/{id}/like", post(posts::like))
         .route("/api/v1/settings", get(public::settings))
         .route("/api/v1/announcements", get(public::announcements))
+        .route("/api/v1/announcements/{id}", get(public::announcement))
+        .route("/api/v1/users", get(public::users))
+        .route("/api/v1/users/{id}", get(public::user))
+        .route("/api/v1/stats", get(public::stats))
         .route("/api/v1/slides", get(public::slides))
         .route("/api/v1/sponsors", get(sponsors::list))
         .route("/api/v1/achievements", get(achievements::map))
@@ -85,5 +90,9 @@ pub fn router(state: AppState) -> Router {
                 .delete(admin::delete_sponsor),
         )
         .route("/api/v1/admin/afdian/sync", post(admin::sync_afdian))
+        .route(
+            "/api/v1/admin/users/{id}/badges",
+            patch(admin::patch_user_badges),
+        )
         .with_state(state)
 }

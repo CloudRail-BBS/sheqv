@@ -29,6 +29,15 @@ const nextConfig = {
     ],
   },
 
+  /**
+   * `/api/*` 一律转发给后端（bootstrap 例外——它是前端契约，有实体路由，
+   * filesystem 路由优先于 rewrites）。生产也可以交给 nginx，两者不冲突。
+   */
+  async rewrites() {
+    const base = (process.env.API_BASE || 'http://127.0.0.1:8080').replace(/\/+$/, '');
+    return [{ source: '/api/:path*', destination: `${base}/api/:path*` }];
+  },
+
   // 反代后由 nginx/Caddy 终止 TLS，这里只补基础安全头
   async headers() {
     return [

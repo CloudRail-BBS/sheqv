@@ -46,6 +46,10 @@ async fn serve() -> anyhow::Result<()> {
     arena_api::agreements::ensure_builtin(&pool)
         .await
         .context("写入内置公约失败")?;
+    // 空站的首页不该是一片空白：给一条欢迎轮播
+    arena_api::slides::ensure_default(&pool)
+        .await
+        .context("写入默认轮播失败")?;
 
     let session_secret = cfg.load_session_secret()?;
     let http = reqwest::Client::builder()
@@ -124,6 +128,10 @@ async fn create_admin() -> anyhow::Result<()> {
     arena_api::agreements::ensure_builtin(&pool)
         .await
         .context("写入内置公约失败")?;
+    // 空站的首页不该是一片空白：给一条欢迎轮播
+    arena_api::slides::ensure_default(&pool)
+        .await
+        .context("写入默认轮播失败")?;
 
     match arena_api::users::create_admin(&pool, &username, &nickname, &password).await {
         Ok(user) => {

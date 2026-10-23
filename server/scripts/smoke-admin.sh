@@ -208,7 +208,7 @@ expect "删手动条目 200" "$c" "200"
 
 c=$("${CURL[@]}" -b "$TMP/a.jar" -o "$TMP/af.json" -w '%{http_code}' -X POST "$BASE/api/v1/admin/afdian/sync")
 expect "未配爱发电时同步 400" "$c" "400"
-expect "错误码 not_configured" "$(jget "$TMP/af.json" error)" "not_configured"
+expect "错误码 afdian_not_configured" "$(jget "$TMP/af.json" error)" "afdian_not_configured"
 
 echo "== 9. 公约后台 =="
 c=$("${CURL[@]}" -b "$TMP/a.jar" -o "$TMP/ag.json" -w '%{http_code}' -X POST "$BASE/api/v1/admin/agreements" \

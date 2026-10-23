@@ -33,6 +33,12 @@
 | GET | `/api/v1/notifications` | 评论通知 + 未读数（`no-store`） |
 | POST | `/api/v1/notifications/read` | 推进已读水位（只进不退） |
 | GET | `/api/v1/sponsors` | 公开赞助名单（只含展示中的，`no-store`） |
+| GET | `/api/v1/settings` | 站点设置白名单投影（不含任何 secret，附 `githubEnabled`/`cnkdEnabled`） |
+| GET | `/api/v1/users` · `/users/{id}` | 公开用户列表 / 单个公开资料（**不含 email**） |
+| GET | `/api/v1/posts/{id}` | 帖子详情 |
+| GET | `/api/v1/announcements/{id}` | 公告详情（未发布按 404） |
+| GET | `/api/v1/stats` | 帖子/评论/点赞计数 |
+| PATCH | `/api/v1/admin/users/{id}/badges` | 后台分配徽章（≤12 个，自动去重） |
 | GET | `/api/v1/achievements` | 全站徽章表（`id:` / `name:` 双键） |
 | GET | `/api/v1/achievements/{userId}` | 单人已得徽章 + 全目录进度 |
 | GET/PATCH/DELETE | `/api/v1/admin/users` | 列表 / 改角色·封禁·头衔 / 删除；三条防锁死规则 |

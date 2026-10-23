@@ -280,7 +280,8 @@ if [ -n "$CK_A" ]; then
   code=$(curl -s -b "ba_session=$CK_A" -X POST -H 'content-type: application/json' -d '{}' -o /tmp/s11c.json -w '%{http_code}' "$BASE/api/v1/notifications/read")
   expect "标记全部已读" "$code" "200"
   expect "返回 readAt" "$(grep -c '"readAt"' /tmp/s11c.json)" "1"
-  expect "已读后未读归零" "$(curl -s -b "ba_session=$CK_A" "$BASE/api/v1/notifications" | grep -o '\"unread\":[0-9]*' | sed 's/.*://')" "0"
+  # 注意：列表项里也有 unread 布尔，grep 会先命中它；必须按 JSON 取顶层字段
+  expect "已读后未读归零" "$(curl -s -b "ba_session=$CK_A" "$BASE/api/v1/notifications" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).unread))")" "0"
 fi
 
 if [ "$A_IS_ADMIN" = "1" ]; then

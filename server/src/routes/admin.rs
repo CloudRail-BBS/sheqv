@@ -746,7 +746,7 @@ pub async fn sync_afdian(State(st): State<AppState>, _: AdminActor) -> ApiResult
     if user_id.is_empty() || token.is_empty() {
         return Err(ApiError::with_message(
             StatusCode::BAD_REQUEST,
-            "not_configured",
+            "afdian_not_configured",
             "未配置爱发电 user_id / token（可在后台「站点设置」填写）",
         ));
     }
@@ -768,4 +768,53 @@ pub async fn sync_afdian(State(st): State<AppState>, _: AdminActor) -> ApiResult
         "totalCount": total,
     }))
     .into_response())
+}
+
+/* ── 徽章分配与概览 ─────────────────────── */
+
+/// PATCH /api/v1/admin/users/{id}/badges  body: { badges: string[] }
+pub async fn patch_user_badges(
+    State(st): State<AppState>,
+    _: AdminActor,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Some(p) = parse_body(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+
+    let badges: Vec<String> = p
+        .get("badges")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            let mut seen = std::collections::HashSet::new();
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty() && seen.insert(s.to_string()))
+                .take(12)
+                .map(str::to_string)
+                .collect()
+        })
+        .ok_or_else(|| ApiError::new(StatusCode::BAD_REQUEST, "invalid_body"))?;
+
+    let affected = sqlx::query("UPDATE users SET badges = $2 WHERE id = $1")
+        .bind(&id)
+        .bind(serde_json::json!(badges))
+        .execute(&st.pool)
+        .await
+        .map_err(ApiError::internal)?
+        .rows_affected();
+
+    if affected == 0 {
+        return Err(ApiError::not_found());
+    }
+
+    let user = users::find_by_id(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+        .map(|r| r.to_public())
+        .ok_or_else(ApiError::not_found)?;
+
+    Ok(Json(json!({ "ok": true, "user": user })).into_response())
 }
