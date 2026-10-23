@@ -159,6 +159,44 @@ d=json.load(open(sys.argv[1],encoding='utf-8'))
 print('yes' if any(i['id']=='community' for i in d['items']) else 'no')
 " "$TMP/sig.json")" "yes"
 
+echo "== 9. 搜索与徽章 =="
+AID=$(jget "$TMP/a.json" user.id)
+c=$("${CURL[@]}" -G --data-urlencode "q=冒烟帖 $STAMP" -o "$TMP/s1.json" -w '%{http_code}' "$BASE/api/v1/posts")
+expect "搜索 200" "$c" "200"
+expect "命中 1 条" "$(jget "$TMP/s1.json" total)" "1"
+
+c=$("${CURL[@]}" -G --data-urlencode "q=zzz没有这个词zzz" -o "$TMP/s2.json" -w '%{http_code}' "$BASE/api/v1/posts")
+expect "无结果 200" "$c" "200"
+expect "结果为 0" "$(jget "$TMP/s2.json" total)" "0"
+
+# 通配符必须被转义：否则 % 会命中全部帖子
+c=$("${CURL[@]}" -G --data-urlencode "q=%" -o "$TMP/s3.json" -w '%{http_code}' "$BASE/api/v1/posts")
+expect "百分号不当通配符" "$(jget "$TMP/s3.json" total)" "0"
+
+c=$("${CURL[@]}" -o "$TMP/ach.json" -w '%{http_code}' "$BASE/api/v1/achievements")
+expect "徽章表 200" "$c" "200"
+expect "作者已获初次发声" "$(python -c "
+import json,sys
+d=json.load(open(sys.argv[1],encoding='utf-8'))
+ids=[b['id'] for b in d['map'].get('id:'+sys.argv[2],[])]
+print('yes' if 'first-post' in ids else 'no')
+" "$TMP/ach.json" "$AID")" "yes"
+expect "全站有人拿到创始成员" "$(python -c "
+import json,sys
+d=json.load(open(sys.argv[1],encoding='utf-8'))
+print('yes' if any('founder' in [b['id'] for b in v] for v in d['map'].values()) else 'no')
+" "$TMP/ach.json")" "yes"
+
+c=$("${CURL[@]}" -o "$TMP/one.json" -w '%{http_code}' "$BASE/api/v1/achievements/$AID")
+expect "单人徽章 200" "$c" "200"
+expect "目录共 8 项" "$(python -c "
+import json,sys
+d=json.load(open(sys.argv[1],encoding='utf-8'))
+print(len(d['all']))
+" "$TMP/one.json")" "8"
+c=$("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE/api/v1/achievements/unotexist")
+expect "不存在的用户 404" "$c" "404"
+
 echo
 echo "通过 $pass 项，失败 $fail 项"
 [ "$fail" -eq 0 ]

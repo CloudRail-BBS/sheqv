@@ -1,6 +1,8 @@
 use axum::Json;
 use axum::body::Bytes;
-use axum::extract::{Path, State};
+use std::collections::HashMap;
+
+use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
@@ -48,10 +50,16 @@ async fn require_community(
     }
 }
 
-/// GET /api/v1/posts
-pub async fn list(State(st): State<AppState>) -> ApiResult<Response> {
-    let items = forum::list(&st.pool).await.map_err(ApiError::internal)?;
-    Ok(Json(json!({ "items": items })).into_response())
+/// GET /api/v1/posts[?q=关键词]
+///
+/// `q` 走标题 / 正文 / 标签的子串匹配（`ILIKE` + `pg_trgm` 索引）。
+pub async fn list(
+    State(st): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> ApiResult<Response> {
+    let q = params.get("q").map(String::as_str);
+    let items = forum::list(&st.pool, q).await.map_err(ApiError::internal)?;
+    Ok(Json(json!({ "items": items, "total": items.len() })).into_response())
 }
 
 /// POST /api/v1/posts —— 需登录 + 社区公约；作者只取自会话

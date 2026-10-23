@@ -232,7 +232,9 @@ pub async fn delete_user(
 /* ── 帖子 ───────────────────────────────── */
 
 pub async fn list_posts(State(st): State<AppState>, _: AdminActor) -> ApiResult<Response> {
-    let items = forum::list(&st.pool).await.map_err(ApiError::internal)?;
+    let items = forum::list(&st.pool, None)
+        .await
+        .map_err(ApiError::internal)?;
     Ok(Json(json!({ "ok": true, "items": items })).into_response())
 }
 

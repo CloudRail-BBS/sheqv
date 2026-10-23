@@ -97,17 +97,47 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
     }
 }
 
-/// 列表：新的在前。评论一次查完再按 postId 分组，避免 N+1。
-pub async fn list(pool: &PgPool) -> Result<Vec<PostView>, sqlx::Error> {
-    let rows: Vec<PostRow> = sqlx::query_as(&format!("{POST_SQL} ORDER BY p.created_at DESC"))
-        .fetch_all(pool)
-        .await?;
+/// 列表：新的在前。`q` 为空表示不筛选。
+///
+/// 搜索走 `ILIKE`（配合 `pg_trgm` 索引），中文按子串命中；
+/// 用户输入里的 `%` `_` `\` 会被转义，避免把通配符当语法用。
+pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx::Error> {
+    let keyword = q.map(str::trim).filter(|v| !v.is_empty());
 
+    let rows: Vec<PostRow> = match keyword {
+        None => {
+            sqlx::query_as(&format!("{POST_SQL} ORDER BY p.created_at DESC"))
+                .fetch_all(pool)
+                .await?
+        }
+        Some(word) => {
+            let pattern = format!("%{}%", escape_like(word));
+            sqlx::query_as(&format!(
+                "{POST_SQL}
+                 WHERE p.title ILIKE $1 ESCAPE '\\'
+                    OR p.body ILIKE $1 ESCAPE '\\'
+                    OR p.tags::text ILIKE $1 ESCAPE '\\'
+                 ORDER BY p.created_at DESC"
+            ))
+            .bind(pattern)
+            .fetch_all(pool)
+            .await?
+        }
+    };
+
+    if rows.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // 只捞本次结果集的评论，避免全表扫描后大部分被丢掉
+    let ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
     let comments: Vec<CommentRow> = sqlx::query_as(
         "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, c.body, c.created_at
            FROM comments c JOIN users u ON u.id = c.author_id
+          WHERE c.post_id = ANY($1)
           ORDER BY c.created_at ASC",
     )
+    .bind(&ids)
     .fetch_all(pool)
     .await?;
 
@@ -130,6 +160,21 @@ pub async fn list(pool: &PgPool) -> Result<Vec<PostView>, sqlx::Error> {
             to_view(row, list)
         })
         .collect())
+}
+
+/// 转义 LIKE 通配符，让用户搜「100%」不会被当成 `%100%%`
+pub fn escape_like(raw: &str) -> String {
+    let mut out = String::with_capacity(raw.len());
+    for c in raw.chars() {
+        match c {
+            '\\' | '%' | '_' => {
+                out.push('\\');
+                out.push(c);
+            }
+            _ => out.push(c),
+        }
+    }
+    out
 }
 
 pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Error> {

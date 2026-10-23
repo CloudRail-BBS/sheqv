@@ -1,3 +1,4 @@
+pub mod achievements;
 pub mod admin;
 pub mod agreements;
 pub mod auth;
@@ -30,6 +31,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/posts/{id}/comments", post(posts::comment))
         .route("/api/v1/posts/{id}/like", post(posts::like))
         .route("/api/v1/sponsors", get(sponsors::list))
+        .route("/api/v1/achievements", get(achievements::map))
+        .route("/api/v1/achievements/{userId}", get(achievements::one))
         .route("/api/v1/agreements", get(agreements::list))
         .route("/api/v1/agreements/signatures", get(agreements::signatures))
         .route("/api/v1/agreements/sign", post(agreements::sign))
