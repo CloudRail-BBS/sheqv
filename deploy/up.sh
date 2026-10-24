@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # 一键起全栈：后端栈（db + api）→ 前端栈（web）
 #
-#   cd deploy && ./up.sh
+#   cd deploy
+#   ./up.sh             # 构建镜像再启动（改了代码/Dockerfile 后用）
+#   ./up.sh --no-build  # 直接用现有镜像启动（日常重启，快）
 #
 # 两个栈的配置分别在 server/compose.yml 与 web/compose.yml，
 # 本脚本只负责「按正确顺序起」并打印入口。
@@ -11,6 +13,14 @@ cd "$(dirname "$0")"
 
 SERVER_DIR="../server"
 WEB_DIR="../web"
+
+BUILD="--build"
+case "${1:-}" in
+  "" ) ;;
+  --no-build ) BUILD="" ;;
+  -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
+  * ) echo "未知参数：$1（可用：--no-build）" >&2; exit 2 ;;
+esac
 
 # 1) 后端 .env（数据库密码、会话密钥）
 if [ ! -f "$SERVER_DIR/.env" ]; then
@@ -53,8 +63,8 @@ if command -v docker >/dev/null 2>&1 && docker inspect blockarena-web >/dev/null
   fi
 fi
 
-echo "==> 构建并启动后端（db + api）"
-( cd "$SERVER_DIR" && docker compose up -d --build )
+echo "==> 启动后端（db + api）${BUILD:+（含构建）}"
+( cd "$SERVER_DIR" && docker compose up -d $BUILD )
 
 # 3) 等 api 健康。web 启动时不需要它，但页面渲染需要，早发现早报错
 API_PORT="$(grep -E '^API_HOST_PORT=' "$SERVER_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
@@ -102,8 +112,8 @@ HINT
 done
 
 # 4) 前端栈
-echo "==> 构建并启动前端（web）"
-( cd "$WEB_DIR" && docker compose up -d --build )
+echo "==> 启动前端（web）${BUILD:+（含构建）}"
+( cd "$WEB_DIR" && docker compose up -d $BUILD )
 
 # 5) 汇总
 echo
@@ -121,4 +131,6 @@ cat <<INFO
   建管理员  (cd server && docker compose exec api /usr/local/bin/arena-api create-admin --username ops --password '<强密码>')
   看日志    (cd server && docker compose logs -f api)   /   (cd web && docker compose logs -f web)
   起不来    ./doctor.sh
+  日常重启  ./up.sh --no-build        （不重建镜像，秒起）
+  停止服务  ./down.sh                  （保留数据）
 INFO

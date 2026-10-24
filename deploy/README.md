@@ -22,6 +22,26 @@ cd deploy
 > `down.sh` 的顺序是**先前端后后端**。web 接在后端创建的 `blockarena-net` 上，
 > 先停后端会让网络删不掉，报 `! Network blockarena-net Resource is still in use`。
 
+## 日常操作
+
+| 场景 | 命令 | 说明 |
+|---|---|---|
+| **日常重启** | `./up.sh --no-build` | 直接用现有镜像，秒级；数据保留 |
+| 改了代码 / 依赖 / Dockerfile | `git pull && ./up.sh` | 带 `--build` 重建镜像 |
+| 只改了 `.env` 或 compose 配置 | `./up.sh --no-build` | compose 检测到配置变化会重建受影响容器 |
+| 只重启后端 | `(cd ../server && docker compose restart api)` | 不重新读 compose 配置 |
+| 停服务、保留数据 | `./down.sh` | 下次 `up.sh` 数据还在 |
+| 清空重来 | `./down.sh --purge && ./up.sh` | **会删数据库** |
+| 改了 `POSTGRES_PASSWORD` | 见下方注意 | 卷里的密码不会跟着变 |
+
+> **服务器重启**：三个容器都是 `restart: unless-stopped`，Docker 起来后会自动恢复，
+> 不需要手动 `up.sh`。但如果之前执行过 `./down.sh`（容器被手动停止），
+> Docker 不会自动拉起，需要 `./up.sh --no-build`。
+
+> **改了 `POSTGRES_PASSWORD` 不会生效**：PostgreSQL 只在首次 initdb 时读这个值。
+> 要改密码必须进容器 `ALTER USER arena PASSWORD '新密码';`；
+> 直接改 `.env` 会让 api 认证失败（详见下方问题表）。
+
 ## 也可以分开起
 
 拆开的好处是改前端不用动后端：
