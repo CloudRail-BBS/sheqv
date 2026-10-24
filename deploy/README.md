@@ -9,13 +9,18 @@
 | `web/compose.yml` | 前端编排 | `web`（Next.js） |
 | `web/Dockerfile` · `web/.env.example` | 前端构建与环境模板 | |
 
-本目录只有三个**跨栈的入口脚本**（不定义任何服务）：
+本目录只有几个**跨栈的入口脚本**（不定义任何服务）：
 
 ```bash
 cd deploy
-./up.sh          # 后端栈 → 等 api 就绪 → 前端栈，一条命令起全栈
-./doctor.sh      # 起不来时先跑它（两个栈的状态、健康、日志一起看）
+./up.sh             # 后端栈 → 等 api 就绪 → 前端栈，一条命令起全栈
+./down.sh           # 停容器，保留数据卷
+./down.sh --purge   # 连数据卷一起删（会丢数据库）
+./doctor.sh         # 起不来时先跑它（两个栈的状态、健康、日志一起看）
 ```
+
+> `down.sh` 的顺序是**先前端后后端**。web 接在后端创建的 `blockarena-net` 上，
+> 先停后端会让网络删不掉，报 `! Network blockarena-net Resource is still in use`。
 
 ## 也可以分开起
 
@@ -67,9 +72,10 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| api 反复重启，日志 `password authentication failed for user "arena"` | 数据卷是旧密码初始化的，改 `.env` 不会改已存在的角色 | 数据可丢：`cd server && docker compose down -v`；要保留：`docker compose exec db psql -U arena -d arena -c "ALTER USER arena PASSWORD '新密码';"` |
+| api 反复重启，日志 `password authentication failed for user "arena"` | 数据卷是旧密码初始化的，改 `.env` 不会改已存在的角色 | 数据可丢：`./down.sh --purge`；要保留：`(cd ../server && docker compose exec db psql -U arena -d arena -c "ALTER USER arena PASSWORD '新密码';")` |
 | `-bash: ./up.sh: Permission denied` | 脚本没有执行位 | 用 `bash up.sh`；或 `chmod +x deploy/*.sh server/*.sh server/scripts/*.sh` |
 | `network blockarena-net declared as external, but could not be found` | 先起了 web | 先 `cd server && docker compose up -d` |
+| `! Network blockarena-net Resource is still in use`（`down` 时） | web 是独立 project，容器还连着这个网络 | 用 `./down.sh`（先前端后后端）；或先 `cd web && docker compose down` |
 
 ## 备份 / 恢复
 

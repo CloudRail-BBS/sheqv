@@ -24,7 +24,7 @@ if [ ! -f "$SERVER_DIR/.env" ]; then
 "password authentication failed for user arena"（POSTGRES_PASSWORD 只在首次 initdb 生效）。
 
 二选一：
-  A. 数据可以丢：docker volume rm blockarena-pgdata
+  A. 数据可以丢：./down.sh --purge     （先前端后后端，顺带清网络）
   B. 要保留数据：先把 .env 里的密码改回当初初始化时用的值，再 ./up.sh
 HINT
     exit 1
@@ -79,7 +79,7 @@ for i in $(seq 1 45); do
 
 二选一：
   A. 数据可以丢（全新部署就是这个情况）
-     (cd server && docker compose down -v) && ./up.sh
+     ./down.sh --purge && ./up.sh
 
   B. 要保留数据
      (cd server && docker compose exec db psql -U arena -d arena \\

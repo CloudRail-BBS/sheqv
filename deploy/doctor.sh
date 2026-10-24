@@ -45,15 +45,16 @@ cat <<'HINT'
    → 数据卷里的 PostgreSQL 是用**旧密码**初始化的。POSTGRES_PASSWORD 只在首次
      initdb 时生效，之后改 server/.env 不会改已存在的角色 arena。
      确认卷的密码改不了了，二选一：
-       数据可丢： (cd server && docker compose down -v) && ./up.sh
+       数据可丢： ./down.sh --purge && ./up.sh
        要保留：   (cd server && docker compose exec db psql -U arena -d arena \
                      -c "ALTER USER arena PASSWORD '新密码';")
      注意：`docker compose down` 不加 -v 不会删卷，所以问题会一直复现。
+     `down.sh` 会按「先前端后后端」的顺序停，避免网络删不掉（见第 7 条）。
 
 2) db 立刻退出，日志里 "database files are incompatible with server" 或
    "the data directory was initialized by PostgreSQL version ..."
    → 数据卷是别的 PG 版本建的（例如 18 与 17 的 PGDATA 布局不同）。
-     确认可以丢数据后重建： (cd server && docker compose down -v) && ./up.sh
+     确认可以丢数据后重建： ./down.sh --purge && ./up.sh
      不能丢数据就先用同版本镜像起来做 pg_dump。
 
 3) db 日志 "initdb: directory ... exists but is not empty"
@@ -70,4 +71,10 @@ cat <<'HINT'
 6) 宿主机端口冲突
    → api 只发布在 127.0.0.1:${API_HOST_PORT:-8860}，不占 8080；web 是 8900。
      看占用：ss -ltnp | grep -E '8860|8900'
+
+7) `cd server && docker compose down -v` 报 "! Network blockarena-net Resource is still in use"
+   → web 是独立 project（blockarena-web），它的容器还连着这个网络，后端 down 删不掉网络。
+     注意：这条**只影响网络，卷仍会被删**。
+     正确做法是在本目录用： ./down.sh --purge   （先前端后后端，最后清网络）
+     只想停不删数据： ./down.sh
 HINT
