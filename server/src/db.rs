@@ -10,6 +10,8 @@ use sqlx::postgres::PgPoolOptions;
 pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
         .max_connections(20)
+        // 常驻 2 条：避免空闲后第一个请求承担建连成本（压测里 p95 会差 10 倍）
+        .min_connections(2)
         .acquire_timeout(Duration::from_secs(5))
         .idle_timeout(Duration::from_secs(600))
         .max_lifetime(Duration::from_secs(1800))

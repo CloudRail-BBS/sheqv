@@ -1,4 +1,4 @@
-# 前后端分离后的目标编排（当前 Next 单体版仍用 web/docker-compose.yml）
+# 生产编排：db + api + web（单进程版 web/docker-compose.yml 已删除）
 #
 #   nginx ─┬─ /api/*  → api:8080 → db:5432
 #          └─ 其余     → web:8900 → （内网）api:8080
@@ -7,8 +7,7 @@
 #   cp server/.env.example server/.env   # 至少改 POSTGRES_PASSWORD
 #   docker compose -f docker-compose.split.yml up -d --build
 #
-# 注意：web 侧要到 Phase 5 才会真正调用 api；在此之前它仍走自己的 Route Handlers，
-# 所以现在起这个编排只用于验证 api + db。
+# web 通过 API_BASE 走内网取数；nginx 可以把 /api/* 直接指到 api，也可以交给 next rewrites。
 
 services:
   db:

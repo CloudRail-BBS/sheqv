@@ -97,7 +97,6 @@ npm run dev                   # http://localhost:8900（默认端口 8900）
 │  ├─ src/components/          客户端组件
 │  ├─ src/lib/                 能力判定 / 账号 / 存储 / 爱发电
 │  ├─ Dockerfile               standalone 多阶段构建
-│  ├─ docker-compose.yml       单服务 + 数据卷 + healthcheck
 │  ├─ deploy/                  nginx / Caddy / systemd / 备份脚本
 │  └─ scripts/                 smoke.sh（冒烟）、selfhost-check.sh（部署体检）
 ├─ contracts/                  端能力契约（32 键 + OpenAPI）

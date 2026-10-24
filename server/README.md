@@ -110,6 +110,23 @@ bash scripts/smoke-content.sh http://127.0.0.1:8080
 
 以上脚本都会写测试数据，**只对测试库跑**；`cargo test` 另有 16 个用例（12 单元 + 4 跨语言 fixture）。
 
+## 运维脚本
+
+```bash
+# 备份（-Fc，自动校验 + 保留 N 份；没有 pg_dump 时自动走 docker compose exec db）
+DATABASE_URL=... bash scripts/backup.sh --keep 14 --dir /backup
+
+# 恢复（覆盖当前库，必须 --yes；会先自动备份一次现状）
+DATABASE_URL=... bash scripts/restore.sh /backup/arena-XXXX.dump --yes
+
+# 压测（只读、无依赖）
+node scripts/loadtest.mjs --base http://127.0.0.1:8080 --path api/v1/posts \
+  --concurrency 20 --requests 300
+```
+
+本机实测（20 并发 × 300）：`/posts` 744 RPS / p50 16ms / p95 47ms；`/auth/state` 1266 RPS / p95 35ms。
+冷启动首轮 p95 会到 400ms+（建连），压测前先预热一轮。
+
 ## 已知缺口（切换前要处理）
 
 | 项 | 现状 |
