@@ -42,6 +42,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         meGuestText: form.meGuestText,
         loginHint: form.loginHint,
         registerHint: form.registerHint,
+        loginPoints: form.loginPoints,
         publicBaseUrl: form.publicBaseUrl,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
@@ -448,6 +449,26 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
           />
         </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            登录页能力条
+            <em className="field-opt">每行「标题|描述」，最多 3 条</em>
+            {isOverride('loginPoints') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={3}
+            value={form.loginPoints}
+            onChange={(e) => setForm({ ...form, loginPoints: e.target.value })}
+            placeholder={'发帖讨论|帖子、评论与站内信\n赛事确权|约战、名单快照与仲裁\n公约共治|社区公约由成员共同签署'}
+            maxLength={300}
+            style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
+          显示在登录页左侧品牌区底部。留空则自动按「当前可用的登录方式」生成。
+        </p>
 
         <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
           <span>

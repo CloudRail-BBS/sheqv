@@ -1595,3 +1595,16 @@ body:has(.auth-page) .app {
 @media (max-width: 900px) {
   body:has(.auth-page) .app { padding-left: 0; padding-right: 0; }
 }
+
+/* 深色下的可读性修正：底部两条文字显式给色，输入框补一层边框 */
+[data-theme="dark"] .auth-points b { color: #eef1f6; }
+[data-theme="dark"] .auth-points span { color: #98a1b0; }
+[data-theme="dark"] .auth-brand {
+  background: linear-gradient(158deg, rgba(62, 124, 255, 0.20) 0%, rgba(62, 124, 255, 0.05) 52%, transparent 100%);
+}
+[data-theme="dark"] .auth-panel { border-left-color: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .auth-form .input,
+[data-theme="dark"] .auth-panel .input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.10);
+}

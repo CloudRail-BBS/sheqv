@@ -41,12 +41,28 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     cnkd: Boolean(settings.cnkdEnabled),
   };
 
+  // 后台「登录页能力条」优先；没配则按当前可用的登录方式生成
+  const customPoints = settings.loginPoints
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const at = line.indexOf('|');
+      return at < 0
+        ? { title: line, desc: '' }
+        : { title: line.slice(0, at).trim(), desc: line.slice(at + 1).trim() };
+    })
+    .filter((p) => p.title)
+    .slice(0, 3);
+
   const methods = [
     { title: '账号密码', desc: '用户名或邮箱 + 密码' },
     ...(settings.emailLoginEnabled ? [{ title: '邮箱验证码', desc: '收信即登录，免密码' }] : []),
     ...(providers.github ? [{ title: 'GitHub', desc: '授权登录，免注册' }] : []),
     ...(providers.cnkd ? [{ title: 'CNKD', desc: '一证通行，免注册' }] : []),
   ];
+
+  const points = customPoints.length > 0 ? customPoints : methods.slice(0, 3);
 
   return (
     <div className="auth-page">
@@ -76,7 +92,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
 
           <ul className="auth-points">
-            {methods.slice(0, 3).map((m) => (
+            {points.map((m) => (
               <li key={m.title}>
                 <b>{m.title}</b>
                 <span>{m.desc}</span>

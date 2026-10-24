@@ -22,6 +22,8 @@
 | POST | `/api/v1/auth/register` | 首个用户自动 admin；写 `ba_session` Cookie |
 | POST | `/api/v1/auth/login` | 用户名或邮箱 + 密码 |
 | POST | `/api/v1/auth/logout` | 清 Cookie（`Max-Age=0`） |
+| POST | `/api/v1/auth/email-code` | 发邮箱验证码（需后台开启 + SMTP 配通） |
+| POST | `/api/v1/auth/email-login` | 邮箱 + 验证码登录，写会话 Cookie |
 | PATCH | `/api/v1/me` | 只开放头衔，保留字对普通用户拦截 |
 | GET | `/api/v1/posts[?q=]` | 帖子列表（含评论）；`q` 搜索标题/正文/标签 |
 | POST | `/api/v1/posts` | 需登录 + 社区公约；作者取自会话 |
@@ -85,6 +87,17 @@ cargo run -- serve                  # 起来之后用这个账号登录，再决
 ```
 
 不依赖「第一个注册的人当管理员」——那样在公网可达时容易被人抢注。
+
+## 邮箱验证码登录
+
+后台「设置 → 邮箱验证码登录」里开启，并填 SMTP（主机 / 端口 / 账号 / 授权码 / 发件人 /
+直连 TLS）。国内常见：QQ、163 用 465 + 授权码；企业邮箱多为 587 + STARTTLS。
+
+- 验证码 **只存 HMAC-SHA256 哈希**（密钥 `SESSION_SECRET`），10 分钟过期、一次性、
+  错 5 次作废
+- 同一邮箱 60 秒一次、每小时 5 次；另有全局每分钟 30 封兜底
+- 邮箱没注册时返回同样的成功文案但不发信（防枚举）
+- 发信失败回 `email_send_failed`，细节只进日志（可能含服务器地址）
 
 ## 测试
 

@@ -28,6 +28,8 @@ export interface SiteSettings {
   meGuestText: string;
   loginHint: string;
   registerHint: string;
+  /** 登录页左侧能力条：每行「标题|描述」，最多 3 条；留空用内置文案 */
+  loginPoints: string;
   allowRegister: boolean;
   homeShowAnnouncements: boolean;
   /** 邮箱验证码登录开关（SMTP 配置只在后台可见，公开投影里没有） */
@@ -64,6 +66,7 @@ const DEFAULTS: SiteSettings = {
   meGuestText: '',
   loginHint: '',
   registerHint: '',
+  loginPoints: '',
   allowRegister: true,
   homeShowAnnouncements: true,
   emailLoginEnabled: false,
