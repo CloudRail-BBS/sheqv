@@ -63,10 +63,11 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 
 `server/.env` 同时被 `cargo run`（dotenvy）读取，所以裸机调试也用这一份。
 
-## 两个最常见的问题
+## 三个最常见的问题
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
+| api 反复重启，日志 `password authentication failed for user "arena"` | 数据卷是旧密码初始化的，改 `.env` 不会改已存在的角色 | 数据可丢：`cd server && docker compose down -v`；要保留：`docker compose exec db psql -U arena -d arena -c "ALTER USER arena PASSWORD '新密码';"` |
 | `-bash: ./up.sh: Permission denied` | 脚本没有执行位 | 用 `bash up.sh`；或 `chmod +x deploy/*.sh server/*.sh server/scripts/*.sh` |
 | `network blockarena-net declared as external, but could not be found` | 先起了 web | 先 `cd server && docker compose up -d` |
 
