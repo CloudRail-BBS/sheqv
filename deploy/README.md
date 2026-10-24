@@ -1,58 +1,85 @@
-# 部署（docker compose）
+# 部署入口
 
-所有部署配置都在本目录，**仓库根目录不再放任何部署文件**。
+配置不在本目录：**每个容器的配置都在它自己的目录里**。
+
+| 目录 | 内容 | 服务 |
+|---|---|---|
+| `server/compose.yml` | 后端编排 | `db`（PostgreSQL）+ `api`（Rust） |
+| `server/Dockerfile` · `server/.env.example` | 后端构建与环境模板 | |
+| `web/compose.yml` | 前端编排 | `web`（Next.js） |
+| `web/Dockerfile` · `web/.env.example` | 前端构建与环境模板 | |
+
+本目录只有三个**跨栈的入口脚本**（不定义任何服务）：
 
 ```bash
 cd deploy
-./up.sh          # 首次自动生成 .env（随机数据库密码/会话密钥）并构建启动
-./doctor.sh      # 起不来时先跑它
+./up.sh          # 后端栈 → 等 api 就绪 → 前端栈，一条命令起全栈
+./doctor.sh      # 起不来时先跑它（两个栈的状态、健康、日志一起看）
 ```
 
-> 报 `Permission denied` 时用 `bash up.sh` —— 说明检出后脚本没有执行位
-> （Windows 打包/提交时常见）。想一次性修好：`git pull` 后若仍有该报错，
-> 执行 `chmod +x *.sh ../server/scripts/*.sh`。
+## 也可以分开起
+
+拆开的好处是改前端不用动后端：
+
+```bash
+cd server && cp .env.example .env   # 或 ./init-env.sh 自动生成随机密码
+cd server && docker compose up -d --build     # db + api，同时创建 blockarena-net
+cd web    && docker compose up -d --build     # web，接入上面那个网络
+```
+
+两个栈的 project name 不同（`blockarena` / `blockarena-web`），所以
+`docker compose down` 只影响自己这一栈，不会误删对方容器。
 
 ## 端口
 
 | 服务 | 容器内 | 宿主机 | 说明 |
 |---|---|---|---|
-| web | 8900 | `127.0.0.1:8900` | 对外由 nginx 承载 |
-| api | 8080 | `127.0.0.1:18080` | **8080 常被占用**，所以映射到 18080；可用 `API_HOST_PORT` 改 |
-| db | 5432 | 不发布 | 只在 compose 网络内可达 |
+| web | 8900 | `127.0.0.1:8900` | `WEB_HOST_PORT` 可改；对外由 nginx 承载 |
+| api | 8080 | `127.0.0.1:18080` | **8080 常被占用**，所以映射到 18080；`API_HOST_PORT` 可改 |
+| db | 5432 | 不发布 | 只在 `blockarena-net` 内可达 |
 
 健康检查：`curl -s 127.0.0.1:18080/api/health`
 
 ## 首次初始化
 
 ```bash
-./up.sh
-docker compose exec api /usr/local/bin/arena-api create-admin \
+cd deploy && ./up.sh
+cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
   --username ops --password '<强密码>' --nickname 运维
 ```
 
 不要依赖「第一个注册的人成为管理员」——公网可达时会被抢注。建完再去后台打开注册。
 
-## 环境变量（`deploy/.env`）
+## 环境变量
 
-| 键 | 必填 | 说明 |
+| 文件 | 键 | 说明 |
 |---|---|---|
-| `POSTGRES_PASSWORD` | 是 | 同时用于初始化 db 与拼 api 的 `DATABASE_URL` |
-| `SESSION_SECRET` | 建议 | 留空会自动生成到数据卷；多实例必须显式配同一个值 |
-| `ADMIN_TOKEN` | 否 | 应急后台口令，留空不启用 |
-| `PUBLIC_BASE_URL` | 建议 | 如 `https://arena.example.com`，影响 OAuth 回调与 Cookie Secure |
-| `API_HOST_PORT` | 否 | 默认 18080 |
+| `server/.env` | `POSTGRES_PASSWORD` **必填** | 同时用于初始化 db 与拼 api 的 `DATABASE_URL` |
+| | `API_HOST_PORT` | 默认 18080 |
+| | `SESSION_SECRET` | 留空自动生成到数据卷；多实例必须显式配同一个值 |
+| | `ADMIN_TOKEN` / `PUBLIC_BASE_URL` | 可选 |
+| `web/.env` | `API_BASE` | 默认 `http://api:8080`（走 compose 网络别名） |
+| | `WEB_HOST_PORT` | 默认 8900 |
+
+`server/.env` 同时被 `cargo run`（dotenvy）读取，所以裸机调试也用这一份。
+
+## 两个最常见的问题
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| `-bash: ./up.sh: Permission denied` | 脚本没有执行位 | 用 `bash up.sh`；或 `chmod +x deploy/*.sh server/*.sh server/scripts/*.sh` |
+| `network blockarena-net declared as external, but could not be found` | 先起了 web | 先 `cd server && docker compose up -d` |
 
 ## 备份 / 恢复
 
 ```bash
-cd deploy
-DATABASE_URL="postgres://arena:<pass>@127.0.0.1:18080/arena" bash ../server/scripts/backup.sh
+cd server
+docker compose exec db pg_dump -U arena -d arena -Fc > /backup/arena-$(date +%F).dump
 ```
 
-更省事的是容器模式（脚本自动识别，无需本机装 pg_dump）：
+或直接用脚本（会自动识别本机 `pg_dump` 与容器两种模式）：
 
 ```bash
-cd deploy && ../server/scripts/backup.sh --dir ./backups
+cd server && ./scripts/backup.sh --dir /backup --keep 14
+cd server && ./scripts/restore.sh /backup/arena-XXXX.dump --yes   # 覆盖当前库，会先自动备份
 ```
-
-恢复：`../server/scripts/restore.sh ./backups/arena-XXXX.dump --yes`（会先自动备份现状）。

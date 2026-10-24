@@ -19,6 +19,7 @@ FROM debian:bookworm-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates tini \
  && rm -rf /var/lib/apt/lists/* \
+ && test -x /usr/bin/tini \
  && useradd --system --uid 1001 --no-create-home arena \
  && mkdir -p /data \
  && chown -R 1001:1001 /data
@@ -34,6 +35,9 @@ USER 1001
 EXPOSE 8080
 VOLUME ["/data"]
 
-# tini 负责转发 SIGTERM，容器 stop 能优雅退出
-ENTRYPOINT ["/usr/sbin/tini", "--"]
+# tini 负责转发 SIGTERM，容器 stop 能优雅退出。
+# ⚠️ Debian 的 tini 在 **/usr/bin/tini**；/usr/sbin/tini 不存在（那是常见写法错误，
+#    运行时会报 exec: "/usr/sbin/tini": no such file or directory）。
+#    Alpine 才在 /sbin/tini。上面 RUN 里的 `test -x` 会在构建期就拦住路径写错。
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["arena-api", "serve"]

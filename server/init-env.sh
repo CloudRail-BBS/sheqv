@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 生成 deploy/.env（给 docker compose 用）：随机 POSTGRES_PASSWORD + SESSION_SECRET
+# 生成 server/.env：随机 POSTGRES_PASSWORD + SESSION_SECRET
 #
-#   cd deploy && ./init-env.sh
+#   cd server && ./init-env.sh
 #
 # 已存在 .env 时**拒绝覆盖**（里面可能是线上密钥）。要换密码请手动改，
-# 并同步 `ALTER USER arena PASSWORD '...'`。
+# 并同步 `ALTER USER arena PASSWORD '...'`（见 deploy/doctor.sh 提示）。
 
 set -euo pipefail
 
@@ -31,16 +31,25 @@ rand_hex() {
 
 DB_PASS="$(rand_hex 16)"
 SESSION="$(rand_hex 32)"
+API_PORT="${API_HOST_PORT:-18080}"
 
 cat > "$TARGET" <<ENV
-# 由 scripts/init-env.sh 生成于 $(date '+%Y-%m-%d %H:%M:%S')
+# 由 server/init-env.sh 生成于 $(date '+%Y-%m-%d %H:%M:%S')
 # 不要提交到版本库（.gitignore 已排除）
+
+# compose 用它初始化 db 并拼 api 的 DATABASE_URL
 POSTGRES_PASSWORD=$DB_PASS
+API_HOST_PORT=$API_PORT
+
+# 裸机 cargo run 用它（容器里 compose 会覆盖成 db:5432）
+DATABASE_URL=postgres://arena:$DB_PASS@127.0.0.1:$API_PORT/arena
+
+PORT=8080
+DATA_DIR=/data
 SESSION_SECRET=$SESSION
 ADMIN_TOKEN=
 PUBLIC_BASE_URL=
-# 宿主机 8080 常被占用，api 发布在 18080（容器内仍是 8080）
-API_HOST_PORT=18080
+RUST_LOG=info,arena_api=info
 APP_VERSION=2026.10.24
 ENV
 
@@ -50,6 +59,7 @@ echo "已生成 $TARGET"
 echo "  数据库密码：已随机生成（16 字节）"
 echo "  会话密钥：已随机生成（32 字节）"
 echo
-echo "下一步（在 deploy 目录）："
-echo "  docker compose up -d --build"
+echo "下一步："
+echo "  docker compose up -d --build              # 在本目录起 db + api"
 echo "  docker compose exec api /usr/local/bin/arena-api create-admin --username ops --password '<强密码>'"
+echo "  cd ../web && docker compose up -d --build # 再起前端"

@@ -26,6 +26,7 @@ ENV NODE_ENV=production \
     TZ=Asia/Shanghai
 
 RUN apk add --no-cache tini \
+ && test -x /sbin/tini \
  && addgroup -g 1001 -S nodejs \
  && adduser -S nextjs -u 1001 \
  && mkdir -p /data \

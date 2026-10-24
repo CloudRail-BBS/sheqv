@@ -19,19 +19,30 @@ bash scripts/smoke.sh http://localhost:8900
 
 ## 自托管
 
-**本项目按自部署设计**，不依赖任何托管平台。完整步骤见 [`../docs/自托管部署.md`](../docs/自托管部署.md)。
+**本项目按自部署设计**，不依赖任何托管平台。完整步骤见 [`../deploy/README.md`](../deploy/README.md)
+与 [`../docs/自托管部署.md`](../docs/自托管部署.md)。
+
+前后端已经分离：本目录只跑**前端**，数据与业务在后端的 `server/`（Rust + PostgreSQL）。
+所以 `web/` 里的 compose 只定义 `web` 一个服务，且必须先起后端（它负责创建 `blockarena-net`）。
 
 ```bash
-cp .env.example .env             # 可选：只填端口/密钥
-docker compose up -d --build
-curl -s localhost:8900/api/health
+# 1) 先起后端
+cd ../server && cp .env.example .env && docker compose up -d --build
 
-# 打开 /register 注册第一个账号 —— 它会自动成为管理员
+# 2) 再起前端
+cd ../web && cp .env.example .env && docker compose up -d --build
+curl -s 127.0.0.1:8900/                # 200 即正常
+
+# 3) 建管理员（空站别靠"第一个注册的人"）
+cd ../server && docker compose exec api /usr/local/bin/arena-api create-admin \
+  --username ops --password '<强密码>' --nickname 运维
 ```
+
+一条命令起全栈：`cd deploy && ./up.sh`。
 
 | 方式 | 入口 |
 |---|---|
-| Docker Compose（推荐） | `Dockerfile` + `deploy/compose.yml`，数据挂 `blockarena-data` 卷 |
+| Docker Compose（推荐） | 本目录 `Dockerfile` + `compose.yml`（只含 web；后端见 `../server/compose.yml`） |
 | 裸机 systemd | `deploy/blockarena.service`（`ProtectSystem=strict`，只有数据目录可写） |
 | 反向代理 | `deploy/nginx.conf`（含 2GB 上传、静态长缓存、WS 预留）或 `deploy/Caddyfile`（自动 HTTPS） |
 | 备份 / 恢复 | `deploy/backup.sh backup 14` · `deploy/backup.sh restore <file>` |
@@ -194,7 +205,7 @@ src/
     api/v1/admin/{users,posts,announcements,slides,settings,agreements,sponsors,afdian}/…
 ```
 
-根目录另有 `Dockerfile`、`deploy/compose.yml`、`.env.example`、`.dockerignore`、`deploy/`。
+本目录还有 `Dockerfile`、`compose.yml`、`.env.example`、`.dockerignore`；`deploy/` 是单进程时代的遗留脚本，现已由 `../server/scripts/` 取代。
 
 ## 验证
 

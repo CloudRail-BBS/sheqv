@@ -1,0 +1,61 @@
+# 前端栈：web（Next.js）
+#
+#   cd server && docker compose up -d          # 先起后端（它负责创建 blockarena-net）
+#   cd web    && docker compose up -d --build
+#
+# 这份文件**只描述 web**，后端与数据库在 ../server/compose.yml。
+# 两者用不同 project name（blockarena / blockarena-web），所以
+# `docker compose down` 只影响自己这一栈，不会误删对方容器。
+#
+# 网络：接后端创建的外部网络 blockarena-net，通过别名 `api` 访问后端。
+# 所以 web 单独 up 时如果报 "network blockarena-net declared as external,
+# but could not be found"，就是后端还没起。
+#
+# 说明：
+# - web 不碰数据库，也不落盘业务数据；它只是把页面渲染出来
+# - 宿主机端口默认 8900，可用 WEB_HOST_PORT 改
+# - 对外由 nginx 反代；nginx 可把 /api/* 直连 127.0.0.1:18080，少一跳
+
+name: blockarena-web
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blockarena/web:2026.10.24
+    container_name: blockarena-web
+    restart: unless-stopped
+    environment:
+      # 内网地址：走 compose 网络别名，不经过宿主机端口
+      API_BASE: ${API_BASE:-http://api:8080}
+      PORT: "8900"
+      HOSTNAME: 0.0.0.0
+      TZ: Asia/Shanghai
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-8900}:8900"
+    networks:
+      - arena
+    healthcheck:
+      # 探首页而不是 /api/health：后者现在归后端，web 自身没有这个路由
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:'+(process.env.PORT||8900)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+networks:
+  arena:
+    external: true
+    name: blockarena-net

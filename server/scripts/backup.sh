@@ -16,7 +16,7 @@ KEEP=30
 DIR="${BACKUP_DIR:-./backups}"
 # 从脚本位置推仓库根，避免在哪个目录执行都要改路径
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-COMPOSE_FILE="${COMPOSE_FILE:-$ROOT/deploy/compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-$ROOT/server/compose.yml}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -37,8 +37,10 @@ echo "==> 备份到 $OUT"
 if command -v pg_dump >/dev/null 2>&1; then
   pg_dump --format=custom --no-owner --no-privileges --file="$OUT" "$DATABASE_URL"
 elif command -v docker >/dev/null 2>&1; then
-  # 容器模式：db 服务在 compose 里，凭据由容器环境变量提供
-  docker compose -f "$COMPOSE_FILE" exec -T db \
+  # 容器模式：db 服务在 compose 里，凭据由容器环境变量提供。
+  # --project-directory 固定到 server/，这样无论从哪个目录执行，
+  # compose 都能读到 server/.env（否则会报 POSTGRES_PASSWORD 缺失）。
+  docker compose --project-directory "$ROOT/server" -f "$COMPOSE_FILE" exec -T db \
     pg_dump -U arena -d arena --format=custom --no-owner --no-privileges > "$OUT"
 else
   echo "既没有 pg_dump 也没有 docker，无法备份" >&2
