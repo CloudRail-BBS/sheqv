@@ -87,15 +87,42 @@ pub async fn slides(State(st): State<AppState>) -> ApiResult<Response> {
 
 use axum::extract::Path;
 
+use crate::current_user::MaybeUser;
+
 /// GET /api/v1/posts/{id}
-pub async fn post(State(st): State<AppState>, Path(id): Path<String>) -> ApiResult<Response> {
-    match crate::forum::get(&st.pool, &id)
+///
+/// 未过审的帖子（`pending` / `rejected`）只对**作者本人**和**有审核权限的人**可见。
+/// 列表接口已经按 `status = 'published'` 过滤，如果详情不拦，知道 id 就能把待审内容读出去。
+pub async fn post(
+    State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    let Some(post) = crate::forum::get(&st.pool, &id)
         .await
         .map_err(ApiError::internal)?
-    {
-        Some(post) => Ok(Json(json!({ "ok": true, "post": post })).into_response()),
-        None => Err(ApiError::not_found()),
+    else {
+        return Err(ApiError::not_found());
+    };
+
+    if post.status != "published" {
+        let viewer = match maybe {
+            Some(user) => user.id,
+            None => return Err(ApiError::not_found()),
+        };
+        let visible = if post.author_id.as_deref() == Some(viewer.as_str()) {
+            true
+        } else {
+            crate::groups::can(&st.pool, &viewer, "audit.review")
+                .await
+                .map_err(ApiError::internal)?
+        };
+        if !visible {
+            return Err(ApiError::not_found());
+        }
     }
+
+    Ok(Json(json!({ "ok": true, "post": post })).into_response())
 }
 
 /// GET /api/v1/announcements/{id} —— 未发布的按不存在处理

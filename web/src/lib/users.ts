@@ -23,6 +23,8 @@ export interface PublicUser {
   notifReadAt?: number;
   banned?: boolean;
   title?: string;
+  /** 身份组 id（未分组时不返回） */
+  groupId?: string;
   email?: string;
   providers?: string[];
   badges?: string[];

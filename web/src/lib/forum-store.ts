@@ -31,8 +31,14 @@ export interface PostView {
   isNew?: boolean;
   /** 预留：库里暂没有置顶字段 */
   pinned?: boolean;
+  /** pending / published / rejected；非 published 的只有作者和审核人能看到 */
+  status?: PostStatus;
+  /** 未通过审核时的原因 */
+  rejectReason?: string;
   href: string;
 }
+
+export type PostStatus = 'pending' | 'published' | 'rejected';
 
 const relTime = (ts: number): string => {
   const minutes = Math.max(0, Math.floor((Date.now() - ts) / 60000));

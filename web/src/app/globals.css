@@ -428,6 +428,21 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .notice .x { margin-left: auto; color: var(--blue); }
 
+/* ── 审核状态条（帖子详情） ─────────────── */
+
+.audit-bar {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-bottom: 14px; padding: 9px 12px;
+  border: 1px solid var(--blue-line); background: var(--blue-soft);
+  border-radius: 9px;
+}
+.audit-bar b { font-size: 12px; font-weight: 600; color: var(--blue); letter-spacing: 0.01em; }
+.audit-bar span { font-size: 12px; line-height: 1.75; color: var(--text-2); }
+.audit-bar[data-kind="rejected"] {
+  border-color: rgba(248, 113, 113, 0.34); background: rgba(248, 113, 113, 0.09);
+}
+.audit-bar[data-kind="rejected"] b { color: var(--danger); }
+
 /* ── resource grid ───────────────────────── */
 
 .res-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }

@@ -70,9 +70,11 @@ pub struct UserRow {
     pub badges: Value,
     pub notif_read_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
+    /// 身份组；为空表示未分组（按最小权限处理）
+    pub group_id: Option<String>,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at";
+const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id";
 
 /// 对外暴露的用户信息（不含哈希）
 #[derive(Debug, Clone, Serialize)]
@@ -90,6 +92,9 @@ pub struct PublicUser {
     pub banned: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// 身份组 id（公开接口只透传 id，具体权限永远在后端判）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -121,6 +126,7 @@ impl UserRow {
             notif_read_at: self.notif_read_at.map(|t| t.timestamp_millis()),
             banned: self.banned,
             title: self.title.clone(),
+            group_id: self.group_id.clone(),
             email: self.email.clone(),
             providers: None,
             badges: badges.filter(|b| !b.is_empty()),

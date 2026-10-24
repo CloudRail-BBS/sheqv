@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { badgeOf, TITLE_MAX } from '@/lib/badges';
+import type { GroupOption } from '@/lib/groups';
 import { UserBadge } from './user-badge';
 
 export interface AdminUserRow {
@@ -15,11 +16,23 @@ export interface AdminUserRow {
   notifReadAt?: number;
   banned?: boolean;
   title?: string;
+  /** 身份组 id；为空表示未分组 */
+  groupId?: string;
 }
 
 const day = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 10) : '—');
 
-export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[]; meId: string | null; adminCount: number }) {
+export function AdminUsers({
+  items,
+  meId,
+  adminCount,
+  groups,
+}: {
+  items: AdminUserRow[];
+  meId: string | null;
+  adminCount: number;
+  groups: GroupOption[];
+}) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -43,6 +56,24 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
     }
     router.refresh();
     return true;
+  }
+
+  async function assignGroup(id: string, groupId: string) {
+    setBusyId(id);
+    setErr(null);
+    const res = await fetch(`/api/v1/admin/users/${encodeURIComponent(id)}/group`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      // 空串表示移出身份组，后端要的是显式 null
+      body: JSON.stringify({ groupId: groupId || null }),
+    }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as { message?: string } | null;
+    setBusyId(null);
+    if (!res?.ok) {
+      setErr(data?.message ?? '分配身份组失败');
+      return;
+    }
+    router.refresh();
   }
 
   async function remove(id: string) {
@@ -73,6 +104,7 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
               <th>昵称</th>
               <th>用户名</th>
               <th>角色</th>
+              <th style={{ width: 132 }}>身份组</th>
               <th style={{ width: 170 }}>头衔</th>
               <th>注册</th>
               <th>最后登录</th>
@@ -96,6 +128,23 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
                     <span className={'badge ' + (u.role === 'admin' ? 'badge-live' : 'badge-ghost')}>
                       {u.role === 'admin' ? '管理员' : '成员'}
                     </span>
+                  </td>
+                  <td>
+                    <select
+                      className="input"
+                      style={{ height: 28, width: 118, fontSize: 12, padding: '0 6px' }}
+                      value={u.groupId ?? ''}
+                      disabled={busyId === u.id || groups.length === 0}
+                      title={groups.length === 0 ? '还没有可分配的身份组' : undefined}
+                      onChange={(e) => assignGroup(u.id, e.target.value)}
+                    >
+                      <option value="">未分组</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td>
                     {editing === u.id ? (
@@ -185,6 +234,7 @@ export function AdminUsers({ items, meId, adminCount }: { items: AdminUserRow[];
       <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
         规则：不能修改自己的角色、封禁或删除自己；任何操作后必须至少保留一个可用管理员。
         头衔留空会回落默认（管理员显示「管理员」，普通用户不显示）。
+        「身份组」决定发帖 / 评论等权限，换组后立即生效（管理员不受组限制）；选「未分组」等于收回全部组权限。
         封禁立即生效——该账号的现有会话会被判为无效，不只是隐藏按钮。
       </p>
     </>

@@ -22,6 +22,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     getAchievementMap(),
   ]);
   const postBadge = resolveBadge(badges, { id: post.authorId, name: post.author });
+  // 未过审的帖子只有作者和审核人打得开（后端已按 status 拦过一次，这里只负责说明状态）
+  const pending = post.status === 'pending';
+  const rejected = post.status === 'rejected';
+  const unpublished = pending || rejected;
 
   return (
     <div className="cols">
@@ -33,6 +37,18 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <article className="card post">
+          {unpublished && (
+            <div className="audit-bar" data-kind={post.status}>
+              <b>{pending ? '审核中' : '未通过审核'}</b>
+              <span>
+                {pending
+                  ? '在审核通过之前，只有你自己和审核人员能看到它，社区列表里不会出现。'
+                  : post.rejectReason
+                    ? `原因：${post.rejectReason}`
+                    : '审核没有给出具体原因，可以按社区公约检查后重新发布。'}
+              </span>
+            </div>
+          )}
           <div className="post-head">
             <div className="post-avatar">{post.author.slice(0, 1)}</div>
             <div>
@@ -59,13 +75,19 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           </div>
         </article>
 
-        <PostActions
-          postId={post.id}
-          likes={post.likes}
-          comments={post.comments}
-          signed={signed}
-          loggedIn={Boolean(user)}
-        />
+        {unpublished ? (
+          <div className="card card-pad small muted">
+            {pending ? '审核通过后才能点赞和评论。' : '这篇文章未通过审核，点赞与评论已关闭。'}
+          </div>
+        ) : (
+          <PostActions
+            postId={post.id}
+            likes={post.likes}
+            comments={post.comments}
+            signed={signed}
+            loggedIn={Boolean(user)}
+          />
+        )}
 
         <section id="comments" className="card" style={{ overflow: 'hidden' }}>
           <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
