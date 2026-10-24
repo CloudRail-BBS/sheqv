@@ -71,7 +71,8 @@ const KNOWN = new Set(NAV_ITEMS.map((i) => i.key));
 
 export const SIDEBAR_DEFAULT = NAV_ITEMS.map((i) => i.key);
 export const TABBAR_DEFAULT = ['home', 'guilds', 'teams', 'matches', 'me'];
-export const TABBAR_SIZE = 5;
+/** 底部栏最多 8 个；超过 5 个后横向滑动 */
+export const TABBAR_SIZE = 8;
 
 export function navItem(key: string): NavItemDef | undefined {
   return NAV_ITEMS.find((i) => i.key === key);
@@ -94,7 +95,7 @@ export function serializeNav(keys: string[]): string {
   return keys.filter((k) => KNOWN.has(k)).slice(0, 32).join(',');
 }
 
-/** 底部栏最多 5 个；少选也能正常均分铺满，未知项丢弃 */
+/** 底部栏最多 8 个；≤5 个均分，>5 个横向滚动，未知项丢弃 */
 export function normalizeTabbar(raw: string | undefined): string[] {
   return parseNav(raw, TABBAR_DEFAULT).slice(0, TABBAR_SIZE);
 }

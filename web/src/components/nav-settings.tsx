@@ -131,7 +131,7 @@ export function NavSettings({
           <div>
             <b style={{ fontSize: 13 }}>移动端底部栏</b>
             <p className="small muted" style={{ marginTop: 2 }}>
-              最多 5 个；少选也会均分铺满。
+              最多 8 个；5 个以内均分，超过 5 个可左右滑动。
             </p>
           </div>
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => onChange('tabbarItems', '')}>

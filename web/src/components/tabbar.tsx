@@ -48,9 +48,10 @@ export function TabBar({ items }: { items?: string }) {
   const pathname = usePathname();
   const search = useSearchParams();
   const keys = normalizeTabbar(items);
+  const fits = keys.length <= 5;
 
   return (
-    <nav className="tabbar" aria-label="主导航">
+    <nav className="tabbar" aria-label="主导航" data-fits={fits}>
       {keys.map((key) => {
         const item = navItem(key);
         if (!item) return null;
