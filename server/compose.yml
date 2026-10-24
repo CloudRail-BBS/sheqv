@@ -12,7 +12,7 @@
 #
 # 说明：
 # - db 不发布端口，只在容器网络内可达；运维用 `docker compose exec db psql`
-# - api 容器内 8080，宿主机只发布到回环 18080（8080 常被服务器上别的服务占用）
+# - api 容器内 8080，宿主机只发布到回环 8860（8080 常被服务器上别的服务占用）
 # - 卷名固定为 blockarena-*，即使换目录/重建项目也不会丢数据
 
 name: blockarena
@@ -74,8 +74,8 @@ services:
       db:
         condition: service_healthy
     ports:
-      # 容器内 8080 → 宿主机回环 18080。8080 留给服务器上已有的服务。
-      - "127.0.0.1:${API_HOST_PORT:-18080}:8080"
+      # 容器内 8080 → 宿主机回环 8860。8080 留给服务器上已有的服务。
+      - "127.0.0.1:${API_HOST_PORT:-8860}:8080"
     networks:
       arena:
         # 固定别名：web 在自己的 compose 项目里也要能用 `http://api:8080`

@@ -31,7 +31,7 @@ rand_hex() {
 
 DB_PASS="$(rand_hex 16)"
 SESSION="$(rand_hex 32)"
-API_PORT="${API_HOST_PORT:-18080}"
+API_PORT="${API_HOST_PORT:-8860}"
 
 cat > "$TARGET" <<ENV
 # 由 server/init-env.sh 生成于 $(date '+%Y-%m-%d %H:%M:%S')

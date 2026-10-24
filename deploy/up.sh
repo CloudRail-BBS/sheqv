@@ -21,6 +21,12 @@ if [ ! -f "$SERVER_DIR/.env" ]; then
 fi
 
 # 2) 后端栈：db 与 api。它同时负责创建 blockarena-net 网络
+#    旧版本默认端口是 18080；如果 .env 里还是它，变量会盖住 compose 的新默认值 8860。
+if grep -qE '^API_HOST_PORT=18080[[:space:]]*$' "$SERVER_DIR/.env" 2>/dev/null; then
+  echo "==> 注意：server/.env 里仍是 API_HOST_PORT=18080（旧默认值），本次仍会用 18080"
+  echo "    改用 8860：把该行改成 API_HOST_PORT=8860，或删掉该行使用新默认值"
+fi
+
 #    先处理升级遗留：旧版把 web 也放在 blockarena 项目里，拆分后 web 归 blockarena-web，
 #    同名容器会让 compose 报 "container name ... is already in use"。只清理这一个容器。
 if command -v docker >/dev/null 2>&1 && docker inspect blockarena-web >/dev/null 2>&1; then
@@ -36,7 +42,7 @@ echo "==> 构建并启动后端（db + api）"
 
 # 3) 等 api 健康。web 启动时不需要它，但页面渲染需要，早发现早报错
 API_PORT="$(grep -E '^API_HOST_PORT=' "$SERVER_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
-API_PORT="${API_PORT:-18080}"
+API_PORT="${API_PORT:-8860}"
 
 echo "==> 等待 api 就绪（最多 90s）"
 for i in $(seq 1 45); do

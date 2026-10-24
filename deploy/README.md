@@ -35,10 +35,10 @@ cd web    && docker compose up -d --build     # web，接入上面那个网络
 | 服务 | 容器内 | 宿主机 | 说明 |
 |---|---|---|---|
 | web | 8900 | `127.0.0.1:8900` | `WEB_HOST_PORT` 可改；对外由 nginx 承载 |
-| api | 8080 | `127.0.0.1:18080` | **8080 常被占用**，所以映射到 18080；`API_HOST_PORT` 可改 |
+| api | 8080 | `127.0.0.1:8860` | **8080 常被占用**，所以映射到 8860；`API_HOST_PORT` 可改 |
 | db | 5432 | 不发布 | 只在 `blockarena-net` 内可达 |
 
-健康检查：`curl -s 127.0.0.1:18080/api/health`
+健康检查：`curl -s 127.0.0.1:8860/api/health`
 
 ## 首次初始化
 
@@ -55,7 +55,7 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 | 文件 | 键 | 说明 |
 |---|---|---|
 | `server/.env` | `POSTGRES_PASSWORD` **必填** | 同时用于初始化 db 与拼 api 的 `DATABASE_URL` |
-| | `API_HOST_PORT` | 默认 18080 |
+| | `API_HOST_PORT` | 默认 8860 |
 | | `SESSION_SECRET` | 留空自动生成到数据卷；多实例必须显式配同一个值 |
 | | `ADMIN_TOKEN` / `PUBLIC_BASE_URL` | 可选 |
 | `web/.env` | `API_BASE` | 默认 `http://api:8080`（走 compose 网络别名） |

@@ -64,6 +64,6 @@ cat <<'HINT'
    → 后端栈没起（网络由它创建）。先 `(cd server && docker compose up -d)`。
 
 6) 宿主机端口冲突
-   → api 只发布在 127.0.0.1:${API_HOST_PORT:-18080}，不占 8080；web 是 8900。
-     看占用：ss -ltnp | grep -E '18080|8900'
+   → api 只发布在 127.0.0.1:${API_HOST_PORT:-8860}，不占 8080；web 是 8900。
+     看占用：ss -ltnp | grep -E '8860|8900'
 HINT
