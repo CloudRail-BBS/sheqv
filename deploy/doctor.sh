@@ -77,4 +77,12 @@ cat <<'HINT'
      注意：这条**只影响网络，卷仍会被删**。
      正确做法是在本目录用： ./down.sh --purge   （先前端后后端，最后清网络）
      只想停不删数据： ./down.sh
+
+8) 浏览器里注册/登录/发帖返回 500，但 api 日志里**没有**对应请求
+   → web 的 rewrites 把 /api/* 转发到了构建时固化的地址。若构建时没有 API_BASE，
+     会写死 127.0.0.1:8080 —— 容器里那是 web 自己，不是 api。
+     确认： (cd web && docker compose logs --tail 30 web) | grep -i "ECONNREFUSED\|127.0.0.1:8080"
+     修复： (cd web && docker compose build) && ./up.sh --no-build
+     根治： web/compose.yml 的 build.args 已传 API_BASE=http://api:8080；
+           改了它必须重建镜像，运行时 env 不生效。
 HINT

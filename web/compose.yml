@@ -23,6 +23,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # ⚠️ 必须作为**构建参数**传入：rewrites 在构建时就把目标地址固化进
+      # routes-manifest.json，只在 environment 里设 API_BASE 不会改变它。
+      # 不加这一行，容器里会写死 127.0.0.1:8080（= web 自己），浏览器发的
+      # /api/* 全部 500 —— 表现就是「注册/登录失败」。
+      args:
+        API_BASE: ${API_BASE:-http://api:8080}
     image: blockarena/web:2026.10.24
     container_name: blockarena-web
     restart: unless-stopped

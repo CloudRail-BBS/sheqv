@@ -32,6 +32,12 @@ const nextConfig = {
   /**
    * `/api/*` 一律转发给后端（bootstrap 例外——它是前端契约，有实体路由，
    * filesystem 路由优先于 rewrites）。生产也可以交给 nginx，两者不冲突。
+   *
+   * ⚠️ 这个目标地址在 **build 时**就被写进 `.next/routes-manifest.json`，
+   * 运行时改 `API_BASE` 不会生效。所以：
+   * - 本地 `npm run dev` / `npm run build` 用默认的 127.0.0.1:8080（api 在宿主机）
+   * - Docker 构建必须传 `--build-arg API_BASE=http://api:8080`（compose 已配 args）
+   * 漏了就会写死 127.0.0.1:8080，容器里那是 web 自己 → 浏览器 /api/* 全 500。
    */
   async rewrites() {
     const base = (process.env.API_BASE || 'http://127.0.0.1:8080').replace(/\/+$/, '');

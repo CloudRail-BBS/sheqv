@@ -96,6 +96,7 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 | `-bash: ./up.sh: Permission denied` | 脚本没有执行位 | 用 `bash up.sh`；或 `chmod +x deploy/*.sh server/*.sh server/scripts/*.sh` |
 | `network blockarena-net declared as external, but could not be found` | 先起了 web | 先 `cd server && docker compose up -d` |
 | `! Network blockarena-net Resource is still in use`（`down` 时） | web 是独立 project，容器还连着这个网络 | 用 `./down.sh`（先前端后后端）；或先 `cd web && docker compose down` |
+| 浏览器里注册/登录返回 500，api 日志里没有该请求 | web 的 rewrites 固化了构建时的地址；没传 `API_BASE` 就会写死 `127.0.0.1:8080`（容器里是 web 自己） | `cd web && docker compose build`（`web/compose.yml` 的 `build.args` 已传 `http://api:8080`） |
 
 ## 备份 / 恢复
 
