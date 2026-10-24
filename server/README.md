@@ -58,6 +58,10 @@
 | GET/POST | `/api/v1/teams` | 战队列表 / 创建；**战队独立于公会**，不挂在公会下 |
 | GET/PATCH/DELETE | `/api/v1/teams/{id}` | 详情 / 修改 / 删除 |
 | GET | `/api/v1/leaderboard?game=` | 公会榜与战队榜分开返回（积分 → 胜场 → 少负 → 早创建） |
+| GET | `/api/v1/points` | 我的积分：余额、连签、今日状态、最近流水与积分榜 |
+| POST | `/api/v1/points/checkin` | 每日签到（上海时区；重复签到返回 `already`） |
+| GET | `/api/v1/points/rank?limit=` | 公开积分榜（只给昵称与分数） |
+
 | GET | `/api/v1/admin/orgs` | 后台：两张榜一起给 |
 | PATCH/DELETE | `/api/v1/admin/orgs/{kind}/{id}` | 校准积分·战绩（唯一写入口）/ 删除 |
 | GET | `/api/v1/servers?kind=` | 联机大厅条目（只含公开展示的，带探测快照） || POST | `/api/v1/servers` | 自由上传（登录 + `post.create`），MC 与中转站共用 |

@@ -11,7 +11,7 @@ use crate::auth::session;
 use crate::current_user::MaybeUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
-use crate::{agreements, audit, forum, groups, settings};
+use crate::{agreements, audit, forum, groups, points, settings};
 
 /// 当前身份组是否允许某个动作
 async fn require_permission(
@@ -173,6 +173,11 @@ pub async fn create(
         audit::record_ai(&st.pool, &id, v).await;
     }
 
+    // 发帖加分。加分失败不拖累发帖：内容已经落库了，回头能补。
+    if let Err(e) = points::award(&st.pool, &user.id, points::POST_REWARD, "post", Some(&id)).await {
+        tracing::warn!(post = %id, error = %e, "发放发帖积分失败");
+    }
+
     let post = forum::get(&st.pool, &id)
         .await
         .map_err(ApiError::internal)?
@@ -222,6 +227,12 @@ pub async fn comment(
     let Some(comment) = comment else {
         return Err(ApiError::not_found());
     };
+
+    if let Err(e) =
+        points::award(&st.pool, &user.id, points::COMMENT_REWARD, "comment", Some(&comment.id)).await
+    {
+        tracing::warn!(comment = %comment.id, error = %e, "发放评论积分失败");
+    }
 
     Ok((
         StatusCode::CREATED,

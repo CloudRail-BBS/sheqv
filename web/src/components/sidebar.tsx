@@ -19,6 +19,7 @@ const I = {
   doc: <path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
   heart: <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
   bell: <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
+  star: <path d="m12 3.6 2.5 5.2 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
   server: <path d="M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
 };
 
@@ -86,6 +87,9 @@ export function Sidebar({ adminVisible, form }: Props) {
         <div className="side-label">工作台</div>
         <Link href="/me" className="side-item" data-active={on('/me')}>
           <Ico>{I.user}</Ico>我的
+        </Link>
+        <Link href="/points" className="side-item" data-active={on('/points')}>
+          <Ico>{I.star}</Ico>积分与签到
         </Link>
         <Link href="/announcements" className="side-item" data-active={on('/announcements')}>
           <Ico>{I.bell}</Ico>公告

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
 import { listOrgs } from '@/lib/orgs';
+import { getPoints } from '@/lib/points';
+import { CheckinCard, CheckinGuest } from '@/components/checkin-card';
 import { winRateText } from '@/lib/org-types';
 import { listPosts } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
@@ -32,6 +34,7 @@ export default async function HomePage() {
     listOrgs('guild').then((list) => list.slice(0, 3)),
     listOrgs('team').then((list) => list.slice(0, 3)),
   ]);
+  const pointsSnap = user ? await getPoints() : null;
   const [userTotal, stats, settings, news, slides, badges, achievements] = await Promise.all([
     countUsers(),
     forumStats(),
@@ -161,6 +164,8 @@ export default async function HomePage() {
       </div>
 
       <aside className="rail">
+        {user && pointsSnap ? <CheckinCard initial={pointsSnap} /> : <CheckinGuest />}
+
         <div className="card rail-card">
           <div className="rail-title">社区概览</div>
           <div className="mini-stats">

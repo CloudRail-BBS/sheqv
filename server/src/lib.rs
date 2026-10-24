@@ -36,6 +36,7 @@ pub mod mcping;
 pub mod netcheck;
 pub mod notifications;
 pub mod orgs;
+pub mod points;
 pub mod oauth;
 pub mod relay;
 pub mod routes;

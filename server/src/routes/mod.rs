@@ -10,6 +10,7 @@ pub mod health;
 pub mod me;
 pub mod notifications;
 pub mod orgs;
+pub mod points;
 pub mod oauth;
 pub mod posts;
 pub mod public;
@@ -114,6 +115,9 @@ pub fn router(state: AppState) -> Router {
             get(orgs::team).patch(orgs::patch_team).delete(orgs::delete_team),
         )
         .route("/api/v1/leaderboard", get(orgs::leaderboard))
+        .route("/api/v1/points", get(points::snapshot))
+        .route("/api/v1/points/checkin", post(points::checkin))
+        .route("/api/v1/points/rank", get(points::rank))
         .route("/api/v1/groups", get(groups::public_list))
         .route("/api/v1/changelog", get(changelog::public_list))
         .route(

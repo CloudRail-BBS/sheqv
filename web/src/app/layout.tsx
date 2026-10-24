@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSettings } from '@/lib/settings';
 import { getNotifications, flatten } from '@/lib/notifications';
+import { getPointsChip } from '@/lib/points';
 import { NotificationBell } from '@/components/notification-bell';
 import { UserBadge } from '@/components/user-badge';
 import { BrandMark } from '@/components/brand-mark';
@@ -44,6 +45,8 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [caps, theme, user] = await Promise.all([getRequestCaps(), getTheme(), getCurrentUser()]);
   const [feed, settings] = await Promise.all([getNotifications(user), getSettings()]);
+  // 顶栏的积分数：只有登录用户才查，失败时静默（不该因为它让整页崩）
+  const pointsChip = user ? await getPointsChip() : null;
   const customLinks = parseFooterLinks(settings.footerLinks);
   const notes = flatten(feed);
 
@@ -87,6 +90,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/#composer" className="btn btn-primary btn-sm hide-mobile">
                   发帖
                 </Link>
+
+                {pointsChip && (
+                  <Link href="/points" className="points-chip" title="积分与签到">
+                    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="m12 3.6 2.5 5.2 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span className="mono">{pointsChip.points}</span>
+                    {!pointsChip.todayDone && <i className="points-dot" aria-label="今日未签到" />}
+                  </Link>
+                )}
 
                 <NotificationBell initial={notes} unread={feed.unread} loggedIn={Boolean(user)} />
 
