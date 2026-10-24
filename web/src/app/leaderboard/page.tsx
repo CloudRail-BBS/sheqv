@@ -20,6 +20,8 @@ import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { getDeveloperBoard } from '@/lib/resource-store';
 import { fmtNum } from '@/lib/resource-types';
+import { DevTeamAvatar } from '@/components/dev-team-avatar';
+import { DevTeamShare } from '@/components/dev-team-share';
 
 export const dynamic = 'force-dynamic';
 
@@ -257,9 +259,12 @@ export default async function LeaderboardPage({
             </div>
 
             <div className="card" style={{ overflow: 'hidden' }}>
-              <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
+              <div className="between" style={{ padding: '10px 16px', borderBottom: '1px solid var(--line-soft)' }}>
                 <b style={{ fontSize: 13 }}>开发团队</b>
-                <span className="small muted">{dev.teams.length} 个</span>
+                <span className="row" style={{ gap: 6 }}>
+                  <DevTeamShare rows={dev.teams} brand={brand} label="分享图" />
+                  <span className="small muted">{dev.teams.length} 个</span>
+                </span>
               </div>
               <table className="table">
                 <thead>
@@ -277,20 +282,24 @@ export default async function LeaderboardPage({
                     <tr key={t.teamId}>
                       <td><span className={'rk-badge ' + rankClass(t.rank - 1)}>{t.rank}</span></td>
                       <td>
-                        <Link href={`/dev-teams/${t.teamId}`} className="small" style={{ fontWeight: 550 }}>
-                          <span
-                            className="crest a"
-                            style={{ width: 20, height: 20, fontSize: 8, borderRadius: 5, background: t.color, marginRight: 6 }}
-                          >
-                            {t.tag}
-                          </span>
-                          {t.name}
+                        <Link href={`/dev-teams/${t.teamId}`} className="dev-team-cell">
+                          <DevTeamAvatar
+                            team={{ name: t.name, tag: t.tag, color: t.color, logo: t.logo }}
+                            size={26}
+                          />
+                          <span className="dtc-name">{t.name}</span>
+                          <span className="dtc-tag">{t.tag}</span>
                         </Link>
                       </td>
                       <td className="mono">{t.members}</td>
                       <td className="mono">{t.resources}</td>
                       <td className="mono">{fmtNum(t.downloads)}</td>
-                      <td className="mono" style={{ fontWeight: 600 }}>{fmtNum(t.score)}</td>
+                      <td className="mono dev-score-cell">
+                        <b>{fmtNum(t.score)}</b>
+                        <span className="dev-score-bar">
+                          <i style={{ width: `${Math.max(6, Math.round((t.score / (dev.teams[0]?.score || 1)) * 100))}%` }} />
+                        </span>
+                      </td>
                     </tr>
                   ))}
                   {dev.teams.length === 0 && (

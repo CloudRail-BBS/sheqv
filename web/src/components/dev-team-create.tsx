@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DEV_TEAM_GAMES } from '@/lib/dev-team-types';
+import { DevTeamAvatar } from './dev-team-avatar';
 
 /**
  * 建队表单。
@@ -25,6 +26,7 @@ export function DevTeamCreate({
   const [tag, setTag] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#0ea5e9');
+  const [logo, setLogo] = useState('');
   const [game, setGame] = useState('minecraft');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export function DevTeamCreate({
     const res = await fetch('/api/v1/dev-teams', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name, tag, description, color, game }),
+      body: JSON.stringify({ name, tag, description, color, logo, game }),
     }).catch(() => null);
 
     setBusy(false);
@@ -130,6 +132,19 @@ export function DevTeamCreate({
         <label className="field">
           <span>标识颜色</span>
           <input className="input" value={color} onChange={(e) => setColor(e.target.value)} placeholder="#0ea5e9" />
+        </label>
+        <label className="field" style={{ gridColumn: '1 / -1' }}>
+          <span>团队头像（可选，http(s) 或 /logo.png）</span>
+          <div className="row" style={{ gap: 8 }}>
+            <input
+              className="input mono"
+              value={logo}
+              onChange={(e) => setLogo(e.target.value)}
+              placeholder="/logo.png 或 https://…/team.png"
+              style={{ flex: 1 }}
+            />
+            <DevTeamAvatar team={{ name: name || '团队', tag: tag || 'TAG', color, logo }} size={34} />
+          </div>
         </label>
         <label className="field" style={{ gridColumn: '1 / -1' }}>
           <span>简介</span>

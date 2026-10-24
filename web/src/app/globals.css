@@ -1691,6 +1691,69 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .dev-board-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
+/* 团队头像：图片与简称色块同尺寸 */
+.dt-avatar {
+  display: block; flex: none; object-fit: cover;
+  border: 1px solid var(--line); background: var(--panel-2);
+}
+
+/* 开发团队榜：头像 + 名称同一行，分数带进度条 */
+.dev-rank-card { padding: 16px; }
+.dev-rank-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.dev-rank-list { display: flex; flex-direction: column; }
+.dev-rank-row {
+  position: relative; display: grid;
+  grid-template-columns: 30px 34px minmax(0, 1fr) auto;
+  align-items: center; gap: 10px;
+  padding: 10px 8px 13px; border-radius: 10px;
+}
+.dev-rank-row:hover { background: var(--panel-2); }
+.dr-main { min-width: 0; }
+.dr-name {
+  font-size: 13.5px; font-weight: 650; letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dr-sub {
+  margin-top: 2px; font-size: 10.5px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dr-score { display: flex; flex-direction: column; align-items: flex-end; }
+.dr-score b { font-size: 15px; letter-spacing: -0.02em; }
+.dr-score span { font-size: 9px; color: var(--muted); }
+.dr-bar {
+  position: absolute; left: 52px; right: 8px; bottom: 4px;
+  height: 3px; border-radius: 2px; background: var(--line-soft); overflow: hidden;
+}
+.dr-bar i {
+  display: block; height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--blue), var(--blue-2));
+}
+
+/* 排行榜里的团队单元格：图 + 名 + 简称强制一行 */
+.dev-team-cell {
+  display: flex; align-items: center; gap: 7px;
+  min-width: 0; white-space: nowrap; color: var(--text);
+}
+.dtc-name {
+  font-size: 12.5px; font-weight: 600;
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis;
+}
+.dtc-tag {
+  flex: none; padding: 1px 4px; border-radius: 4px;
+  border: 1px solid var(--line); color: var(--muted);
+  font-size: 9px; font-weight: 700;
+}
+.dev-score-cell { min-width: 92px; }
+.dev-score-cell b { font-size: 12px; }
+.dev-score-bar {
+  display: block; height: 3px; margin-top: 3px;
+  border-radius: 2px; background: var(--line-soft); overflow: hidden;
+}
+.dev-score-bar i { display: block; height: 100%; background: var(--blue); border-radius: 2px; }
+
 /* ── 福利中心 ───────────────────────────── */
 
 .rw-head {

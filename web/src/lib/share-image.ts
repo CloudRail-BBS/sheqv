@@ -229,6 +229,222 @@ function footer(
   write(ctx, date, w - 72, h - 62, { size: 20, color: C.muted, align: 'right' });
 }
 
+/** 团队头像：只加载站内路径（同源），避免 canvas 被跨域图片污染导致导出失败 */
+function loadSameOriginLogo(url?: string): Promise<HTMLImageElement | null> {
+  if (!url || !url.startsWith('/')) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    let done = false;
+    const finish = (value: HTMLImageElement | null) => {
+      if (done) return;
+      done = true;
+      resolve(value);
+    };
+    img.onload = () => finish(img);
+    img.onerror = () => finish(null);
+    img.src = url;
+    // 图片再慢也不能卡住导出
+    window.setTimeout(() => finish(null), 2500);
+  });
+}
+
+function avatar(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement | null,
+  tag: string,
+  color: string,
+  x: number,
+  y: number,
+  size: number,
+) {
+  if (img) {
+    ctx.save();
+    roundRect(ctx, x, y, size, size, size * 0.24);
+    ctx.clip();
+    ctx.drawImage(img, x, y, size, size);
+    ctx.restore();
+    roundRect(ctx, x, y, size, size, size * 0.24);
+    ctx.strokeStyle = 'rgba(21, 26, 35, 0.12)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    return;
+  }
+  crest(ctx, tag, x, y, size, {
+    bg: color || C.blue,
+    color: '#ffffff',
+    fontSize: size * 0.31,
+  });
+}
+
+/* ── 开发团队榜分享图 1080×1440 ─────────── */
+
+export interface ShareDevTeamRow {
+  rank: number;
+  teamId: string;
+  name: string;
+  tag: string;
+  color: string;
+  logo?: string;
+  members: number;
+  resources: number;
+  downloads: number;
+  likes: number;
+  score: number;
+}
+
+export async function renderDevBoardShare(opts: {
+  rows: ShareDevTeamRow[];
+  brand: string;
+  date: string;
+}): Promise<HTMLCanvasElement> {
+  const W = 1080;
+  const H = 1440;
+  const [el, ctx] = canvas(W, H);
+  paintBase(ctx, W, H);
+
+  const top = opts.rows.slice(0, 8);
+  const logos = await Promise.all(top.map((r) => loadSameOriginLogo(r.logo)));
+
+  roundRect(ctx, 72, 76, 258, 52, 26);
+  ctx.fillStyle = C.panel;
+  ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  write(ctx, 'DEVELOPER TEAMS', 201, 110, {
+    size: 20,
+    weight: 700,
+    color: C.blue,
+    align: 'center',
+  });
+
+  write(ctx, '开发团队榜', 72, 236, { size: 84, weight: 700, color: C.ink });
+  write(ctx, '下载 + 点赞 × 3 · 资源数 × 4 计入团队分', 76, 288, {
+    size: 23,
+    color: C.muted,
+  });
+
+  const gap = 14;
+  const areaTop = 356;
+  const areaBottom = H - 170;
+  const rowH = Math.max(
+    96,
+    Math.min(
+      190,
+      Math.floor((areaBottom - areaTop - gap * Math.max(0, top.length - 1)) / Math.max(1, top.length)),
+    ),
+  );
+  const blockH = top.length * rowH + gap * Math.max(0, top.length - 1);
+  // 只有 1–3 个团队时靠上排，下面补「本期概览」，避免一张分享图中间只有一个卡片
+  const startY =
+    top.length <= 3
+      ? areaTop + 20
+      : areaTop + Math.max(0, Math.floor((areaBottom - areaTop - blockH) / 2));
+
+  top.forEach((row, i) => {
+    const y = startY + i * (rowH + gap);
+    const isFirst = i === 0;
+
+    roundRect(ctx, 72, y, W - 144, rowH, 22);
+    ctx.fillStyle = C.panel;
+    ctx.fill();
+    ctx.strokeStyle = isFirst ? 'rgba(62, 124, 255, 0.45)' : C.line;
+    ctx.lineWidth = isFirst ? 3 : 2;
+    ctx.stroke();
+
+    write(ctx, String(row.rank), 116, y + rowH / 2 + 20, {
+      size: 48,
+      weight: 700,
+      color: isFirst ? C.blue : C.muted,
+      align: 'center',
+      font: MONO,
+    });
+
+    avatar(ctx, logos[i], row.tag, row.color, 164, y + (rowH - 76) / 2, 76);
+
+    write(ctx, row.name, 268, y + rowH / 2 - 6, {
+      size: 34,
+      weight: 600,
+      color: C.ink,
+      maxWidth: 430,
+    });
+    write(
+      ctx,
+      `${row.tag} · ${row.members} 成员 · ${row.resources} 个资源`,
+      268,
+      y + rowH / 2 + 34,
+      { size: 21, color: C.muted, maxWidth: 430 },
+    );
+
+    write(ctx, String(row.score), W - 96, y + rowH / 2 + 2, {
+      size: 46,
+      weight: 700,
+      color: C.ink,
+      align: 'right',
+      font: MONO,
+    });
+    write(ctx, '团队分', W - 96, y + rowH / 2 - 34, {
+      size: 19,
+      color: C.muted,
+      align: 'right',
+    });
+    write(ctx, `↓ ${row.downloads} · ♥ ${row.likes}`, W - 96, y + rowH / 2 + 34, {
+      size: 18,
+      color: C.muted,
+      align: 'right',
+    });
+  });
+
+  if (top.length === 0) {
+    write(ctx, '还没有团队上榜', W / 2, H / 2, {
+      size: 32,
+      weight: 600,
+      color: C.muted,
+      align: 'center',
+    });
+  }
+
+  if (top.length > 0 && top.length <= 3) {
+    const totals = top.reduce(
+      (acc, row) => ({
+        resources: acc.resources + row.resources,
+        downloads: acc.downloads + row.downloads,
+        likes: acc.likes + row.likes,
+      }),
+      { resources: 0, downloads: 0, likes: 0 },
+    );
+    const summaryY = startY + blockH + 42;
+    write(ctx, '本期概览', 76, summaryY, { size: 22, weight: 600, color: C.muted });
+
+    const cards: [string, number][] = [
+      ['上榜团队', top.length],
+      ['资源', totals.resources],
+      ['下载', totals.downloads],
+      ['点赞', totals.likes],
+    ];
+    const cardW = (W - 144 - 18 * 3) / 4;
+    cards.forEach(([label, value], i) => {
+      const x = 72 + i * (cardW + 18);
+      roundRect(ctx, x, summaryY + 24, cardW, 118, 18);
+      ctx.fillStyle = C.panel;
+      ctx.fill();
+      ctx.strokeStyle = C.line;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      write(ctx, String(value), x + 20, summaryY + 88, {
+        size: 42,
+        weight: 700,
+        color: C.ink,
+        font: MONO,
+      });
+      write(ctx, label, x + 20, summaryY + 118, { size: 19, color: C.muted });
+    });
+  }
+
+  footer(ctx, W, H, opts.brand, opts.date);
+  return el;
+}
+
 /* ── 榜单分享图 1080×1440 ─────────────────── */
 
 export function renderLeaderboardShare(opts: {

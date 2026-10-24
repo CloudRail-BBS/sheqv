@@ -7,6 +7,7 @@ import { listTeamResources } from '@/lib/resource-store';
 import { devTeamGameLabel } from '@/lib/dev-team-types';
 import { ResourceCard } from '@/components/resource-card';
 import { DevTeamOwner } from '@/components/dev-team-owner';
+import { DevTeamAvatar } from '@/components/dev-team-avatar';
 import { buildMetadata } from '@/lib/seo';
 import { fmtNum } from '@/lib/resource-types';
 
@@ -50,16 +51,7 @@ export default async function DevTeamDetail({ params }: { params: Promise<{ id: 
           style={{ '--dt-color': accent } as CSSProperties}
         >
           <div className="dth-top">
-            <span
-              className="dth-mark"
-              style={{
-                background: `color-mix(in srgb, ${accent} 18%, transparent)`,
-                color: accent,
-                borderColor: `color-mix(in srgb, ${accent} 40%, transparent)`,
-              }}
-            >
-              {team.tag}
-            </span>
+            <DevTeamAvatar team={team} size={54} />
             <div style={{ minWidth: 0 }}>
               <h1 className="dth-name">{team.name}</h1>
               <div className="small muted">
@@ -130,7 +122,15 @@ export default async function DevTeamDetail({ params }: { params: Promise<{ id: 
       </div>
 
       <aside className="rail">
-        {isOwner && <DevTeamOwner teamId={team.id} members={team.members ?? []} />}
+        {isOwner && (
+          <DevTeamOwner
+            teamId={team.id}
+            members={team.members ?? []}
+            logo={team.logo ?? ''}
+            tag={team.tag}
+            color={team.color}
+          />
+        )}
 
         <div className="card rail-card">
           <div className="rail-title">怎么加入</div>

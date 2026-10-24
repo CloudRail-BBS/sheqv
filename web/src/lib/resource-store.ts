@@ -53,6 +53,7 @@ export interface DevTeamRow {
   name: string;
   tag: string;
   color: string;
+  logo?: string;
   members: number;
   resources: number;
   downloads: number;

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { devTeamGameLabel, type DevTeam } from '@/lib/dev-team-types';
+import { DevTeamAvatar } from './dev-team-avatar';
 import { fmtNum } from '@/lib/resource-types';
 
 /** 开发团队卡片：和公会/战队卡片刻意不同，强调「作品」而不是「战绩」 */
@@ -8,16 +9,7 @@ export function DevTeamCard({ team }: { team: DevTeam }) {
     <Link href={`/dev-teams/${team.id}`} className="card dev-team-card">
       <span className="dt-accent" style={{ background: team.color || 'var(--blue)' }} />
       <div className="dt-head">
-        <span
-          className="dt-mark"
-          style={{
-            background: `color-mix(in srgb, ${team.color || '#3e7cff'} 16%, transparent)`,
-            color: team.color || 'var(--blue)',
-            borderColor: `color-mix(in srgb, ${team.color || '#3e7cff'} 36%, transparent)`,
-          }}
-        >
-          {team.tag}
-        </span>
+        <DevTeamAvatar team={team} size={42} />
         <div style={{ minWidth: 0 }}>
           <div className="dt-name">{team.name}</div>
           <div className="small muted">

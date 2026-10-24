@@ -26,6 +26,9 @@ pub struct DevTeamView {
     pub tag: String,
     pub description: String,
     pub color: String,
+    /// 团队头像地址；空表示用简称色块
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub logo: String,
     pub game: String,
     pub owner_id: String,
     pub owner: String,
@@ -45,6 +48,7 @@ struct Row {
     tag: String,
     description: String,
     color: String,
+    logo: String,
     game: String,
     owner_id: String,
     owner: String,
@@ -55,7 +59,7 @@ struct Row {
     created_at: DateTime<Utc>,
 }
 
-const SELECT: &str = "SELECT t.id, t.name, t.tag, t.description, t.color, t.game,
+const SELECT: &str = "SELECT t.id, t.name, t.tag, t.description, t.color, t.logo, t.game,
             t.owner_id, u.nickname AS owner,
             (SELECT count(*) FROM dev_team_members m WHERE m.team_id = t.id)::bigint AS member_count,
             (SELECT count(*) FROM resources r WHERE r.team_id = t.id AND r.status = 'published')::bigint AS resource_count,
@@ -74,6 +78,7 @@ impl Row {
             tag: self.tag,
             description: self.description,
             color: self.color,
+            logo: self.logo,
             game: self.game,
             owner_id: self.owner_id,
             owner: self.owner,
@@ -163,6 +168,7 @@ pub struct NewDevTeam<'a> {
     pub tag: &'a str,
     pub description: &'a str,
     pub color: &'a str,
+    pub logo: &'a str,
     pub game: &'a str,
 }
 
@@ -185,6 +191,14 @@ pub fn validate(input: &NewDevTeam<'_>) -> Option<String> {
             && color[1..].chars().all(|c| c.is_ascii_hexdigit()))
     {
         return Some("颜色需写成 #rgb 或 #rrggbb".into());
+    }
+    let logo = input.logo.trim();
+    let logo_ok = logo.is_empty()
+        || ((logo.starts_with("http://") || logo.starts_with("https://")
+            || (logo.starts_with('/') && !logo.starts_with("//")))
+            && logo.len() <= 500);
+    if !logo_ok {
+        return Some("头像需为 http(s) 链接或站内路径（/ 开头），最长 500 字".into());
     }
     if !matches!(input.game, "" | "minecraft" | "rusted_warfare") {
         return Some("游戏类型不正确".into());
@@ -259,8 +273,8 @@ pub async fn create(pool: &PgPool, owner_id: &str, input: &NewDevTeam<'_>) -> Re
     let id = crate::ids::next('d');
     let mut tx = pool.begin().await?;
     sqlx::query(
-        "INSERT INTO dev_teams (id, name, tag, description, color, game, owner_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        "INSERT INTO dev_teams (id, name, tag, description, color, logo, game, owner_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
     )
     .bind(&id)
     .bind(input.name.trim())
@@ -271,6 +285,7 @@ pub async fn create(pool: &PgPool, owner_id: &str, input: &NewDevTeam<'_>) -> Re
     } else {
         input.color.trim()
     })
+    .bind(input.logo.trim())
     .bind(input.game)
     .bind(owner_id)
     .execute(&mut *tx)
@@ -291,6 +306,7 @@ pub struct TeamPatch<'a> {
     pub tag: Option<&'a str>,
     pub description: Option<&'a str>,
     pub color: Option<&'a str>,
+    pub logo: Option<&'a str>,
     pub game: Option<&'a str>,
 }
 
@@ -302,6 +318,7 @@ pub async fn patch(pool: &PgPool, id: &str, patch: TeamPatch<'_>) -> Result<Opti
     let tag = patch.tag.unwrap_or(&cur.tag);
     let description = patch.description.unwrap_or(&cur.description);
     let color = patch.color.unwrap_or(&cur.color);
+    let logo = patch.logo.unwrap_or(&cur.logo);
     let game = patch.game.unwrap_or(&cur.game);
 
     let check = NewDevTeam {
@@ -309,6 +326,7 @@ pub async fn patch(pool: &PgPool, id: &str, patch: TeamPatch<'_>) -> Result<Opti
         tag,
         description,
         color,
+        logo,
         game,
     };
     if let Some(msg) = validate(&check) {
@@ -335,7 +353,7 @@ pub async fn patch(pool: &PgPool, id: &str, patch: TeamPatch<'_>) -> Result<Opti
     }
 
     sqlx::query(
-        "UPDATE dev_teams SET name=$2, tag=$3, description=$4, color=$5, game=$6, updated_at=now()
+        "UPDATE dev_teams SET name=$2, tag=$3, description=$4, color=$5, logo=$6, game=$7, updated_at=now()
           WHERE id=$1",
     )
     .bind(id)
@@ -343,6 +361,7 @@ pub async fn patch(pool: &PgPool, id: &str, patch: TeamPatch<'_>) -> Result<Opti
     .bind(tag.trim())
     .bind(description.trim())
     .bind(color.trim())
+    .bind(logo.trim())
     .bind(game)
     .execute(pool)
     .await?;
@@ -424,6 +443,7 @@ mod tests {
             tag: "CRW",
             description: "",
             color: "#0ea5e9",
+            logo: "",
             game: "minecraft",
         }
     }

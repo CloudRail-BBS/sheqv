@@ -14,6 +14,8 @@ export interface DevTeam {
   tag: string;
   description: string;
   color: string;
+  /** 团队头像地址；空则用简称色块 */
+  logo?: string;
   game: string;
   ownerId: string;
   owner: string;

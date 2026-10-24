@@ -105,6 +105,7 @@ pub async fn create(
         tag: &text(&obj, "tag"),
         description: &text(&obj, "description"),
         color: &text(&obj, "color"),
+        logo: &text(&obj, "logo"),
         game: &text(&obj, "game"),
     };
 
@@ -151,6 +152,7 @@ pub async fn patch(
     let tag = obj.get("tag").and_then(|v| v.as_str());
     let description = obj.get("description").and_then(|v| v.as_str());
     let color = obj.get("color").and_then(|v| v.as_str());
+    let logo = obj.get("logo").and_then(|v| v.as_str());
     let game = obj.get("game").and_then(|v| v.as_str());
 
     let item = dev_teams::patch(
@@ -161,6 +163,7 @@ pub async fn patch(
             tag,
             description,
             color,
+            logo,
             game,
         },
     )

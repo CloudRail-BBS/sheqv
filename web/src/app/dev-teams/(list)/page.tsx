@@ -3,10 +3,14 @@ import { getCurrentUser } from '@/lib/current-user';
 import { listDevTeams, listMyDevTeams } from '@/lib/dev-team-store';
 import { getDeveloperBoard } from '@/lib/resource-store';
 import { DevTeamCard } from '@/components/dev-team-card';
+import { DevTeamAvatar } from '@/components/dev-team-avatar';
+import { DevTeamShare } from '@/components/dev-team-share';
 import { DevTeamCreate } from '@/components/dev-team-create';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { fmtNum } from '@/lib/resource-types';
+import { rankClass } from '@/lib/org-types';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +28,14 @@ export default async function DevTeamsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const [user, teams, board] = await Promise.all([
+  const [user, teams, board, settings] = await Promise.all([
     getCurrentUser(),
     listDevTeams(q),
     getDeveloperBoard(),
+    getSettings(),
   ]);
+  const brand = settings.siteName || '云轨社区';
+  const topScore = board.teams[0]?.score || 1;
   const myTeams = user ? await listMyDevTeams() : [];
   const ownedTeam = myTeams.find((t) => t.ownerId === user?.id);
 
@@ -47,6 +54,44 @@ export default async function DevTeamsPage({
             <input name="q" defaultValue={q ?? ''} placeholder="搜索团队" aria-label="搜索开发团队" />
           </form>
         </div>
+
+        {board.teams.length > 0 && (
+          <section className="card dev-rank-card">
+            <div className="dev-rank-head">
+              <div>
+                <div className="rail-title" style={{ margin: 0 }}>团队榜</div>
+                <p className="small muted" style={{ marginTop: 3 }}>
+                  下载 + 点赞 × 3 · 资源数 × 4 计入团队分
+                </p>
+              </div>
+              <DevTeamShare rows={board.teams} brand={brand} />
+            </div>
+            <div className="dev-rank-list">
+              {board.teams.slice(0, 5).map((t) => (
+                <Link key={t.teamId} href={`/dev-teams/${t.teamId}`} className="dev-rank-row">
+                  <span className={'rk-badge ' + rankClass(t.rank - 1)}>{t.rank}</span>
+                  <DevTeamAvatar
+                    team={{ name: t.name, tag: t.tag, color: t.color, logo: t.logo }}
+                    size={34}
+                  />
+                  <div className="dr-main">
+                    <div className="dr-name">{t.name}</div>
+                    <div className="dr-sub">
+                      {t.tag} · {t.members} 成员 · {t.resources} 资源 · ↓{fmtNum(t.downloads)} · ♥{fmtNum(t.likes)}
+                    </div>
+                  </div>
+                  <div className="dr-score">
+                    <b className="mono">{fmtNum(t.score)}</b>
+                    <span>团队分</span>
+                  </div>
+                  <span className="dr-bar" aria-hidden="true">
+                    <i style={{ width: `${Math.max(6, Math.round((t.score / topScore) * 100))}%` }} />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="dt-create-wrap">
           <DevTeamCreate
@@ -76,29 +121,21 @@ export default async function DevTeamsPage({
 
       <aside className="rail">
         <div className="card rail-card">
-          <div className="rail-title">团队榜</div>
-          {board.teams.length === 0 ? (
-            <p className="small muted" style={{ lineHeight: 1.75 }}>
-              团队有作品后才会进入榜单。
-            </p>
-          ) : (
-            <div className="rail-list">
-              {board.teams.slice(0, 5).map((t) => (
-                <Link key={t.teamId} href={`/dev-teams/${t.teamId}`} className="rail-item">
-                  <span className="idx">{t.rank}</span>
-                  <span className="crest a" style={{ width: 24, height: 24, fontSize: 9, borderRadius: 6, background: t.color }}>
-                    {t.tag}
-                  </span>
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.name}
-                  </span>
-                  <span className="mono small muted" style={{ marginLeft: 'auto' }}>
-                    {fmtNum(t.downloads)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="rail-title">团队分怎么算</div>
+          <dl className="kv">
+            <dt>资源数</dt>
+            <dd className="mono">× 4</dd>
+            <dt>下载量</dt>
+            <dd className="mono">× 1</dd>
+            <dt>点赞量</dt>
+            <dd className="mono">× 3</dd>
+          </dl>
+          <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
+            与开发者个人榜同一套口径；只有挂在团队名下的资源才计入团队分。
+          </p>
+          <Link href="/leaderboard#developers" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
+            完整开发者榜
+          </Link>
         </div>
 
         <div className="card rail-card">

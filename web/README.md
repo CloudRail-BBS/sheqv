@@ -80,7 +80,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/login` | 登录（同样过人机验证） |
 | `/guilds` | 公会列表 + 公会战日程 |
 | `/teams` | 战队列表 + 出战名单 + 战绩；战队独立于公会 |
-| `/dev-teams` `/dev-teams/[id]` | 开发团队：面向资源作者，团队作品与成员管理 |
+| `/dev-teams` `/dev-teams/[id]` | 开发团队：团队头像、团队榜、作品与成员管理；可导出团队榜分享图 |
 | `/matches` `/matches/[id]` | 约战列表；详情含分局、时间线、确认/争议 |
 | `/resources` `/resources/[id]` | 资源库：筛选 / 排序 / 点赞 / 下载（同用户同天去重） |
 | `/resources/new` | 发布资源：登录即可，首个资源自动点亮开发者身份 |

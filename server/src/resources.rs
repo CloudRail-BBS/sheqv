@@ -544,6 +544,9 @@ pub struct DevTeamRow {
     pub name: String,
     pub tag: String,
     pub color: String,
+    /// 团队头像；空则前端用简称色块
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub logo: String,
     pub members: i64,
     pub resources: i64,
     pub downloads: i64,
@@ -569,6 +572,7 @@ struct DevTeamDbRow {
     name: String,
     tag: String,
     color: String,
+    logo: String,
     members: i64,
     resources: i64,
     downloads: i64,
@@ -618,7 +622,7 @@ pub async fn developer_board(pool: &PgPool, limit: i64) -> Result<Vec<DevRow>, s
 /// 开发团队榜：只统计挂在团队名下的资源
 pub async fn dev_team_board(pool: &PgPool, limit: i64) -> Result<Vec<DevTeamRow>, sqlx::Error> {
     let rows: Vec<DevTeamDbRow> = sqlx::query_as(
-        "SELECT t.id AS team_id, t.name, t.tag, t.color,
+        "SELECT t.id AS team_id, t.name, t.tag, t.color, t.logo,
                 (SELECT count(*) FROM dev_team_members m WHERE m.team_id = t.id)::bigint AS members,
                 count(r.id)::bigint AS resources,
                 COALESCE(sum(r.download_count), 0)::bigint AS downloads,
@@ -643,6 +647,7 @@ pub async fn dev_team_board(pool: &PgPool, limit: i64) -> Result<Vec<DevTeamRow>
             name: r.name,
             tag: r.tag,
             color: r.color,
+            logo: r.logo,
             members: r.members,
             resources: r.resources,
             downloads: r.downloads,
