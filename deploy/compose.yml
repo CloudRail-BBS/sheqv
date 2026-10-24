@@ -1,0 +1,118 @@
+# 生产编排：db + api + web
+#
+#   nginx ─┬─ /api/*  → api:8080 → db:5432
+#          └─ 其余     → web:8900 → （内网）api:8080
+#
+# 用法（**本目录就是部署目录**，配置都放这里，仓库根目录保持干净）：
+#   cd deploy
+#   ./up.sh                 # 首次会自动生成 .env（随机密码/密钥）再起服务
+#   ./doctor.sh             # 起不来时先跑它，看 db/api 的日志与健康状态
+#
+# 说明：
+# - db 不发布端口，只在容器网络内可达；运维用 `docker compose exec db psql`
+# - web 通过 API_BASE 走内网取数；nginx 可以把 /api/* 直连 api:8080，也可以交给 next rewrites
+# - 数据卷固定叫 blockarena-*，删了 compose 目录也不会丢数据
+# - **宿主机 8080 常被占用**：api 容器内部仍监听 8080，但只在回环地址发布成
+#   `${API_HOST_PORT:-18080}`，健康检查/nginx 都走这个端口，不去抢 8080
+
+name: blockarena
+
+services:
+  db:
+    # 固定 17：18 把默认 PGDATA 改成了 /var/lib/postgresql/18/docker，
+    # 与本文件的挂载点不一致，首次启动容易直接退出。
+    image: postgres:17-alpine
+    container_name: blockarena-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: arena
+      POSTGRES_USER: arena
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 deploy/.env 里设置 POSTGRES_PASSWORD（运行 ./up.sh 会自动生成）}
+      # 显式钉住数据目录，避免镜像默认值变化导致挂载点与 PGDATA 不一致
+      PGDATA: /var/lib/postgresql/data
+      TZ: Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # 用 TCP 探，避免初始化阶段 socket 已存在但未就绪的假阳性
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U arena -d arena"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      # 首次 initdb 在慢盘上要十几秒，给够时间再判定 unhealthy
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256mb
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  api:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    image: blockarena/api:2026.10.24
+    container_name: blockarena-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://arena:${POSTGRES_PASSWORD}@db:5432/arena
+      PORT: "8080"
+      DATA_DIR: /data
+      TZ: Asia/Shanghai
+      RUST_LOG: info,arena_api=info
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      APP_VERSION: ${APP_VERSION:-2026.10.24}
+    volumes:
+      # 只放 .session-secret；多实例部署必须显式配 SESSION_SECRET
+      - session-secret:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # 容器内 8080 → 宿主机回环 18080。8080 留给服务器上已有的服务。
+      - "127.0.0.1:${API_HOST_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/arena-api", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+    image: blockarena/web:2026.10.24
+    container_name: blockarena-web
+    restart: unless-stopped
+    environment:
+      API_BASE: http://api:8080
+      PORT: "8900"
+      TZ: Asia/Shanghai
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # 对外由 nginx 承载；直接访问就放开成 "8900:8900"
+      - "127.0.0.1:8900:8900"
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+volumes:
+  pgdata:
+    name: blockarena-pgdata
+  session-secret:
+    name: blockarena-session-secret

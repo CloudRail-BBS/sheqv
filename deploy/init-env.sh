@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# 生成根目录 .env（给 docker compose 用）：随机 POSTGRES_PASSWORD + SESSION_SECRET
+# 生成 deploy/.env（给 docker compose 用）：随机 POSTGRES_PASSWORD + SESSION_SECRET
 #
-#   bash scripts/init-env.sh
+#   cd deploy && ./init-env.sh
 #
 # 已存在 .env 时**拒绝覆盖**（里面可能是线上密钥）。要换密码请手动改，
 # 并同步 `ALTER USER arena PASSWORD '...'`。
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET="${ENV_FILE:-$ROOT/.env}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET="${ENV_FILE:-$HERE/.env}"
 
 if [ -e "$TARGET" ]; then
   echo "已存在 $TARGET，未做任何修改。" >&2
@@ -39,6 +39,8 @@ POSTGRES_PASSWORD=$DB_PASS
 SESSION_SECRET=$SESSION
 ADMIN_TOKEN=
 PUBLIC_BASE_URL=
+# 宿主机 8080 常被占用，api 发布在 18080（容器内仍是 8080）
+API_HOST_PORT=18080
 APP_VERSION=2026.10.24
 ENV
 
@@ -48,6 +50,6 @@ echo "已生成 $TARGET"
 echo "  数据库密码：已随机生成（16 字节）"
 echo "  会话密钥：已随机生成（32 字节）"
 echo
-echo "下一步（都在仓库根目录）："
+echo "下一步（在 deploy 目录）："
 echo "  docker compose up -d --build"
 echo "  docker compose exec api /usr/local/bin/arena-api create-admin --username ops --password '<强密码>'"

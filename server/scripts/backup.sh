@@ -14,7 +14,9 @@ set -euo pipefail
 
 KEEP=30
 DIR="${BACKUP_DIR:-./backups}"
-COMPOSE_FILE="${COMPOSE_FILE:-../docker-compose.yml}"
+# 从脚本位置推仓库根，避免在哪个目录执行都要改路径
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+COMPOSE_FILE="${COMPOSE_FILE:-$ROOT/deploy/compose.yml}"
 
 while [ $# -gt 0 ]; do
   case "$1" in

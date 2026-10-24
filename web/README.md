@@ -31,7 +31,7 @@ curl -s localhost:8900/api/health
 
 | 方式 | 入口 |
 |---|---|
-| Docker Compose（推荐） | `Dockerfile` + `docker-compose.yml`，数据挂 `blockarena-data` 卷 |
+| Docker Compose（推荐） | `Dockerfile` + `deploy/compose.yml`，数据挂 `blockarena-data` 卷 |
 | 裸机 systemd | `deploy/blockarena.service`（`ProtectSystem=strict`，只有数据目录可写） |
 | 反向代理 | `deploy/nginx.conf`（含 2GB 上传、静态长缓存、WS 预留）或 `deploy/Caddyfile`（自动 HTTPS） |
 | 备份 / 恢复 | `deploy/backup.sh backup 14` · `deploy/backup.sh restore <file>` |
@@ -194,7 +194,7 @@ src/
     api/v1/admin/{users,posts,announcements,slides,settings,agreements,sponsors,afdian}/…
 ```
 
-根目录另有 `Dockerfile`、`docker-compose.yml`、`.env.example`、`.dockerignore`、`deploy/`。
+根目录另有 `Dockerfile`、`deploy/compose.yml`、`.env.example`、`.dockerignore`、`deploy/`。
 
 ## 验证
 
