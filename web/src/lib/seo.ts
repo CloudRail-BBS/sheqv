@@ -23,7 +23,6 @@ export const DEFAULT_KEYWORDS = [
   '我的世界',
   '我的世界服务器',
   'Rusted Warfare',
-  'Rusted Warfare',
   '联机大厅',
   '玩家社区',
   '公会',
@@ -43,10 +42,20 @@ function absolute(pathOrUrl: string, base: string): string {
 
 export interface SiteMeta {
   name: string;
+  /** 首页 / 默认标题 */
+  defaultTitle: string;
   description: string;
   keywords: string[];
   baseUrl: string;
   logo: string;
+  /** 分享封面绝对地址 */
+  ogImage: string;
+  /** 是否允许搜索引擎收录 */
+  index: boolean;
+  /** Google Search Console 验证码 */
+  verification: string;
+  /** Twitter 卡片账号 */
+  twitter: string;
 }
 
 export const getSiteMeta = cache(async (): Promise<SiteMeta> => {
@@ -60,6 +69,8 @@ export const getSiteMeta = cache(async (): Promise<SiteMeta> => {
   }
 
   const name = (settings.siteName || config.siteName || '云轨社区').trim();
+  const defaultTitle =
+    (settings.seoTitle || '').trim() || `${name} · 玩家社区与赛事确权`;
   const description = (settings.seoDescription || '').trim() || DEFAULT_DESCRIPTION;
   const keywords = (settings.seoKeywords || '')
     .split(/[,，\s]+/)
@@ -71,7 +82,12 @@ export const getSiteMeta = cache(async (): Promise<SiteMeta> => {
     description,
     keywords: keywords.length > 0 ? keywords : DEFAULT_KEYWORDS,
     baseUrl,
+    defaultTitle,
     logo: absolute((settings.logoImage || '/logo.png').trim(), baseUrl),
+    ogImage: absolute((settings.seoOgImage || '/opengraph-image.png').trim(), baseUrl),
+    index: settings.seoIndex !== false,
+    verification: (settings.seoVerification || '').trim(),
+    twitter: (settings.seoTwitter || '').trim(),
   };
 });
 
@@ -94,9 +110,10 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
   const site = await getSiteMeta();
   const description = (input.description || site.description).trim();
   const title = input.title?.trim();
-  const defaultTitle = `${site.name} · 玩家社区与赛事确权`;
+  const defaultTitle = site.defaultTitle;
   const headline = title ? `${title} · ${site.name}` : defaultTitle;
-  const shareImage = absolute(input.image || '/opengraph-image.png', site.baseUrl);
+  const shareImage = absolute(input.image || site.ogImage, site.baseUrl);
+  const indexable = site.index && !input.noIndex;
   const canonical = input.path
     ? site.baseUrl
       ? absolute(input.path, site.baseUrl)
@@ -110,6 +127,9 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
     title: title ?? (input.root ? { default: defaultTitle, template: `%s · ${site.name}` } : defaultTitle),
     description,
     keywords: site.keywords,
+    ...(site.verification
+      ? { other: { 'google-site-verification': site.verification } }
+      : {}),
     applicationName: site.name,
     creator: site.name,
     publisher: site.name,
@@ -125,17 +145,18 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
     },
     twitter: {
       card: 'summary_large_image',
+      site: site.twitter || undefined,
       title: title ? `${title} · ${site.name}` : site.name,
       description,
       images: [shareImage],
     },
-    robots: input.noIndex
-      ? { index: false, follow: false }
-      : {
+    robots: indexable
+      ? {
           index: true,
           follow: true,
           googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
-        },
+        }
+      : { index: false, follow: false },
   };
 }
 

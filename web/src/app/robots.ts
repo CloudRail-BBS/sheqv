@@ -10,6 +10,13 @@ export const dynamic = 'force-dynamic';
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const site = await getSiteMeta();
 
+  if (!site.index) {
+    return {
+      rules: [{ userAgent: '*', disallow: '/' }],
+      host: site.baseUrl || undefined,
+    };
+  }
+
   return {
     rules: [
       {

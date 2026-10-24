@@ -286,6 +286,56 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .composer-actions .tip { margin-left: auto; font-size: 11px; color: #8a8a90; }
 .composer-actions .act { font-size: 12px; }
+.composer-trigger { cursor: pointer; }
+.composer-trigger:hover { border-color: var(--line-strong); }
+
+/* 独立悬浮的发帖编辑器 */
+.composer-modal {
+  position: fixed; inset: 0; z-index: 110;
+  display: grid; place-items: center; padding: 24px;
+}
+.composer-backdrop {
+  position: absolute; inset: 0; border: 0; cursor: default;
+  background: rgba(7, 10, 18, 0.62);
+  backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+}
+.composer-panel {
+  position: relative; z-index: 1;
+  width: min(780px, 94vw); max-height: min(88vh, 920px); overflow: auto;
+  padding: 18px 20px 16px; border-radius: 18px;
+  background: var(--panel); border: 1px solid var(--line);
+  box-shadow: 0 45px 110px -35px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: composerIn 0.18s ease-out both;
+}
+[data-theme="light"] .composer-panel {
+  box-shadow: 0 35px 90px -35px rgba(15, 23, 42, 0.55), inset 0 1px 0 #fff;
+}
+.composer-panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.composer-close {
+  margin-left: auto; width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
+  font-size: 20px; line-height: 1; cursor: pointer; flex: none;
+}
+.composer-close:hover { color: var(--text); border-color: var(--line-strong); }
+.composer-title { height: 40px; font-size: 14px; }
+.composer-tags { margin-top: 10px; }
+.composer-modal-foot {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.composer-modal-foot .tip { margin-right: auto; font-size: 11px; color: var(--muted); }
+@keyframes composerIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 560px) {
+  .composer-modal { padding: 0; }
+  .composer-panel {
+    width: 100%; height: 100dvh; max-height: none;
+    border-radius: 0; border: 0; padding: 14px;
+  }
+  .composer-panel .md-input { min-height: 220px; }
+}
 
 /* ── feed tabs ───────────────────────────── */
 
@@ -585,7 +635,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 /* ── form / modal ────────────────────────── */
 
-.field { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--muted); min-width: 0; }
+.field > .input { width: 100%; min-width: 0; }
+.org-form-row {
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  gap: 8px; margin-top: 10px;
+}
 .input {
   height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line);
   background: var(--bg-soft); color: var(--text); font-size: 13px; font-family: inherit;
@@ -2033,6 +2088,35 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .admin-split { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 12px; margin-top: 10px; }
 
 /* 后台导航编辑器 */
+.seo-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+  margin-top: 12px; max-width: 760px;
+}
+.switch-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 14px; font-size: 12px; color: var(--text-2); cursor: pointer;
+}
+.switch-row input { margin-top: 2px; accent-color: var(--blue); }
+.switch-row .field-opt { display: block; margin: 2px 0 0; }
+.seo-preview {
+  margin-top: 14px; max-width: 620px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
+}
+.seo-preview-url { font-size: 11px; color: #2f7d4f; }
+.seo-preview-title {
+  margin-top: 3px; font-size: 17px; line-height: 1.4; color: #1a0dab;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.seo-preview-desc {
+  margin-top: 3px; font-size: 12px; line-height: 1.6; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+[data-theme="dark"] .seo-preview-url { color: #7ee2a8; }
+[data-theme="dark"] .seo-preview-title { color: #8ab4f8; }
+@media (max-width: 860px) {
+  .seo-grid { grid-template-columns: 1fr; }
+}
+
 .nav-editor {
   display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px;
   margin-top: 12px;
@@ -2091,7 +2175,36 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 
 @media (max-width: 1024px) {
-  .admin-split, .nav-editor { grid-template-columns: 1fr; }
+  .admin-split, .seo-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+  margin-top: 12px; max-width: 760px;
+}
+.switch-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 14px; font-size: 12px; color: var(--text-2); cursor: pointer;
+}
+.switch-row input { margin-top: 2px; accent-color: var(--blue); }
+.switch-row .field-opt { display: block; margin: 2px 0 0; }
+.seo-preview {
+  margin-top: 14px; max-width: 620px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
+}
+.seo-preview-url { font-size: 11px; color: #2f7d4f; }
+.seo-preview-title {
+  margin-top: 3px; font-size: 17px; line-height: 1.4; color: #1a0dab;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.seo-preview-desc {
+  margin-top: 3px; font-size: 12px; line-height: 1.6; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+[data-theme="dark"] .seo-preview-url { color: #7ee2a8; }
+[data-theme="dark"] .seo-preview-title { color: #8ab4f8; }
+@media (max-width: 860px) {
+  .seo-grid { grid-template-columns: 1fr; }
+}
+
+.nav-editor { grid-template-columns: 1fr; }
 }
 @media (max-width: 860px) {
   .dev-team-grid, .gift-grid, .dt-members, .dev-board-grid { grid-template-columns: 1fr; }

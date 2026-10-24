@@ -13,10 +13,20 @@ export interface SiteSettings {
   siteName: string;
   logoText: string;
   logoImage: string;
+  /** 首页默认标题；留空用「站点名 · 玩家社区与赛事确权」 */
+  seoTitle: string;
   /** 搜索引擎与社交分享用的描述；留空用内置文案 */
   seoDescription: string;
   /** 逗号分隔的关键词；留空用内置文案 */
   seoKeywords: string;
+  /** 分享封面；留空用 /opengraph-image.png */
+  seoOgImage: string;
+  /** 是否允许搜索引擎收录（false = 全站 noindex + robots 全禁） */
+  seoIndex: boolean;
+  /** Google Search Console 验证码 */
+  seoVerification: string;
+  /** Twitter 分享卡片账号，如 @cloudrail */
+  seoTwitter: string;
   publicBaseUrl: string;
   geetestId: string;
   geetestKey: string;
@@ -65,8 +75,13 @@ const DEFAULTS: SiteSettings = {
   siteName: '云轨社区',
   logoText: '',
   logoImage: '/logo.png',
+  seoTitle: '',
   seoDescription: '',
   seoKeywords: '',
+  seoOgImage: '',
+  seoIndex: true,
+  seoVerification: '',
+  seoTwitter: '',
   publicBaseUrl: '',
   geetestId: '',
   geetestKey: '',

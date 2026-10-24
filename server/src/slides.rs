@@ -235,9 +235,9 @@ pub async fn ensure_default(pool: &PgPool) -> Result<(), sqlx::Error> {
 
     sqlx::query(
         "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord)
-         VALUES ('s-welcome', '从这里开始', '注册一个账号，就能发帖、评论与签署公约',
-                 '第一个注册的账号自动成为管理员。本站没有内置账号，社区内容全部来自真实用户。',
-                 '注册账号', '/register', '#e8f0ff', '', 'dark', true, 1)
+         VALUES ('s-welcome', '欢迎', '欢迎来到云轨社区',
+                 '玩家社区、开发团队与赛事确权都在这里。先逛逛资源库，或者发第一条帖子。',
+                 '去资源库', '/resources', '#e8f0ff', '', 'dark', true, 1)
          ON CONFLICT (id) DO NOTHING",
     )
     .execute(pool)

@@ -33,8 +33,13 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         siteName: form.siteName,
         logoText: form.logoText,
         logoImage: form.logoImage,
+        seoTitle: form.seoTitle,
         seoDescription: form.seoDescription,
         seoKeywords: form.seoKeywords,
+        seoOgImage: form.seoOgImage,
+        seoIndex: form.seoIndex,
+        seoVerification: form.seoVerification,
+        seoTwitter: form.seoTwitter,
         githubClientId: form.githubClientId,
         githubClientSecret: form.githubClientSecret,
         cnkdClientId: form.cnkdClientId,
@@ -147,31 +152,6 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
           标识文字留空时取站点名首字；填了图片地址就用图片。建议正方形，尺寸 64×64 以上。
           默认使用站内 <code>/logo.png</code>，也可以换成本站上传的其他图片或外链。
-        </p>
-
-        <label className="field" style={{ marginTop: 12, maxWidth: 560 }}>
-          <span>站点描述（SEO / 分享卡片）</span>
-          <textarea
-            className="input textarea"
-            rows={2}
-            value={form.seoDescription}
-            onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
-            placeholder="留空使用内置文案：玩家社区 · 公会战队 · 赛事确权"
-            maxLength={160}
-          />
-        </label>
-        <label className="field" style={{ marginTop: 10, maxWidth: 560 }}>
-          <span>关键词（逗号分隔，可留空）</span>
-          <input
-            className="input"
-            value={form.seoKeywords}
-            onChange={(e) => setForm({ ...form, seoKeywords: e.target.value })}
-            placeholder="我的世界, Rusted Warfare, 玩家社区, 电竞"
-            maxLength={200}
-          />
-        </label>
-        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
-          描述会写进 <code>&lt;meta name=&quot;description&quot;&gt;</code>、Open Graph 与分享卡片；建议 60–120 字。
         </p>
 
         <label className="field" style={{ marginTop: 12, maxWidth: 460 }}>
@@ -617,6 +597,114 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
           />
         </label>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <div className="between" style={{ marginBottom: 4 }}>
+          <h3 style={{ fontSize: 13 }}>SEO 与分享</h3>
+          <span className="small muted">保存后立即生效</span>
+        </div>
+        <p className="small muted" style={{ lineHeight: 1.7 }}>
+          控制搜索引擎收录、搜索结果摘要与社交分享卡片。留空项使用内置文案。
+        </p>
+
+        <div className="seo-grid">
+          <label className="field" style={{ gridColumn: '1 / -1' }}>
+            <span>首页标题</span>
+            <input
+              className="input"
+              value={form.seoTitle}
+              onChange={(e) => setForm({ ...form, seoTitle: e.target.value })}
+              placeholder={`留空：${form.siteName} · 玩家社区与赛事确权`}
+              maxLength={60}
+            />
+          </label>
+
+          <label className="field" style={{ gridColumn: '1 / -1' }}>
+            <span>站点描述</span>
+            <textarea
+              className="input textarea"
+              rows={3}
+              value={form.seoDescription}
+              onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
+              placeholder="留空使用内置文案：玩家社区 · 公会战队 · 赛事确权"
+              maxLength={160}
+              style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+            />
+          </label>
+
+          <label className="field">
+            <span>关键词（逗号分隔）</span>
+            <input
+              className="input"
+              value={form.seoKeywords}
+              onChange={(e) => setForm({ ...form, seoKeywords: e.target.value })}
+              placeholder="我的世界, Rusted Warfare, 玩家社区, 电竞"
+              maxLength={200}
+            />
+          </label>
+
+          <label className="field">
+            <span>分享封面地址</span>
+            <input
+              className="input mono"
+              value={form.seoOgImage}
+              onChange={(e) => setForm({ ...form, seoOgImage: e.target.value })}
+              placeholder="/opengraph-image.png 或 https://…"
+              maxLength={500}
+            />
+          </label>
+
+          <label className="field">
+            <span>Google 验证码</span>
+            <input
+              className="input mono"
+              value={form.seoVerification}
+              onChange={(e) => setForm({ ...form, seoVerification: e.target.value })}
+              placeholder="google-site-verification 的 content"
+              maxLength={200}
+            />
+          </label>
+
+          <label className="field">
+            <span>Twitter 账号</span>
+            <input
+              className="input"
+              value={form.seoTwitter}
+              onChange={(e) => setForm({ ...form, seoTwitter: e.target.value })}
+              placeholder="@cloudrail"
+              maxLength={40}
+            />
+          </label>
+        </div>
+
+        <label className="switch-row">
+          <input
+            type="checkbox"
+            checked={form.seoIndex}
+            onChange={(e) => setForm({ ...form, seoIndex: e.target.checked })}
+          />
+          <span>
+            允许搜索引擎收录
+            <em className="field-opt">关闭后全站 noindex，robots.txt 拒绝所有抓取</em>
+          </span>
+        </label>
+
+        <div className="seo-preview">
+          <div className="seo-preview-url">
+            {(form.publicBaseUrl || 'https://your.site').replace(/\/+$/, '')}
+          </div>
+          <div className="seo-preview-title">
+            {form.seoTitle || `${form.siteName} · 玩家社区与赛事确权`}
+          </div>
+          <div className="seo-preview-desc">
+            {form.seoDescription || '玩家社区 · 公会战队 · 赛事确权'}
+          </div>
+        </div>
+        <p className="small muted" style={{ marginTop: 8, lineHeight: 1.7 }}>
+          描述建议 60–120 字；分享封面建议 1200×630。Google 验证码填 Search Console
+          给出的 content 值即可，无需整段 HTML。
+        </p>
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }}>

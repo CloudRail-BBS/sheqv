@@ -65,8 +65,7 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <div className="col-main">
-        {/* 内置的「注册一个账号」只对未登录用户有意义；管理员配的真实轮播照常展示 */}
-        <Carousel slides={user ? slides.filter((s) => s.id !== 's-welcome') : slides} />
+        <Carousel slides={slides} />
 
         <div id="composer">
           <Composer

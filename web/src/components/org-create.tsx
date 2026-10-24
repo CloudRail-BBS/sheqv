@@ -79,8 +79,9 @@ export function OrgCreate({ kind, loggedIn }: { kind: OrgKind; loggedIn: boolean
         />
       </label>
 
-      <div className="row" style={{ gap: 8, marginTop: 10 }}>
-        <label className="field" style={{ flex: 1 }}>
+      {/* 右栏只有 260px 左右，两列会把「Rusted Warfare」挤出去；统一单列 */}
+      <div className="org-form-row">
+        <label className="field">
           简称
           <input
             className="input"
@@ -91,7 +92,7 @@ export function OrgCreate({ kind, loggedIn }: { kind: OrgKind; loggedIn: boolean
             required
           />
         </label>
-        <label className="field" style={{ flex: 1 }}>
+        <label className="field">
           游戏所属
           <select
             className="input"

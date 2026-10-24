@@ -14,12 +14,17 @@ use crate::state::AppState;
 use crate::{announcements, settings, slides};
 
 /// 可以给浏览器看的键
-const PUBLIC_KEYS: [&str; 19] = [
+const PUBLIC_KEYS: [&str; 24] = [
     "siteName",
     "logoText",
     "logoImage",
+    "seoTitle",
     "seoDescription",
     "seoKeywords",
+    "seoOgImage",
+    "seoIndex",
+    "seoVerification",
+    "seoTwitter",
     "geetestId",
     "afdianPageUrl",
     "footerText",

@@ -75,7 +75,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 
 | 路由 | 说明 |
 |---|---|
-| `/` | 首页：轮播 + Markdown 发帖编辑器 + 排序 tab + 帖子流 + 右栏（概览 / 活跃公会 / 活跃战队 / 标签 / 规则） |
+| `/` | 首页：轮播 + Markdown 悬浮发帖弹窗 + 排序 tab + 帖子流 + 右栏（概览 / 活跃公会 / 活跃战队 / 标签 / 规则） |
 | `/register` | 注册（人机验证 + 密码强度校验）；**第一个注册的账号自动成为管理员** |
 | `/login` | 登录（同样过人机验证） |
 | `/guilds` | 公会列表 + 公会战日程 |
@@ -103,7 +103,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/admin/groups` | 身份组：名称 / 颜色 / 说明 / 权限 / 进组公约 |
 | `/admin/announcements` | 公告管理：发布 / 编辑 / 置顶 / 转草稿 / 删除 |
 | `/admin/slides` | 轮播管理：文案、链接、背景色或背景图、文字明暗、排序 |
-| `/admin/settings` | 站点设置：站点名、导航（侧边栏/底部栏）、GeeTest、爱发电、开放注册、首页公告开关（立即生效） |
+| `/admin/settings` | 站点设置：站点名、导航、SEO 与分享（标题/描述/关键词/封面/收录开关）、GeeTest、爱发电、开放注册（立即生效） |
 | `/admin/agreements` | 公约管理：新增 / 停用 / 删除，内置两份锁定 |
 | `/admin/sponsors` | 赞助管理：同步爱发电、手动录入、隐藏 / 删除 |
 | `/dev/capabilities` | 端能力台：4 列能力矩阵 + 配额 + bootstrap 实测（生产默认 404） |
