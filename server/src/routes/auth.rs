@@ -38,7 +38,7 @@ struct LoginBody {
     captcha: Option<CaptchaPayload>,
 }
 
-fn set_cookie_header(res: &mut Response, cookie: String) {
+pub(crate) fn set_cookie_header(res: &mut Response, cookie: String) {
     if let Ok(value) = cookie.parse() {
         res.headers_mut().insert(header::SET_COOKIE, value);
     }

@@ -14,7 +14,7 @@ use crate::state::AppState;
 use crate::{announcements, settings, slides};
 
 /// 可以给浏览器看的键
-const PUBLIC_KEYS: [&str; 13] = [
+const PUBLIC_KEYS: [&str; 14] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -28,6 +28,8 @@ const PUBLIC_KEYS: [&str; 13] = [
     "registerHint",
     "allowRegister",
     "homeShowAnnouncements",
+    // 只告诉前端「能不能用」，SMTP 的 host/user/pass 一律不下发
+    "emailLoginEnabled",
 ];
 
 fn no_store(res: &mut Response) {

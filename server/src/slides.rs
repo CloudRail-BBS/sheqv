@@ -237,7 +237,7 @@ pub async fn ensure_default(pool: &PgPool) -> Result<(), sqlx::Error> {
         "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord)
          VALUES ('s-welcome', '从这里开始', '注册一个账号，就能发帖、评论与签署公约',
                  '第一个注册的账号自动成为管理员。本站没有内置账号，社区内容全部来自真实用户。',
-                 '注册账号', '/register', '#1b1b1e', '', 'light', true, 1)
+                 '注册账号', '/register', '#e8f0ff', '', 'dark', true, 1)
          ON CONFLICT (id) DO NOTHING",
     )
     .execute(pool)

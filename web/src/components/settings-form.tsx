@@ -50,6 +50,13 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         afdianPageUrl: form.afdianPageUrl,
         allowRegister: form.allowRegister,
         homeShowAnnouncements: form.homeShowAnnouncements,
+        emailLoginEnabled: form.emailLoginEnabled,
+        smtpHost: form.smtpHost,
+        smtpPort: form.smtpPort,
+        smtpUser: form.smtpUser,
+        smtpPass: form.smtpPass,
+        smtpFrom: form.smtpFrom,
+        smtpSecure: form.smtpSecure,
       }),
     }).catch(() => null);
     setBusy(null);
@@ -188,6 +195,94 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </div>
         <p className="small muted" style={{ marginTop: 8 }}>
           当前状态：{settings.geetestId && settings.geetestKey ? '已启用' : '未配置（注册会跳过验证）'}
+        </p>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <h3 style={{ fontSize: 13 }}>邮箱验证码登录</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          开启后，登录页会多出「邮箱验证码」方式：输入账号绑定的邮箱，收到 6 位码即可登录，
+          不用密码。验证码 10 分钟有效、一次性，同一邮箱 60 秒只能发一次、每小时最多 5 次。
+        </p>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          前提是下面的 SMTP 已配通。国内常见配置：QQ 邮箱 / 163 用 465 + 授权码；
+          企业邮箱多为 587 + STARTTLS。
+        </p>
+
+        <label className="check" style={{ marginTop: 10 }}>
+          <input
+            type="checkbox"
+            checked={form.emailLoginEnabled}
+            onChange={(e) => setForm({ ...form, emailLoginEnabled: e.target.checked })}
+          />
+          <span>启用邮箱验证码登录</span>
+        </label>
+
+        <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
+          <label className="field">
+            <span>SMTP 主机</span>
+            <input
+              className="input"
+              value={form.smtpHost}
+              onChange={(e) => setForm({ ...form, smtpHost: e.target.value })}
+              placeholder="smtp.qq.com"
+            />
+          </label>
+          <label className="field">
+            <span>端口</span>
+            <input
+              className="input"
+              value={form.smtpPort}
+              onChange={(e) => setForm({ ...form, smtpPort: e.target.value.replace(/\D/g, '').slice(0, 5) })}
+              placeholder="465"
+            />
+          </label>
+          <label className="field">
+            <span>登录账号</span>
+            <input
+              className="input"
+              value={form.smtpUser}
+              onChange={(e) => setForm({ ...form, smtpUser: e.target.value })}
+              placeholder="no-reply@example.com"
+              autoComplete="off"
+            />
+          </label>
+          <label className="field">
+            <span>授权码 / 密码</span>
+            <input
+              className="input"
+              type="password"
+              value={form.smtpPass}
+              onChange={(e) => setForm({ ...form, smtpPass: e.target.value })}
+              autoComplete="new-password"
+            />
+          </label>
+          <label className="field">
+            <span>发件人</span>
+            <input
+              className="input"
+              value={form.smtpFrom}
+              onChange={(e) => setForm({ ...form, smtpFrom: e.target.value })}
+              placeholder="留空则用上面的登录账号"
+            />
+          </label>
+          <label className="check" style={{ alignSelf: 'end', paddingBottom: 10 }}>
+            <input
+              type="checkbox"
+              checked={form.smtpSecure}
+              onChange={(e) => setForm({ ...form, smtpSecure: e.target.checked })}
+            />
+            <span>直连 TLS（465）；取消则用 STARTTLS（587）</span>
+          </label>
+        </div>
+
+        <p className="small muted" style={{ marginTop: 8 }}>
+          当前状态：
+          {form.emailLoginEnabled
+            ? form.smtpHost && (form.smtpFrom || form.smtpUser)
+              ? '已开启'
+              : '已开启但 SMTP 未填全，发送会失败'
+            : '未开启'}
         </p>
       </div>
 

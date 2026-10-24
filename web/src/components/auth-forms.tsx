@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Geetest, type CaptchaPayload } from './geetest';
 
@@ -20,6 +20,10 @@ interface CommonProps {
   /** 后台可配的说明文案；为空时用内置默认 */
   hint?: string;
   initialError?: string | null;
+  /** 后台是否开启「邮箱验证码登录」；关闭时界面上不出现切换入口 */
+  emailEnabled?: boolean;
+  /** 外层自带卡片与标题时用：不渲染 AuthHead，也不套 card 背景 */
+  bare?: boolean;
 }
 
 const GITHUB_ICON = (
@@ -58,7 +62,7 @@ async function post(url: string, body: unknown) {
     body: JSON.stringify(body),
   });
   const data = (await res.json().catch(() => null)) as
-    | { ok?: boolean; error?: string; message?: string; becameAdmin?: boolean }
+    | { ok?: boolean; error?: string; message?: string; becameAdmin?: boolean; retryAfter?: number }
     | null;
   return { ok: res.ok, data };
 }
@@ -256,19 +260,35 @@ export function RegisterForm(props: CommonProps & { isFirst: boolean }) {
 }
 
 export function LoginForm(props: CommonProps) {
-  const { captchaId, providers, logo, siteName, hint, initialError } = props;
+  const { captchaId, providers, logo, siteName, hint, initialError, emailEnabled, bare } = props;
   const router = useRouter();
+
+  const [mode, setMode] = useState<'password' | 'email'>('password');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState<CaptchaPayload | null>(null);
   const [resetKey, setResetKey] = useState(0);
+
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const [sending, setSending] = useState(false);
+
   const [err, setErr] = useState<string | null>(initialError ?? null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const needCaptcha = Boolean(captchaId);
   const ready = !needCaptcha || Boolean(captcha);
 
-  async function submit(e: React.FormEvent) {
+  // 重发倒计时：服务端返回的 retryAfter 是秒数，这里只负责往下减
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((n) => n - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  async function submitPassword(e: React.FormEvent) {
     e.preventDefault();
     if (!ready) {
       setErr('请先完成人机验证');
@@ -276,6 +296,7 @@ export function LoginForm(props: CommonProps) {
     }
     setBusy(true);
     setErr(null);
+    setNotice(null);
 
     const { ok, data } = await post('/api/v1/auth/login', { username: identifier, password, captcha });
 
@@ -292,44 +313,161 @@ export function LoginForm(props: CommonProps) {
     router.refresh();
   }
 
+  async function sendCode() {
+    if (countdown > 0 || sending) return;
+    if (!email.trim()) {
+      setErr('请先填写邮箱');
+      return;
+    }
+    setSending(true);
+    setErr(null);
+    setNotice(null);
+
+    const { ok, data } = await post('/api/v1/auth/email-code', { email: email.trim() });
+
+    setSending(false);
+
+    if (!ok) {
+      setErr(data?.message ?? '验证码发送失败，请稍后再试');
+      return;
+    }
+    setNotice(data?.message ?? '验证码已发送，请查收邮件');
+    setCountdown(typeof data?.retryAfter === 'number' ? data.retryAfter : 60);
+  }
+
+  async function submitEmail(e: React.FormEvent) {
+    e.preventDefault();
+    if (code.trim().length !== 6) {
+      setErr('请输入邮件里的 6 位验证码');
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+
+    const { ok, data } = await post('/api/v1/auth/email-login', {
+      email: email.trim(),
+      code: code.trim(),
+    });
+
+    setBusy(false);
+
+    if (!ok) {
+      setErr(data?.message ?? '验证码不正确或已过期');
+      return;
+    }
+
+    router.replace('/me');
+    router.refresh();
+  }
+
+  const tab = (key: 'password' | 'email', label: string) => (
+    <button
+      type="button"
+      className={`btn ${mode === key ? 'btn-primary' : 'btn-ghost'}`}
+      style={{ flex: 1 }}
+      onClick={() => {
+        setMode(key);
+        setErr(null);
+        setNotice(null);
+      }}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <form className="card card-pad auth-card" onSubmit={submit}>
-      <AuthHead
-        logo={logo}
-        siteName={siteName}
-        title="登录"
-        desc={hint || '登录后可发帖、评论、签署公约与进入后台。'}
-      />
+    <form
+      className={bare ? 'auth-form' : 'card card-pad auth-card'}
+      onSubmit={mode === 'password' ? submitPassword : submitEmail}
+    >
+      {!bare && (
+        <AuthHead
+          logo={logo}
+          siteName={siteName}
+          title="登录"
+          desc={hint || '登录后可发帖、评论、签署公约与进入后台。'}
+        />
+      )}
+
+      {emailEnabled && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          {tab('password', '密码登录')}
+          {tab('email', '邮箱验证码')}
+        </div>
+      )}
 
       <AuthSocials providers={providers} />
 
-      <label className="field" style={{ marginTop: 14 }}>
-        <span>用户名或邮箱</span>
-        <input
-          className="input"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          autoComplete="username"
-          required
-        />
-      </label>
+      {mode === 'password' ? (
+        <>
+          <label className="field" style={{ marginTop: 14 }}>
+            <span>用户名或邮箱</span>
+            <input
+              className="input"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              autoComplete="username"
+              required
+            />
+          </label>
 
-      <label className="field">
-        <span>密码</span>
-        <input
-          className="input"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
-      </label>
+          <label className="field">
+            <span>密码</span>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
 
-      {needCaptcha && (
-        <div style={{ marginTop: 12 }}>
-          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
-        </div>
+          {needCaptcha && (
+            <div style={{ marginTop: 12 }}>
+              <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <label className="field" style={{ marginTop: 14 }}>
+            <span>邮箱</span>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="账号绑定的邮箱"
+              required
+            />
+          </label>
+
+          <label className="field">
+            <span>验证码</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="input"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6 位数字"
+                required
+              />
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={sendCode}
+                disabled={sending || countdown > 0}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {sending ? '发送中…' : countdown > 0 ? `${countdown}s 后重发` : '发送验证码'}
+              </button>
+            </div>
+          </label>
+        </>
       )}
 
       {err && (
@@ -338,8 +476,14 @@ export function LoginForm(props: CommonProps) {
         </p>
       )}
 
+      {notice && (
+        <p className="small muted" style={{ marginTop: 10 }}>
+          {notice}
+        </p>
+      )}
+
       <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%', marginTop: 16 }}>
-        {busy ? '登录中…' : '登录'}
+        {busy ? (mode === 'password' ? '登录中…' : '验证中…') : '登录'}
       </button>
 
       <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>

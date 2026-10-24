@@ -41,69 +41,86 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     cnkd: Boolean(settings.cnkdEnabled),
   };
 
+  const methods = [
+    { title: '账号密码', desc: '用户名或邮箱 + 密码' },
+    ...(settings.emailLoginEnabled ? [{ title: '邮箱验证码', desc: '收信即登录，免密码' }] : []),
+    ...(providers.github ? [{ title: 'GitHub', desc: '授权登录，免注册' }] : []),
+    ...(providers.cnkd ? [{ title: 'CNKD', desc: '一证通行，免注册' }] : []),
+  ];
+
   return (
-    <div className="cols">
-      <div className="col-main">
-        <div className="auth-wrap">
+    <div className="auth-page">
+      <div className="auth-shell">
+        <aside className="auth-brand">
+          <span className="auth-eyebrow">
+            <i />
+            {settings.siteName}
+          </span>
+
+          <h1 className="auth-brand-title">
+            欢迎回到
+            <br />
+            {settings.siteName}
+          </h1>
+
+          <p className="auth-brand-desc">
+            {settings.loginHint || '登录后可发帖、评论、签署公约与进入后台。'}
+          </p>
+
+          <div className="auth-orbit" aria-hidden="true">
+            <span className="auth-orbit-1" />
+            <span className="auth-orbit-2" />
+            <span className="auth-orbit-mark">
+              <BrandMark settings={settings} />
+            </span>
+          </div>
+
+          <ul className="auth-points">
+            {methods.slice(0, 3).map((m) => (
+              <li key={m.title}>
+                <b>{m.title}</b>
+                <span>{m.desc}</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        <div className="auth-panel">
           {total === 0 ? (
-            <div className="card card-pad">
-              <h1 className="page-title" style={{ fontSize: 20 }}>
-                还没有任何账号
-              </h1>
+            <>
+              <h2 className="auth-panel-title">还没有任何账号</h2>
               <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
                 本站没有内置管理员。第一个注册的账号将成为管理员。
               </p>
-              <Link href="/register" className="btn btn-primary" style={{ width: '100%', marginTop: 16 }}>
+              <Link href="/register" className="btn btn-primary" style={{ width: '100%', marginTop: 18 }}>
                 去注册（第一个账号即管理员）
               </Link>
-            </div>
+            </>
           ) : (
-            <LoginForm
-              captchaId={captchaId}
-              providers={providers}
-              logo={<BrandMark settings={settings} />}
-              siteName={settings.siteName}
-              hint={settings.loginHint}
-              initialError={initialError}
-            />
+            <>
+              <p className="auth-eyebrow-sm">Secure Login</p>
+              <h2 className="auth-panel-title" style={{ marginTop: 8 }}>
+                欢迎回来
+              </h2>
+              <p className="small muted" style={{ marginTop: 6 }}>
+                请登录你的账号继续
+              </p>
+              <div style={{ marginTop: 22 }}>
+                <LoginForm
+                  captchaId={captchaId}
+                  providers={providers}
+                  logo={<BrandMark settings={settings} />}
+                  siteName={settings.siteName}
+                  hint={settings.loginHint}
+                  initialError={initialError}
+                  emailEnabled={settings.emailLoginEnabled}
+                  bare
+                />
+              </div>
+            </>
           )}
         </div>
       </div>
-
-      <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">登录方式</div>
-          <div className="rule-list">
-            <div className="rule-row">
-              <span className="n">1</span>
-              <span>用户名或邮箱 + 密码</span>
-            </div>
-            {providers.github && (
-              <div className="rule-row">
-                <span className="n">2</span>
-                <span>GitHub 授权登录，免注册</span>
-              </div>
-            )}
-            {providers.cnkd && (
-              <div className="rule-row">
-                <span className="n">3</span>
-                <span>CNKD 一证通行，免注册</span>
-              </div>
-            )}
-          </div>
-          <p className="small muted" style={{ marginTop: 10, lineHeight: 1.75 }}>
-            第三方登录不会读取你的邮箱或密码，只用于确认「你是同一个人」。
-          </p>
-        </div>
-
-        <div className="card rail-card">
-          <div className="rail-title">忘记密码</div>
-          <p className="small muted" style={{ lineHeight: 1.8 }}>
-            当前版本不支持自助找回密码。请联系站点管理员重置；忘记的是管理员账号时，
-            可由运维人员协助恢复。
-          </p>
-        </div>
-      </aside>
     </div>
   );
 }

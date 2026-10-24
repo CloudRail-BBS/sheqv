@@ -30,6 +30,15 @@ export interface SiteSettings {
   registerHint: string;
   allowRegister: boolean;
   homeShowAnnouncements: boolean;
+  /** 邮箱验证码登录开关（SMTP 配置只在后台可见，公开投影里没有） */
+  emailLoginEnabled: boolean;
+  smtpHost: string;
+  smtpPort: string;
+  smtpUser: string;
+  smtpPass: string;
+  smtpFrom: string;
+  /** true = 465 直连 TLS；false = 587 STARTTLS */
+  smtpSecure: boolean;
   /** 仅公开投影提供：id + secret 是否都配好 */
   githubEnabled?: boolean;
   cnkdEnabled?: boolean;
@@ -57,6 +66,13 @@ const DEFAULTS: SiteSettings = {
   registerHint: '',
   allowRegister: true,
   homeShowAnnouncements: true,
+  emailLoginEnabled: false,
+  smtpHost: '',
+  smtpPort: '465',
+  smtpUser: '',
+  smtpPass: '',
+  smtpFrom: '',
+  smtpSecure: true,
 };
 
 async function fetchSettings(): Promise<Partial<SiteSettings>> {

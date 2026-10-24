@@ -1292,41 +1292,43 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #fafafa;
-  --bg-soft: #f4f4f5;
+  /* 白底 + 亮蓝，参考 heicdn 控制台的观感：底偏冷灰，主色 #3e7cff */
+  --bg: #f3f5f9;
+  --bg-soft: #eef1f7;
   --panel: #ffffff;
-  --panel-2: #f5f5f6;
-  --panel-3: #ebebed;
-  --line: #e4e4e7;
-  --line-soft: #f0f0f1;
-  --text: #111113;
-  --text-2: #3f3f46;
-  --muted: #71717a;
-  --accent: #18181b;
-  --accent-2: #3f3f46;
+  --panel-2: #f6f8fc;
+  --panel-3: #eaeef6;
+  --line: #e3e8f0;
+  --line-soft: #eef2f8;
+  --text: #151a23;
+  --text-2: #3d4757;
+  --muted: #6b7688;
+  --accent: #151a23;
+  --accent-2: #3d4757;
   --accent-ink: #ffffff;
-  --accent-soft: rgba(0, 0, 0, 0.04);
-  --accent-soft2: rgba(0, 0, 0, 0.07);
-  --on-dim: #52525b;
-  --blue: #1f5fbf;
-  --blue-2: #17458f;
-  --blue-soft: rgba(31, 95, 191, 0.09);
-  --blue-line: rgba(31, 95, 191, 0.24);
-  --amber: #71717a;
+  --accent-soft: rgba(21, 26, 35, 0.05);
+  --accent-soft2: rgba(21, 26, 35, 0.08);
+  --on-dim: #5a6577;
+  --blue: #3e7cff;
+  --blue-2: #2b63e0;
+  --blue-soft: rgba(62, 124, 255, 0.10);
+  --blue-line: rgba(62, 124, 255, 0.26);
+  --amber: #6b7688;
   --danger: #dc2626;
-  --btn-bg: linear-gradient(180deg, #2b2b2f, #18181b);
-  --btn-bg-hover: linear-gradient(180deg, #3a3a40, #232327);
-  --btn-bd: #18181b;
-  --btn-glow: 0 10px 24px -18px rgba(0, 0, 0, 0.6);
-  --tabbar-bg: rgba(255, 255, 255, 0.95);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 14px 30px -26px rgba(0, 0, 0, 0.45);
-  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.05), 0 20px 40px -30px rgba(0, 0, 0, 0.5);
+  /* 主按钮改为蓝色渐变，与参考站的「登录控制台」按钮同款 */
+  --btn-bg: linear-gradient(180deg, #5b8dff, #3e7cff);
+  --btn-bg-hover: linear-gradient(180deg, #6d9aff, #4b86ff);
+  --btn-bd: #3e7cff;
+  --btn-glow: 0 10px 24px -14px rgba(62, 124, 255, 0.55);
+  --tabbar-bg: rgba(255, 255, 255, 0.92);
+  --shadow: 0 1px 2px rgba(21, 26, 35, 0.04), 0 14px 30px -26px rgba(21, 26, 35, 0.35);
+  --shadow-lift: 0 2px 4px rgba(21, 26, 35, 0.05), 0 20px 40px -30px rgba(21, 26, 35, 0.4);
 }
 
 [data-theme="light"] body {
   background:
-    radial-gradient(760px 380px at 8% -10%, rgba(0, 0, 0, 0.07), transparent 60%),
-    radial-gradient(680px 340px at 96% -8%, rgba(37, 99, 235, 0.06), transparent 58%),
+    radial-gradient(780px 400px at 6% -12%, rgba(62, 124, 255, 0.10), transparent 62%),
+    radial-gradient(700px 360px at 96% -10%, rgba(62, 124, 255, 0.07), transparent 58%),
     var(--bg);
 }
 [data-theme="light"] .topbar { background: rgba(255, 255, 255, 0.88); }
@@ -1376,3 +1378,220 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 [data-theme="light"] .hint-box { color: #3f3f46; background: #f4f4f5; border-color: #e4e4e7; }
 [data-theme="light"] .footer { color: #7a8b9e; }
+
+/* ── 登录页：左右分栏大卡片（参考控制台首页的观感）────── */
+
+.auth-page {
+  max-width: 1120px;
+  margin: 26px auto 60px;
+  padding: 0 20px;
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: 1.32fr 1fr;
+  min-height: 556px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
+/* 左侧品牌区：淡蓝渐变 */
+.auth-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* 显式左对齐：窄屏下父级可能带 align-items: center，会让标题缩成文字宽并居中 */
+  align-items: flex-start;
+  padding: 46px 44px 34px;
+  background: linear-gradient(158deg, #e9f1ff 0%, #f4f9ff 44%, #ffffff 100%);
+}
+
+.auth-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(62, 124, 255, 0.11);
+  color: var(--blue);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.auth-eyebrow i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.auth-brand-title {
+  margin-top: 26px;
+  font-size: 41px;
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+.auth-brand-desc {
+  margin-top: 14px;
+  max-width: 30em;
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+
+/* 同心圆装饰，中心放站点标识 */
+.auth-orbit {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  height: 186px;
+  margin: 30px 0 26px;
+}
+
+.auth-orbit-1,
+.auth-orbit-2 {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(62, 124, 255, 0.16);
+}
+
+.auth-orbit-1 { width: 172px; height: 172px; }
+.auth-orbit-2 { width: 114px; height: 114px; border-style: dashed; border-color: rgba(62, 124, 255, 0.24); }
+
+.auth-orbit-mark {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 17px;
+  background: linear-gradient(160deg, #5b8dff, #3e7cff);
+  box-shadow: 0 18px 32px -16px rgba(62, 124, 255, 0.75);
+}
+
+.auth-orbit-mark .brand-mark {
+  color: #fff;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  font-size: 16px;
+}
+
+/* 左侧底部三条能力说明 */
+.auth-points {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin: auto 0 0;
+  padding: 20px 0 0;
+  list-style: none;
+  border-top: 1px solid rgba(62, 124, 255, 0.15);
+}
+
+.auth-points li { display: flex; flex-direction: column; gap: 3px; }
+.auth-points b { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.auth-points span { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+/* 右侧表单区 */
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 46px 42px;
+  border-left: 1px solid var(--line-soft);
+}
+
+.auth-panel-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.auth-eyebrow-sm {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.auth-form { display: flex; flex-direction: column; }
+
+/* 输入框：浅底、无边框、聚焦时蓝边 —— 与参考站的表单一致 */
+.auth-form .input,
+.auth-panel .input {
+  background: var(--panel-2);
+  border-color: transparent;
+  border-radius: 10px;
+  height: 42px;
+}
+
+.auth-form .input:focus,
+.auth-panel .input:focus {
+  background: var(--panel);
+  border-color: var(--blue-line);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.auth-form .btn-primary {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .auth-page { margin-top: 14px; padding: 0 14px; }
+  .auth-shell { grid-template-columns: 1fr; min-height: 0; border-radius: 18px; }
+  .auth-brand { padding: 28px 22px 22px; }
+  .auth-brand-title { margin-top: 18px; font-size: 27px; }
+  .auth-brand-desc { font-size: 12.5px; }
+  .auth-orbit { display: none; }
+  .auth-panel { padding: 26px 22px 30px; border-left: 0; border-top: 1px solid var(--line-soft); }
+  .auth-points { gap: 10px; padding-top: 14px; }
+}
+
+/* 深色主题下的登录页：把浅蓝渐变换成低透明度蓝，避免亮底配白字 */
+[data-theme="dark"] .auth-brand {
+  background: linear-gradient(158deg, rgba(62, 124, 255, 0.16) 0%, rgba(62, 124, 255, 0.05) 48%, transparent 100%);
+}
+[data-theme="dark"] .auth-orbit-1 { border-color: rgba(127, 176, 255, 0.22); }
+[data-theme="dark"] .auth-orbit-2 { border-color: rgba(127, 176, 255, 0.32); }
+[data-theme="dark"] .auth-points { border-top-color: rgba(127, 176, 255, 0.18); }
+[data-theme="dark"] .auth-eyebrow { background: rgba(127, 176, 255, 0.14); }
+
+/* 登录页去掉左侧导航与两栏约束：整块居中，和参考站一致 */
+body:has(.auth-page) .sidebar { display: none; }
+body:has(.auth-page) .app {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* 底部能力列数按实际条数自适应，只有 2 条时不留空列 */
+/* 底部能力条：条数不定（1–4 条），flex 均分比 auto-fit 可控 */
+.auth-points {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: stretch;
+  width: 100%;
+  gap: 16px;
+}
+.auth-points li { flex: 1 1 132px; min-width: 0; }
+
+@media (max-width: 900px) {
+  body:has(.auth-page) .app { padding-left: 0; padding-right: 0; }
+}

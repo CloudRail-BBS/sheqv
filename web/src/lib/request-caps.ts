@@ -22,5 +22,7 @@ export const getRequestCaps = cache(async (): Promise<CapabilityState> => {
 
 export const getTheme = cache(async (): Promise<'dark' | 'light'> => {
   const c = await cookies();
-  return c.get('theme')?.value === 'light' ? 'light' : 'dark';
+  // 默认浅色（白底 + 蓝）：没选过主题的新访客看到的就是这一套；
+  // 手动切到深色会写 cookie，之后一直按 cookie 走。
+  return c.get('theme')?.value === 'dark' ? 'dark' : 'light';
 });

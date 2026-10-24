@@ -2,6 +2,7 @@ pub mod achievements;
 pub mod admin;
 pub mod agreements;
 pub mod auth;
+pub mod email_auth;
 pub mod health;
 pub mod me;
 pub mod notifications;
@@ -21,6 +22,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/register", post(auth::register))
         .route("/api/v1/auth/login", post(auth::login))
         .route("/api/v1/auth/logout", post(auth::logout))
+        .route("/api/v1/auth/email-code", post(email_auth::send_code))
+        .route("/api/v1/auth/email-login", post(email_auth::login))
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/auth/oauth/{provider}", get(oauth::start))

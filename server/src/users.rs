@@ -424,12 +424,17 @@ pub async fn authenticate(pool: &PgPool, identifier: &str, password: &str) -> Op
         return None;
     }
 
-    let _ = sqlx::query("UPDATE users SET last_login_at = now() WHERE id = $1")
-        .bind(&row.id)
-        .execute(pool)
-        .await;
+    touch_login(pool, &row.id).await;
 
     Some(row.to_public())
+}
+
+/// 记录一次成功登录。失败只影响 last_login_at，绝不影响登录本身。
+pub async fn touch_login(pool: &PgPool, id: &str) {
+    let _ = sqlx::query("UPDATE users SET last_login_at = now() WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await;
 }
 
 /// 改头衔。`None` 表示清除（回落角色默认文案）。
