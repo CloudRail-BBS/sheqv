@@ -36,6 +36,8 @@ async fn serve() -> anyhow::Result<()> {
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     let cfg = Config::from_env()?;
+    // 探测白名单：默认只允许公网；fake-ip 代理环境由 PROBE_ALLOW_FAKE_IP 显式打开
+    arena_api::netcheck::configure(cfg.allow_fake_ip);
 
     let pool = db::connect(&cfg.database_url)
         .await
@@ -79,8 +81,13 @@ async fn serve() -> anyhow::Result<()> {
         session_secret: Arc::new(session_secret),
         http,
         ai_http,
+        relay: arena_api::relay::Cache::default(),
         started_at: Instant::now(),
     };
+
+    // 联机大厅的状态刷新：独立任务，跟 HTTP 服务同生共死。
+    // 第一个 tick 立即触发，所以新部署的站点启动后十几秒内就有状态可看。
+    tokio::spawn(arena_api::servers::probe_loop(state.clone()));
 
     let app = routes::router(state)
         .layer(CompressionLayer::new())

@@ -9,6 +9,7 @@ const TABS = [
   { href: '/admin/groups', label: '身份组' },
   { href: '/admin/posts', label: '帖子' },
   { href: '/admin/audit', label: '审核' },
+  { href: '/admin/servers', label: '联机大厅' },
   { href: '/admin/announcements', label: '公告' },
   { href: '/admin/slides', label: '轮播' },
   { href: '/admin/agreements', label: '公约' },

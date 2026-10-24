@@ -53,6 +53,13 @@
 | POST | `/api/v1/admin/afdian/sync` | 拉取爱发电并覆盖快照 |
 | GET | `/api/v1/auth/oauth/{provider}` | 生成 state + PKCE，写一次性 Cookie，302 到平台 |
 | GET | `/api/v1/auth/oauth/{provider}/callback` | 校验 state → 换 token → 取资料 → 建号/登录 → 302 `/me` |
+| GET | `/api/v1/servers?kind=` | 联机大厅条目（只含公开展示的，带探测快照） |
+| POST | `/api/v1/servers` | 自由上传（登录 + `post.create`），MC 与中转站共用 |
+| PATCH/DELETE | `/api/v1/servers/{id}` | 本人或管理员；改地址会清空探测快照 |
+| POST | `/api/v1/servers/{id}/probe` | 手动刷新一次（10 秒冷却） |
+| GET | `/api/v1/relay/rooms` | 铁锈战争中转站的实时房间（10 秒缓存，失败回落旧数据） |
+| GET | `/api/v1/admin/servers` | 后台列表（含隐藏条目） |
+| PATCH/DELETE | `/api/v1/admin/servers/{id}` | 隐藏 / 恢复 / 删除 |
 
 ## 本地运行
 

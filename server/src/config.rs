@@ -23,6 +23,12 @@ pub struct Config {
     pub afdian_user_id: String,
     pub afdian_token: String,
     pub afdian_page_url: String,
+    /// 联机大厅的探测周期（秒）。太短会被 MC 服务器当成压测，太长大厅数据就不新。
+    pub probe_interval_secs: u64,
+    /// 内置的铁锈战争中转站：没有任何用户上传时用它兜底，空站大厅也有内容
+    pub rw_relay_url: String,
+    /// 放行 198.18.0.0/15（fake-ip 代理环境专用，默认关）
+    pub allow_fake_ip: bool,
     /// 只在显式配置时生效；缺省走 `$DATA_DIR/.session-secret`
     session_secret_env: Option<String>,
 }
@@ -68,6 +74,14 @@ impl Config {
             afdian_page_url: non_empty("AFDIAN_PAGE_URL")
                 .map(|u| u.trim_end_matches('/').to_string())
                 .unwrap_or_default(),
+            probe_interval_secs: non_empty("SERVER_PROBE_SECS")
+                .and_then(|v| v.trim().parse::<u64>().ok())
+                .filter(|v| *v >= 15)
+                .unwrap_or(60),
+            rw_relay_url: non_empty("RW_RELAY_URL")
+                .map(|u| u.trim_end_matches('/').to_string())
+                .unwrap_or_else(|| "http://101.43.41.22:46784".to_string()),
+            allow_fake_ip: flag("PROBE_ALLOW_FAKE_IP", false),
             session_secret_env: non_empty("SESSION_SECRET"),
         })
     }

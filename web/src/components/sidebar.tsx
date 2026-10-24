@@ -19,6 +19,7 @@ const I = {
   doc: <path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
   heart: <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
   bell: <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
+  server: <path d="M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
 };
 
 function Ico({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,9 @@ export function Sidebar({ adminVisible, form }: Props) {
         </Link>
         <Link href="/matches" className="side-item" data-active={on('/matches')}>
           <Ico>{I.sword}</Ico>约战
+        </Link>
+        <Link href="/servers" className="side-item" data-active={on('/servers')}>
+          <Ico>{I.server}</Ico>联机大厅
         </Link>
         <Link href="/resources" className="side-item" data-active={on('/resources')}>
           <Ico>{I.box}</Ico>资源库

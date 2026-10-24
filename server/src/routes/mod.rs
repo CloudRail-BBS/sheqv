@@ -12,6 +12,7 @@ pub mod notifications;
 pub mod oauth;
 pub mod posts;
 pub mod public;
+pub mod servers;
 pub mod sponsors;
 
 use axum::Router;
@@ -97,6 +98,25 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/groups", get(groups::public_list))
         .route("/api/v1/changelog", get(changelog::public_list))
+        .route(
+            "/api/v1/servers",
+            get(servers::list).post(servers::create),
+        )
+        .route(
+            "/api/v1/servers/{id}",
+            patch(servers::patch).delete(servers::remove),
+        )
+        .route("/api/v1/servers/{id}/probe", post(servers::refresh))
+        .route("/api/v1/relay/rooms", get(servers::rooms))
+        .route("/api/v1/admin/servers", get(servers::admin_list))
+        .route(
+            "/api/v1/admin/servers/probe",
+            get(servers::admin_probe),
+        )
+        .route(
+            "/api/v1/admin/servers/{id}",
+            patch(servers::admin_patch).delete(servers::admin_delete),
+        )
         .route("/api/v1/admin/audit/posts", get(audit::pending))
         .route("/api/v1/admin/audit/posts/{id}", post(audit::review))
         .route("/api/v1/admin/audit/test", post(audit::test))

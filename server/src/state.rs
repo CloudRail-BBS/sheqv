@@ -15,5 +15,7 @@ pub struct AppState {
     pub http: reqwest::Client,
     /// 审核用的 AI 客户端：模型响应慢，超时放宽到 30 秒
     pub ai_http: reqwest::Client,
+    /// 铁锈战争中转站房间的进程内缓存（按中转站地址，TTL 见 `relay::CACHE_TTL`）
+    pub relay: crate::relay::Cache,
     pub started_at: Instant,
 }
