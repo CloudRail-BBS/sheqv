@@ -1,11 +1,14 @@
-# 生产编排：db + api + web（单进程版 web/docker-compose.yml 已删除）
+# 生产编排：db + api + web（单进程版已删除）
+# 文件名就是默认的 docker-compose.yml —— 在仓库根目录直接 `docker compose up -d` 即可，
+# 不需要 `-f`。若报 "no configuration file provided"，说明当前目录不是仓库根目录。
 #
 #   nginx ─┬─ /api/*  → api:8080 → db:5432
 #          └─ 其余     → web:8900 → （内网）api:8080
 #
 # 用法：
 #   cp server/.env.example server/.env   # 至少改 POSTGRES_PASSWORD
-#   docker compose -f docker-compose.split.yml up -d --build
+#   # 下面的命令都在**仓库根目录**执行（本文件就是默认的 docker-compose.yml）
+#   docker compose up -d --build
 #
 # web 通过 API_BASE 走内网取数；nginx 可以把 /api/* 直接指到 api，也可以交给 next rewrites。
 

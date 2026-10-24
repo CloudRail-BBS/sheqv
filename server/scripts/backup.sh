@@ -14,7 +14,7 @@ set -euo pipefail
 
 KEEP=30
 DIR="${BACKUP_DIR:-./backups}"
-COMPOSE_FILE="${COMPOSE_FILE:-../docker-compose.split.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-../docker-compose.yml}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
