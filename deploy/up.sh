@@ -8,7 +8,9 @@ cd "$(dirname "$0")"
 
 if [ ! -f .env ]; then
   echo "==> 未找到 deploy/.env，先生成"
-  ./init-env.sh
+  # 用 bash 显式执行：仓库在 Windows 上打过包时脚本可能丢了执行位，
+  # 那种情况下 `./init-env.sh` 会 Permission denied，而 `bash xx.sh` 不受影响。
+  bash ./init-env.sh
 fi
 
 echo "==> 构建并启动（首次会比较慢）"

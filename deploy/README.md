@@ -8,6 +8,10 @@ cd deploy
 ./doctor.sh      # 起不来时先跑它
 ```
 
+> 报 `Permission denied` 时用 `bash up.sh` —— 说明检出后脚本没有执行位
+> （Windows 打包/提交时常见）。想一次性修好：`git pull` 后若仍有该报错，
+> 执行 `chmod +x *.sh ../server/scripts/*.sh`。
+
 ## 端口
 
 | 服务 | 容器内 | 宿主机 | 说明 |
