@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { buildMetadata } from '@/lib/seo';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { countUsers } from '@/lib/users';
@@ -8,6 +9,10 @@ import { RegisterForm } from '@/components/auth-forms';
 import { BrandMark } from '@/components/brand-mark';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return buildMetadata({ title: '注册', path: '/register', noIndex: true });
+}
 
 const ERRORS: Record<string, string> = {
   register_closed: '站点暂时关闭了注册',

@@ -6,22 +6,43 @@ import { getCurrentUser } from '@/lib/current-user';
 import { PostActions } from '@/components/post-actions';
 import { getBadgeMap } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
+import { getGroupMap, resolveGroup } from '@/lib/group-map';
 import { UserBadge } from '@/components/user-badge';
+import { GroupTag } from '@/components/group-tag';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
+import { buildMetadata } from '@/lib/seo';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const post = await getPost(id);
+  // 待审 / 被拒 / 不存在：不进索引，也不泄漏标题
+  if (!post || post.status !== 'published') {
+    return buildMetadata({ title: '帖子', path: `/p/${id}`, noIndex: true });
+  }
+  const title = post.title?.trim() || post.body.replace(/\s+/g, ' ').slice(0, 24);
+  return buildMetadata({
+    title,
+    description: post.body.replace(/\s+/g, ' ').slice(0, 120),
+    path: `/p/${id}`,
+    type: 'article',
+  });
+}
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const post = await getPost(id);
   if (!post) notFound();
 
-  const [signed, user, badges, achievements] = await Promise.all([
+  const [signed, user, badges, achievements, groups] = await Promise.all([
     isCommunitySigned(),
     getCurrentUser(),
     getBadgeMap(),
     getAchievementMap(),
+    getGroupMap(),
   ]);
   const postBadge = resolveBadge(badges, { id: post.authorId, name: post.author });
+  const postGroup = resolveGroup(groups, { id: post.authorId, name: post.author });
   // 未过审的帖子只有作者和审核人打得开（后端已按 status 拦过一次，这里只负责说明状态）
   const pending = post.status === 'pending';
   const rejected = post.status === 'rejected';
@@ -55,6 +76,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <div className="post-meta">
                 <b>{post.author}</b>
                 <UserBadge badge={postBadge} />
+                <GroupTag group={postGroup} size="sm" />
                 <span className="sep">·</span>
                 {post.guild}
                 {post.pinned && <span className="post-pin">置顶</span>}
@@ -104,6 +126,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
                     {c.author}
                     <UserBadge badge={resolveBadge(badges, { id: c.authorId, name: c.author })} size="sm" />
+                    <GroupTag group={resolveGroup(groups, { id: c.authorId, name: c.author })} size="sm" />
                   </div>
                   <div className="small dim" style={{ lineHeight: 1.7 }}>{c.body}</div>
                 </div>
@@ -122,6 +145,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
                 {post.author}
                 <UserBadge badge={postBadge} size="sm" />
+                <GroupTag group={postGroup} size="sm" />
               </div>
               <div className="small muted">{post.guild}公会</div>
               <AchievementChips

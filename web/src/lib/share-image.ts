@@ -470,7 +470,7 @@ export function renderCertificate(
 
   const kindLabel = org.kind === 'guild' ? '公会' : '战队';
 
-  write(ctx, 'BLOCKARENA · 方块竞技场', W / 2, 176, {
+  write(ctx, brand, W / 2, 176, {
     size: 22,
     weight: 600,
     color: C.muted,

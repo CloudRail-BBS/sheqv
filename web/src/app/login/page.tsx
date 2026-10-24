@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { buildMetadata } from '@/lib/seo';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { countUsers } from '@/lib/users';
@@ -8,6 +9,10 @@ import { LoginForm } from '@/components/auth-forms';
 import { BrandMark } from '@/components/brand-mark';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return buildMetadata({ title: '登录', path: '/login', noIndex: true });
+}
 
 /** 第三方登录失败时带上来的错误码 */
 const ERRORS: Record<string, string> = {

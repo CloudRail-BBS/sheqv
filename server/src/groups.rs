@@ -47,6 +47,8 @@ pub struct Group {
     pub name: String,
     pub slug: String,
     pub color: String,
+    /// 一句话说明「这个组是干什么的」，公开页与后台都用
+    pub description: String,
     pub weight: i32,
     pub is_default: bool,
     pub is_builtin: bool,
@@ -62,6 +64,7 @@ struct Row {
     name: String,
     slug: String,
     color: String,
+    description: String,
     weight: i32,
     is_default: bool,
     is_builtin: bool,
@@ -90,6 +93,7 @@ impl Row {
             name: self.name,
             slug: self.slug,
             color: self.color,
+            description: self.description,
             weight: self.weight,
             is_default: self.is_default,
             is_builtin: self.is_builtin,
@@ -98,7 +102,7 @@ impl Row {
     }
 }
 
-const SELECT: &str = "SELECT g.id, g.name, g.slug, g.color, g.weight, g.is_default, g.is_builtin,
+const SELECT: &str = "SELECT g.id, g.name, g.slug, g.color, g.description, g.weight, g.is_default, g.is_builtin,
             g.permissions, g.required_agreements,
             (SELECT count(*) FROM users u WHERE u.group_id = g.id) AS member_count
        FROM groups g";
@@ -131,6 +135,7 @@ pub struct NewGroup<'a> {
     pub name: &'a str,
     pub slug: &'a str,
     pub color: &'a str,
+    pub description: &'a str,
     pub weight: i32,
     pub is_default: bool,
     pub permissions: Vec<String>,
@@ -193,13 +198,14 @@ pub async fn create(pool: &PgPool, input: NewGroup<'_>) -> Result<Group, GroupEr
             .await?;
     }
     sqlx::query(
-        "INSERT INTO groups (id, name, slug, color, weight, is_default, is_builtin, permissions, required_agreements)
-         VALUES ($1,$2,$3,$4,$5,$6,false,$7,$8)",
+        "INSERT INTO groups (id, name, slug, color, description, weight, is_default, is_builtin, permissions, required_agreements)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,false,$8,$9)",
     )
     .bind(&id)
     .bind(input.name.trim())
     .bind(input.slug.trim())
     .bind(input.color.trim())
+    .bind(input.description.trim())
     .bind(input.weight)
     .bind(input.is_default)
     .bind(json!(perms))
@@ -214,6 +220,7 @@ pub async fn create(pool: &PgPool, input: NewGroup<'_>) -> Result<Group, GroupEr
 pub struct GroupPatch {
     pub name: Option<String>,
     pub color: Option<String>,
+    pub description: Option<String>,
     pub weight: Option<i32>,
     pub is_default: Option<bool>,
     pub permissions: Option<Vec<String>>,
@@ -242,13 +249,14 @@ pub async fn update(pool: &PgPool, id: &str, patch: GroupPatch) -> Result<Group,
             .await?;
     }
     sqlx::query(
-        "UPDATE groups SET name=$2, color=$3, weight=$4, is_default=$5,
-                permissions=$6, required_agreements=$7, updated_at=now()
+        "UPDATE groups SET name=$2, color=$3, description=$4, weight=$5, is_default=$6,
+                permissions=$7, required_agreements=$8, updated_at=now()
           WHERE id=$1",
     )
     .bind(id)
     .bind(name.trim())
     .bind(patch.color.unwrap_or(current.color))
+    .bind(patch.description.unwrap_or(current.description))
     .bind(patch.weight.unwrap_or(current.weight))
     .bind(patch.is_default.unwrap_or(current.is_default))
     .bind(json!(perms))
@@ -356,8 +364,10 @@ pub async fn ensure_builtin(pool: &PgPool) -> Result<(), sqlx::Error> {
     let all: Vec<String> = PERMISSIONS.iter().map(|(k, _)| k.to_string()).collect();
 
     sqlx::query(
-        "INSERT INTO groups (id, name, slug, color, weight, is_default, is_builtin, permissions)
-         VALUES ('g-member', '成员', 'member', '', 10, true, true, $1)
+        "INSERT INTO groups (id, name, slug, color, description, weight, is_default, is_builtin, permissions)
+         VALUES ('g-member', '成员', 'member', '#64748b',
+                 '默认身份组。注册后自动加入，可以发帖、评论、参与讨论。',
+                 10, true, true, $1)
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(json!(["post.create", "comment.create"]))
@@ -365,11 +375,24 @@ pub async fn ensure_builtin(pool: &PgPool) -> Result<(), sqlx::Error> {
     .await?;
 
     sqlx::query(
-        "INSERT INTO groups (id, name, slug, color, weight, is_default, is_builtin, permissions)
-         VALUES ('g-admin', '管理员', 'admin', '#3e7cff', 100, false, true, $1)
+        "INSERT INTO groups (id, name, slug, color, description, weight, is_default, is_builtin, permissions)
+         VALUES ('g-admin', '管理员', 'admin', '#3e7cff',
+                 '站点管理身份组。拥有全部权限：内容审核、用户与身份组管理、站点设置。',
+                 100, false, true, $1)
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(json!(all))
+    .execute(pool)
+    .await?;
+
+    // 老库补描述：只在为空时写，后台改过的不动
+    sqlx::query(
+        "UPDATE groups SET description = CASE slug
+             WHEN 'member' THEN '默认身份组。注册后自动加入，可以发帖、评论、参与讨论。'
+             WHEN 'admin'  THEN '站点管理身份组。拥有全部权限：内容审核、用户与身份组管理、站点设置。'
+             ELSE description END
+          WHERE is_builtin AND description = ''",
+    )
     .execute(pool)
     .await?;
 

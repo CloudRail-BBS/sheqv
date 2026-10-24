@@ -1,8 +1,13 @@
 import Link from 'next/link';
+import { buildMetadata } from '@/lib/seo';
 import { listPosts } from '@/lib/forum-store';
 import { MATCHES, RESOURCES, GAME_LABEL } from '@/lib/data';
 import { listOrgs } from '@/lib/orgs';
 import { formatBytes } from '@/lib/capabilities';
+
+export async function generateMetadata() {
+  return buildMetadata({ title: '搜索', path: '/search', noIndex: true });
+}
 
 const HOT = ['天空之城', '整合包', '名单快照', '星轨', '约战'];
 

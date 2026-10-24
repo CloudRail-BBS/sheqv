@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import { listAnnouncements, type AnnouncementKind } from '@/lib/announcement-store';
 import { EmptyState } from '@/components/empty-state';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '公告',
+    description: '站点规则、版本更新与活动公告。',
+    path: '/announcements',
+  });
+}
 
 const KIND_CLASS: Record<AnnouncementKind, string> = {
   规则: 'badge badge-warn',

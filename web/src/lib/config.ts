@@ -30,7 +30,7 @@ const baseUrl = trimBase(env('PUBLIC_BASE_URL'));
 
 export const config = {
   /** 站点名，出现在标题与品牌位 */
-  siteName: envOr('SITE_NAME', '方块竞技场'),
+  siteName: envOr('SITE_NAME', '云轨社区'),
 
   /**
    * 对外根地址的**默认值**（可空）。

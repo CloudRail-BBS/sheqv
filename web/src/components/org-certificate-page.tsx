@@ -60,7 +60,7 @@ export async function OrgCertificatePage({ kind, id }: { kind: OrgKind; id: stri
       <OrgCertificate
         org={org}
         ownerName={org.owner || user!.nickname}
-        brand={settings.siteName || '方块竞技场'}
+        brand={settings.siteName || '云轨社区'}
       />
     </div>
   );

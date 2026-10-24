@@ -121,7 +121,7 @@ export async function OrgDetail({ kind, id }: { kind: OrgKind; id: string }) {
       <aside className="rail">
         <OrgOwnerPanel
           org={org}
-          brand={settings.siteName || '方块竞技场'}
+          brand={settings.siteName || '云轨社区'}
           isOwner={isOwner}
           isAdmin={isAdmin}
         />

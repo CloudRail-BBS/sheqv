@@ -4,6 +4,18 @@ import { getRequestCaps } from '@/lib/request-caps';
 import { GAME_LABEL, RESOURCES } from '@/lib/data';
 import { formatBytes } from '@/lib/capabilities';
 import { DownloadGate } from '@/components/download-gate';
+import { buildMetadata } from '@/lib/seo';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const item = RESOURCES.find((r) => r.id === id);
+  if (!item) return buildMetadata({ title: '资源', path: `/resources/${id}`, noIndex: true });
+  return buildMetadata({
+    title: item.title,
+    description: item.summary,
+    path: `/resources/${id}`,
+  });
+}
 
 export default async function ResourceDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

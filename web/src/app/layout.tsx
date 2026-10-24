@@ -12,8 +12,10 @@ import { getNotifications, flatten } from '@/lib/notifications';
 import { getPointsChip } from '@/lib/points';
 import { NotificationBell } from '@/components/notification-bell';
 import { UserBadge } from '@/components/user-badge';
+import { GroupTag } from '@/components/group-tag';
 import { BrandMark } from '@/components/brand-mark';
 import { badgeOf } from '@/lib/badges';
+import { buildMetadata } from '@/lib/seo';
 
 /** 页脚自定义链接：每行「名称|地址」，只放行站内路径与 http(s) */
 function parseFooterLinks(raw: string): { label: string; href: string }[] {
@@ -28,17 +30,16 @@ function parseFooterLinks(raw: string): { label: string; href: string }[] {
   return out;
 }
 
-export const metadata: Metadata = {
-  title: '方块竞技场 · BlockArena',
-  description: 'Minecraft / Roblox 玩家社区与赛事确权平台',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({ root: true });
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: [
     { media: '(prefers-color-scheme: dark)', color: '#0a0a0b' },
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
+    { media: '(prefers-color-scheme: light)', color: '#f3f5f9' },
   ],
 };
 
@@ -121,6 +122,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     <span className="user-dot">{user.nickname.slice(0, 1)}</span>
                     <span className="user-name">{user.nickname}</span>
                     <UserBadge badge={badgeOf(user)} size="sm" />
+                    <GroupTag group={user.group} size="sm" />
                   </Link>
                 ) : (
                   <div className="row hide-mobile" style={{ gap: 6 }}>

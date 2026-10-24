@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { apiGetOr } from './api-client';
 import { getCurrentUser } from './current-user';
 
@@ -12,6 +13,10 @@ export interface SiteSettings {
   siteName: string;
   logoText: string;
   logoImage: string;
+  /** 搜索引擎与社交分享用的描述；留空用内置文案 */
+  seoDescription: string;
+  /** 逗号分隔的关键词；留空用内置文案 */
+  seoKeywords: string;
   publicBaseUrl: string;
   geetestId: string;
   geetestKey: string;
@@ -54,9 +59,11 @@ export interface SiteSettings {
 }
 
 const DEFAULTS: SiteSettings = {
-  siteName: '方块竞技场',
+  siteName: '云轨社区',
   logoText: '',
-  logoImage: '',
+  logoImage: '/logo.png',
+  seoDescription: '',
+  seoKeywords: '',
   publicBaseUrl: '',
   geetestId: '',
   geetestKey: '',
@@ -97,9 +104,13 @@ async function fetchSettings(): Promise<Partial<SiteSettings>> {
   return d.settings ?? {};
 }
 
-export async function getSettings(): Promise<SiteSettings> {
+/**
+ * 站点设置：请求内只取一次。
+ * 一页里 layout / generateMetadata / 页脚 / base-url 会各要一遍，不去重就是 4 次内网请求。
+ */
+export const getSettings = cache(async (): Promise<SiteSettings> => {
   return { ...DEFAULTS, ...(await fetchSettings()) };
-}
+});
 
 export async function getOverrides(): Promise<Partial<SiteSettings>> {
   const d = await apiGetOr<{ overrides: Partial<SiteSettings> }>('/api/v1/admin/settings', {

@@ -40,9 +40,9 @@ export function SharePreview() {
   useEffect(() => {
     const rows = SAMPLE_ORGS.map((o, i) => toShareRow(o, i + 1, 'MC'));
     const canvases = [
-      { host: board.current, el: renderLeaderboardShare({ title: '公会榜', gameLabel: '我的世界', rows, brand: '方块竞技场 · 排行榜', date: '2026-10-24' }) },
-      { host: card.current, el: renderOrgCard(toShareOrg(SAMPLE_ORGS[0]), '方块竞技场', '2026-10-24') },
-      { host: cert.current, el: renderCertificate(toShareOrg(SAMPLE_ORGS[0]), '榜测1', '方块竞技场', '2026-10-24') },
+      { host: board.current, el: renderLeaderboardShare({ title: '公会榜', gameLabel: '我的世界', rows, brand: '云轨社区 · 排行榜', date: '2026-10-24' }) },
+      { host: card.current, el: renderOrgCard(toShareOrg(SAMPLE_ORGS[0]), '云轨社区', '2026-10-24') },
+      { host: cert.current, el: renderCertificate(toShareOrg(SAMPLE_ORGS[0]), '榜测1', '云轨社区', '2026-10-24') },
     ];
     for (const { host, el } of canvases) {
       if (!host) continue;

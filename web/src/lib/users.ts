@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { apiGetOr } from './api-client';
 import { badgeOf, type BadgeMap } from './badges';
 
@@ -10,6 +11,14 @@ import { badgeOf, type BadgeMap } from './badges';
 
 export type Role = 'admin' | 'member';
 export type Provider = 'github' | 'cnkd';
+
+/** 身份组的展示快照：名字与颜色，权限判定永远在后端 */
+export interface UserGroup {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
 
 export interface PublicUser {
   id: string;
@@ -25,6 +34,8 @@ export interface PublicUser {
   title?: string;
   /** 身份组 id（未分组时不返回） */
   groupId?: string;
+  /** 身份组的名字与颜色（未分组时不返回） */
+  group?: UserGroup;
   email?: string;
   providers?: string[];
   badges?: string[];
@@ -76,11 +87,14 @@ export async function listUsers(): Promise<PublicUser[]> {
   return d.items;
 }
 
-/** 公开用户列表（作者徽标批量渲染用，不含 email） */
-export async function listPublicUsers(): Promise<PublicUser[]> {
+/**
+ * 公开用户列表（作者徽标 / 身份组批量渲染用，不含 email）。
+ * 一页里徽标表和身份组表都要它，请求内只取一次。
+ */
+export const listPublicUsers = cache(async (): Promise<PublicUser[]> => {
   const d = await apiGetOr<{ items: PublicUser[] }>('/api/v1/users', { items: [] });
   return d.items;
-}
+});
 
 export async function countUsers(): Promise<number> {
   const d = await apiGetOr<{ userCount: number }>('/api/v1/auth/state', { userCount: 0 });

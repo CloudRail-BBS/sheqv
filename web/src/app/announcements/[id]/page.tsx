@@ -1,8 +1,23 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAnnouncement } from '@/lib/announcement-store';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const item = await getAnnouncement(id);
+  if (!item || !item.published) {
+    return buildMetadata({ title: '公告', path: `/announcements/${id}`, noIndex: true });
+  }
+  return buildMetadata({
+    title: item.title,
+    description: item.body.replace(/\s+/g, ' ').slice(0, 120),
+    path: `/announcements/${id}`,
+    type: 'article',
+  });
+}
 
 const fmt = (ts: number) => new Date(ts).toLocaleString('zh-CN', { hour12: false });
 

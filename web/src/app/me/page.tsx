@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
 import { listPosts } from '@/lib/forum-store';
 import { listActive } from '@/lib/agreement-store';
@@ -6,12 +7,18 @@ import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
 import { TitleEditor } from '@/components/title-editor';
 import { UserBadge } from '@/components/user-badge';
+import { GroupTag } from '@/components/group-tag';
 import { badgeOf } from '@/lib/badges';
+import { listPublicGroups } from '@/lib/groups';
 import { getSettings } from '@/lib/settings';
 import { getAchievementState } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return buildMetadata({ title: '我的', path: '/me', noIndex: true });
+}
 
 const DEFAULT_GUEST_TEXT =
   '「我的」需要账号登录后才能查看。本站没有默认账号，第一个注册的用户会成为管理员。';
@@ -44,11 +51,13 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements, achieved] = await Promise.all([
+  const [posts, agreements, achieved, groups] = await Promise.all([
     listPosts(),
     listActive(),
     getAchievementState(user),
+    listPublicGroups(),
   ]);
+  const myGroup = groups.find((g) => g.id === user.group?.id);
   const sigs = await getSignatures(agreements);
   const mine = posts.filter((p) => p.author === user.nickname);
   const likes = mine.reduce((n, p) => n + p.likes, 0);
@@ -64,6 +73,7 @@ export default async function MePage() {
             <div className="row" style={{ gap: 7 }}>
               <span className="me-name">{user.nickname}</span>
               <UserBadge badge={badgeOf(user)} />
+              <GroupTag group={user.group} />
             </div>
             <div className="me-sub">
               @{user.username} · 注册于 {joined}
@@ -77,6 +87,50 @@ export default async function MePage() {
             )}
             <LogoutButton />
           </div>
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="between" style={{ marginBottom: 8 }}>
+            <h3 style={{ fontSize: 13 }}>身份组</h3>
+            <span className="small muted">由管理员分配</span>
+          </div>
+          {user.group ? (
+            <>
+              <div className="row wrap" style={{ gap: 8 }}>
+                <GroupTag group={user.group} />
+                {myGroup?.isDefault && <span className="badge badge-ghost">默认身份组</span>}
+                <span className="small muted">
+                  共 {myGroup?.memberCount ?? 0} 人
+                </span>
+              </div>
+              <p className="small muted" style={{ marginTop: 8, lineHeight: 1.75 }}>
+                {myGroup?.description || '这个身份组还没有写说明。'}
+              </p>
+              {myGroup && myGroup.capabilities.length > 0 && (
+                <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
+                  {myGroup.capabilities.map((c) => (
+                    <span key={c} className="badge badge-ghost">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {myGroup && myGroup.requiredAgreements.length > 0 && (
+                <p className="small muted" style={{ marginTop: 10 }}>
+                  进组需签署：{myGroup.requiredAgreements.join('、')}
+                </p>
+              )}
+              <p className="small muted" style={{ marginTop: 10 }}>
+                <Link href="/groups" style={{ color: 'var(--blue)' }}>
+                  查看全部身份组 →
+                </Link>
+              </p>
+            </>
+          ) : (
+            <p className="small muted" style={{ lineHeight: 1.75 }}>
+              还没有分配身份组，当前按最小权限处理（不能发帖与评论）。请联系管理员。
+            </p>
+          )}
         </div>
 
         <div className="card card-pad" style={{ marginTop: 12 }}>
@@ -119,7 +173,7 @@ export default async function MePage() {
             { k: '我的帖子', v: String(mine.length) },
             { k: '获得点赞', v: String(likes) },
             { k: '已签公约', v: `${signedCount}/${agreements.length}` },
-            { k: '身份', v: user.isAdmin ? '管理员' : '成员' },
+            { k: '身份组', v: user.group?.name ?? '未分组' },
           ].map((s) => (
             <div key={s.k} className="card">
               <b>{s.v}</b>

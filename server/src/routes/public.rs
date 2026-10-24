@@ -14,10 +14,12 @@ use crate::state::AppState;
 use crate::{announcements, settings, slides};
 
 /// 可以给浏览器看的键
-const PUBLIC_KEYS: [&str; 15] = [
+const PUBLIC_KEYS: [&str; 17] = [
     "siteName",
     "logoText",
     "logoImage",
+    "seoDescription",
+    "seoKeywords",
     "geetestId",
     "afdianPageUrl",
     "footerText",
@@ -153,6 +155,9 @@ pub struct PublicProfile {
     pub created_at: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// 身份组的名字与颜色（只用于展示，权限永远在后端判）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group: Option<crate::users::GroupTag>,
 }
 
 /// GET /api/v1/users/{id}
@@ -170,6 +175,7 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         is_admin: row.role == "admin",
         created_at: row.created_at.timestamp_millis(),
         title: row.title.clone(),
+        group: row.group_tag(),
     };
 
     Ok(Json(json!({ "ok": true, "user": profile })).into_response())
@@ -191,6 +197,7 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
             is_admin: row.role == "admin",
             created_at: row.created_at.timestamp_millis(),
             title: row.title.clone(),
+            group: row.group_tag(),
         })
         .collect();
 

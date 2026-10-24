@@ -5,7 +5,9 @@ import Link from 'next/link';
 import type { FeedItem } from '@/lib/data';
 import type { BadgeInfo } from '@/lib/badges';
 import type { EarnedBadge } from '@/lib/achievements';
+import type { UserGroup } from '@/lib/users';
 import { UserBadge } from './user-badge';
+import { GroupTag } from './group-tag';
 import { AchievementChips } from './achievement-chips';
 
 type Item = FeedItem & { href?: string };
@@ -13,10 +15,13 @@ type Item = FeedItem & { href?: string };
 export function PostCard({
   item,
   badge,
+  group,
   achievements,
 }: {
   item: Item;
   badge?: BadgeInfo;
+  /** 作者的身份组（名字 + 颜色） */
+  group?: UserGroup;
   achievements?: EarnedBadge[];
 }) {
   const [liked, setLiked] = useState(false);
@@ -43,6 +48,7 @@ export function PostCard({
           <div className="post-meta">
             <b>{item.author}</b>
             <UserBadge badge={badge} />
+            <GroupTag group={group} size="sm" />
             <span className="sep">·</span>
             {item.guild}
             {item.pinned && <span className="post-pin">置顶</span>}

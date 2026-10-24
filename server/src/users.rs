@@ -72,9 +72,25 @@ pub struct UserRow {
     pub last_login_at: Option<DateTime<Utc>>,
     /// 身份组；为空表示未分组（按最小权限处理）
     pub group_id: Option<String>,
+    /// 组的展示字段（LEFT JOIN 得来；未分组时全为 None）
+    pub group_name: Option<String>,
+    pub group_color: Option<String>,
+    pub group_slug: Option<String>,
 }
 
 const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id";
+
+/// 读用户时统一带出组的展示信息。
+/// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
+const SELECT_USER: &str = "SELECT u.id, u.username, u.nickname, u.password_hash, u.email, u.role,
+        u.created_at, u.banned, u.title, u.badges, u.notif_read_at, u.last_login_at, u.group_id,
+        g.name AS group_name, g.color AS group_color, g.slug AS group_slug
+   FROM users u LEFT JOIN groups g ON g.id = u.group_id";
+
+/// UPDATE ... RETURNING 不能 JOIN，用标量子查询补同样的字段
+const RETURNING_GROUP: &str = "(SELECT name FROM groups WHERE id = users.group_id) AS group_name,
+        (SELECT color FROM groups WHERE id = users.group_id) AS group_color,
+        (SELECT slug FROM groups WHERE id = users.group_id) AS group_slug";
 
 /// 对外暴露的用户信息（不含哈希）
 #[derive(Debug, Clone, Serialize)]
@@ -95,6 +111,9 @@ pub struct PublicUser {
     /// 身份组 id（公开接口只透传 id，具体权限永远在后端判）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_id: Option<String>,
+    /// 身份组的展示信息：名字与颜色，用来在名字旁边挂一个组标签
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group: Option<GroupTag>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -107,7 +126,30 @@ fn is_false(v: &bool) -> bool {
     !*v
 }
 
+/// 只给展示用的身份组快照（不含权限）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupTag {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
+    pub color: String,
+}
+
 impl UserRow {
+    /// 只给展示用的组快照（名字 + 颜色），权限不在里面
+    pub fn group_tag(&self) -> Option<GroupTag> {
+        match (&self.group_id, &self.group_name) {
+            (Some(id), Some(name)) => Some(GroupTag {
+                id: id.clone(),
+                name: name.clone(),
+                slug: self.group_slug.clone().unwrap_or_default(),
+                color: self.group_color.clone().unwrap_or_default(),
+            }),
+            _ => None,
+        }
+    }
+
     pub fn to_public(&self) -> PublicUser {
         let role = Role::from_db(&self.role);
         let badges = self.badges.as_array().map(|arr| {
@@ -127,6 +169,7 @@ impl UserRow {
             banned: self.banned,
             title: self.title.clone(),
             group_id: self.group_id.clone(),
+            group: self.group_tag(),
             email: self.email.clone(),
             providers: None,
             badges: badges.filter(|b| !b.is_empty()),
@@ -252,7 +295,7 @@ pub async fn count(pool: &PgPool) -> Result<i64, sqlx::Error> {
 }
 
 pub async fn find_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRow>, sqlx::Error> {
-    sqlx::query_as::<_, UserRow>(&format!("SELECT {COLUMNS} FROM users WHERE id = $1"))
+    sqlx::query_as::<_, UserRow>(&format!("{SELECT_USER} WHERE u.id = $1"))
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -263,7 +306,7 @@ pub async fn find_by_username(
     username: &str,
 ) -> Result<Option<UserRow>, sqlx::Error> {
     sqlx::query_as::<_, UserRow>(&format!(
-        "SELECT {COLUMNS} FROM users WHERE lower(username) = lower($1)"
+        "{SELECT_USER} WHERE lower(u.username) = lower($1)"
     ))
     .bind(username.trim())
     .fetch_optional(pool)
@@ -275,7 +318,7 @@ pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<Option<UserRow>
         return Ok(None);
     };
     sqlx::query_as::<_, UserRow>(&format!(
-        "SELECT {COLUMNS} FROM users WHERE lower(email) = lower($1)"
+        "{SELECT_USER} WHERE lower(u.email) = lower($1)"
     ))
     .bind(target)
     .fetch_optional(pool)
@@ -284,7 +327,7 @@ pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<Option<UserRow>
 
 pub async fn list(pool: &PgPool) -> Result<Vec<UserRow>, sqlx::Error> {
     sqlx::query_as::<_, UserRow>(&format!(
-        "SELECT {COLUMNS} FROM users ORDER BY created_at ASC"
+        "{SELECT_USER} ORDER BY u.created_at ASC"
     ))
     .fetch_all(pool)
     .await
@@ -451,7 +494,7 @@ pub async fn set_title(
 ) -> Result<Option<PublicUser>, sqlx::Error> {
     let clean = title.map(str::trim).filter(|t| !t.is_empty());
     let updated = sqlx::query_as::<_, UserRow>(&format!(
-        "UPDATE users SET title = $2 WHERE id = $1 RETURNING {COLUMNS}"
+        "UPDATE users SET title = $2 WHERE id = $1 RETURNING {COLUMNS}, {RETURNING_GROUP}"
     ))
     .bind(id)
     .bind(clean)
@@ -494,14 +537,9 @@ pub async fn find_by_identity(
     sub: &str,
 ) -> Result<Option<UserRow>, sqlx::Error> {
     sqlx::query_as::<_, UserRow>(&format!(
-        "SELECT {cols} FROM users u
+        "{SELECT_USER}
            JOIN identities i ON i.user_id = u.id
-          WHERE i.provider = $1 AND i.sub = $2",
-        cols = COLUMNS
-            .split(", ")
-            .map(|c| format!("u.{c}"))
-            .collect::<Vec<_>>()
-            .join(", ")
+          WHERE i.provider = $1 AND i.sub = $2"
     ))
     .bind(provider)
     .bind(sub)

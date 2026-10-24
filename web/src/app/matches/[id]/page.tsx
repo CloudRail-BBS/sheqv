@@ -4,6 +4,14 @@ import { getRequestCaps } from '@/lib/request-caps';
 import { GAME_LABEL, MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
 import { MatchActions } from '@/components/match-actions';
 import { isTrustSigned } from '@/lib/agreement-state';
+import { buildMetadata } from '@/lib/seo';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const match = MATCHES.find((m) => m.id === id);
+  if (!match) return buildMetadata({ title: '约战', path: `/matches/${id}`, noIndex: true });
+  return buildMetadata({ title: '约战详情', path: `/matches/${id}` });
+}
 
 export default async function MatchDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

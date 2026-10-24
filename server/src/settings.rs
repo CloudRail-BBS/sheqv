@@ -12,10 +12,13 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 34] = [
+pub const KEYS: [&str; 36] = [
     "siteName",
     "logoText",
     "logoImage",
+    // SEO：搜索引擎与社交分享用的描述 / 关键词，留空走内置文案
+    "seoDescription",
+    "seoKeywords",
     "publicBaseUrl",
     "geetestId",
     "geetestKey",
@@ -64,7 +67,9 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     };
     put("siteName", json!(cfg.site_name));
     put("logoText", json!(""));
-    put("logoImage", json!(""));
+    put("logoImage", json!("/logo.png"));
+    put("seoDescription", json!(""));
+    put("seoKeywords", json!(""));
     put(
         "publicBaseUrl",
         json!(cfg.public_base_url.clone().unwrap_or_default()),

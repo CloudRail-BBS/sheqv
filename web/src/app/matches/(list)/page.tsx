@@ -2,6 +2,15 @@ import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
 import { MATCHES, MATCH_STATUS_LABEL, GAME_LABEL, type MatchStatus } from '@/lib/data';
 import { EmptyState } from '@/components/empty-state';
+import { buildMetadata } from '@/lib/seo';
+
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '约战',
+    description: '公会与战队之间的约战：名单快照、双方提交、确认与仲裁记录。',
+    path: '/matches',
+  });
+}
 
 const STATUS_BADGE: Record<MatchStatus, string> = {
   pending_accept: 'badge',

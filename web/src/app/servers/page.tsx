@@ -5,13 +5,17 @@ import { ServerCard } from '@/components/server-card';
 import { RelayBoard } from '@/components/relay-board';
 import { ServerUpload } from '@/components/server-upload';
 import { EmptyState } from '@/components/empty-state';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: '联机大厅 · 我的世界与铁锈战争',
-  description: '玩家上传的 Minecraft 服务器状态与铁锈战争联机房，实时人数与在线情况',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '联机大厅',
+    description: '玩家上传的 Minecraft 服务器状态与铁锈战争联机房，实时显示在线人数、版本与房间列表。',
+    path: '/servers',
+  });
+}
 
 /**
  * 联机大厅。

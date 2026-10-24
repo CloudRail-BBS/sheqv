@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { CHANGELOG, type ChangelogEntry } from '@/lib/changelog';
 import { listChangelog, type ChangelogApiItem } from '@/lib/changelog-store';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: '更新日志',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '更新日志',
+    description: '云轨社区的功能更新与修复记录。',
+    path: '/changelog',
+  });
+}
 
 /** 库里的条目 → 页面结构：正文按行拆成要点，标签统一用条目自身的 */
 function toEntry(e: ChangelogApiItem): ChangelogEntry {

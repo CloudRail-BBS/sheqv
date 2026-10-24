@@ -4,8 +4,17 @@ import { ResourceCard } from '@/components/resource-card';
 import { UploadPanel } from '@/components/upload-panel';
 import { formatBytes } from '@/lib/capabilities';
 import { EmptyState } from '@/components/empty-state';
+import { buildMetadata } from '@/lib/seo';
 
 const FILTERS = ['全部', 'Minecraft', 'Roblox', '地图', '整合包', '材质', '存档', '工具'];
+
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '资源库',
+    description: '玩家分享的地图、整合包、材质与工具，支持按游戏与分类筛选。',
+    path: '/resources',
+  });
+}
 
 export default async function ResourcesPage() {
   const caps = await getRequestCaps();

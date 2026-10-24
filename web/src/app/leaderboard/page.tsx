@@ -17,13 +17,17 @@ import {
 } from '@/lib/org-types';
 import { LeaderboardShare } from '@/components/leaderboard-share';
 import { EmptyState } from '@/components/empty-state';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: '排行榜 · 方块竞技场',
-  description: '公会榜与战队榜分开统计，支持按游戏筛选与导出分享图',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '排行榜',
+    description: '公会榜与战队榜分开统计，支持按游戏筛选，可一键导出榜单分享图。',
+    path: '/leaderboard',
+  });
+}
 
 const BOARD_HINT: Record<OrgKind, string> = {
   guild: '按积分排序，同分看胜场',
@@ -154,7 +158,7 @@ export default async function LeaderboardPage({
     getSettings(),
   ]);
 
-  const brand = `${settings.siteName || '方块竞技场'} · 排行榜`;
+  const brand = `${settings.siteName || '云轨社区'} · 排行榜`;
   const scope = activeGame ? activeGame.label : '全部游戏';
 
   // 「我的排名」：只认负责人身份，成员关系还没做

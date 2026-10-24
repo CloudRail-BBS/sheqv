@@ -7,6 +7,7 @@ interface Group {
   name: string;
   slug: string;
   color: string;
+  description: string;
   weight: number;
   isDefault: boolean;
   isBuiltin: boolean;
@@ -29,6 +30,7 @@ const EMPTY = {
   name: '',
   slug: '',
   color: '#3e7cff',
+  description: '',
   weight: 10,
   isDefault: false,
   permissions: [] as string[],
@@ -75,6 +77,7 @@ export function AdminGroups() {
       name: draft.name,
       slug: draft.slug,
       color: draft.color,
+      description: draft.description,
       weight: draft.weight,
       isDefault: draft.isDefault,
       permissions: draft.permissions,
@@ -119,6 +122,7 @@ export function AdminGroups() {
       name: g.name,
       slug: g.slug,
       color: g.color || '#3e7cff',
+      description: g.description ?? '',
       weight: g.weight,
       isDefault: g.isDefault,
       permissions: g.permissions,
@@ -160,10 +164,25 @@ export function AdminGroups() {
               <tr key={g.id}>
                 <td>
                   <span className="row" style={{ gap: 6 }}>
+                    <i
+                      aria-hidden="true"
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: 3,
+                        background: g.color || 'var(--muted)',
+                        flex: 'none',
+                      }}
+                    />
                     <b>{g.name}</b>
                     {g.isDefault && <span className="badge">默认</span>}
                     {g.isBuiltin && <span className="badge">内置</span>}
                   </span>
+                  {g.description && (
+                    <div className="small muted" style={{ marginTop: 3, lineHeight: 1.6 }}>
+                      {g.description}
+                    </div>
+                  )}
                 </td>
                 <td className="mono small">{g.slug}</td>
                 <td className="mono">{g.memberCount}</td>
@@ -247,6 +266,17 @@ export function AdminGroups() {
                 value={draft.color}
                 onChange={(e) => setDraft({ ...draft, color: e.target.value })}
                 placeholder="#3e7cff"
+              />
+            </label>
+            <label className="field" style={{ gridColumn: '1 / -1' }}>
+              <span>说明（显示在公开的身份组页与个人中心）</span>
+              <textarea
+                className="input textarea"
+                rows={2}
+                value={draft.description}
+                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                placeholder="这个组是干什么的，写一句就够"
+                maxLength={120}
               />
             </label>
           </div>

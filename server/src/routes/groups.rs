@@ -87,6 +87,7 @@ pub async fn create(State(st): State<AppState>, _: AdminActor, body: Bytes) -> A
             name: &text(&obj, "name"),
             slug: &text(&obj, "slug"),
             color: &text(&obj, "color"),
+            description: &text(&obj, "description"),
             weight: obj.get("weight").and_then(|v| v.as_i64()).unwrap_or(10) as i32,
             is_default: obj
                 .get("isDefault")
@@ -124,6 +125,10 @@ pub async fn patch(
             name: obj.get("name").and_then(|v| v.as_str()).map(str::to_string),
             color: obj
                 .get("color")
+                .and_then(|v| v.as_str())
+                .map(str::to_string),
+            description: obj
+                .get("description")
                 .and_then(|v| v.as_str())
                 .map(str::to_string),
             weight: obj.get("weight").and_then(|v| v.as_i64()).map(|v| v as i32),
@@ -187,20 +192,50 @@ pub async fn assign(
     Ok(Json(json!({ "ok": true })).into_response())
 }
 
-/// GET /api/v1/groups —— 公开列表：只给展示需要的字段，不含权限与公约要求
+/// GET /api/v1/groups —— 公开列表。
+///
+/// 身份组是「社区里看得见的东西」，所以给描述、成员数、能力标签与进组条件；
+/// 权限键不直接下发（那是实现细节），翻译成人话再给。
 pub async fn public_list(State(st): State<AppState>) -> ApiResult<Response> {
+    let agreements = agreements::list_active(&st.pool)
+        .await
+        .map_err(ApiError::internal)?;
+    let label = |key: &str| {
+        groups::PERMISSIONS
+            .iter()
+            .find(|(k, _)| *k == key)
+            .map(|(_, v)| (*v).to_string())
+            .unwrap_or_else(|| key.to_string())
+    };
+
     let items: Vec<Value> = groups::list(&st.pool)
         .await
         .map_err(ApiError::internal)?
         .into_iter()
         .map(|g| {
+            let capabilities: Vec<String> = g.permissions.iter().map(|p| label(p)).collect();
+            let must_sign: Vec<String> = g
+                .required_agreements
+                .iter()
+                .map(|id| {
+                    agreements
+                        .iter()
+                        .find(|a| &a.id == id)
+                        .map(|a| a.title.clone())
+                        .unwrap_or_else(|| id.clone())
+                })
+                .collect();
             json!({
                 "id": g.id,
                 "name": g.name,
                 "slug": g.slug,
                 "color": g.color,
+                "description": g.description,
                 "weight": g.weight,
+                "isDefault": g.is_default,
                 "memberCount": g.member_count,
+                "capabilities": capabilities,
+                "requiredAgreements": must_sign,
             })
         })
         .collect();

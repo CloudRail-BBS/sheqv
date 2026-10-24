@@ -21,6 +21,7 @@ const I = {
   bell: <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
   star: <path d="m12 3.6 2.5 5.2 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
   server: <path d="M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
+  tag: <><path d="M4 4h7l9 9-7 7-9-9z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><circle cx="8.2" cy="8.2" r="1.4" fill="currentColor" /></>,
 };
 
 function Ico({ children }: { children: React.ReactNode }) {
@@ -90,6 +91,9 @@ export function Sidebar({ adminVisible, form }: Props) {
         </Link>
         <Link href="/points" className="side-item" data-active={on('/points')}>
           <Ico>{I.star}</Ico>积分与签到
+        </Link>
+        <Link href="/groups" className="side-item" data-active={on('/groups')}>
+          <Ico>{I.tag}</Ico>身份组
         </Link>
         <Link href="/announcements" className="side-item" data-active={on('/announcements')}>
           <Ico>{I.bell}</Ico>公告

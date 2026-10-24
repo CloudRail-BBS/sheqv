@@ -11,6 +11,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
 import { countUsers, getBadgeMap } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
+import { getGroupMap, resolveGroup } from '@/lib/group-map';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { getSettings } from '@/lib/settings';
 import { listAnnouncements } from '@/lib/announcement-store';
@@ -20,6 +21,11 @@ import { afdianPageUrl } from '@/lib/afdian';
 import { Composer } from '@/components/composer';
 import { PostCard } from '@/components/post-card';
 import { Carousel } from '@/components/carousel';
+import { buildMetadata, websiteJsonLd } from '@/lib/seo';
+
+export async function generateMetadata() {
+  return buildMetadata({ path: '/' });
+}
 
 const TAGS = ['地图', '整合包', '材质', '约战', '招募', '红石', 'PvP', '公告'];
 
@@ -35,7 +41,7 @@ export default async function HomePage() {
     listOrgs('team').then((list) => list.slice(0, 3)),
   ]);
   const pointsSnap = user ? await getPoints() : null;
-  const [userTotal, stats, settings, news, slides, badges, achievements] = await Promise.all([
+  const [userTotal, stats, settings, news, slides, badges, achievements, groups] = await Promise.all([
     countUsers(),
     forumStats(),
     getSettings(),
@@ -43,14 +49,20 @@ export default async function HomePage() {
     listSlides({ activeOnly: true }),
     getBadgeMap(),
     getAchievementMap(),
+    getGroupMap(),
   ]);
   const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
   const sponsorUrl = await afdianPageUrl();
   const communitySigned = await isCommunitySigned();
   const live = MATCHES[0] ?? null;
+  const jsonLd = await websiteJsonLd();
 
   return (
     <div className="cols">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
+      />
       <div className="col-main">
         <Carousel slides={slides} />
 
@@ -108,6 +120,7 @@ export default async function HomePage() {
             key={f.id}
             item={f}
             badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
+            group={resolveGroup(groups, { id: f.authorId, name: f.author })}
             achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
           />
         ))}
@@ -154,6 +167,7 @@ export default async function HomePage() {
             key={f.id}
             item={f}
             badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
+            group={resolveGroup(groups, { id: f.authorId, name: f.author })}
             achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
           />
         ))}

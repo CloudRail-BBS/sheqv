@@ -1,11 +1,15 @@
 import { OrgList } from '@/components/org-list';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: '战队 · 方块竞技场',
-  description: '战队独立于公会：自己的负责人、自己的战绩与榜单',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '战队',
+    description: '战队独立于公会：自己的负责人、自己的战绩与单独一张榜，按游戏分组排名。',
+    path: '/teams',
+  });
+}
 
 export default async function TeamsPage({
   searchParams,

@@ -32,6 +32,8 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         siteName: form.siteName,
         logoText: form.logoText,
         logoImage: form.logoImage,
+        seoDescription: form.seoDescription,
+        seoKeywords: form.seoKeywords,
         githubClientId: form.githubClientId,
         githubClientSecret: form.githubClientSecret,
         cnkdClientId: form.cnkdClientId,
@@ -141,7 +143,32 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </div>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
           标识文字留空时取站点名首字；填了图片地址就用图片。建议正方形，尺寸 64×64 以上。
-          图片会随页面直接加载，请使用可公开访问的地址。
+          默认使用站内 <code>/logo.png</code>，也可以换成本站上传的其他图片或外链。
+        </p>
+
+        <label className="field" style={{ marginTop: 12, maxWidth: 560 }}>
+          <span>站点描述（SEO / 分享卡片）</span>
+          <textarea
+            className="input textarea"
+            rows={2}
+            value={form.seoDescription}
+            onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
+            placeholder="留空使用内置文案：玩家社区 · 公会战队 · 赛事确权"
+            maxLength={160}
+          />
+        </label>
+        <label className="field" style={{ marginTop: 10, maxWidth: 560 }}>
+          <span>关键词（逗号分隔，可留空）</span>
+          <input
+            className="input"
+            value={form.seoKeywords}
+            onChange={(e) => setForm({ ...form, seoKeywords: e.target.value })}
+            placeholder="我的世界, 铁锈战争, 玩家社区, 电竞"
+            maxLength={200}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
+          描述会写进 <code>&lt;meta name=&quot;description&quot;&gt;</code>、Open Graph 与分享卡片；建议 60–120 字。
         </p>
 
         <label className="field" style={{ marginTop: 12, maxWidth: 460 }}>
@@ -270,7 +297,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
                 审核提示词<em className="field-opt">留空用内置规则</em>
               </span>
               <textarea
-                className="input"
+                className="input textarea"
                 rows={3}
                 value={form.aiPrompt}
                 onChange={(e) => setForm({ ...form, aiPrompt: e.target.value })}
@@ -523,7 +550,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             {isOverride('loginHint') && <em className="ovr">已覆盖</em>}
           </span>
           <textarea
-            className="input"
+            className="input textarea"
             rows={2}
             value={form.loginHint}
             onChange={(e) => setForm({ ...form, loginHint: e.target.value })}
@@ -540,7 +567,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             {isOverride('loginPoints') && <em className="ovr">已覆盖</em>}
           </span>
           <textarea
-            className="input"
+            className="input textarea"
             rows={3}
             value={form.loginPoints}
             onChange={(e) => setForm({ ...form, loginPoints: e.target.value })}
@@ -559,7 +586,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             {isOverride('registerHint') && <em className="ovr">已覆盖</em>}
           </span>
           <textarea
-            className="input"
+            className="input textarea"
             rows={2}
             value={form.registerHint}
             onChange={(e) => setForm({ ...form, registerHint: e.target.value })}
@@ -578,7 +605,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             {isOverride('meGuestText') && <em className="ovr">已覆盖</em>}
           </span>
           <textarea
-            className="input"
+            className="input textarea"
             rows={3}
             value={form.meGuestText}
             onChange={(e) => setForm({ ...form, meGuestText: e.target.value })}
@@ -625,7 +652,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             {isOverride('footerLinks') && <em className="ovr">已覆盖</em>}
           </span>
           <textarea
-            className="input"
+            className="input textarea"
             rows={3}
             value={form.footerLinks}
             onChange={(e) => setForm({ ...form, footerLinks: e.target.value })}

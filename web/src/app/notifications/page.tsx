@@ -1,9 +1,14 @@
 import Link from 'next/link';
+import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
 import { getNotifications, timeAgo } from '@/lib/notifications';
 import { MarkAllRead } from '@/components/notification-bell';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return buildMetadata({ title: '站内通知', path: '/notifications', noIndex: true });
+}
 
 export default async function NotificationsPage() {
   const user = await getCurrentUser();

@@ -1549,6 +1549,63 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 18px -14px rgba(62, 124, 255, 0.9);
 }
 
+/* ── 身份组 ─────────────────────────────── */
+
+/* 名字后面的组标签：颜色由后台设定，淡底 + 同色描边，深浅主题都读得清 */
+.gtag {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  height: 17px; padding: 0 6px; border-radius: 5px; border: 1px solid transparent;
+  font-size: 10px; font-weight: 600; line-height: 1; white-space: nowrap;
+  vertical-align: middle; margin-left: 6px;
+}
+.gtag[data-size="sm"] { height: 15px; font-size: 9.5px; padding: 0 5px; margin-left: 5px; }
+.gtag i { width: 5px; height: 5px; border-radius: 50%; flex: none; }
+
+/* 顶栏空间紧：窄屏只留积分与头像，组名回个人页看 */
+@media (max-width: 1180px) {
+  .user-chip .gtag { display: none; }
+}
+
+/* ── 身份组公开页 ───────────────────────── */
+
+.group-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px; margin-top: 14px;
+}
+.group-card { position: relative; overflow: hidden; padding: 16px 16px 14px; }
+.group-card::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: var(--gc, var(--blue));
+}
+.group-card[data-mine="true"] {
+  border-color: var(--blue-line);
+  box-shadow: inset 0 0 0 1px var(--blue-line);
+}
+.gc-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.gc-name { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+.gc-desc {
+  margin-top: 8px; font-size: 12.5px; color: var(--text-2);
+  line-height: 1.75; min-height: 44px;
+}
+.gc-meta {
+  display: flex; gap: 12px; margin-top: 10px;
+  font-size: 11px; color: var(--muted);
+}
+.gc-meta b { color: var(--text-2); font-family: ui-monospace, monospace; }
+.gc-caps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.gc-sign { margin-top: 10px; font-size: 11px; color: var(--muted); }
+.gc-pips { display: flex; gap: 3px; margin-left: auto; }
+.gc-pips i { width: 4px; height: 14px; border-radius: 2px; background: var(--line); }
+.gc-pips i[data-on="true"] { background: var(--gc, var(--blue)); }
+
+@media (max-width: 860px) {
+  .group-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .group-card { padding: 14px; }
+  .gc-desc { min-height: 0; }
+}
+
 /* ── 明暗主题 ───────────────────────────── */
 
 [data-theme="dark"] .ic-sun { display: none; }

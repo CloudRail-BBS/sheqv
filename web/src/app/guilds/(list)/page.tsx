@@ -1,11 +1,15 @@
 import { OrgList } from '@/components/org-list';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: '公会 · 方块竞技场',
-  description: '玩家自建公会，按游戏分榜；负责人可导出证书与分享图',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '公会',
+    description: '玩家自建公会，按游戏分榜；公会负责人可以导出负责人证书与公会信息分享图。',
+    path: '/guilds',
+  });
+}
 
 export default async function GuildsPage({
   searchParams,

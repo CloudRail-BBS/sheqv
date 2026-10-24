@@ -68,7 +68,7 @@ impl Config {
                 .unwrap_or_default(),
             geetest_key: non_empty("GEETEST_KEY").unwrap_or_default(),
             geetest_bypass_on_error: flag("GEETEST_BYPASS_ON_ERROR", false),
-            site_name: non_empty("SITE_NAME").unwrap_or_else(|| "方块竞技场".to_string()),
+            site_name: non_empty("SITE_NAME").unwrap_or_else(|| "云轨社区".to_string()),
             afdian_user_id: non_empty("AFDIAN_USER_ID").unwrap_or_default(),
             afdian_token: non_empty("AFDIAN_TOKEN").unwrap_or_default(),
             afdian_page_url: non_empty("AFDIAN_PAGE_URL")

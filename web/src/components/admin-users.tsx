@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { badgeOf, TITLE_MAX } from '@/lib/badges';
 import type { GroupOption } from '@/lib/groups';
+import type { UserGroup } from '@/lib/users';
 import { UserBadge } from './user-badge';
+import { GroupTag } from './group-tag';
 
 export interface AdminUserRow {
   id: string;
@@ -18,6 +20,8 @@ export interface AdminUserRow {
   title?: string;
   /** 身份组 id；为空表示未分组 */
   groupId?: string;
+  /** 身份组的名字与颜色 */
+  group?: UserGroup;
 }
 
 const day = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 10) : '—');
@@ -130,6 +134,13 @@ export function AdminUsers({
                     </span>
                   </td>
                   <td>
+                    <div style={{ marginBottom: 5 }}>
+                      {u.group ? (
+                        <GroupTag group={u.group} size="sm" />
+                      ) : (
+                        <span className="small muted">未分组</span>
+                      )}
+                    </div>
                     <select
                       className="input"
                       style={{ height: 28, width: 118, fontSize: 12, padding: '0 6px' }}

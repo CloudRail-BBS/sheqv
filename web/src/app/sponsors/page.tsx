@@ -2,13 +2,17 @@ import Link from 'next/link';
 import { getSnapshot, formatAmount, formatDate } from '@/lib/sponsor-store';
 import { afdianConfigured, afdianPageUrl } from '@/lib/afdian';
 import { getCurrentUser } from '@/lib/current-user';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: '赞助者 · 方块竞技场',
-  description: '支持过方块竞技场的人',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '赞助者',
+    description: '支持过云轨社区的玩家名单，按累计赞助金额排序。',
+    path: '/sponsors',
+  });
+}
 
 export default async function SponsorsPage() {
   const [snap, user] = await Promise.all([getSnapshot(), getCurrentUser()]);

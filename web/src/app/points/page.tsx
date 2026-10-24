@@ -3,13 +3,17 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getPoints } from '@/lib/points';
 import { CHECKIN_BASE, STREAK_BONUS_MAX, fmtTime, reasonLabel } from '@/lib/point-types';
 import { CheckinCard } from '@/components/checkin-card';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: '我的积分 · 方块竞技场',
-  description: '签到、发帖、评论都能拿积分，这里是余额、明细与排行榜',
-};
+export async function generateMetadata() {
+  return buildMetadata({
+    title: '积分与签到',
+    description: '每日签到、发帖、评论都能获得积分，这里可以查看余额、连签记录与社区积分榜。',
+    path: '/points',
+  });
+}
 
 export default async function PointsPage() {
   const user = await getCurrentUser();
