@@ -22,7 +22,6 @@ pub mod announcements;
 pub mod audit;
 pub mod auth;
 pub mod captcha;
-pub mod changelog;
 pub mod config;
 pub mod current_user;
 pub mod db;

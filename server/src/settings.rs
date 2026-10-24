@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 36] = [
+pub const KEYS: [&str; 38] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -53,6 +53,9 @@ pub const KEYS: [&str; 36] = [
     "aiApiKey",
     "aiModel",
     "aiPrompt",
+    // 导航：逗号分隔的 key，空串 = 前端内置默认
+    "sidebarItems",
+    "tabbarItems",
 ];
 
 pub fn is_known(key: &str) -> bool {
@@ -107,6 +110,8 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("aiApiKey", json!(""));
     put("aiModel", json!("gpt-4o-mini"));
     put("aiPrompt", json!(""));
+    put("sidebarItems", json!(""));
+    put("tabbarItems", json!(""));
     m
 }
 

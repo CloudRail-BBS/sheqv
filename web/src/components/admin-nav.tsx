@@ -17,7 +17,6 @@ const TABS = [
   { href: '/admin/slides', label: '轮播' },
   { href: '/admin/agreements', label: '公约' },
   { href: '/admin/sponsors', label: '赞助' },
-  { href: '/admin/changelog', label: '更新日志' },
   { href: '/admin/settings', label: '设置' },
 ];
 

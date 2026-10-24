@@ -138,6 +138,21 @@ pub async fn award_in(
     Ok(balance.unwrap_or(0) as i64)
 }
 
+/// 顶栏用的轻量读数：只要余额与今天是否已签到。
+///
+/// 不要为了两个数字去跑整份 `snapshot`（流水 + 榜单 + 7 天点阵）。
+pub async fn chip(pool: &PgPool, user_id: &str) -> Result<Option<(i64, bool)>, sqlx::Error> {
+    let row: Option<(i32, bool)> = sqlx::query_as(
+        "SELECT points,
+                COALESCE(last_checkin = (now() AT TIME ZONE 'Asia/Shanghai')::date, false)
+           FROM users WHERE id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(p, done)| (p as i64, done)))
+}
+
 /// 扣分。余额不足返回 `None`，不写流水也不改余额。
 pub async fn spend(
     pool: &PgPool,

@@ -3,12 +3,11 @@ import { getSiteMeta } from '@/lib/seo';
 import { listPosts } from '@/lib/forum-store';
 import { listOrgs } from '@/lib/orgs';
 import { listAnnouncements } from '@/lib/announcement-store';
-import { listChangelog } from '@/lib/changelog-store';
 import { listResources } from '@/lib/resource-store';
 import { listDevTeams } from '@/lib/dev-team-store';
 
 /**
- * 动态 sitemap：静态入口 + 帖子 + 公会 / 战队 + 公告 + 更新日志。
+ * 动态 sitemap：静态入口 + 帖子 + 公会 / 战队 + 公告 + 资源 / 团队。
  *
  * 只收**公开可索引**的内容：待审帖、被拒帖、个人页、后台一律不进。
  * 每条列表都限流（前 200），避免站点长大之后一次生成几万个 URL。
@@ -33,19 +32,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/teams'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: url('/announcements'), lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: url('/points'), lastModified: now, changeFrequency: 'daily', priority: 0.6 },
-    { url: url('/changelog'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/resources'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/matches'), lastModified: now, changeFrequency: 'weekly', priority: 0.4 },
     { url: url('/sponsors'), lastModified: now, changeFrequency: 'weekly', priority: 0.4 },
     { url: url('/agreements'), lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ];
 
-  const [posts, guilds, teams, news, logs, resources, devTeams] = await Promise.all([
+  const [posts, guilds, teams, news, resources, devTeams] = await Promise.all([
     listPosts(),
     listOrgs('guild'),
     listOrgs('team'),
     listAnnouncements({ publishedOnly: true }),
-    listChangelog(),
     listResources(),
     listDevTeams(),
   ]);
@@ -91,14 +88,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     });
   }
-  for (const c of logs.slice(0, LIMIT)) {
-    entries.push({
-      url: url(`/changelog#${c.id}`),
-      lastModified: new Date(c.releasedAt),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    });
-  }
-
   return entries;
 }

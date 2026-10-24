@@ -53,6 +53,9 @@ export interface SiteSettings {
   aiModel: string;
   /** 留空用内置审核提示词 */
   aiPrompt: string;
+  /** 侧边栏 / 移动端底部栏的 key 列表（逗号分隔，空串用内置默认） */
+  sidebarItems: string;
+  tabbarItems: string;
   /** 仅公开投影提供：id + secret 是否都配好 */
   githubEnabled?: boolean;
   cnkdEnabled?: boolean;
@@ -95,6 +98,8 @@ const DEFAULTS: SiteSettings = {
   aiApiKey: '',
   aiModel: 'gpt-4o-mini',
   aiPrompt: '',
+  sidebarItems: '',
+  tabbarItems: '',
 };
 
 async function fetchSettings(): Promise<Partial<SiteSettings>> {

@@ -8,8 +8,8 @@ import { TabBar } from '@/components/tabbar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSettings } from '@/lib/settings';
-import { getNotifications, flatten } from '@/lib/notifications';
-import { getPointsChip } from '@/lib/points';
+import { flatten } from '@/lib/notifications';
+import { getChrome } from '@/lib/chrome';
 import { NotificationBell } from '@/components/notification-bell';
 import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
@@ -45,11 +45,11 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [caps, theme, user] = await Promise.all([getRequestCaps(), getTheme(), getCurrentUser()]);
-  const [feed, settings] = await Promise.all([getNotifications(user), getSettings()]);
-  // 顶栏的积分数：只有登录用户才查，失败时静默（不该因为它让整页崩）
-  const pointsChip = user ? await getPointsChip() : null;
+  // 设置与顶栏数据并行；站内信 + 积分合并成一个接口，登录用户每页少一跳
+  const [settings, chrome] = await Promise.all([getSettings(), getChrome(user)]);
   const customLinks = parseFooterLinks(settings.footerLinks);
-  const notes = flatten(feed);
+  const notes = flatten({ comments: chrome.items, pending: [], unread: chrome.unread });
+  const pointsChip = user ? { points: chrome.points, todayDone: chrome.todayDone } : null;
 
   return (
     <html
@@ -108,7 +108,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </Link>
                 )}
 
-                <NotificationBell initial={notes} unread={feed.unread} loggedIn={Boolean(user)} />
+                <NotificationBell initial={notes} unread={chrome.unread} loggedIn={Boolean(user)} />
 
                 <Link href={user ? '/me' : '/login'} className="icon-btn" aria-label={user ? '我的' : '登录'}>
                   <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
@@ -139,7 +139,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </header>
 
           <div className="app">
-            <Sidebar adminVisible={caps.capabilities.admin.console} form={caps.form} />
+            <Sidebar adminVisible={caps.capabilities.admin.console} items={settings.sidebarItems} />
             <div className="content">{children}</div>
           </div>
 
@@ -174,9 +174,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       <Link href="/agreements" style={{ marginLeft: 12 }}>
                         公约
                       </Link>
-                      <Link href="/changelog" style={{ marginLeft: 12 }}>
-                        更新日志
-                      </Link>
                       <Link href="/login" style={{ marginLeft: 12 }}>
                         登录
                       </Link>
@@ -186,7 +183,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           </footer>
 
-          <TabBar />
+          <TabBar items={settings.tabbarItems} />
         </CapProvider>
       </body>
     </html>

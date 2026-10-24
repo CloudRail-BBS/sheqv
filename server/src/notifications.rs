@@ -44,7 +44,7 @@ pub async fn feed(
            FROM comments c
            JOIN users u ON u.id = c.author_id
            JOIN posts p ON p.id = c.post_id
-          WHERE ($1 = '' OR c.author_id <> $1)
+          WHERE p.author_id = $1 AND c.author_id <> $1
           ORDER BY c.created_at DESC
           LIMIT 30",
     )

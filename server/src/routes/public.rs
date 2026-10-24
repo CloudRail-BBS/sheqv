@@ -14,7 +14,7 @@ use crate::state::AppState;
 use crate::{announcements, settings, slides};
 
 /// 可以给浏览器看的键
-const PUBLIC_KEYS: [&str; 17] = [
+const PUBLIC_KEYS: [&str; 19] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -30,6 +30,8 @@ const PUBLIC_KEYS: [&str; 17] = [
     "registerHint",
     // 登录页左侧能力条是纯展示文案，匿名也要能看到
     "loginPoints",
+    "sidebarItems",
+    "tabbarItems",
     "allowRegister",
     "homeShowAnnouncements",
     // 只告诉前端「能不能用」，SMTP 的 host/user/pass 一律不下发

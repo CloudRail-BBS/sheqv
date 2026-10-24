@@ -3,7 +3,6 @@ pub mod admin;
 pub mod agreements;
 pub mod audit;
 pub mod auth;
-pub mod changelog;
 pub mod email_auth;
 pub mod dev_teams;
 pub mod groups;
@@ -35,6 +34,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/email-login", post(email_auth::login))
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
+        .route("/api/v1/me/chrome", get(me::chrome))
         .route("/api/v1/auth/oauth/{provider}", get(oauth::start))
         .route(
             "/api/v1/auth/oauth/{provider}/callback",
@@ -168,7 +168,6 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/points/checkin", post(points::checkin))
         .route("/api/v1/points/rank", get(points::rank))
         .route("/api/v1/groups", get(groups::public_list))
-        .route("/api/v1/changelog", get(changelog::public_list))
         .route(
             "/api/v1/servers",
             get(servers::list).post(servers::create),
@@ -232,14 +231,6 @@ pub fn router(state: AppState) -> Router {
             patch(groups::patch).delete(groups::remove),
         )
         .route("/api/v1/admin/users/{id}/group", patch(groups::assign))
-        .route(
-            "/api/v1/admin/changelog",
-            get(changelog::admin_list).post(changelog::create),
-        )
-        .route(
-            "/api/v1/admin/changelog/{id}",
-            patch(changelog::patch).delete(changelog::remove),
-        )
         .route("/api/v1/admin/afdian/sync", post(admin::sync_afdian))
         .route(
             "/api/v1/admin/users/{id}/badges",

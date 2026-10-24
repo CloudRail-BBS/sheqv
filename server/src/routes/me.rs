@@ -9,6 +9,34 @@ use crate::current_user::CurrentUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::users;
+use crate::{notifications, points};
+
+/// GET /api/v1/me/chrome —— 顶栏一次取齐：站内信 + 积分胶囊。
+///
+/// 之前 layout 先等站内信、再等积分，串行两跳；合并后登录用户每页少一跳，
+/// 也避免为了两个数字去跑整份积分快照。
+pub async fn chrome(
+    State(st): State<AppState>,
+    CurrentUser(user): CurrentUser,
+) -> ApiResult<Response> {
+    let (items, unread) = notifications::feed(&st.pool, Some(&user))
+        .await
+        .map_err(ApiError::internal)?;
+    let (points, today_done) = points::chip(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?
+        .unwrap_or((0, false));
+
+    let mut res = Json(json!({
+        "ok": true,
+        "notifications": { "items": items, "unread": unread },
+        "points": { "points": points, "todayDone": today_done },
+    }))
+    .into_response();
+    res.headers_mut()
+        .insert(axum::http::header::CACHE_CONTROL, "no-store".parse().expect("固定值"));
+    Ok(res)
+}
 
 /// PATCH /api/v1/me —— 头衔与个人主页背景。
 ///

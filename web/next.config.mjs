@@ -56,6 +56,13 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      // 品牌图不常换，给浏览器一天缓存；换 logo 时改后台 logoImage 或换文件名
+      ...['/logo.png', '/logo-192.png', '/logo-512.png', '/favicon.ico'].map((source) => ({
+        source,
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      })),
     ];
   },
 };

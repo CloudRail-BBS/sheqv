@@ -86,7 +86,6 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/resources/new` | 发布资源：登录即可，首个资源自动点亮开发者身份 |
 | `/leaderboard` | 公会榜 / 战队榜 / 开发者个人榜 / 开发团队榜；可导出分享图 |
 | `/announcements` | 公告：置顶优先，分类徽标，点击进 `/announcements/[id]` 详情 |
-| `/changelog` | 更新日志：按版本倒序，标签区分功能 / 修复 / 安全 / 样式 / 文档 |
 | `/sponsors` | 赞助者名单：累计金额 / 人数 / 前三名 / 完整列表（数据来自爱发电） |
 | `/agreements` | 公约签署：诚信公约 / 社区公约，含版本校验与签署凭证 |
 | `/p/[id]` | 帖子详情：正文、点赞、评论（需签社区公约） |
@@ -104,7 +103,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/admin/groups` | 身份组：名称 / 颜色 / 说明 / 权限 / 进组公约 |
 | `/admin/announcements` | 公告管理：发布 / 编辑 / 置顶 / 转草稿 / 删除 |
 | `/admin/slides` | 轮播管理：文案、链接、背景色或背景图、文字明暗、排序 |
-| `/admin/settings` | 站点设置：站点名、GeeTest、爱发电、开放注册、首页公告开关（立即生效） |
+| `/admin/settings` | 站点设置：站点名、导航（侧边栏/底部栏）、GeeTest、爱发电、开放注册、首页公告开关（立即生效） |
 | `/admin/agreements` | 公约管理：新增 / 停用 / 删除，内置两份锁定 |
 | `/admin/sponsors` | 赞助管理：同步爱发电、手动录入、隐藏 / 删除 |
 | `/dev/capabilities` | 端能力台：4 列能力矩阵 + 配额 + bootstrap 实测（生产默认 404） |

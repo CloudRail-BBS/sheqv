@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteSettings } from '@/lib/settings';
 import { BrandMark } from './brand-mark';
+import { NavSettings } from './nav-settings';
 
 type Key = keyof SiteSettings;
 
@@ -65,6 +66,8 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         aiApiKey: form.aiApiKey,
         aiModel: form.aiModel,
         aiPrompt: form.aiPrompt,
+        sidebarItems: form.sidebarItems,
+        tabbarItems: form.tabbarItems,
       }),
     }).catch(() => null);
     setBusy(null);
@@ -664,6 +667,18 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
           留空则使用默认链接（赞助者 / 公约 / 登录）。只接受站内路径与 http(s) 地址。
         </p>
 
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <div className="between" style={{ marginBottom: 4 }}>
+          <h3 style={{ fontSize: 13 }}>导航</h3>
+          <span className="small muted">保存后立即生效</span>
+        </div>
+        <NavSettings
+          sidebar={form.sidebarItems}
+          tabbar={form.tabbarItems}
+          onChange={(key, value) => setForm({ ...form, [key]: value })}
+        />
       </div>
 
       <div className="card card-pad" style={{ marginTop: 12 }}>
