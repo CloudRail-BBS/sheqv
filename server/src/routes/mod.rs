@@ -1,8 +1,11 @@
 pub mod achievements;
 pub mod admin;
 pub mod agreements;
+pub mod audit;
 pub mod auth;
+pub mod changelog;
 pub mod email_auth;
+pub mod groups;
 pub mod health;
 pub mod me;
 pub mod notifications;
@@ -91,6 +94,28 @@ pub fn router(state: AppState) -> Router {
                 .post(admin::create_sponsor)
                 .patch(admin::patch_sponsor)
                 .delete(admin::delete_sponsor),
+        )
+        .route("/api/v1/groups", get(groups::public_list))
+        .route("/api/v1/changelog", get(changelog::public_list))
+        .route("/api/v1/admin/audit/posts", get(audit::pending))
+        .route("/api/v1/admin/audit/posts/{id}", post(audit::review))
+        .route("/api/v1/admin/audit/test", post(audit::test))
+        .route(
+            "/api/v1/admin/groups",
+            get(groups::list).post(groups::create),
+        )
+        .route(
+            "/api/v1/admin/groups/{id}",
+            patch(groups::patch).delete(groups::remove),
+        )
+        .route("/api/v1/admin/users/{id}/group", patch(groups::assign))
+        .route(
+            "/api/v1/admin/changelog",
+            get(changelog::admin_list).post(changelog::create),
+        )
+        .route(
+            "/api/v1/admin/changelog/{id}",
+            patch(changelog::patch).delete(changelog::remove),
         )
         .route("/api/v1/admin/afdian/sync", post(admin::sync_afdian))
         .route(

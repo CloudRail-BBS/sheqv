@@ -1,11 +1,31 @@
 import Link from 'next/link';
-import { CHANGELOG } from '@/lib/changelog';
+import { CHANGELOG, type ChangelogEntry } from '@/lib/changelog';
+import { listChangelog, type ChangelogApiItem } from '@/lib/changelog-store';
 
 export const metadata = {
   title: '更新日志',
 };
 
-export default function ChangelogPage() {
+/** 库里的条目 → 页面结构：正文按行拆成要点，标签统一用条目自身的 */
+function toEntry(e: ChangelogApiItem): ChangelogEntry {
+  const tag = (e.tag || '功能') as ChangelogEntry['items'][number]['tag'];
+  return {
+    version: e.version,
+    title: e.title,
+    date: new Date(e.releasedAt).toISOString().slice(0, 10),
+    items: e.body
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((text) => ({ tag, text })),
+  };
+}
+
+export default async function ChangelogPage() {
+  const fromDb = await listChangelog();
+  // 后台还没录时回落到代码里的内置记录，避免升级后页面变空
+  const entries: ChangelogEntry[] = fromDb.length > 0 ? fromDb.map(toEntry) : CHANGELOG;
+
   return (
     <div className="cols">
       <div className="col-main">
@@ -20,11 +40,11 @@ export default function ChangelogPage() {
             更新日志
           </h1>
           <p className="small muted" style={{ marginTop: 6, lineHeight: 1.8 }}>
-            这里记录每次上线的功能与修复，最新的在最前面。共 {CHANGELOG.length} 个版本。
+            这里记录每次上线的功能与修复，最新的在最前面。共 {entries.length} 个版本。
           </p>
         </div>
 
-        {CHANGELOG.map((e) => (
+        {entries.map((e) => (
           <section key={e.version} className="card card-pad cl-item">
             <div className="cl-head">
               <h2 className="cl-title">{e.title}</h2>

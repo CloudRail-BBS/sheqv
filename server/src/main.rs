@@ -50,12 +50,21 @@ async fn serve() -> anyhow::Result<()> {
     arena_api::slides::ensure_default(&pool)
         .await
         .context("写入默认轮播失败")?;
+    // 内置身份组（成员 / 管理员），并把没有组的老用户归档到默认组
+    arena_api::groups::ensure_builtin(&pool)
+        .await
+        .context("写入内置身份组失败")?;
 
     let session_secret = cfg.load_session_secret()?;
     let http = reqwest::Client::builder()
         .timeout(Duration::from_secs(5))
         .build()
         .context("初始化 HTTP 客户端失败")?;
+    // 审核调模型的耗时明显更长，单独一个客户端
+    let ai_http = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .context("初始化 AI 客户端失败")?;
 
     tracing::info!(
         port = cfg.port,
@@ -69,6 +78,7 @@ async fn serve() -> anyhow::Result<()> {
         cfg: Arc::new(cfg.clone()),
         session_secret: Arc::new(session_secret),
         http,
+        ai_http,
         started_at: Instant::now(),
     };
 

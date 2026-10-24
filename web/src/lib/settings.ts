@@ -41,6 +41,13 @@ export interface SiteSettings {
   smtpFrom: string;
   /** true = 465 直连 TLS；false = 587 STARTTLS */
   smtpSecure: boolean;
+  /** 帖子审核策略：off 关闭 / ai AI 预审 / all 全部人工 */
+  postAuditMode: string;
+  aiBaseUrl: string;
+  aiApiKey: string;
+  aiModel: string;
+  /** 留空用内置审核提示词 */
+  aiPrompt: string;
   /** 仅公开投影提供：id + secret 是否都配好 */
   githubEnabled?: boolean;
   cnkdEnabled?: boolean;
@@ -76,6 +83,11 @@ const DEFAULTS: SiteSettings = {
   smtpPass: '',
   smtpFrom: '',
   smtpSecure: true,
+  postAuditMode: 'off',
+  aiBaseUrl: '',
+  aiApiKey: '',
+  aiModel: 'gpt-4o-mini',
+  aiPrompt: '',
 };
 
 async function fetchSettings(): Promise<Partial<SiteSettings>> {

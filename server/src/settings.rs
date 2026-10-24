@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 29] = [
+pub const KEYS: [&str; 34] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -44,6 +44,12 @@ pub const KEYS: [&str; 29] = [
     "smtpPass",
     "smtpFrom",
     "smtpSecure",
+    // 内容审核：off / ai / all
+    "postAuditMode",
+    "aiBaseUrl",
+    "aiApiKey",
+    "aiModel",
+    "aiPrompt",
 ];
 
 pub fn is_known(key: &str) -> bool {
@@ -90,6 +96,12 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("smtpFrom", json!(""));
     // true = 465 端口直连 TLS（implicit）；false = 587 端口 STARTTLS
     put("smtpSecure", json!(true));
+    // 默认关闭审核，保持「发帖即发布」的现有体验
+    put("postAuditMode", json!("off"));
+    put("aiBaseUrl", json!(""));
+    put("aiApiKey", json!(""));
+    put("aiModel", json!("gpt-4o-mini"));
+    put("aiPrompt", json!(""));
     m
 }
 

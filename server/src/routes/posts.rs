@@ -11,7 +11,54 @@ use crate::auth::session;
 use crate::current_user::MaybeUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
-use crate::{agreements, forum};
+use crate::{agreements, audit, forum, groups, settings};
+
+/// 当前身份组是否允许某个动作
+async fn require_permission(
+    st: &AppState,
+    user_id: &str,
+    perm: &str,
+    msg: &str,
+) -> Result<(), ApiError> {
+    if groups::can(&st.pool, user_id, perm)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        Ok(())
+    } else {
+        Err(ApiError::with_message(
+            StatusCode::FORBIDDEN,
+            "no_permission",
+            msg,
+        ))
+    }
+}
+
+/// 组要求的公约必须都已签署（与社区公约取并集）
+async fn require_group_agreements(st: &AppState, user_id: &str) -> Result<(), ApiError> {
+    let ids = groups::required_agreements(&st.pool, user_id)
+        .await
+        .map_err(ApiError::internal)?;
+
+    for id in ids {
+        let Some(ag) = agreements::get(&st.pool, &id)
+            .await
+            .map_err(ApiError::internal)?
+        else {
+            continue;
+        };
+        let signed =
+            agreements::is_signed_with_cookie(&st.pool, user_id, &ag.id, &ag.version, None).await;
+        if !signed {
+            return Err(ApiError::with_message(
+                StatusCode::FORBIDDEN,
+                "need_agreement",
+                format!("当前身份组要求先签署《{}》", ag.title),
+            ));
+        }
+    }
+    Ok(())
+}
 
 fn need_login() -> ApiError {
     // 注意：发帖相关接口的未登录是 403，与登录接口的 401 不同（历史契约）
@@ -70,7 +117,9 @@ pub async fn create(
     body: Bytes,
 ) -> ApiResult<Response> {
     let user = maybe.ok_or_else(need_login)?;
+    require_permission(&st, &user.id, "post.create", "当前身份组没有发帖权限").await?;
     require_community(&st, &user.id, &headers).await?;
+    require_group_agreements(&st, &user.id).await?;
 
     let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
@@ -103,6 +152,10 @@ pub async fn create(
         })
         .unwrap_or_default();
 
+    // 审核策略在写库前定状态：off 直接发布、ai 先过模型、all 全部待审
+    let s = settings::load(&st.pool, &st.cfg).await;
+    let pre = audit::precheck(&s, &st.ai_http, &title, &content).await;
+
     let id = forum::add(
         &st.pool,
         &user.id,
@@ -110,10 +163,15 @@ pub async fn create(
             title: &title,
             body: &content,
             tags,
+            status: pre.status,
         },
     )
     .await
     .map_err(ApiError::internal)?;
+
+    if let Some(v) = &pre.verdict {
+        audit::record_ai(&st.pool, &id, v).await;
+    }
 
     let post = forum::get(&st.pool, &id)
         .await
@@ -136,7 +194,9 @@ pub async fn comment(
     body: Bytes,
 ) -> ApiResult<Response> {
     let user = maybe.ok_or_else(need_login)?;
+    require_permission(&st, &user.id, "comment.create", "当前身份组没有评论权限").await?;
     require_community(&st, &user.id, &headers).await?;
+    require_group_agreements(&st, &user.id).await?;
 
     let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));

@@ -40,6 +40,10 @@ pub struct PostView {
     pub created_at: i64,
     pub is_new: bool,
     pub href: String,
+    /// pending / published / rejected；前端据此显示「审核中」等提示
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reject_reason: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -53,6 +57,8 @@ struct PostRow {
     author: String,
     created_at: DateTime<Utc>,
     like_count: i32,
+    status: String,
+    reject_reason: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -66,7 +72,7 @@ struct CommentRow {
 }
 
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
-        u.nickname AS author, p.created_at, p.like_count
+        u.nickname AS author, p.created_at, p.like_count, p.status, p.reject_reason
    FROM posts p JOIN users u ON u.id = p.author_id";
 
 fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
@@ -94,6 +100,8 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         comments_list: comments,
         created_at: row.created_at.timestamp_millis(),
         is_new: true,
+        status: row.status,
+        reject_reason: row.reject_reason,
     }
 }
 
@@ -106,9 +114,11 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
 
     let rows: Vec<PostRow> = match keyword {
         None => {
-            sqlx::query_as(&format!("{POST_SQL} ORDER BY p.created_at DESC"))
-                .fetch_all(pool)
-                .await?
+            sqlx::query_as(&format!(
+                "{POST_SQL} WHERE p.status = 'published' ORDER BY p.created_at DESC"
+            ))
+            .fetch_all(pool)
+            .await?
         }
         Some(word) => {
             let pattern = format!("%{}%", escape_like(word));
@@ -227,6 +237,8 @@ pub struct NewPost<'a> {
     pub title: &'a str,
     pub body: &'a str,
     pub tags: Vec<String>,
+    /// pending / published：由审核策略在写库前决定
+    pub status: &'a str,
 }
 
 pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<String, sqlx::Error> {
@@ -234,8 +246,8 @@ pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<Str
     let tags = Value::Array(input.tags.into_iter().take(3).map(Value::String).collect());
 
     sqlx::query(
-        "INSERT INTO posts (id, title, body, guild, tags, author_id, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now())",
+        "INSERT INTO posts (id, title, body, guild, tags, author_id, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, now())",
     )
     .bind(&id)
     .bind(input.title)
@@ -243,6 +255,7 @@ pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<Str
     .bind("个人")
     .bind(tags)
     .bind(user_id)
+    .bind(input.status)
     .execute(pool)
     .await?;
 

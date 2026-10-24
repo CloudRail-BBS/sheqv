@@ -13,5 +13,7 @@ pub struct AppState {
     pub session_secret: Arc<Vec<u8>>,
     /// 出站 HTTP（GeeTest / 爱发电 / OAuth），统一 5 秒超时
     pub http: reqwest::Client,
+    /// 审核用的 AI 客户端：模型响应慢，超时放宽到 30 秒
+    pub ai_http: reqwest::Client,
     pub started_at: Instant,
 }

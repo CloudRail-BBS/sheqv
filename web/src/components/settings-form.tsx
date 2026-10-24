@@ -58,6 +58,11 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         smtpPass: form.smtpPass,
         smtpFrom: form.smtpFrom,
         smtpSecure: form.smtpSecure,
+        postAuditMode: form.postAuditMode,
+        aiBaseUrl: form.aiBaseUrl,
+        aiApiKey: form.aiApiKey,
+        aiModel: form.aiModel,
+        aiPrompt: form.aiPrompt,
       }),
     }).catch(() => null);
     setBusy(null);
@@ -197,6 +202,84 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         <p className="small muted" style={{ marginTop: 8 }}>
           当前状态：{settings.geetestId && settings.geetestKey ? '已启用' : '未配置（注册会跳过验证）'}
         </p>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }}>
+        <h3 style={{ fontSize: 13 }}>内容审核</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          控制新帖是否先审后发。审核队列在{' '}
+          <a href="/admin/audit" style={{ color: 'var(--blue)' }}>
+            /admin/audit
+          </a>
+          ；谁能审由「身份组」里的「审核内容」权限决定。
+        </p>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 320 }}>
+          <span>策略</span>
+          <select
+            className="input"
+            value={form.postAuditMode}
+            onChange={(e) => setForm({ ...form, postAuditMode: e.target.value })}
+          >
+            <option value="off">关闭 — 发帖即发布</option>
+            <option value="ai">AI 预审 — 可疑内容转人工</option>
+            <option value="all">全部人工 — 所有新帖都待审</option>
+          </select>
+        </label>
+
+        {form.postAuditMode !== 'off' && (
+          <>
+            <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
+              AI 走 OpenAI 兼容接口（`/chat/completions`）。**调用失败会一律转入人工**，不会直接放行。
+            </p>
+
+            <div className="adm-form" style={{ gridTemplateColumns: '1.4fr 1fr', marginTop: 10 }}>
+              <label className="field">
+                <span>接口地址</span>
+                <input
+                  className="input"
+                  value={form.aiBaseUrl}
+                  onChange={(e) => setForm({ ...form, aiBaseUrl: e.target.value })}
+                  placeholder="https://api.openai.com/v1"
+                />
+              </label>
+              <label className="field">
+                <span>模型</span>
+                <input
+                  className="input"
+                  value={form.aiModel}
+                  onChange={(e) => setForm({ ...form, aiModel: e.target.value })}
+                  placeholder="gpt-4o-mini"
+                />
+              </label>
+            </div>
+
+            <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+              <span>API Key</span>
+              <input
+                className="input"
+                type="password"
+                value={form.aiApiKey}
+                onChange={(e) => setForm({ ...form, aiApiKey: e.target.value })}
+                autoComplete="new-password"
+              />
+            </label>
+
+            <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+              <span>
+                审核提示词<em className="field-opt">留空用内置规则</em>
+              </span>
+              <textarea
+                className="input"
+                rows={3}
+                value={form.aiPrompt}
+                onChange={(e) => setForm({ ...form, aiPrompt: e.target.value })}
+                placeholder={'模型只需输出 {"risky":bool,"score":0-1,"labels":[],"reason":""}'}
+                style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+              />
+            </label>
+          </>
+        )}
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }}>
