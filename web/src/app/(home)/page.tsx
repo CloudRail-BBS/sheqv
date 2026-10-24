@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getRequestCaps } from '@/lib/request-caps';
-import { GUILDS, MATCHES, MATCH_STATUS_LABEL, TEAMS } from '@/lib/data';
+import { MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
+import { listOrgs } from '@/lib/orgs';
+import { winRateText } from '@/lib/org-types';
 import { listPosts } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
@@ -25,6 +27,11 @@ export default async function HomePage() {
   const posts = await listPosts();
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
+  // 侧栏的活跃公会 / 战队：两张独立的榜，各取前三
+  const [topGuilds, topTeams] = await Promise.all([
+    listOrgs('guild').then((list) => list.slice(0, 3)),
+    listOrgs('team').then((list) => list.slice(0, 3)),
+  ]);
   const [userTotal, stats, settings, news, slides, badges, achievements] = await Promise.all([
     countUsers(),
     forumStats(),
@@ -184,18 +191,32 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="rail-list">
-            {GUILDS.map((g, i) => (
-              <Link key={g.tag} href="/guilds" className="rail-item">
+            {topGuilds.length === 0 && (
+              <p className="small muted" style={{ padding: '4px 0' }}>
+                还没有公会。创建后按积分自动上榜。
+              </p>
+            )}
+            {topGuilds.map((g, i) => (
+              <Link key={g.id} href={`/guilds/${g.id}`} className="rail-item">
                 <span className="idx">{i + 1}</span>
                 <span className="crest a" style={{ width: 25, height: 25, fontSize: 10, borderRadius: 7, flex: 'none' }}>
                   {g.tag}
                 </span>
-                <span style={{ width: 30, flex: 'none' }}>{g.name}</span>
+                <span
+                  style={{
+                    flex: '0 0 56px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {g.name}
+                </span>
                 <span className="bar">
                   <i style={{ width: `${g.winRate * 100}%` }} />
                 </span>
                 <span className="mono" style={{ color: 'var(--muted)' }}>
-                  {(g.winRate * 100).toFixed(0)}%
+                  {winRateText(g)}
                 </span>
               </Link>
             ))}
@@ -210,16 +231,13 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="rail-list">
-            {TEAMS.length === 0 && (
+            {topTeams.length === 0 && (
               <p className="small muted" style={{ padding: '4px 0' }}>
-                还没有战队数据。
+                还没有战队。战队独立于公会，单独建。
               </p>
             )}
-            {[...TEAMS]
-              .sort((a, b) => b.winRate - a.winRate)
-              .slice(0, 3)
-              .map((t, i) => (
-                <Link key={t.id} href="/teams" className="rail-item">
+            {topTeams.map((t, i) => (
+                <Link key={t.id} href={`/teams/${t.id}`} className="rail-item">
                   <span className="idx">{i + 1}</span>
                   <span className="crest b" style={{ width: 25, height: 25, fontSize: 9, borderRadius: 7, flex: 'none' }}>
                     {t.tag}
@@ -238,7 +256,7 @@ export default async function HomePage() {
                     <i style={{ width: `${t.winRate * 100}%` }} />
                   </span>
                   <span className="mono" style={{ color: 'var(--muted)' }}>
-                    {(t.winRate * 100).toFixed(0)}%
+                    {winRateText(t)}
                   </span>
                 </Link>
               ))}

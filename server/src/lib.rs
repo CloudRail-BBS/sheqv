@@ -35,6 +35,7 @@ pub mod mailer;
 pub mod mcping;
 pub mod netcheck;
 pub mod notifications;
+pub mod orgs;
 pub mod oauth;
 pub mod relay;
 pub mod routes;

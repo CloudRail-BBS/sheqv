@@ -1,0 +1,561 @@
+/**
+ * 分享图 / 证书的绘制。
+ *
+ * 为什么用 Canvas 2D 而不是「渲染 DOM 再截图」：
+ * 截图要靠第三方库（html2canvas 之类），本项目零 UI 依赖，也不该为了三张图引一个；
+ * Canvas 画出来的就是最终像素，没有字体/布局抖动，导出 PNG 只需 `toBlob`。
+ *
+ * 所有函数都返回已经画好的 `HTMLCanvasElement`，调用方负责下载。
+ * 只在浏览器里用（导入方都是 'use client' 组件）。
+ */
+
+import type { ShareRow } from './org-types';
+
+export type { ShareRow };
+
+export interface ShareOrg {
+  id: string;
+  kind: 'guild' | 'team';
+  name: string;
+  tag: string;
+  game: string;
+  gameLabel: string;
+  intro: string;
+  owner: string;
+  status: string;
+  statusLabel: string;
+  points: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  members: number;
+  createdAt: number;
+}
+
+const C = {
+  bg: '#f3f5f9',
+  panel: '#ffffff',
+  ink: '#151a23',
+  ink2: '#3d4757',
+  muted: '#6b7688',
+  line: '#e3e8f0',
+  blue: '#3e7cff',
+  blueSoft: '#e8f0ff',
+  gold: '#b8860b',
+};
+
+const FONT = '"PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif';
+const MONO = 'ui-monospace, "SFMono-Regular", Consolas, monospace';
+
+function canvas(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+  const el = document.createElement('canvas');
+  el.width = w;
+  el.height = h;
+  const ctx = el.getContext('2d');
+  if (!ctx) throw new Error('浏览器不支持 canvas');
+  ctx.textBaseline = 'alphabetic';
+  return [el, ctx];
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+interface TextOpts {
+  size?: number;
+  weight?: number | string;
+  color?: string;
+  align?: CanvasTextAlign;
+  font?: string;
+  maxWidth?: number;
+}
+
+/** 画一行字，超宽自动省略号（社交图里长名字必须截断，不能溢出） */
+function write(
+  ctx: CanvasRenderingContext2D,
+  str: string,
+  x: number,
+  y: number,
+  opts: TextOpts = {},
+) {
+  const {
+    size = 24,
+    weight = 400,
+    color = C.ink,
+    align = 'left',
+    font = FONT,
+    maxWidth,
+  } = opts;
+  ctx.font = `${weight} ${size}px ${font}`;
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+
+  let text = str;
+  if (maxWidth && ctx.measureText(text).width > maxWidth) {
+    const chars = [...text];
+    while (chars.length > 1 && ctx.measureText(chars.join('') + '…').width > maxWidth) {
+      chars.pop();
+    }
+    text = chars.join('') + '…';
+  }
+  ctx.fillText(text, x, y);
+  return ctx.measureText(text).width;
+}
+
+/** 按宽度折行绘制，最多 `maxLines` 行，末行补省略号；返回实际行数 */
+function wrap(
+  ctx: CanvasRenderingContext2D,
+  str: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  maxLines: number,
+  opts: { size: number; weight?: number | string; color?: string; lineHeight: number },
+): number {
+  ctx.font = `${opts.weight ?? 400} ${opts.size}px ${FONT}`;
+  const chars = [...str.replace(/\s+/g, ' ').trim()];
+  const lines: string[] = [];
+  let cur = '';
+  for (const ch of chars) {
+    const next = cur + ch;
+    if (ctx.measureText(next).width > maxWidth && cur) {
+      if (lines.length === maxLines - 1) {
+        cur = next;
+        break;
+      }
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = next;
+    }
+  }
+  if (cur) {
+    if (lines.length === maxLines - 1 && ctx.measureText(cur).width > maxWidth) {
+      let last = cur;
+      while (last.length > 1 && ctx.measureText(last + '…').width > maxWidth) {
+        last = last.slice(0, -1);
+      }
+      cur = last + '…';
+    }
+    lines.push(cur);
+  }
+
+  lines.forEach((line, i) => {
+    write(ctx, line, x, y + i * opts.lineHeight, {
+      size: opts.size,
+      weight: opts.weight,
+      color: opts.color,
+      maxWidth,
+    });
+  });
+  return lines.length;
+}
+
+function paintBase(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, w, h);
+
+  // 右上角蓝色光晕 + 左下角淡格子，避免大面积纯色显得像截图
+  const glow = ctx.createRadialGradient(w * 0.86, h * 0.06, 0, w * 0.86, h * 0.06, w * 0.7);
+  glow.addColorStop(0, 'rgba(62, 124, 255, 0.20)');
+  glow.addColorStop(1, 'rgba(62, 124, 255, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.045)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 48) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 48) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+function crest(
+  ctx: CanvasRenderingContext2D,
+  tag: string,
+  x: number,
+  y: number,
+  size: number,
+  opts: { bg?: string; color?: string; radius?: number; fontSize?: number } = {},
+) {
+  roundRect(ctx, x, y, size, size, opts.radius ?? size * 0.24);
+  ctx.fillStyle = opts.bg ?? C.blueSoft;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(62, 124, 255, 0.22)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const label = [...tag].slice(0, 3).join('');
+  write(ctx, label, x + size / 2, y + size / 2 + (opts.fontSize ?? size * 0.3) * 0.36, {
+    size: opts.fontSize ?? size * 0.3,
+    weight: 700,
+    color: opts.color ?? C.blue,
+    align: 'center',
+  });
+}
+
+function footer(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  brand: string,
+  date: string,
+) {
+  ctx.fillStyle = C.line;
+  ctx.fillRect(72, h - 108, w - 144, 1);
+  write(ctx, brand, 72, h - 62, { size: 22, weight: 600, color: C.ink2, maxWidth: w - 320 });
+  write(ctx, date, w - 72, h - 62, { size: 20, color: C.muted, align: 'right' });
+}
+
+/* ── 榜单分享图 1080×1440 ─────────────────── */
+
+export function renderLeaderboardShare(opts: {
+  title: string;
+  gameLabel: string;
+  rows: ShareRow[];
+  brand: string;
+  date: string;
+}): HTMLCanvasElement {
+  const W = 1080;
+  const H = 1440;
+  const [el, ctx] = canvas(W, H);
+  paintBase(ctx, W, H);
+
+  // 顶部胶囊
+  roundRect(ctx, 72, 76, 236, 52, 26);
+  ctx.fillStyle = C.panel;
+  ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  write(ctx, `赛季榜 · ${opts.gameLabel}`, 190, 110, {
+    size: 22,
+    weight: 600,
+    color: C.blue,
+    align: 'center',
+  });
+
+  write(ctx, opts.title, 72, 236, { size: 84, weight: 700, color: C.ink });
+  write(ctx, `按积分排序 · 共 ${opts.rows.length} 个条目`, 76, 288, {
+    size: 24,
+    color: C.muted,
+  });
+
+  const top = opts.rows.slice(0, 8);
+  const gap = 14;
+  const areaTop = 356;
+  const areaBottom = H - 170;
+  // 行高随条目数自适应：只有 3 名时把行撑开并整体居中，
+  // 否则底部会留出一大片空白，像没画完。
+  const rowH = Math.max(
+    96,
+    Math.min(190, Math.floor((areaBottom - areaTop - gap * (top.length - 1)) / Math.max(1, top.length))),
+  );
+  const blockH = top.length * rowH + gap * (top.length - 1);
+  const startY = areaTop + Math.max(0, Math.floor((areaBottom - areaTop - blockH) / 2));
+
+  top.forEach((row, i) => {
+    const y = startY + i * (rowH + gap);
+    const isFirst = i === 0;
+
+    roundRect(ctx, 72, y, W - 144, rowH, 22);
+    ctx.fillStyle = C.panel;
+    ctx.fill();
+    ctx.strokeStyle = isFirst ? 'rgba(62, 124, 255, 0.45)' : C.line;
+    ctx.lineWidth = isFirst ? 3 : 2;
+    ctx.stroke();
+
+    // 名次
+    write(ctx, String(row.rank), 116, y + rowH / 2 + 20, {
+      size: 48,
+      weight: 700,
+      color: isFirst ? C.blue : C.muted,
+      align: 'center',
+      font: MONO,
+    });
+
+    crest(ctx, row.tag, 164, y + (rowH - 76) / 2, 76, {
+      bg: isFirst ? C.blue : C.blueSoft,
+      color: isFirst ? '#ffffff' : C.blue,
+      fontSize: 26,
+    });
+
+    write(ctx, row.name, 268, y + rowH / 2 - 6, {
+      size: 34,
+      weight: 600,
+      color: C.ink,
+      maxWidth: 420,
+    });
+    write(
+      ctx,
+      `${row.game} · ${row.wins}胜${row.losses}负 · 胜率 ${row.wins + row.losses ? Math.round(row.winRate * 100) : 0}%`,
+      268,
+      y + rowH / 2 + 34,
+      { size: 21, color: C.muted, maxWidth: 420 },
+    );
+
+    write(ctx, String(row.points), W - 96, y + rowH / 2 + 4, {
+      size: 46,
+      weight: 700,
+      color: C.ink,
+      align: 'right',
+      font: MONO,
+    });
+    write(ctx, '积分', W - 96, y + rowH / 2 + 34, {
+      size: 19,
+      color: C.muted,
+      align: 'right',
+    });
+  });
+
+  footer(ctx, W, H, opts.brand, opts.date);
+  return el;
+}
+
+/* ── 公会 / 战队信息分享卡 1080×1350 ─────── */
+
+export function renderOrgCard(org: ShareOrg, brand: string, date: string): HTMLCanvasElement {
+  const W = 1080;
+  const H = 1350;
+  const [el, ctx] = canvas(W, H);
+  paintBase(ctx, W, H);
+
+  const kindLabel = org.kind === 'guild' ? '公会' : '战队';
+
+  roundRect(ctx, 72, 72, W - 144, H - 144, 36);
+  ctx.fillStyle = C.panel;
+  ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  crest(ctx, org.tag, 132, 140, 168, { radius: 44, fontSize: 62 });
+
+  write(ctx, org.name, 340, 232, { size: 64, weight: 700, color: C.ink, maxWidth: 560 });
+  write(ctx, `${org.gameLabel} · ${kindLabel} · ${org.statusLabel}`, 344, 282, {
+    size: 24,
+    color: C.muted,
+    maxWidth: 560,
+  });
+
+  // 负责人
+  write(ctx, `负责人 ${org.owner || '—'}`, 344, 336, {
+    size: 22,
+    color: C.ink2,
+    maxWidth: 560,
+  });
+
+  // 简介：最多 3 行，超长省略
+  wrap(ctx, org.intro || `这个${kindLabel}还没有写简介。`, 132, 470, W - 264, 3, {
+    size: 26,
+    color: C.ink2,
+    lineHeight: 44,
+  });
+
+  // 数据块
+  const stats: [string, string][] = [
+    ['积分', String(org.points)],
+    ['场次', String(org.wins + org.losses)],
+    ['胜率', org.wins + org.losses ? `${Math.round(org.winRate * 100)}%` : '—'],
+    ['成员', String(org.members)],
+  ];
+  const boxY = 640;
+  const boxW = (W - 264 - 3 * 20) / 4;
+  stats.forEach(([label, value], i) => {
+    const x = 132 + i * (boxW + 20);
+    roundRect(ctx, x, boxY, boxW, 168, 24);
+    ctx.fillStyle = C.bg;
+    ctx.fill();
+    ctx.strokeStyle = C.line;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    write(ctx, value, x + boxW / 2, boxY + 88, {
+      size: 46,
+      weight: 700,
+      color: C.ink,
+      align: 'center',
+      font: MONO,
+    });
+    write(ctx, label, x + boxW / 2, boxY + 130, {
+      size: 20,
+      color: C.muted,
+      align: 'center',
+    });
+  });
+
+  // 证书式尾部
+  ctx.fillStyle = C.line;
+  ctx.fillRect(132, 900, W - 264, 1);
+  write(ctx, '成立于', 132, 958, { size: 20, color: C.muted });
+  write(ctx, new Date(org.createdAt).toISOString().slice(0, 10), 132, 1000, {
+    size: 30,
+    weight: 600,
+    color: C.ink2,
+    font: MONO,
+  });
+
+  write(ctx, '编号', W / 2 + 40, 958, { size: 20, color: C.muted });
+  write(ctx, org.id.toUpperCase(), W / 2 + 40, 1000, {
+    size: 26,
+    weight: 600,
+    color: C.ink2,
+    font: MONO,
+    maxWidth: 300,
+  });
+
+  write(ctx, brand, 132, 1180, { size: 26, weight: 600, color: C.ink });
+  write(ctx, date, W - 132, 1180, { size: 20, color: C.muted, align: 'right' });
+  return el;
+}
+
+/* ── 负责人证书 1600×1131（A4 横向） ─────── */
+
+export function renderCertificate(
+  org: ShareOrg,
+  ownerName: string,
+  brand: string,
+  date: string,
+): HTMLCanvasElement {
+  const W = 1600;
+  const H = 1131;
+  const [el, ctx] = canvas(W, H);
+
+  ctx.fillStyle = '#fbfcfe';
+  ctx.fillRect(0, 0, W, H);
+
+  // 双线边框
+  ctx.strokeStyle = 'rgba(62, 124, 255, 0.35)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(44, 44, W - 88, H - 88);
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(62, 62, W - 124, H - 124);
+
+  // 四角装饰
+  const corner = (x: number, y: number, sx: number, sy: number) => {
+    ctx.strokeStyle = C.blue;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x, y + sy * 46);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + sx * 46, y);
+    ctx.stroke();
+  };
+  corner(62, 62, 1, 1);
+  corner(W - 62, 62, -1, 1);
+  corner(62, H - 62, 1, -1);
+  corner(W - 62, H - 62, -1, -1);
+
+  const kindLabel = org.kind === 'guild' ? '公会' : '战队';
+
+  write(ctx, 'BLOCKARENA · 方块竞技场', W / 2, 176, {
+    size: 22,
+    weight: 600,
+    color: C.muted,
+    align: 'center',
+  });
+  write(ctx, `${kindLabel}负责人证书`, W / 2, 300, {
+    size: 76,
+    weight: 700,
+    color: C.ink,
+    align: 'center',
+  });
+  write(ctx, 'CERTIFICATE OF OWNERSHIP', W / 2, 348, {
+    size: 20,
+    color: C.muted,
+    align: 'center',
+    font: MONO,
+  });
+
+  ctx.fillStyle = C.blue;
+  ctx.fillRect(W / 2 - 40, 386, 80, 4);
+
+  write(ctx, '兹证明', 200, 500, { size: 26, color: C.ink2 });
+  write(ctx, ownerName || '—', 320, 506, { size: 40, weight: 700, color: C.blue, maxWidth: 620 });
+
+  write(ctx, `为${kindLabel}「${org.name}」（${org.tag}）的创建者与负责人，`, 200, 590, {
+    size: 26,
+    color: C.ink2,
+    maxWidth: W - 400,
+  });
+  write(
+    ctx,
+    `该${kindLabel}登记于 ${org.gameLabel}，自 ${new Date(org.createdAt).toISOString().slice(0, 10)} 起在站内有效。`,
+    200,
+    642,
+    { size: 26, color: C.ink2, maxWidth: W - 400 },
+  );
+
+  // 编号与状态
+  write(ctx, '编号', 200, 742, { size: 20, color: C.muted });
+  write(ctx, org.id.toUpperCase(), 200, 782, {
+    size: 30,
+    weight: 600,
+    color: C.ink,
+    font: MONO,
+    maxWidth: 420,
+  });
+  write(ctx, '当前状态', 760, 742, { size: 20, color: C.muted });
+  write(ctx, org.statusLabel, 760, 782, { size: 30, weight: 600, color: C.ink });
+
+  // 落款
+  write(ctx, brand, 200, 960, { size: 26, weight: 600, color: C.ink });
+  write(ctx, '运营团队', 200, 998, { size: 20, color: C.muted });
+  write(ctx, date, W - 200, 960, { size: 26, weight: 600, color: C.ink, align: 'right' });
+  write(ctx, '签发日期', W - 200, 998, { size: 20, color: C.muted, align: 'right' });
+
+  // 水印徽记
+  ctx.globalAlpha = 0.06;
+  crest(ctx, org.tag, W - 380, 470, 300, { radius: 76, fontSize: 110 });
+  ctx.globalAlpha = 1;
+
+  return el;
+}
+
+/* ── 下载 ───────────────────────────────── */
+
+export function downloadCanvas(el: HTMLCanvasElement, filename: string) {
+  el.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // 立刻 revoke 会让部分浏览器下载失败，延后一点
+    window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }, 'image/png');
+}
+
+/** 文件名里不能有斜杠与引号，中文可以保留 */
+export function safeName(raw: string): string {
+  return raw.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+}
+
+export function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}

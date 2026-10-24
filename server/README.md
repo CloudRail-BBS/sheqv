@@ -53,8 +53,14 @@
 | POST | `/api/v1/admin/afdian/sync` | 拉取爱发电并覆盖快照 |
 | GET | `/api/v1/auth/oauth/{provider}` | 生成 state + PKCE，写一次性 Cookie，302 到平台 |
 | GET | `/api/v1/auth/oauth/{provider}/callback` | 校验 state → 换 token → 取资料 → 建号/登录 → 302 `/me` |
-| GET | `/api/v1/servers?kind=` | 联机大厅条目（只含公开展示的，带探测快照） |
-| POST | `/api/v1/servers` | 自由上传（登录 + `post.create`），MC 与中转站共用 |
+| GET/POST | `/api/v1/guilds` | 公会列表（`?game=`）/ 创建（每人一个，创建者即负责人） |
+| GET/PATCH/DELETE | `/api/v1/guilds/{id}` | 详情 / 改名·简介·状态（负责人或管理员）/ 删除 |
+| GET/POST | `/api/v1/teams` | 战队列表 / 创建；**战队独立于公会**，不挂在公会下 |
+| GET/PATCH/DELETE | `/api/v1/teams/{id}` | 详情 / 修改 / 删除 |
+| GET | `/api/v1/leaderboard?game=` | 公会榜与战队榜分开返回（积分 → 胜场 → 少负 → 早创建） |
+| GET | `/api/v1/admin/orgs` | 后台：两张榜一起给 |
+| PATCH/DELETE | `/api/v1/admin/orgs/{kind}/{id}` | 校准积分·战绩（唯一写入口）/ 删除 |
+| GET | `/api/v1/servers?kind=` | 联机大厅条目（只含公开展示的，带探测快照） || POST | `/api/v1/servers` | 自由上传（登录 + `post.create`），MC 与中转站共用 |
 | PATCH/DELETE | `/api/v1/servers/{id}` | 本人或管理员；改地址会清空探测快照 |
 | POST | `/api/v1/servers/{id}/probe` | 手动刷新一次（10 秒冷却） |
 | GET | `/api/v1/relay/rooms` | 铁锈战争中转站的实时房间（10 秒缓存，失败回落旧数据） |

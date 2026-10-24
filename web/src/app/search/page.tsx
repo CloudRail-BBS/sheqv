@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { listPosts } from '@/lib/forum-store';
-import { GUILDS, MATCHES, RESOURCES, TEAMS, GAME_LABEL } from '@/lib/data';
+import { MATCHES, RESOURCES, GAME_LABEL } from '@/lib/data';
+import { listOrgs } from '@/lib/orgs';
 import { formatBytes } from '@/lib/capabilities';
 
 const HOT = ['天空之城', '整合包', '名单快照', '星轨', '约战'];
@@ -12,8 +13,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   const posts = (await listPosts()).filter((p) => hit(p.title ?? '', p.body, p.tags.join(' ')));
   const resources = RESOURCES.filter((r) => hit(r.title, r.summary, r.tags.join(' '), r.author));
-  const guilds = GUILDS.filter((g) => hit(g.name, g.intro, g.tag));
-  const teams = TEAMS.filter((t) => hit(t.name, t.guild, t.intro, t.roster.join(' ')));
+  // 公会与战队是独立实体，各自查各自的，不互相带出
+  const [allGuilds, allTeams] = await Promise.all([listOrgs('guild'), listOrgs('team')]);
+  const guilds = allGuilds.filter((g) => hit(g.name, g.intro, g.tag, g.owner));
+  const teams = allTeams.filter((t) => hit(t.name, t.intro, t.tag, t.owner));
   const matches = MATCHES.filter((m) => hit(m.title, m.guildA.name, m.guildB.name, m.format));
   const total = posts.length + resources.length + guilds.length + teams.length + matches.length;
 
@@ -80,7 +83,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <div className="section-h"><h2>公会</h2><span className="hint">{guilds.length} 个</span></div>
             <div className="card" style={{ overflow: 'hidden' }}>
               {guilds.map((g) => (
-                <Link key={g.tag} href="/guilds" className="rail-item" style={{ padding: '12px 16px' }}>
+                <Link key={g.id} href={`/guilds/${g.id}`} className="rail-item" style={{ padding: '12px 16px' }}>
                   <span className="crest a" style={{ width: 24, height: 24, fontSize: 9, borderRadius: 6 }}>{g.tag}</span>
                   <span>{g.name}</span>
                   <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>{g.members} 人</span>
@@ -95,7 +98,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <div className="section-h"><h2>战队</h2><span className="hint">{teams.length} 支</span></div>
             <div className="card" style={{ overflow: 'hidden' }}>
               {teams.map((t) => (
-                <Link key={t.id} href="/teams" className="rail-item" style={{ padding: '12px 16px' }}>
+                <Link key={t.id} href={`/teams/${t.id}`} className="rail-item" style={{ padding: '12px 16px' }}>
                   <span className="crest a" style={{ width: 24, height: 24, fontSize: 8.5, borderRadius: 6 }}>{t.tag}</span>
                   <span>{t.name}</span>
                   <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>{t.wins}-{t.losses}</span>

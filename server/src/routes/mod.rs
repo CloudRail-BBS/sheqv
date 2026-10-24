@@ -9,6 +9,7 @@ pub mod groups;
 pub mod health;
 pub mod me;
 pub mod notifications;
+pub mod orgs;
 pub mod oauth;
 pub mod posts;
 pub mod public;
@@ -96,6 +97,23 @@ pub fn router(state: AppState) -> Router {
                 .patch(admin::patch_sponsor)
                 .delete(admin::delete_sponsor),
         )
+        .route(
+            "/api/v1/guilds",
+            get(orgs::list_guilds).post(orgs::create_guild),
+        )
+        .route(
+            "/api/v1/guilds/{id}",
+            get(orgs::guild).patch(orgs::patch_guild).delete(orgs::delete_guild),
+        )
+        .route(
+            "/api/v1/teams",
+            get(orgs::list_teams).post(orgs::create_team),
+        )
+        .route(
+            "/api/v1/teams/{id}",
+            get(orgs::team).patch(orgs::patch_team).delete(orgs::delete_team),
+        )
+        .route("/api/v1/leaderboard", get(orgs::leaderboard))
         .route("/api/v1/groups", get(groups::public_list))
         .route("/api/v1/changelog", get(changelog::public_list))
         .route(
@@ -108,6 +126,11 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/servers/{id}/probe", post(servers::refresh))
         .route("/api/v1/relay/rooms", get(servers::rooms))
+        .route("/api/v1/admin/orgs", get(orgs::admin_list))
+        .route(
+            "/api/v1/admin/orgs/{kind}/{id}",
+            patch(orgs::admin_patch).delete(orgs::admin_delete),
+        )
         .route("/api/v1/admin/servers", get(servers::admin_list))
         .route(
             "/api/v1/admin/servers/probe",
