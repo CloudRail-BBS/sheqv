@@ -15,15 +15,14 @@ import { getSettings } from './settings';
  */
 
 export const DEFAULT_DESCRIPTION =
-  '云轨社区是 Minecraft / Roblox 玩家社区：联机大厅实时显示服务器状态与铁锈战争房间，公会与战队各有独立榜单，赛事名单可存证追溯。';
+  '云轨社区是 Minecraft / Rusted Warfare 玩家社区：联机大厅实时显示服务器状态与联机房间，公会与战队各有独立榜单，赛事名单可存证追溯。';
 
 export const DEFAULT_KEYWORDS = [
   '云轨社区',
   'Minecraft',
   '我的世界',
   '我的世界服务器',
-  'Roblox',
-  '铁锈战争',
+  'Rusted Warfare',
   'Rusted Warfare',
   '联机大厅',
   '玩家社区',

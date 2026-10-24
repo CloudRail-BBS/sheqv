@@ -13,9 +13,10 @@ use sqlx::PgPool;
 use crate::ids;
 
 /// 权限点清单。新增权限时只改这里，后台勾选项与判定会自动跟上。
-pub const PERMISSIONS: [(&str, &str); 8] = [
+pub const PERMISSIONS: [(&str, &str); 9] = [
     ("post.create", "发帖"),
     ("comment.create", "评论"),
+    ("resource.publish", "发布资源"),
     ("post.delete.any", "删除任意帖子"),
     ("audit.review", "审核内容"),
     ("admin.console", "进入后台"),
@@ -382,6 +383,17 @@ pub async fn ensure_builtin(pool: &PgPool) -> Result<(), sqlx::Error> {
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(json!(all))
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO groups (id, name, slug, color, description, weight, is_default, is_builtin, permissions)
+         VALUES ('g-developer', '开发者', 'developer', '#0ea5e9',
+                 '面向资源作者的标识。发布第一个资源后自动获得，可创建开发团队。',
+                 50, false, true, $1)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(json!(["post.create", "comment.create", "resource.publish"]))
     .execute(pool)
     .await?;
 

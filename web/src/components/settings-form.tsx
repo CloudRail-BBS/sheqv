@@ -163,7 +163,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
             className="input"
             value={form.seoKeywords}
             onChange={(e) => setForm({ ...form, seoKeywords: e.target.value })}
-            placeholder="我的世界, 铁锈战争, 玩家社区, 电竞"
+            placeholder="我的世界, Rusted Warfare, 玩家社区, 电竞"
             maxLength={200}
           />
         </label>

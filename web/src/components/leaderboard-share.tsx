@@ -7,8 +7,8 @@ import { downloadCanvas, renderLeaderboardShare, safeName, today } from '@/lib/s
 /**
  * 榜单分享图按钮：点一下直接把当前榜单（前 8 名）画成 1080×1440 的 PNG。
  *
- * 分享图故意做成「当前筛选后的样子」——用户切到铁锈战争再导出，
- * 图里就只会有铁锈战争的榜，不会混进别的游戏。
+ * 分享图故意做成「当前筛选后的样子」——用户切到 Rusted Warfare 再导出，
+ * 图里就只会有 Rusted Warfare 的榜，不会混进别的游戏。
  */
 export function LeaderboardShare({
   kind,

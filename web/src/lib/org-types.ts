@@ -10,8 +10,7 @@ export type GameKey = 'minecraft' | 'roblox' | 'rusted_warfare';
 
 export const GAMES: { key: GameKey; label: string; short: string }[] = [
   { key: 'minecraft', label: '我的世界', short: 'MC' },
-  { key: 'roblox', label: 'Roblox', short: 'RBX' },
-  { key: 'rusted_warfare', label: '铁锈战争', short: 'RW' },
+  { key: 'rusted_warfare', label: 'Rusted Warfare', short: 'RW' },
 ];
 
 export const KIND_LABEL: Record<OrgKind, string> = {

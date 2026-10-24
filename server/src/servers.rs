@@ -1,11 +1,11 @@
-//! 联机大厅：用户自由上传的「我的世界服务器」与「铁锈战争中转站」。
+//! 联机大厅：用户自由上传的「我的世界服务器」与「Rusted Warfare 中转站」。
 //!
 //! 两条硬规则：
 //! 1. **探测永远不在请求里做**。大厅只读行上的快照，TCP/UDP 由后台循环按
 //!    `probed_at` 轮转刷新，所以站点再卡也不会被一个连不上的 MC 服务器拖死。
 //! 2. **地址只允许公网**（见 `netcheck`）。上传是自由填写的，不拦内网就成了内网扫描器。
 //!
-//! 铁锈战争条目本身没有「房间」概念——房间实时长在中转站上，这里只探测中转站是否可达、
+//! Rusted Warfare 条目本身没有「房间」概念——房间实时长在中转站上，这里只探测中转站是否可达、
 //! 顺带记下房间数与总人数；具体房间由 `relay` 模块现取现用。
 
 use std::time::Duration;
@@ -201,7 +201,7 @@ pub fn validate(input: &mut NewServer) -> Result<(), String> {
             return Err("请填写域名或 IP，不要带 http:// 或路径".into());
         }
     } else {
-        // 铁锈战争填的是中转站根地址
+        // Rusted Warfare 填的是中转站根地址
         input.edition = String::new();
         input.port = 0;
         match relay::normalize_base(&input.host) {
@@ -436,7 +436,7 @@ pub async fn probe_and_store(st: &AppState, target: &Target) -> bool {
     }
 }
 
-/// 铁锈战争：探测中转站可达性，并把房间数与总人数记在快照上。
+/// Rusted Warfare：探测中转站可达性，并把房间数与总人数记在快照上。
 async fn probe_relay(st: &AppState, base: &str) -> Result<mcping::Status, String> {
     let node = st.relay.snapshot(&st.http, base, relay::CACHE_TTL).await;
     if !node.ok {
@@ -454,7 +454,7 @@ async fn probe_relay(st: &AppState, base: &str) -> Result<mcping::Status, String
         players_max: 0,
         version: format!("{} 个房间", node.rooms.len()),
         motd: if node.name.is_empty() {
-            "铁锈战争中转站".to_string()
+            "Rusted Warfare 中转站".to_string()
         } else {
             node.name
         },

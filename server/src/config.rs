@@ -25,7 +25,7 @@ pub struct Config {
     pub afdian_page_url: String,
     /// 联机大厅的探测周期（秒）。太短会被 MC 服务器当成压测，太长大厅数据就不新。
     pub probe_interval_secs: u64,
-    /// 内置的铁锈战争中转站：没有任何用户上传时用它兜底，空站大厅也有内容
+    /// 内置的 Rusted Warfare 中转站：没有任何用户上传时用它兜底，空站大厅也有内容
     pub rw_relay_url: String,
     /// 放行 198.18.0.0/15（fake-ip 代理环境专用，默认关）
     pub allow_fake_ip: bool,

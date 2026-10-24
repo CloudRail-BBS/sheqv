@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { buildMetadata } from '@/lib/seo';
 import { listPosts } from '@/lib/forum-store';
-import { MATCHES, RESOURCES, GAME_LABEL } from '@/lib/data';
+import { MATCHES } from '@/lib/data';
+import { listResources } from '@/lib/resource-store';
+import { gameLabel, gameTone } from '@/lib/resource-types';
 import { listOrgs } from '@/lib/orgs';
 import { formatBytes } from '@/lib/capabilities';
 
@@ -17,7 +19,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const hit = (...fields: string[]) => !kw || fields.join(' ').toLowerCase().includes(kw);
 
   const posts = (await listPosts()).filter((p) => hit(p.title ?? '', p.body, p.tags.join(' ')));
-  const resources = RESOURCES.filter((r) => hit(r.title, r.summary, r.tags.join(' '), r.author));
+  const resources = kw ? await listResources({ q: q.trim() }) : [];
   // 公会与战队是独立实体，各自查各自的，不互相带出
   const [allGuilds, allTeams] = await Promise.all([listOrgs('guild'), listOrgs('team')]);
   const guilds = allGuilds.filter((g) => hit(g.name, g.intro, g.tag, g.owner));
@@ -74,7 +76,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <div className="card" style={{ overflow: 'hidden' }}>
               {resources.map((r) => (
                 <Link key={r.id} href={`/resources/${r.id}`} className="rail-item" style={{ padding: '12px 16px' }}>
-                  <span className="badge badge-mc">{GAME_LABEL[r.game]}</span>
+                  <span className={'badge badge-' + gameTone(r.game)}>{gameLabel(r.game)}</span>
                   <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
                   <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>{formatBytes(r.sizeBytes)}</span>
                 </Link>

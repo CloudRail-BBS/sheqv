@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::PgPool;
 
-pub const GAMES: [&str; 3] = ["minecraft", "roblox", "rusted_warfare"];
+pub const GAMES: [&str; 2] = ["minecraft", "rusted_warfare"];
 pub const STATUSES: [&str; 3] = ["recruiting", "training", "rest"];
 
 pub const NAME_MIN: usize = 2;
@@ -167,7 +167,7 @@ pub fn validate(input: &mut OrgInput) -> Result<(), String> {
         return Err("简称不能带空格".into());
     }
     if !GAMES.contains(&input.game.as_str()) {
-        return Err("游戏只能是 minecraft / roblox / rusted_warfare".into());
+        return Err("游戏只能是 minecraft / rusted_warfare".into());
     }
     if input.intro.chars().count() > INTRO_MAX {
         return Err(format!("简介不超过 {INTRO_MAX} 字"));

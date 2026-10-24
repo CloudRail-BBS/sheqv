@@ -143,6 +143,10 @@ pub async fn announcement(
     }
 }
 
+fn is_false(v: &bool) -> bool {
+    !*v
+}
+
 /// 公开主页字段：**不含 email**，邮箱只有后台和本人能看到
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -158,6 +162,12 @@ pub struct PublicProfile {
     /// 身份组的名字与颜色（只用于展示，权限永远在后端判）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<crate::users::GroupTag>,
+    #[serde(skip_serializing_if = "is_false")]
+    pub developer: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub developer_since: Option<i64>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub profile_bg: String,
 }
 
 /// GET /api/v1/users/{id}
@@ -176,6 +186,9 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         created_at: row.created_at.timestamp_millis(),
         title: row.title.clone(),
         group: row.group_tag(),
+        developer: row.developer_at.is_some(),
+        developer_since: row.developer_at.map(|t| t.timestamp_millis()),
+        profile_bg: row.profile_bg.clone(),
     };
 
     Ok(Json(json!({ "ok": true, "user": profile })).into_response())
@@ -198,6 +211,9 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
             created_at: row.created_at.timestamp_millis(),
             title: row.title.clone(),
             group: row.group_tag(),
+            developer: row.developer_at.is_some(),
+            developer_since: row.developer_at.map(|t| t.timestamp_millis()),
+            profile_bg: row.profile_bg.clone(),
         })
         .collect();
 

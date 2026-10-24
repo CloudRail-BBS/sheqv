@@ -76,14 +76,19 @@ pub struct UserRow {
     pub group_name: Option<String>,
     pub group_color: Option<String>,
     pub group_slug: Option<String>,
+    /// 开发者身份：首次发布资源时写入
+    pub developer_at: Option<DateTime<Utc>>,
+    /// 个人主页背景图（空表示用默认渐变）
+    pub profile_bg: String,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id";
+const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg";
 
 /// 读用户时统一带出组的展示信息。
 /// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
 const SELECT_USER: &str = "SELECT u.id, u.username, u.nickname, u.password_hash, u.email, u.role,
         u.created_at, u.banned, u.title, u.badges, u.notif_read_at, u.last_login_at, u.group_id,
+        u.developer_at, u.profile_bg,
         g.name AS group_name, g.color AS group_color, g.slug AS group_slug
    FROM users u LEFT JOIN groups g ON g.id = u.group_id";
 
@@ -120,6 +125,14 @@ pub struct PublicUser {
     pub providers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub badges: Option<Vec<String>>,
+    /// 已获得开发者身份（发布过资源）
+    #[serde(skip_serializing_if = "is_false")]
+    pub developer: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub developer_since: Option<i64>,
+    /// 个人主页背景图；空串不下发
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub profile_bg: String,
 }
 
 fn is_false(v: &bool) -> bool {
@@ -173,6 +186,9 @@ impl UserRow {
             email: self.email.clone(),
             providers: None,
             badges: badges.filter(|b| !b.is_empty()),
+            developer: self.developer_at.is_some(),
+            developer_since: self.developer_at.map(|t| t.timestamp_millis()),
+            profile_bg: self.profile_bg.clone(),
         }
     }
 }
@@ -309,6 +325,16 @@ pub async fn find_by_username(
         "{SELECT_USER} WHERE lower(u.username) = lower($1)"
     ))
     .bind(username.trim())
+    .fetch_optional(pool)
+    .await
+}
+
+/// 按昵称找人。昵称不唯一（注册时不校验），取最早创建的那个。
+pub async fn find_by_nickname(pool: &PgPool, nickname: &str) -> Result<Option<UserRow>, sqlx::Error> {
+    sqlx::query_as::<_, UserRow>(&format!(
+        "{SELECT_USER} WHERE lower(u.nickname) = lower($1) ORDER BY u.created_at ASC LIMIT 1"
+    ))
+    .bind(nickname.trim())
     .fetch_optional(pool)
     .await
 }
@@ -498,6 +524,41 @@ pub async fn set_title(
     ))
     .bind(id)
     .bind(clean)
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated.map(|r| r.to_public()))
+}
+
+/// 个人主页背景图。空串表示恢复默认。
+pub async fn set_profile_bg(
+    pool: &PgPool,
+    id: &str,
+    bg: &str,
+) -> Result<Option<PublicUser>, sqlx::Error> {
+    let updated = sqlx::query_as::<_, UserRow>(&format!(
+        "UPDATE users SET profile_bg = $2 WHERE id = $1 RETURNING {COLUMNS}, {RETURNING_GROUP}"
+    ))
+    .bind(id)
+    .bind(bg.trim())
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated.map(|r| r.to_public()))
+}
+
+/// 开发者身份：后台可授予 / 撤销
+pub async fn set_developer(
+    pool: &PgPool,
+    id: &str,
+    developer: bool,
+) -> Result<Option<PublicUser>, sqlx::Error> {
+    let updated = sqlx::query_as::<_, UserRow>(&format!(
+        "UPDATE users
+            SET developer_at = CASE WHEN $2 THEN COALESCE(developer_at, now()) ELSE NULL END
+          WHERE id = $1
+          RETURNING {COLUMNS}, {RETURNING_GROUP}"
+    ))
+    .bind(id)
+    .bind(developer)
     .fetch_optional(pool)
     .await?;
     Ok(updated.map(|r| r.to_public()))

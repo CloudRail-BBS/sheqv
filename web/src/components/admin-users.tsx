@@ -22,6 +22,8 @@ export interface AdminUserRow {
   groupId?: string;
   /** 身份组的名字与颜色 */
   group?: UserGroup;
+  /** 是否已获得开发者身份 */
+  developer?: boolean;
 }
 
 const day = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 10) : '—');
@@ -80,6 +82,22 @@ export function AdminUsers({
     router.refresh();
   }
 
+  async function toggleDeveloper(id: string, next: boolean) {
+    setBusyId(id);
+    setErr(null);
+    const res = await fetch(`/api/v1/admin/users/${id}/developer`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ developer: next }),
+    }).catch(() => null);
+    setBusyId(null);
+    if (!res?.ok) {
+      setErr('修改开发者身份失败');
+      return;
+    }
+    router.refresh();
+  }
+
   async function remove(id: string) {
     setBusyId(id);
     setErr(null);
@@ -132,6 +150,30 @@ export function AdminUsers({
                     <span className={'badge ' + (u.role === 'admin' ? 'badge-live' : 'badge-ghost')}>
                       {u.role === 'admin' ? '管理员' : '成员'}
                     </span>
+                    <div className="row" style={{ gap: 5, marginTop: 5 }}>
+                      {u.developer ? (
+                        <span className="dev-chip">开发者</span>
+                      ) : (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          style={{ height: 20, fontSize: 10, padding: '0 6px' }}
+                          onClick={() => toggleDeveloper(u.id, true)}
+                          disabled={busyId === u.id}
+                        >
+                          设为开发者
+                        </button>
+                      )}
+                      {u.developer && (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          style={{ height: 20, fontSize: 10, padding: '0 6px' }}
+                          onClick={() => toggleDeveloper(u.id, false)}
+                          disabled={busyId === u.id}
+                        >
+                          取消
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div style={{ marginBottom: 5 }}>

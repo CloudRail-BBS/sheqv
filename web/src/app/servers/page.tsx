@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata() {
   return buildMetadata({
     title: '联机大厅',
-    description: '玩家上传的 Minecraft 服务器状态与铁锈战争联机房，实时显示在线人数、版本与房间列表。',
+    description: '玩家上传的 Minecraft 服务器状态与 Rusted Warfare 联机房，实时显示在线人数、版本与房间列表。',
     path: '/servers',
   });
 }
@@ -21,7 +21,7 @@ export async function generateMetadata() {
  * 联机大厅。
  *
  * 两个 tab 共用一页：我的世界走「库里的条目 + 后台探测快照」，
- * 铁锈战争走「实时聚合中转站房间」。前者首屏就能拿到状态，
+ * Rusted Warfare 走「实时聚合中转站房间」。前者首屏就能拿到状态，
  * 后者由 `RelayBoard` 每 15 秒自取——两种数据的新鲜度本来就不一样。
  */
 export default async function ServersPage({
@@ -53,7 +53,7 @@ export default async function ServersPage({
           <div>
             <h1 className="page-title">联机大厅</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              Minecraft 服务器与铁锈战争联机房 · 人数与在线状态自动刷新
+              Minecraft 服务器与 Rusted Warfare 联机房 · 人数与在线状态自动刷新
             </p>
           </div>
           <div className="row wrap" style={{ gap: 6 }}>
@@ -77,7 +77,7 @@ export default async function ServersPage({
             <span className="n">{mc.length}</span>
           </Link>
           <Link href="/servers?tab=rusted" className="srv-tab" data-on={active === 'rusted_warfare'}>
-            铁锈战争
+            Rusted Warfare
             {relay ? <span className="n">{relay.totalRooms}</span> : null}
           </Link>
         </div>
@@ -111,7 +111,7 @@ export default async function ServersPage({
             <dd>约 1 分钟一次</dd>
             <dt>我的世界</dt>
             <dd>Java 与基岩版都可探</dd>
-            <dt>铁锈战争</dt>
+            <dt>Rusted Warfare</dt>
             <dd>房间从你填的中转站实时读取</dd>
             <dt>上限</dt>
             <dd>每人 20 个条目</dd>

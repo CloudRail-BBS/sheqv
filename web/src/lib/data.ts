@@ -1,6 +1,6 @@
 export type GameKey = 'mc' | 'rw';
 
-export const GAME_LABEL: Record<GameKey, string> = { mc: 'Minecraft', rw: 'Roblox' };
+export const GAME_LABEL: Record<GameKey, string> = { mc: 'Minecraft', rw: 'Rusted Warfare' };
 
 export interface ResourceItem {
   id: string;

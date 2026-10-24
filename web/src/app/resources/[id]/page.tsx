@@ -1,28 +1,41 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getRequestCaps } from '@/lib/request-caps';
-import { GAME_LABEL, RESOURCES } from '@/lib/data';
-import { formatBytes } from '@/lib/capabilities';
-import { DownloadGate } from '@/components/download-gate';
+import { getCurrentUser } from '@/lib/current-user';
+import { getResource } from '@/lib/resource-store';
+import { ResourceActions } from '@/components/resource-actions';
 import { buildMetadata } from '@/lib/seo';
+import { fmtNum, fmtSize, gameLabel, gameTone } from '@/lib/resource-types';
+
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = RESOURCES.find((r) => r.id === id);
-  if (!item) return buildMetadata({ title: '资源', path: `/resources/${id}`, noIndex: true });
+  const item = await getResource(id);
+  if (!item || item.status !== 'published') {
+    return buildMetadata({ title: '资源', path: `/resources/${id}`, noIndex: true });
+  }
   return buildMetadata({
     title: item.title,
-    description: item.summary,
+    description: item.summary || `${item.author} 分享的 ${gameLabel(item.game)} ${item.category}`,
     path: `/resources/${id}`,
   });
 }
 
+const fmtDate = (ts: number) => new Date(ts).toISOString().slice(0, 10);
+
 export default async function ResourceDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = RESOURCES.find((r) => r.id === id);
+  const [item, user, caps] = await Promise.all([
+    getResource(id),
+    getCurrentUser(),
+    getRequestCaps(),
+  ]);
+
   if (!item) notFound();
 
-  const caps = await getRequestCaps();
+  const tone = gameTone(item.game);
+  const canDelete = Boolean(user && (user.id === item.authorId || user.isAdmin));
   const { directDownload, externalBrowserHint } = caps.capabilities.resource;
 
   return (
@@ -34,100 +47,115 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
           <span>{item.category}</span>
         </div>
 
-        <div>
-          <div className="row wrap" style={{ gap: 6, marginBottom: 8 }}>
-            <span className={'badge ' + (item.game === 'mc' ? 'badge-mc' : 'badge-rw')}>{GAME_LABEL[item.game]}</span>
+        <article className="card card-pad res-detail">
+          <div className="row wrap" style={{ gap: 6, marginBottom: 10 }}>
+            <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
             <span className="badge">{item.category}</span>
+            {item.version && <span className="badge badge-ghost">v{item.version}</span>}
+            {item.status === 'hidden' && <span className="badge badge-danger">已下架</span>}
+          </div>
+
+          <h1 className="page-title" style={{ marginBottom: 8 }}>{item.title}</h1>
+          {item.summary && (
+            <p style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: 1.85, marginBottom: 4 }}>
+              {item.summary}
+            </p>
+          )}
+
+          <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
             {item.tags.map((t) => (
-              <span key={t} className="badge badge-ghost">
-                #{t}
-              </span>
+              <span key={t} className="badge badge-ghost">#{t}</span>
             ))}
           </div>
-          <h1 className="page-title">{item.title}</h1>
-          <div className="small muted" style={{ marginTop: 6 }}>
-            {item.author} · {item.authorGuild}公会 · 更新于 {item.updatedAt} · {item.version}
+
+          <div className="res-detail-actions">
+            <ResourceActions
+              id={item.id}
+              initialLiked={item.liked}
+              initialLikes={item.likeCount}
+              initialDownloads={item.downloadCount}
+              sizeBytes={item.sizeBytes}
+              url={item.url}
+              loggedIn={Boolean(user)}
+              canDelete={canDelete}
+              directDownload={directDownload}
+            />
           </div>
-        </div>
 
-        <div className="card card-pad">
-          <h3 style={{ fontSize: 13, marginBottom: 8 }}>简介</h3>
-          <p style={{ color: 'var(--text-2)', fontSize: 13.5, lineHeight: 1.8 }}>{item.summary}</p>
-        </div>
+          {!directDownload && externalBrowserHint && (
+            <p className="small" style={{ color: 'var(--amber)', marginTop: 10 }}>
+              {externalBrowserHint}
+            </p>
+          )}
 
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
-            <h3 style={{ fontSize: 13 }}>版本与更新日志</h3>
-            <span className="small muted">{item.versions.length} 个版本</span>
+          <div className="res-body-text">
+            {item.body
+              ? item.body.split('\n').map((line, i) =>
+                  line.trim() ? <p key={i}>{line}</p> : <br key={i} />,
+                )
+              : <p className="muted">作者还没有写详细介绍。</p>}
           </div>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>版本</th>
-                <th>日期</th>
-                <th>说明</th>
-              </tr>
-            </thead>
-            <tbody>
-              {item.versions.map((v) => (
-                <tr key={v.version}>
-                  <td className="mono" style={{ color: v.version === item.version ? 'var(--accent)' : undefined }}>
-                    {v.version}
-                  </td>
-                  <td className="mono muted">{v.date}</td>
-                  <td className="dim">{v.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        </article>
 
-        <div className="card card-pad">
-          <h3 style={{ fontSize: 13, marginBottom: 10 }}>文件信息</h3>
-          <dl className="kv">
-            <dt>大小</dt>
-            <dd className="mono">{formatBytes(item.sizeBytes)}</dd>
-            <dt>哈希</dt>
-            <dd className="mono">sha256:9f2a…{item.id.slice(0, 4)}e</dd>
-            <dt>许可</dt>
-            <dd>{item.license}</dd>
-            <dt>风险提示</dt>
-            <dd className="dim">外链资源未经扫描，下载后请自行校验哈希</dd>
-          </dl>
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="between">
+            <div className="row" style={{ gap: 10 }}>
+              <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>
+                {item.author.slice(0, 1)}
+              </span>
+              <div>
+                <div className="row" style={{ gap: 6 }}>
+                  <b>{item.author}</b>
+                  {item.authorDeveloper && <span className="dev-chip">开发者</span>}
+                </div>
+                <div className="small muted">
+                  {item.teamId ? (
+                    <>
+                      来自开发团队{' '}
+                      <Link href={`/dev-teams/${item.teamId}`} style={{ color: 'var(--blue)' }}>
+                        {item.teamName}
+                      </Link>
+                    </>
+                  ) : (
+                    '以个人名义发布'
+                  )}
+                </div>
+              </div>
+            </div>
+            <Link href="/dev-teams" className="btn btn-sm btn-ghost">
+              开发团队
+            </Link>
+          </div>
         </div>
       </div>
 
       <aside className="rail">
         <div className="card rail-card">
-          <div className="between" style={{ marginBottom: 10 }}>
-            <span className="rail-title" style={{ margin: 0 }}>下载</span>
-            <span className="badge">{item.version}</span>
-          </div>
-          <DownloadGate
-            title={item.title}
-            sizeLabel={formatBytes(item.sizeBytes)}
-            directDownload={directDownload}
-            isWeChat={caps.isWeChat}
-            externalHint={externalBrowserHint}
-          />
+          <div className="rail-title">资源信息</div>
+          <dl className="kv">
+            <dt>下载</dt>
+            <dd className="mono">{fmtNum(item.downloadCount)}</dd>
+            <dt>点赞</dt>
+            <dd className="mono">{fmtNum(item.likeCount)}</dd>
+            <dt>文件大小</dt>
+            <dd className="mono">{fmtSize(item.sizeBytes)}</dd>
+            <dt>版本</dt>
+            <dd className="mono">{item.version || '—'}</dd>
+            <dt>授权</dt>
+            <dd>{item.license || '作者保留'}</dd>
+            <dt>发布</dt>
+            <dd className="mono">{fmtDate(item.createdAt)}</dd>
+          </dl>
         </div>
 
         <div className="card rail-card">
-          <div className="rail-title">数据</div>
-          <dl className="kv">
-            <dt>下载量</dt>
-            <dd className="mono">{item.downloads.toLocaleString('zh-CN')}</dd>
-            <dt>评分</dt>
-            <dd className="mono">{item.rating.toFixed(1)} / 5.0</dd>
-            <dt>作者</dt>
-            <dd>{item.author}</dd>
-            <dt>所属</dt>
-            <dd>{item.authorGuild}</dd>
-          </dl>
-          <div className="row" style={{ marginTop: 12, gap: 6 }}>
-            <button className="btn btn-ghost btn-sm grow">举报</button>
-            <button className="btn btn-ghost btn-sm grow">侵权投诉</button>
-          </div>
+          <div className="rail-title">开发者榜单</div>
+          <p className="small muted" style={{ lineHeight: 1.8 }}>
+            资源下载量与点赞量会折算成开发者积分，个人与团队各有一张榜。
+          </p>
+          <Link href="/leaderboard#developers" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
+            查看开发者榜
+          </Link>
         </div>
       </aside>
     </div>

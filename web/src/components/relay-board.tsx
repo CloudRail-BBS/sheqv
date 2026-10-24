@@ -6,7 +6,7 @@ import { ago, roomStatusLabel, type RelaySnapshot } from '@/lib/server-types';
 const POLL_MS = 15_000;
 
 /**
- * 铁锈战争房间板。
+ * Rusted Warfare 房间板。
  *
  * 房间是**实时数据**，不落库：服务端给首屏快照，之后每 15 秒自己拉一次。
  * 中转站挂掉时后端会把上一次成功的结果标成 `ok=false` 返回，这里显示成

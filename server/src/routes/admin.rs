@@ -818,3 +818,27 @@ pub async fn patch_user_badges(
 
     Ok(Json(json!({ "ok": true, "user": user })).into_response())
 }
+
+/// PATCH /api/v1/admin/users/{id}/developer  body: { developer: bool }
+///
+/// 开发者身份平时由「发布第一个资源」自动获得；这里给后台一个撤销 / 补授的口子。
+pub async fn set_developer(
+    State(st): State<AppState>,
+    _: AdminActor,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Some(payload) = parse_body(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let Some(developer) = payload.get("developer").and_then(|v| v.as_bool()) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "missing_developer"));
+    };
+
+    let updated = users::set_developer(&st.pool, &id, developer)
+        .await
+        .map_err(ApiError::internal)?
+        .ok_or_else(ApiError::not_found)?;
+
+    Ok(Json(json!({ "ok": true, "user": updated })).into_response())
+}

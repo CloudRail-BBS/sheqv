@@ -8,8 +8,11 @@ import { LogoutButton } from '@/components/logout-button';
 import { TitleEditor } from '@/components/title-editor';
 import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
+import { ProfileBgEditor } from '@/components/profile-bg-editor';
 import { badgeOf } from '@/lib/badges';
 import { listPublicGroups } from '@/lib/groups';
+import { listOrgs } from '@/lib/orgs';
+import { listMyDevTeams } from '@/lib/dev-team-store';
 import { getSettings } from '@/lib/settings';
 import { getAchievementState } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
@@ -51,13 +54,19 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements, achieved, groups] = await Promise.all([
+  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams] = await Promise.all([
     listPosts(),
     listActive(),
     getAchievementState(user),
     listPublicGroups(),
+    listOrgs('guild'),
+    listOrgs('team'),
+    listMyDevTeams(),
   ]);
   const myGroup = groups.find((g) => g.id === user.group?.id);
+  const myGuilds = allGuilds.filter((g) => g.ownerId === user.id);
+  const myTeams = allTeams.filter((t) => t.ownerId === user.id);
+  const hasOrg = myGuilds.length + myTeams.length + myDevTeams.length > 0;
   const sigs = await getSignatures(agreements);
   const mine = posts.filter((p) => p.author === user.nickname);
   const likes = mine.reduce((n, p) => n + p.likes, 0);
@@ -67,13 +76,26 @@ export default async function MePage() {
   return (
     <div className="cols">
       <div className="col-main">
-        <div className="card me-card">
+        <div
+          className="card me-card"
+          data-bg={Boolean(user.profileBg)}
+          style={
+            user.profileBg
+              ? {
+                  backgroundImage: `linear-gradient(90deg, var(--panel) 12%, color-mix(in srgb, var(--panel) 78%, transparent) 52%, transparent), url(${JSON.stringify(user.profileBg)})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }
+              : undefined
+          }
+        >
           <div className="me-ava">{user.nickname.slice(0, 1)}</div>
           <div style={{ minWidth: 0 }}>
             <div className="row" style={{ gap: 7 }}>
               <span className="me-name">{user.nickname}</span>
               <UserBadge badge={badgeOf(user)} />
               <GroupTag group={user.group} />
+              {user.developer && <span className="dev-chip">开发者</span>}
             </div>
             <div className="me-sub">
               @{user.username} · 注册于 {joined}
@@ -132,6 +154,42 @@ export default async function MePage() {
             </p>
           )}
         </div>
+
+        {hasOrg && (
+          <div className="card card-pad" style={{ marginTop: 12 }}>
+            <div className="between" style={{ marginBottom: 8 }}>
+              <h3 style={{ fontSize: 13 }}>我的组织</h3>
+              <span className="small muted">三种身份互不影响</span>
+            </div>
+            <div className="org-links">
+              {myGuilds.map((g) => (
+                <Link key={g.id} href={`/guilds/${g.id}`} className="org-link">
+                  <span className="badge badge-ghost">公会</span>
+                  {g.name}
+                </Link>
+              ))}
+              {myTeams.map((t) => (
+                <Link key={t.id} href={`/teams/${t.id}`} className="org-link">
+                  <span className="badge badge-ghost">战队</span>
+                  {t.name}
+                </Link>
+              ))}
+              {myDevTeams.map((t) => (
+                <Link key={t.id} href={`/dev-teams/${t.id}`} className="org-link">
+                  <span className="badge badge-ghost">开发团队</span>
+                  {t.name}
+                </Link>
+              ))}
+            </div>
+            {myDevTeams.length > 0 && (
+              <p className="small muted" style={{ marginTop: 8 }}>
+                开发团队的作品会计入团队榜，个人榜只算你署名的资源。
+              </p>
+            )}
+          </div>
+        )}
+
+        <ProfileBgEditor current={user.profileBg} />
 
         <div className="card card-pad" style={{ marginTop: 12 }}>
           <div className="between" style={{ marginBottom: 8 }}>

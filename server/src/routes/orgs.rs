@@ -60,7 +60,7 @@ fn check_game(game: &Option<String>) -> ApiResult<()> {
     if let Some(g) = game {
         if !orgs::GAMES.contains(&g.as_str()) {
             return Err(ApiError::invalid_input(
-                "游戏只能是 minecraft / roblox / rusted_warfare",
+                "游戏只能是 minecraft / rusted_warfare",
             ));
         }
     }

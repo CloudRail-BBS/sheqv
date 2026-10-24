@@ -18,6 +18,8 @@ import {
 import { LeaderboardShare } from '@/components/leaderboard-share';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
+import { getDeveloperBoard } from '@/lib/resource-store';
+import { fmtNum } from '@/lib/resource-types';
 
 export const dynamic = 'force-dynamic';
 
@@ -152,10 +154,11 @@ export default async function LeaderboardPage({
 }) {
   const { game } = await searchParams;
   const activeGame = GAMES.find((g) => g.key === game);
-  const [data, user, settings] = await Promise.all([
+  const [data, user, settings, dev] = await Promise.all([
     leaderboard(activeGame?.key),
     getCurrentUser(),
     getSettings(),
+    getDeveloperBoard(),
   ]);
 
   const brand = `${settings.siteName || '云轨社区'} · 排行榜`;
@@ -205,6 +208,99 @@ export default async function LeaderboardPage({
 
         <Board kind="guild" orgs={data.guilds} brand={brand} scope={scope} />
         <Board kind="team" orgs={data.teams} brand={brand} scope={scope} />
+
+        <section id="developers" style={{ marginTop: 26 }}>
+          <div className="section-h">
+            <h2>开发者榜</h2>
+            <span className="hint">下载量 + 点赞量 × 3 · 资源数 × 4 计入团队分</span>
+            <Link href="/resources" className="more" style={{ marginLeft: 'auto' }}>
+              去资源库 →
+            </Link>
+          </div>
+
+          <div className="dev-board-grid">
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
+                <b style={{ fontSize: 13 }}>开发者个人</b>
+                <span className="small muted">{dev.developers.length} 人</span>
+              </div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 40 }}>#</th>
+                    <th>开发者</th>
+                    <th>资源</th>
+                    <th>下载</th>
+                    <th>点赞</th>
+                    <th>积分</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dev.developers.map((d) => (
+                    <tr key={d.userId}>
+                      <td><span className={'rk-badge ' + rankClass(d.rank - 1)}>{d.rank}</span></td>
+                      <td>
+                        <div className="small" style={{ fontWeight: 550 }}>{d.nickname}</div>
+                        {d.teamName && <div className="small muted">{d.teamName}</div>}
+                      </td>
+                      <td className="mono">{d.resources}</td>
+                      <td className="mono">{fmtNum(d.downloads)}</td>
+                      <td className="mono">{fmtNum(d.likes)}</td>
+                      <td className="mono" style={{ fontWeight: 600 }}>{fmtNum(d.score)}</td>
+                    </tr>
+                  ))}
+                  {dev.developers.length === 0 && (
+                    <tr><td colSpan={6} className="small muted">还没有开发者，发布第一个资源就能上榜</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
+                <b style={{ fontSize: 13 }}>开发团队</b>
+                <span className="small muted">{dev.teams.length} 个</span>
+              </div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 40 }}>#</th>
+                    <th>团队</th>
+                    <th>成员</th>
+                    <th>资源</th>
+                    <th>下载</th>
+                    <th>积分</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dev.teams.map((t) => (
+                    <tr key={t.teamId}>
+                      <td><span className={'rk-badge ' + rankClass(t.rank - 1)}>{t.rank}</span></td>
+                      <td>
+                        <Link href={`/dev-teams/${t.teamId}`} className="small" style={{ fontWeight: 550 }}>
+                          <span
+                            className="crest a"
+                            style={{ width: 20, height: 20, fontSize: 8, borderRadius: 5, background: t.color, marginRight: 6 }}
+                          >
+                            {t.tag}
+                          </span>
+                          {t.name}
+                        </Link>
+                      </td>
+                      <td className="mono">{t.members}</td>
+                      <td className="mono">{t.resources}</td>
+                      <td className="mono">{fmtNum(t.downloads)}</td>
+                      <td className="mono" style={{ fontWeight: 600 }}>{fmtNum(t.score)}</td>
+                    </tr>
+                  ))}
+                  {dev.teams.length === 0 && (
+                    <tr><td colSpan={6} className="small muted">还没有团队作品</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       </div>
 
       <aside className="rail">
@@ -261,6 +357,17 @@ export default async function LeaderboardPage({
               <span>公会与战队分开排名，互相不占名额</span>
             </div>
           </div>
+        </div>
+
+        <div className="card rail-card">
+          <div className="rail-title">开发者榜</div>
+          <p className="small muted" style={{ lineHeight: 1.8 }}>
+            资源下载 1 分、点赞 3 分；团队另加每个资源 4 分。
+            个人榜只算个人署名的资源，团队榜只算挂在团队名下的资源。
+          </p>
+          <Link href="/resources" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
+            去资源库
+          </Link>
         </div>
 
         <div className="card rail-card">

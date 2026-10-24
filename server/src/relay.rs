@@ -1,4 +1,4 @@
-//! 铁锈战争（Rusted Warfare）联机房的实时数据。
+//! Rusted Warfare 联机房的实时数据。
 //!
 //! 房间由中转站（RW-HPS / CNKDRelay）维护，站点这边**不存房间**，只做两件事：
 //! 1. 拉 `{中转站}/relay/rooms`，把 `data.rooms` 摊平成大厅能直接渲染的形状；

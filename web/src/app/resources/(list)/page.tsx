@@ -1,23 +1,57 @@
-import { getRequestCaps } from '@/lib/request-caps';
-import { RESOURCES } from '@/lib/data';
+import Link from 'next/link';
+import { getCurrentUser } from '@/lib/current-user';
+import { getDeveloperBoard, listResources } from '@/lib/resource-store';
 import { ResourceCard } from '@/components/resource-card';
-import { UploadPanel } from '@/components/upload-panel';
-import { formatBytes } from '@/lib/capabilities';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
+import {
+  RESOURCE_CATEGORIES,
+  RESOURCE_GAMES,
+  fmtNum,
+  gameLabel,
+  type ResourceView,
+} from '@/lib/resource-types';
 
-const FILTERS = ['全部', 'Minecraft', 'Roblox', '地图', '整合包', '材质', '存档', '工具'];
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata() {
   return buildMetadata({
     title: '资源库',
-    description: '玩家分享的地图、整合包、材质与工具，支持按游戏与分类筛选。',
+    description: '玩家与开发团队分享的地图、整合包、材质与工具，按游戏与分类筛选，下载量与点赞实时统计。',
     path: '/resources',
   });
 }
 
-export default async function ResourcesPage() {
-  const caps = await getRequestCaps();
+function buildQuery(base: Record<string, string | undefined>, patch: Record<string, string | undefined>) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries({ ...base, ...patch })) {
+    if (v) sp.set(k, v);
+  }
+  const qs = sp.toString();
+  return `/resources${qs ? `?${qs}` : ''}`;
+}
+
+export default async function ResourcesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ game?: string; category?: string; sort?: string; q?: string }>;
+}) {
+  const sp = await searchParams;
+  const sort = sp.sort === 'likes' || sp.sort === 'downloads' ? sp.sort : 'new';
+  const [user, items, board] = await Promise.all([
+    getCurrentUser(),
+    listResources({
+      game: sp.game,
+      category: sp.category,
+      q: sp.q,
+      sort: sort as 'new' | 'likes' | 'downloads',
+    }),
+    getDeveloperBoard(),
+  ]);
+
+  const totalLikes = items.reduce((n, r) => n + r.likeCount, 0);
+  const totalDownloads = items.reduce((n, r) => n + r.downloadCount, 0);
+  const base = { game: sp.game, category: sp.category, sort: sp.sort, q: sp.q };
 
   return (
     <div className="cols">
@@ -26,62 +60,151 @@ export default async function ResourcesPage() {
           <div>
             <h1 className="page-title">资源库</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              地图、整合包、材质与工具 · 全部过审后展示
+              地图、整合包、材质与工具 · 开发者与团队的作品都在这里
             </p>
           </div>
-          <span className="badge">{RESOURCES.length} 个条目</span>
+          <Link href={user ? '/resources/new' : '/login'} className="btn btn-primary btn-sm">
+            {user ? '发布资源' : '登录后发布'}
+          </Link>
         </div>
 
-        <div className="row wrap" style={{ gap: 6 }}>
-          {FILTERS.map((f, i) => (
-            <button key={f} className="chip" data-on={i === 0}>
-              {f}
-            </button>
+        <div className="res-stats">
+          <span><b className="mono">{items.length}</b> 个资源</span>
+          <span><b className="mono">{fmtNum(totalLikes)}</b> 次点赞</span>
+          <span><b className="mono">{fmtNum(totalDownloads)}</b> 次下载</span>
+          <span className="muted">按当前筛选统计</span>
+        </div>
+
+        <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
+          <Link href={buildQuery(base, { game: undefined })} className="chip" data-on={!sp.game}>
+            全部游戏
+          </Link>
+          {RESOURCE_GAMES.map((g) => (
+            <Link
+              key={g.key}
+              href={buildQuery(base, { game: g.key })}
+              className="chip"
+              data-on={sp.game === g.key}
+            >
+              {g.label}
+            </Link>
           ))}
         </div>
 
-        <div className="res-grid">
-          {RESOURCES.length === 0 && (
-          <EmptyState title="资源库还是空的" desc="还没有人上传地图、整合包或材质。接入上传通道后，这里会按游戏与分类展示。" actionHref="/" actionLabel="去社区看看" icon="box" />
+        <div className="row wrap" style={{ gap: 6, marginTop: 8 }}>
+          <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
+            全部分类
+          </Link>
+          {RESOURCE_CATEGORIES.map((c) => (
+            <Link
+              key={c}
+              href={buildQuery(base, { category: c })}
+              className="chip"
+              data-on={sp.category === c}
+            >
+              {c}
+            </Link>
+          ))}
+        </div>
+
+        <div className="between" style={{ marginTop: 14, marginBottom: 10 }}>
+          <div className="row" style={{ gap: 6 }}>
+            {[
+              { key: 'new', label: '最新' },
+              { key: 'likes', label: '最多点赞' },
+              { key: 'downloads', label: '最多下载' },
+            ].map((s) => (
+              <Link
+                key={s.key}
+                href={buildQuery(base, { sort: s.key === 'new' ? undefined : s.key })}
+                className="chip"
+                data-on={sort === s.key}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+          {sp.q && (
+            <span className="small muted">
+              搜索「{sp.q}」· <Link href={buildQuery(base, { q: undefined })}>清除</Link>
+            </span>
+          )}
+        </div>
+
+        {items.length === 0 ? (
+          <div className="card" style={{ padding: 8 }}>
+            <EmptyState
+              title={sp.q || sp.game || sp.category ? '这个筛选下没有资源' : '资源库还是空的'}
+              desc={
+                sp.q || sp.game || sp.category
+                  ? '换个分类或游戏看看，也可以自己发布第一个。'
+                  : '发布第一个资源，顺手点亮开发者身份。'
+              }
+              actionHref={user ? '/resources/new' : '/login'}
+              actionLabel={user ? '发布资源' : '登录后发布'}
+              icon="box"
+            />
+          </div>
+        ) : (
+          <div className="res-grid">
+            {items.map((r: ResourceView) => (
+              <ResourceCard key={r.id} item={r} />
+            ))}
+          </div>
         )}
-
-        {RESOURCES.map((r) => (
-            <ResourceCard key={r.id} item={r} directDownload={caps.capabilities.resource.directDownload} />
-          ))}
-        </div>
-
-        <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
-          加载更多
-        </button>
       </div>
 
       <aside className="rail">
-        <UploadPanel maxUploadBytes={caps.limits.maxUploadBytes} chunkConcurrency={caps.limits.chunkConcurrency} />
-
         <div className="card rail-card">
-          <div className="rail-title">当前形态的下载能力</div>
-          <dl className="kv">
-            <dt>runtime</dt>
-            <dd className="mono">{caps.runtime} · {caps.source}</dd>
-            <dt>直下</dt>
-            <dd className="mono" style={{ color: caps.capabilities.resource.directDownload ? 'var(--accent)' : 'var(--amber)' }}>
-              {String(caps.capabilities.resource.directDownload)}
-            </dd>
-            <dt>上传上限</dt>
-            <dd className="mono">{formatBytes(caps.limits.maxUploadBytes)}</dd>
-            <dt>附件上限</dt>
-            <dd className="mono">{formatBytes(caps.limits.attachmentBytes)}</dd>
-          </dl>
-          <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
-            来自 <code className="mono">/api/v1/bootstrap</code>，服务端按 UA 判定后下发。
-          </p>
+          <div className="rail-title">开发者榜</div>
+          {board.developers.length === 0 ? (
+            <p className="small muted" style={{ lineHeight: 1.75 }}>
+              还没有人发布资源。第一个资源会自动点亮开发者身份。
+            </p>
+          ) : (
+            <div className="rail-list">
+              {board.developers.slice(0, 4).map((d) => (
+                <div key={d.userId} className="rail-item">
+                  <span className="idx">{d.rank}</span>
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.nickname}
+                  </span>
+                  <span className="mono small muted" style={{ marginLeft: 'auto' }}>
+                    {fmtNum(d.downloads)} ↓
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <Link href="/leaderboard#developers" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
+            完整开发者榜
+          </Link>
         </div>
 
         <div className="card rail-card">
-          <div className="rail-title">投稿须知</div>
+          <div className="rail-title">发布说明</div>
           <p className="small muted" style={{ lineHeight: 1.8 }}>
-            转载需注明许可协议；含外链的资源会标注风险；侵权投诉 48 小时内处理。
+            资源发布后立即可见，不做人工预审；违规内容由后台下架。
+            下载按「同一账号同一天」计一次，点赞每个账号只能点一次。
           </p>
+          <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
+            以团队名义发布前，需要先创建或加入一个开发团队。
+          </p>
+          <Link href="/dev-teams" className="btn btn-sm btn-ghost" style={{ marginTop: 10 }}>
+            看看开发团队
+          </Link>
+        </div>
+
+        <div className="card rail-card">
+          <div className="rail-title">当前筛选</div>
+          <dl className="kv">
+            <dt>游戏</dt>
+            <dd>{sp.game ? gameLabel(sp.game) : '全部'}</dd>
+            <dt>分类</dt>
+            <dd>{sp.category || '全部'}</dd>
+            <dt>排序</dt>
+            <dd>{sort === 'likes' ? '点赞' : sort === 'downloads' ? '下载' : '最新'}</dd>
+          </dl>
         </div>
       </aside>
     </div>

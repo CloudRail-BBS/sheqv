@@ -4,6 +4,8 @@ import { listPosts } from '@/lib/forum-store';
 import { listOrgs } from '@/lib/orgs';
 import { listAnnouncements } from '@/lib/announcement-store';
 import { listChangelog } from '@/lib/changelog-store';
+import { listResources } from '@/lib/resource-store';
+import { listDevTeams } from '@/lib/dev-team-store';
 
 /**
  * 动态 sitemap：静态入口 + 帖子 + 公会 / 战队 + 公告 + 更新日志。
@@ -38,12 +40,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/agreements'), lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ];
 
-  const [posts, guilds, teams, news, logs] = await Promise.all([
+  const [posts, guilds, teams, news, logs, resources, devTeams] = await Promise.all([
     listPosts(),
     listOrgs('guild'),
     listOrgs('team'),
     listAnnouncements({ publishedOnly: true }),
     listChangelog(),
+    listResources(),
+    listDevTeams(),
   ]);
 
   for (const p of posts) {
@@ -68,6 +72,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: url(`/announcements/${a.id}`),
       lastModified: new Date(a.updatedAt || a.createdAt),
       changeFrequency: 'monthly',
+      priority: 0.5,
+    });
+  }
+  for (const r of resources.slice(0, LIMIT)) {
+    entries.push({
+      url: url(`/resources/${r.id}`),
+      lastModified: new Date(r.updatedAt || r.createdAt),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    });
+  }
+  for (const t of devTeams.slice(0, LIMIT)) {
+    entries.push({
+      url: url(`/dev-teams/${t.id}`),
+      lastModified: now,
+      changeFrequency: 'weekly',
       priority: 0.5,
     });
   }

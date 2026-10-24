@@ -5,6 +5,7 @@ pub mod audit;
 pub mod auth;
 pub mod changelog;
 pub mod email_auth;
+pub mod dev_teams;
 pub mod groups;
 pub mod health;
 pub mod me;
@@ -14,11 +15,13 @@ pub mod points;
 pub mod oauth;
 pub mod posts;
 pub mod public;
+pub mod resources;
+pub mod rewards;
 pub mod servers;
 pub mod sponsors;
 
 use axum::Router;
-use axum::routing::{get, patch, post};
+use axum::routing::{delete, get, patch, post};
 
 use crate::state::AppState;
 
@@ -115,6 +118,52 @@ pub fn router(state: AppState) -> Router {
             get(orgs::team).patch(orgs::patch_team).delete(orgs::delete_team),
         )
         .route("/api/v1/leaderboard", get(orgs::leaderboard))
+        .route(
+            "/api/v1/leaderboard/developers",
+            get(resources::developer_board),
+        )
+        .route(
+            "/api/v1/resources",
+            get(resources::list).post(resources::create),
+        )
+        .route(
+            "/api/v1/resources/{id}",
+            get(resources::detail)
+                .patch(resources::patch)
+                .delete(resources::remove),
+        )
+        .route("/api/v1/resources/{id}/like", post(resources::like))
+        .route("/api/v1/resources/{id}/download", post(resources::download))
+        .route(
+            "/api/v1/dev-teams",
+            get(dev_teams::list).post(dev_teams::create),
+        )
+        .route(
+            "/api/v1/dev-teams/{id}",
+            get(dev_teams::detail)
+                .patch(dev_teams::patch)
+                .delete(dev_teams::remove),
+        )
+        .route(
+            "/api/v1/dev-teams/{id}/members",
+            post(dev_teams::add_member),
+        )
+        .route(
+            "/api/v1/dev-teams/{id}/members/{userId}",
+            delete(dev_teams::remove_member),
+        )
+        .route(
+            "/api/v1/dev-teams/{id}/resources",
+            get(dev_teams::team_resources),
+        )
+        .route("/api/v1/me/dev-teams", get(dev_teams::mine))
+        .route("/api/v1/rewards", get(rewards::snapshot))
+        .route("/api/v1/rewards/redeem", post(rewards::redeem))
+        .route("/api/v1/rewards/lottery", post(rewards::draw))
+        .route(
+            "/api/v1/rewards/cards/{id}/open",
+            post(rewards::open),
+        )
         .route("/api/v1/points", get(points::snapshot))
         .route("/api/v1/points/checkin", post(points::checkin))
         .route("/api/v1/points/rank", get(points::rank))
@@ -130,6 +179,33 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/servers/{id}/probe", post(servers::refresh))
         .route("/api/v1/relay/rooms", get(servers::rooms))
+        .route("/api/v1/admin/users/{id}/developer", patch(admin::set_developer))
+        .route("/api/v1/admin/resources", get(resources::admin_list))
+        .route(
+            "/api/v1/admin/resources/{id}",
+            patch(resources::admin_patch).delete(resources::admin_delete),
+        )
+        .route("/api/v1/admin/dev-teams", get(dev_teams::admin_list))
+        .route(
+            "/api/v1/admin/dev-teams/{id}",
+            delete(dev_teams::admin_delete),
+        )
+        .route(
+            "/api/v1/admin/rewards/cards",
+            get(rewards::admin_cards).post(rewards::admin_create_card),
+        )
+        .route(
+            "/api/v1/admin/rewards/cards/{id}",
+            delete(rewards::admin_delete_card),
+        )
+        .route(
+            "/api/v1/admin/rewards/prizes",
+            get(rewards::admin_prizes).post(rewards::admin_create_prize),
+        )
+        .route(
+            "/api/v1/admin/rewards/prizes/{id}",
+            patch(rewards::admin_patch_prize).delete(rewards::admin_delete_prize),
+        )
         .route("/api/v1/admin/orgs", get(orgs::admin_list))
         .route(
             "/api/v1/admin/orgs/{kind}/{id}",

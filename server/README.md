@@ -61,13 +61,37 @@
 | GET | `/api/v1/points` | 我的积分：余额、连签、今日状态、最近流水与积分榜 |
 | POST | `/api/v1/points/checkin` | 每日签到（上海时区；重复签到返回 `already`） |
 | GET | `/api/v1/points/rank?limit=` | 公开积分榜（只给昵称与分数） |
+| GET | `/api/v1/resources?game=&category=&q=&sort=` | 资源列表（published） |
+| GET/POST | `/api/v1/resources` | 列表 / 发布（登录即可，首个资源自动授予开发者） |
+| GET/PATCH/DELETE | `/api/v1/resources/{id}` | 详情 / 修改 / 删除（作者或管理员） |
+| POST | `/api/v1/resources/{id}/like` | 切换点赞（每用户一次） |
+| POST | `/api/v1/resources/{id}/download` | 取下载地址并计数（同用户同天一次） |
+| GET | `/api/v1/leaderboard/developers` | 开发者个人榜 + 开发团队榜 |
+| GET/POST | `/api/v1/dev-teams` | 开发团队列表 / 创建（需开发者，一人一队） |
+| GET/PATCH/DELETE | `/api/v1/dev-teams/{id}` | 详情 / 修改 / 解散（负责人或管理员） |
+| POST/DELETE | `/api/v1/dev-teams/{id}/members[/{userId}]` | 加人 / 移除（负责人） |
+| GET | `/api/v1/dev-teams/{id}/resources` | 团队作品 |
+| GET | `/api/v1/me/dev-teams` | 我所在的开发团队 |
+| GET | `/api/v1/rewards` | 我的卡包 / 历史 / 奖池 / 抽奖记录 / 余额 |
+| POST | `/api/v1/rewards/cards/{id}/open` | 拆礼品卡（仅收件人） |
+| POST | `/api/v1/rewards/redeem` | 兑换码兑换 |
+| POST | `/api/v1/rewards/lottery` | 扣 20 积分抽一次 |
 
 | GET | `/api/v1/admin/orgs` | 后台：两张榜一起给 |
 | PATCH/DELETE | `/api/v1/admin/orgs/{kind}/{id}` | 校准积分·战绩（唯一写入口）/ 删除 |
-| GET | `/api/v1/servers?kind=` | 联机大厅条目（只含公开展示的，带探测快照） || POST | `/api/v1/servers` | 自由上传（登录 + `post.create`），MC 与中转站共用 |
+| PATCH | `/api/v1/admin/users/{id}/developer` | 授予 / 撤销开发者身份 |
+| GET | `/api/v1/admin/resources?q=` | 后台资源列表（含隐藏） |
+| PATCH/DELETE | `/api/v1/admin/resources/{id}` | 下架 / 恢复 / 删除 |
+| GET/DELETE | `/api/v1/admin/dev-teams[/{id}]` | 开发团队列表 / 删除 |
+| GET/POST | `/api/v1/admin/rewards/cards` | 发礼品卡 / 生成兑换码 |
+| DELETE | `/api/v1/admin/rewards/cards/{id}` | 删除未使用的卡 |
+| GET/POST | `/api/v1/admin/rewards/prizes` | 奖池列表 / 新增 |
+| PATCH/DELETE | `/api/v1/admin/rewards/prizes/{id}` | 启停 / 权重 / 库存 / 删除 |
+| GET | `/api/v1/servers?kind=` | 联机大厅条目（只含公开展示的，带探测快照） |
+| POST | `/api/v1/servers` | 自由上传（登录 + `post.create`），MC 与中转站共用 |
 | PATCH/DELETE | `/api/v1/servers/{id}` | 本人或管理员；改地址会清空探测快照 |
 | POST | `/api/v1/servers/{id}/probe` | 手动刷新一次（10 秒冷却） |
-| GET | `/api/v1/relay/rooms` | 铁锈战争中转站的实时房间（10 秒缓存，失败回落旧数据） |
+| GET | `/api/v1/relay/rooms` | Rusted Warfare 中转站的实时房间（10 秒缓存，失败回落旧数据） |
 | GET | `/api/v1/admin/servers` | 后台列表（含隐藏条目） |
 | PATCH/DELETE | `/api/v1/admin/servers/{id}` | 隐藏 / 恢复 / 删除 |
 

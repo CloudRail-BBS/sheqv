@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { ServerKind } from '@/lib/server-types';
 
 /**
- * 上传面板：我的世界服务器 / 铁锈战争中转站。
+ * 上传面板：我的世界服务器 / Rusted Warfare 中转站。
  *
  * 两类条目共用一套表单，切 kind 时只换「要填什么」。上传不做人工审核
  * （站长要求自由上传），所以提交成功就刷新页面，状态由后台探测补上。
@@ -105,7 +105,7 @@ export function ServerUpload({ loggedIn }: { loggedIn: boolean }) {
             setMsg(null);
           }}
         >
-          铁锈战争
+          Rusted Warfare
         </button>
       </div>
 

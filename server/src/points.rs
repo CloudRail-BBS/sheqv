@@ -14,17 +14,23 @@ use sqlx::PgPool;
 pub const POST_REWARD: i64 = 5;
 /// 发一条评论
 pub const COMMENT_REWARD: i64 = 2;
+/// 发布一个资源
+pub const RESOURCE_REWARD: i64 = 20;
 /// 签到基础分
 pub const CHECKIN_BASE: i64 = 10;
 /// 连签加成上限：第 n 天 +min(n-1, 7)，连签 8 天封顶 +7
 pub const STREAK_BONUS_MAX: i64 = 7;
 
 /// 与前端约定：这些 reason 会显示成中文
-pub const REASON_LABELS: [(&str, &str); 4] = [
+pub const REASON_LABELS: [(&str, &str); 8] = [
     ("post", "发帖"),
     ("comment", "评论"),
     ("checkin", "签到"),
-    ("admin", "管理员调整"),
+    ("resource", "发布资源"),
+    ("redeem", "兑换码"),
+    ("gift", "礼品卡"),
+    ("lottery", "抽奖消耗"),
+    ("lottery_prize", "抽奖奖励"),
 ];
 
 #[derive(Debug, Serialize)]
@@ -95,6 +101,21 @@ pub async fn award(
     reference: Option<&str>,
 ) -> Result<i64, sqlx::Error> {
     let mut tx = pool.begin().await?;
+    let balance = award_in(&mut tx, user_id, delta, reason, reference).await?;
+    tx.commit().await?;
+    Ok(balance)
+}
+
+/// 在调用方的事务里加分 / 扣分。
+///
+/// 礼品卡、抽奖、兑换码都要「发奖 + 改余额」原子完成，单独开事务会留下半截状态。
+pub async fn award_in(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: &str,
+    delta: i64,
+    reason: &str,
+    reference: Option<&str>,
+) -> Result<i64, sqlx::Error> {
     sqlx::query(
         "INSERT INTO point_logs (id, user_id, delta, reason, ref) VALUES ($1, $2, $3, $4, $5)",
     )
@@ -103,7 +124,7 @@ pub async fn award(
     .bind(delta as i32)
     .bind(reason)
     .bind(reference)
-    .execute(&mut *tx)
+    .execute(&mut **tx)
     .await?;
 
     let balance: Option<i32> = sqlx::query_scalar(
@@ -111,11 +132,55 @@ pub async fn award(
     )
     .bind(user_id)
     .bind(delta as i32)
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    Ok(balance.unwrap_or(0) as i64)
+}
+
+/// 扣分。余额不足返回 `None`，不写流水也不改余额。
+pub async fn spend(
+    pool: &PgPool,
+    user_id: &str,
+    cost: i64,
+    reason: &str,
+    reference: Option<&str>,
+) -> Result<Option<i64>, sqlx::Error> {
+    if cost <= 0 {
+        let balance: Option<i32> = sqlx::query_scalar("SELECT points FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
+        return Ok(balance.map(|v| v as i64));
+    }
+
+    let mut tx = pool.begin().await?;
+    let balance: Option<i32> = sqlx::query_scalar(
+        "UPDATE users SET points = points - $2 WHERE id = $1 AND points >= $2 RETURNING points",
+    )
+    .bind(user_id)
+    .bind(cost as i32)
     .fetch_optional(&mut *tx)
     .await?;
 
+    let Some(left) = balance else {
+        tx.rollback().await?;
+        return Ok(None);
+    };
+
+    sqlx::query(
+        "INSERT INTO point_logs (id, user_id, delta, reason, ref) VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(crate::ids::next('l'))
+    .bind(user_id)
+    .bind(-(cost as i32))
+    .bind(reason)
+    .bind(reference)
+    .execute(&mut *tx)
+    .await?;
+
     tx.commit().await?;
-    Ok(balance.unwrap_or(0) as i64)
+    Ok(Some(left as i64))
 }
 
 /// 按流水重算余额与连签。给后台修数据用，也方便单测。

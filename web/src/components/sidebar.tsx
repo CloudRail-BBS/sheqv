@@ -22,6 +22,7 @@ const I = {
   star: <path d="m12 3.6 2.5 5.2 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
   server: <path d="M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
   tag: <><path d="M4 4h7l9 9-7 7-9-9z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><circle cx="8.2" cy="8.2" r="1.4" fill="currentColor" /></>,
+  gift: <><path d="M4 9h16v11H4zM3 5h18v4H3zM12 5v15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 5c-1.8 0-4-1-4-2.5S10.5 1 12 5c1.5-4 4-4 4-2.5S13.8 5 12 5Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></>,
 };
 
 function Ico({ children }: { children: React.ReactNode }) {
@@ -63,6 +64,9 @@ export function Sidebar({ adminVisible, form }: Props) {
         <Link href="/resources" className="side-item" data-active={on('/resources')}>
           <Ico>{I.box}</Ico>资源库
         </Link>
+        <Link href="/dev-teams" className="side-item" data-active={on('/dev-teams')}>
+          <Ico>{I.users}</Ico>开发团队
+        </Link>
         <Link href="/leaderboard" className="side-item" data-active={on('/leaderboard')}>
           <Ico>{I.chart}</Ico>排行榜
         </Link>
@@ -70,11 +74,11 @@ export function Sidebar({ adminVisible, form }: Props) {
 
       <div className="side-group">
         <div className="side-label">分区</div>
-        <Link href="/resources" className="side-item">
+        <Link href="/resources?game=minecraft" className="side-item">
           <Ico>{I.grid}</Ico>Minecraft
         </Link>
-        <Link href="/resources" className="side-item">
-          <Ico>{I.grid}</Ico>Roblox
+        <Link href="/resources?game=rusted_warfare" className="side-item">
+          <Ico>{I.grid}</Ico>Rusted Warfare
         </Link>
         <Link href="/resources" className="side-item">
           <Ico>{I.layers}</Ico>整合包
@@ -94,6 +98,9 @@ export function Sidebar({ adminVisible, form }: Props) {
         </Link>
         <Link href="/groups" className="side-item" data-active={on('/groups')}>
           <Ico>{I.tag}</Ico>身份组
+        </Link>
+        <Link href="/rewards" className="side-item" data-active={on('/rewards')}>
+          <Ico>{I.gift}</Ico>福利中心
         </Link>
         <Link href="/announcements" className="side-item" data-active={on('/announcements')}>
           <Ico>{I.bell}</Ico>公告

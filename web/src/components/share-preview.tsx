@@ -23,7 +23,7 @@ const SAMPLE_TEAMS: Org[] = [
 function toShareOrg(o: Org): ShareOrg {
   return {
     ...o,
-    gameLabel: o.game === 'minecraft' ? '我的世界' : o.game === 'roblox' ? 'Roblox' : '铁锈战争',
+    gameLabel: o.game === 'minecraft' ? '我的世界' : 'Rusted Warfare',
     statusLabel: o.status === 'recruiting' ? '招募中' : o.status === 'training' ? '训练中' : '休赛',
   };
 }

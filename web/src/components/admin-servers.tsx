@@ -101,7 +101,7 @@ export function AdminServers() {
                 <tr key={s.id}>
                   <td>
                     <span className="badge badge-ghost">
-                      {s.kind === 'minecraft' ? '我的世界' : '铁锈战争'}
+                      {s.kind === 'minecraft' ? '我的世界' : 'Rusted Warfare'}
                     </span>
                   </td>
                   <td>{s.name}</td>

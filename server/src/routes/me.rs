@@ -10,7 +10,7 @@ use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::users;
 
-/// PATCH /api/v1/me —— 目前只开放头衔。
+/// PATCH /api/v1/me —— 头衔与个人主页背景。
 ///
 /// 昵称是帖子里已经落盘的作者名，改名会让历史帖子指向空，
 /// 要做的话得先把帖子改成纯按 id 关联，不在这次范围内。
@@ -22,24 +22,44 @@ pub async fn patch_me(
     let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
         return Err(ApiError::invalid_input("没有要修改的内容"));
     };
-
     let Some(obj) = payload.as_object() else {
         return Err(ApiError::invalid_input("没有要修改的内容"));
     };
-    let Some(title) = obj.get("title") else {
+    if !obj.contains_key("title") && !obj.contains_key("profileBg") {
         return Err(ApiError::invalid_input("没有要修改的内容"));
-    };
+    }
 
-    // 非字符串一律当空处理：与 Node 版 `typeof raw === 'string' ? raw : ''` 一致
-    let raw = title.as_str().unwrap_or("");
-    let clean = users::normalize_title(raw, user.is_admin).map_err(|msg| {
-        ApiError::with_message(StatusCode::UNPROCESSABLE_ENTITY, "invalid_title", msg)
-    })?;
+    let mut updated = None;
 
-    let updated = users::set_title(&st.pool, &user.id, Some(clean.as_str()))
-        .await
-        .map_err(ApiError::internal)?
-        .ok_or_else(ApiError::not_found)?;
+    if let Some(title) = obj.get("title") {
+        // 非字符串一律当空处理：与 Node 版 `typeof raw === 'string' ? raw : ''` 一致
+        let raw = title.as_str().unwrap_or("");
+        let clean = users::normalize_title(raw, user.is_admin).map_err(|msg| {
+            ApiError::with_message(StatusCode::UNPROCESSABLE_ENTITY, "invalid_title", msg)
+        })?;
+        updated = users::set_title(&st.pool, &user.id, Some(clean.as_str()))
+            .await
+            .map_err(ApiError::internal)?;
+    }
 
+    if let Some(bg) = obj.get("profileBg") {
+        let raw = bg.as_str().unwrap_or("").trim();
+        let ok = raw.is_empty()
+            || ((raw.starts_with("http://") || raw.starts_with("https://")
+                || (raw.starts_with('/') && !raw.starts_with("//")))
+                && raw.len() <= 500);
+        if !ok {
+            return Err(ApiError::with_message(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_bg",
+                "背景图需为 http(s) 链接或站内路径（/ 开头），最长 500 字",
+            ));
+        }
+        updated = users::set_profile_bg(&st.pool, &user.id, raw)
+            .await
+            .map_err(ApiError::internal)?;
+    }
+
+    let updated = updated.ok_or_else(ApiError::not_found)?;
     Ok(Json(json!({ "ok": true, "user": updated })).into_response())
 }

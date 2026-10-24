@@ -1,31 +1,45 @@
 import Link from 'next/link';
-import { GAME_LABEL, type ResourceItem } from '@/lib/data';
-import { formatBytes } from '@/lib/capabilities';
+import { fmtNum, fmtSize, gameLabel, gameShort, gameTone, type ResourceView } from '@/lib/resource-types';
 
-export function ResourceCard({ item, directDownload }: { item: ResourceItem; directDownload: boolean }) {
-  const isMc = item.game === 'mc';
+/**
+ * 资源卡片。
+ *
+ * 作者名后面最多两个标记：开发者 + 团队简称。两者都不占太多宽度，
+ * 卡片里真正要一眼看到的是「什么东西 / 谁做的 / 多少人用过」。
+ */
+export function ResourceCard({ item }: { item: ResourceView }) {
+  const tone = gameTone(item.game);
+
   return (
     <Link href={`/resources/${item.id}`} className="card res-card">
-      <div className={'res-cover ' + (isMc ? 'cover-mc' : 'cover-rw')}>
-        <span className={'badge ' + (isMc ? 'badge-mc' : 'badge-rw')}>{GAME_LABEL[item.game]}</span>
+      <div className={'res-cover cover-' + tone}>
+        <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
         <span className="glyph" aria-hidden="true">
-          {isMc ? 'MC' : 'RW'}
+          {gameShort(item.game)}
         </span>
-        <span className="ver">{item.version}</span>
+        {item.version && <span className="ver">{item.version}</span>}
       </div>
+
       <div className="res-body">
         <div className="res-title">{item.title}</div>
         <div className="res-meta">
           <span>{item.category}</span>
           <span>·</span>
-          <span>{item.author}</span>
-          <span className="score" style={{ marginLeft: 'auto' }}>
-            ★ {item.rating.toFixed(1)}
+          <span className="res-author">
+            {item.author}
+            {item.authorDeveloper && <span className="dev-chip">开发者</span>}
           </span>
+          {item.teamName && (
+            <span className="team-chip" title={`开发团队：${item.teamName}`}>
+              {item.teamTag || item.teamName}
+            </span>
+          )}
         </div>
         <div className="res-foot">
-          <span className="small muted mono">{formatBytes(item.sizeBytes)}</span>
-          <span className="how">{directDownload ? '直接下载' : '预览 · 收藏'}</span>
+          <span className="small muted mono">
+            ♥ {fmtNum(item.likeCount)} · ↓ {fmtNum(item.downloadCount)}
+          </span>
+          <span className="how">{fmtSize(item.sizeBytes)}</span>
         </div>
       </div>
     </Link>

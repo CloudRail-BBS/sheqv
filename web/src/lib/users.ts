@@ -36,6 +36,11 @@ export interface PublicUser {
   groupId?: string;
   /** 身份组的名字与颜色（未分组时不返回） */
   group?: UserGroup;
+  /** 发布过资源后自动获得 */
+  developer?: boolean;
+  developerSince?: number;
+  /** 个人主页背景图 */
+  profileBg?: string;
   email?: string;
   providers?: string[];
   badges?: string[];
