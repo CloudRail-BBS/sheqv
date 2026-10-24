@@ -20,6 +20,7 @@ pub mod servers;
 pub mod sponsors;
 
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, patch, post};
 
 use crate::state::AppState;
@@ -35,6 +36,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/me/chrome", get(me::chrome))
+        .route(
+            "/api/v1/me/media",
+            post(me::upload_media).layer(DefaultBodyLimit::max(crate::media::MAX_BYTES + 1024 * 1024)),
+        )
+        .route("/api/v1/media/{id}", get(me::media_file))
         .route("/api/v1/auth/oauth/{provider}", get(oauth::start))
         .route(
             "/api/v1/auth/oauth/{provider}/callback",

@@ -29,6 +29,7 @@ pub mod email_login;
 pub mod errors;
 pub mod forum;
 pub mod groups;
+pub mod media;
 pub mod ids;
 pub mod mailer;
 pub mod mcping;

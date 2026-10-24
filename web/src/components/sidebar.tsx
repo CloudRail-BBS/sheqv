@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { NAV_GROUPS, SIDEBAR_DEFAULT, parseNav } from '@/lib/nav-config';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { NAV_GROUPS, SIDEBAR_DEFAULT, isNavActive, parseNav } from '@/lib/nav-config';
 
 const I: Record<string, React.ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5V21H3z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
@@ -63,8 +63,9 @@ function Ico({ children }: { children: React.ReactNode }) {
  */
 export function Sidebar({ adminVisible, items }: { adminVisible: boolean; items?: string }) {
   const pathname = usePathname();
+  const search = useSearchParams();
   const keys = parseNav(items, SIDEBAR_DEFAULT);
-  const on = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href.split('?')[0]));
+  const on = (href: string) => isNavActive(pathname, search, href);
 
   return (
     <aside className="sidebar">

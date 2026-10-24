@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use axum::Json;
-use axum::body::Bytes;
-use axum::extract::State;
-use axum::http::StatusCode;
+use axum::body::{Body, Bytes};
+use axum::extract::{Path, Query, State};
+use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
 
@@ -9,7 +11,98 @@ use crate::current_user::CurrentUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::users;
-use crate::{notifications, points};
+use crate::{media, notifications, points};
+
+/// POST /api/v1/me/media?kind=avatar|background|post
+///
+/// 客户端直接 PUT 图片字节，Content-Type 只作提示；服务端按魔数判类型。
+/// 头像/背景上传成功会顺手删掉上一张本站图片，避免库里越攒越多。
+pub async fn upload_media(
+    State(st): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Query(params): Query<HashMap<String, String>>,
+    _headers: HeaderMap,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let kind = params.get("kind").map(String::as_str).unwrap_or("post");
+    if !media::kind_ok(kind) {
+        return Err(ApiError::invalid_input("图片用途不正确"));
+    }
+    if body.is_empty() {
+        return Err(ApiError::invalid_input("没有收到图片"));
+    }
+    if body.len() > media::MAX_BYTES {
+        return Err(ApiError::with_message(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "too_large",
+            "图片不能超过 2MB",
+        ));
+    }
+    let Some(mime) = media::detect(&body) else {
+        return Err(ApiError::with_message(
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            "unsupported_image",
+            "只支持 PNG / JPEG / WebP / GIF",
+        ));
+    };
+
+    let id = media::save(&st.pool, &user.id, kind, mime, &body)
+        .await
+        .map_err(ApiError::internal)?;
+    let url = format!("/api/v1/media/{id}");
+
+    if kind == "avatar" {
+        if let Some(updated) = users::set_avatar(&st.pool, &user.id, &url)
+            .await
+            .map_err(ApiError::internal)?
+        {
+            if !user.avatar.is_empty() {
+                let _ = media::delete_url(&st.pool, &user.id, &user.avatar).await;
+            }
+            return Ok(Json(json!({ "ok": true, "url": url, "user": updated })).into_response());
+        }
+        return Err(ApiError::not_found());
+    }
+
+    if kind == "background" {
+        if let Some(updated) = users::set_profile_bg(&st.pool, &user.id, &url)
+            .await
+            .map_err(ApiError::internal)?
+        {
+            if !user.profile_bg.is_empty() {
+                let _ = media::delete_url(&st.pool, &user.id, &user.profile_bg).await;
+            }
+            return Ok(Json(json!({ "ok": true, "url": url, "user": updated })).into_response());
+        }
+        return Err(ApiError::not_found());
+    }
+
+    Ok(Json(json!({ "ok": true, "url": url })).into_response())
+}
+
+/// GET /api/v1/media/{id} —— 公开读图，长缓存
+pub async fn media_file(State(st): State<AppState>, Path(id): Path<String>) -> ApiResult<Response> {
+    if id.len() > 40 || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Err(ApiError::not_found());
+    }
+    let Some((mime, bytes)) = media::load(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+
+    let len = bytes.len();
+    let mut res = Response::new(Body::from(bytes));
+    let headers = res.headers_mut();
+    headers.insert(header::CONTENT_TYPE, mime.parse().expect("固定 MIME"));
+    headers.insert(header::CONTENT_LENGTH, len.to_string().parse().expect("数字"));
+    headers.insert(
+        header::CACHE_CONTROL,
+        "public, max-age=31536000, immutable".parse().expect("固定值"),
+    );
+    Ok(res)
+}
 
 /// GET /api/v1/me/chrome —— 顶栏一次取齐：站内信 + 积分胶囊。
 ///
@@ -53,7 +146,10 @@ pub async fn patch_me(
     let Some(obj) = payload.as_object() else {
         return Err(ApiError::invalid_input("没有要修改的内容"));
     };
-    if !obj.contains_key("title") && !obj.contains_key("profileBg") {
+    if !obj.contains_key("title")
+        && !obj.contains_key("profileBg")
+        && !obj.contains_key("avatar")
+    {
         return Err(ApiError::invalid_input("没有要修改的内容"));
     }
 
@@ -70,22 +166,48 @@ pub async fn patch_me(
             .map_err(ApiError::internal)?;
     }
 
+    let media_url_ok = |raw: &str| {
+        raw.is_empty()
+            || ((raw.starts_with("http://")
+                || raw.starts_with("https://")
+                || (raw.starts_with('/') && !raw.starts_with("//")))
+                && raw.len() <= 500)
+    };
+
+    if let Some(avatar) = obj.get("avatar") {
+        let raw = avatar.as_str().unwrap_or("").trim();
+        if !media_url_ok(raw) {
+            return Err(ApiError::with_message(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_avatar",
+                "头像需为 http(s) 链接或站内路径（/ 开头），最长 500 字",
+            ));
+        }
+        let old = user.avatar.clone();
+        updated = users::set_avatar(&st.pool, &user.id, raw)
+            .await
+            .map_err(ApiError::internal)?;
+        if raw.is_empty() && !old.is_empty() {
+            let _ = media::delete_url(&st.pool, &user.id, &old).await;
+        }
+    }
+
     if let Some(bg) = obj.get("profileBg") {
         let raw = bg.as_str().unwrap_or("").trim();
-        let ok = raw.is_empty()
-            || ((raw.starts_with("http://") || raw.starts_with("https://")
-                || (raw.starts_with('/') && !raw.starts_with("//")))
-                && raw.len() <= 500);
-        if !ok {
+        if !media_url_ok(raw) {
             return Err(ApiError::with_message(
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "invalid_bg",
                 "背景图需为 http(s) 链接或站内路径（/ 开头），最长 500 字",
             ));
         }
+        let old = user.profile_bg.clone();
         updated = users::set_profile_bg(&st.pool, &user.id, raw)
             .await
             .map_err(ApiError::internal)?;
+        if raw.is_empty() && !old.is_empty() {
+            let _ = media::delete_url(&st.pool, &user.id, &old).await;
+        }
     }
 
     let updated = updated.ok_or_else(ApiError::not_found)?;

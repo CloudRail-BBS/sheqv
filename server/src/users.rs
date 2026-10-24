@@ -80,15 +80,17 @@ pub struct UserRow {
     pub developer_at: Option<DateTime<Utc>>,
     /// 个人主页背景图（空表示用默认渐变）
     pub profile_bg: String,
+    /// 头像地址；空表示用昵称首字
+    pub avatar: String,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg";
+const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
 
 /// 读用户时统一带出组的展示信息。
 /// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
 const SELECT_USER: &str = "SELECT u.id, u.username, u.nickname, u.password_hash, u.email, u.role,
         u.created_at, u.banned, u.title, u.badges, u.notif_read_at, u.last_login_at, u.group_id,
-        u.developer_at, u.profile_bg,
+        u.developer_at, u.profile_bg, u.avatar,
         g.name AS group_name, g.color AS group_color, g.slug AS group_slug
    FROM users u LEFT JOIN groups g ON g.id = u.group_id";
 
@@ -133,6 +135,9 @@ pub struct PublicUser {
     /// 个人主页背景图；空串不下发
     #[serde(skip_serializing_if = "String::is_empty")]
     pub profile_bg: String,
+    /// 头像；空串不下发
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub avatar: String,
 }
 
 fn is_false(v: &bool) -> bool {
@@ -189,6 +194,7 @@ impl UserRow {
             developer: self.developer_at.is_some(),
             developer_since: self.developer_at.map(|t| t.timestamp_millis()),
             profile_bg: self.profile_bg.clone(),
+            avatar: self.avatar.clone(),
         }
     }
 }
@@ -540,6 +546,22 @@ pub async fn set_profile_bg(
     ))
     .bind(id)
     .bind(bg.trim())
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated.map(|r| r.to_public()))
+}
+
+/// 头像。空串表示恢复昵称首字。
+pub async fn set_avatar(
+    pool: &PgPool,
+    id: &str,
+    avatar: &str,
+) -> Result<Option<PublicUser>, sqlx::Error> {
+    let updated = sqlx::query_as::<_, UserRow>(&format!(
+        "UPDATE users SET avatar = $2 WHERE id = $1 RETURNING {COLUMNS}, {RETURNING_GROUP}"
+    ))
+    .bind(id)
+    .bind(avatar.trim())
     .fetch_optional(pool)
     .await?;
     Ok(updated.map(|r| r.to_public()))

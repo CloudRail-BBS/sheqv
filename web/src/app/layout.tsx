@@ -119,7 +119,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
                 {user ? (
                   <Link href="/me" className="user-chip hide-mobile">
-                    <span className="user-dot">{user.nickname.slice(0, 1)}</span>
+                    <span className="user-dot">
+                      {user.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={user.avatar} alt="" />
+                      ) : (
+                        user.nickname.slice(0, 1)
+                      )}
+                    </span>
                     <span className="user-name">{user.nickname}</span>
                     <UserBadge badge={badgeOf(user)} size="sm" />
                     <GroupTag group={user.group} size="sm" />

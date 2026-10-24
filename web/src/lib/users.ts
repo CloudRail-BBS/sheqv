@@ -41,6 +41,8 @@ export interface PublicUser {
   developerSince?: number;
   /** 个人主页背景图 */
   profileBg?: string;
+  /** 头像；空则用昵称首字 */
+  avatar?: string;
   email?: string;
   providers?: string[];
   badges?: string[];
@@ -130,6 +132,30 @@ export async function getBadgeMap(): Promise<BadgeMap> {
     map[`name:${u.nickname}`] = info;
   }
   return map;
+}
+
+export type AvatarMap = Record<string, string>;
+
+/** 头像映射：帖子/评论只有作者名，按 id 与昵称双键兼容老数据 */
+export async function getAvatarMap(): Promise<AvatarMap> {
+  const users = await listPublicUsers();
+  const map: AvatarMap = {};
+  for (const u of users) {
+    if (!u.avatar) continue;
+    map[`id:${u.id}`] = u.avatar;
+    map[`name:${u.nickname}`] = u.avatar;
+  }
+  return map;
+}
+
+export function resolveAvatar(
+  map: AvatarMap | undefined,
+  who: { id?: string | null; name?: string | null },
+): string | undefined {
+  if (!map) return undefined;
+  if (who.id && map[`id:${who.id}`]) return map[`id:${who.id}`];
+  if (who.name && map[`name:${who.name}`]) return map[`name:${who.name}`];
+  return undefined;
 }
 
 export async function findById(id: string): Promise<PublicUser | null> {

@@ -170,6 +170,8 @@ pub struct PublicProfile {
     pub developer_since: Option<i64>,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub profile_bg: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub avatar: String,
 }
 
 /// GET /api/v1/users/{id}
@@ -191,6 +193,7 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         developer: row.developer_at.is_some(),
         developer_since: row.developer_at.map(|t| t.timestamp_millis()),
         profile_bg: row.profile_bg.clone(),
+        avatar: row.avatar.clone(),
     };
 
     Ok(Json(json!({ "ok": true, "user": profile })).into_response())
@@ -216,6 +219,7 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
             developer: row.developer_at.is_some(),
             developer_since: row.developer_at.map(|t| t.timestamp_millis()),
             profile_bg: row.profile_bg.clone(),
+            avatar: row.avatar.clone(),
         })
         .collect();
 

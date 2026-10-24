@@ -8,7 +8,7 @@ import { LogoutButton } from '@/components/logout-button';
 import { TitleEditor } from '@/components/title-editor';
 import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
-import { ProfileBgEditor } from '@/components/profile-bg-editor';
+import { ImageClearButton, ImageUploadButton } from '@/components/image-upload';
 import { badgeOf } from '@/lib/badges';
 import { listPublicGroups } from '@/lib/groups';
 import { listOrgs } from '@/lib/orgs';
@@ -77,19 +77,40 @@ export default async function MePage() {
     <div className="cols">
       <div className="col-main">
         <div
-          className="card me-card"
+          className="card me-card me-hero"
           data-bg={Boolean(user.profileBg)}
           style={
             user.profileBg
               ? {
-                  backgroundImage: `linear-gradient(90deg, var(--panel) 12%, color-mix(in srgb, var(--panel) 78%, transparent) 52%, transparent), url(${JSON.stringify(user.profileBg)})`,
+                  backgroundImage: `linear-gradient(90deg, var(--panel) 8%, color-mix(in srgb, var(--panel) 82%, transparent) 48%, transparent), url(${JSON.stringify(user.profileBg)})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }
               : undefined
           }
         >
-          <div className="me-ava">{user.nickname.slice(0, 1)}</div>
+          <div className="me-cover-actions">
+            <ImageUploadButton
+              kind="background"
+              label={user.profileBg ? '更换背景' : '上传背景'}
+              className="btn btn-sm me-glass-btn"
+            />
+            {user.profileBg && (
+              <ImageClearButton field="profileBg" label="移除背景" className="btn btn-sm me-glass-btn" />
+            )}
+          </div>
+
+          <div className="me-avatar-wrap">
+            <div className="me-ava">
+              {user.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.avatar} alt={user.nickname} />
+              ) : (
+                user.nickname.slice(0, 1)
+              )}
+            </div>
+            <ImageUploadButton kind="avatar" label="换头像" className="me-avatar-upload" />
+          </div>
           <div style={{ minWidth: 0 }}>
             <div className="row" style={{ gap: 7 }}>
               <span className="me-name">{user.nickname}</span>
@@ -109,6 +130,20 @@ export default async function MePage() {
             )}
             <LogoutButton />
           </div>
+        </div>
+
+        <div className="me-stats">
+          {[
+            { k: '我的帖子', v: String(mine.length) },
+            { k: '获得点赞', v: String(likes) },
+            { k: '已签公约', v: `${signedCount}/${agreements.length}` },
+            { k: '身份组', v: user.group?.name ?? '未分组' },
+          ].map((s) => (
+            <div key={s.k} className="card">
+              <b>{s.v}</b>
+              <span>{s.k}</span>
+            </div>
+          ))}
         </div>
 
         <div className="card card-pad" style={{ marginTop: 12 }}>
@@ -189,7 +224,6 @@ export default async function MePage() {
           </div>
         )}
 
-        <ProfileBgEditor current={user.profileBg} />
 
         <div className="card card-pad" style={{ marginTop: 12 }}>
           <div className="between" style={{ marginBottom: 8 }}>
@@ -224,20 +258,6 @@ export default async function MePage() {
           <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
             徽章由行为自动判定（发帖、评论、获赞、注册时长等），不需要申请。
           </p>
-        </div>
-
-        <div className="me-stats">
-          {[
-            { k: '我的帖子', v: String(mine.length) },
-            { k: '获得点赞', v: String(likes) },
-            { k: '已签公约', v: `${signedCount}/${agreements.length}` },
-            { k: '身份组', v: user.group?.name ?? '未分组' },
-          ].map((s) => (
-            <div key={s.k} className="card">
-              <b>{s.v}</b>
-              <span>{s.k}</span>
-            </div>
-          ))}
         </div>
 
         <div className="card" style={{ overflow: 'hidden' }}>

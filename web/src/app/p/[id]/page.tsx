@@ -4,7 +4,7 @@ import { getPost } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { PostActions } from '@/components/post-actions';
-import { getBadgeMap } from '@/lib/users';
+import { getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { getGroupMap, resolveGroup } from '@/lib/group-map';
 import { UserBadge } from '@/components/user-badge';
@@ -12,6 +12,7 @@ import { GroupTag } from '@/components/group-tag';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
 import { buildMetadata } from '@/lib/seo';
+import { Markdown, markdownToText } from '@/lib/markdown';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = post.title?.trim() || post.body.replace(/\s+/g, ' ').slice(0, 24);
   return buildMetadata({
     title,
-    description: post.body.replace(/\s+/g, ' ').slice(0, 120),
+    description: markdownToText(post.body).slice(0, 120),
     path: `/p/${id}`,
     type: 'article',
   });
@@ -34,13 +35,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const post = await getPost(id);
   if (!post) notFound();
 
-  const [signed, user, badges, achievements, groups] = await Promise.all([
+  const [signed, user, badges, achievements, groups, avatars] = await Promise.all([
     isCommunitySigned(),
     getCurrentUser(),
     getBadgeMap(),
     getAchievementMap(),
     getGroupMap(),
+    getAvatarMap(),
   ]);
+  const postAvatar = resolveAvatar(avatars, { id: post.authorId, name: post.author });
   const postBadge = resolveBadge(badges, { id: post.authorId, name: post.author });
   const postGroup = resolveGroup(groups, { id: post.authorId, name: post.author });
   // 未过审的帖子只有作者和审核人打得开（后端已按 status 拦过一次，这里只负责说明状态）
@@ -71,7 +74,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
           <div className="post-head">
-            <div className="post-avatar">{post.author.slice(0, 1)}</div>
+            <div className="post-avatar">
+              {postAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={postAvatar} alt="" />
+              ) : (
+                post.author.slice(0, 1)
+              )}
+            </div>
             <div>
               <div className="post-meta">
                 <b>{post.author}</b>
@@ -88,7 +98,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           <h1 className="page-title" style={{ marginBottom: 12 }}>
             {post.title ?? '无标题'}
           </h1>
-          <p style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{post.body}</p>
+          <Markdown text={post.body} className="md-body post-md" />
 
           <div className="post-tags">
             {post.tags.map((t) => (
@@ -121,7 +131,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           ) : (
             post.commentsList.map((c) => (
               <div key={c.id} className="rail-item" style={{ padding: '12px 16px', alignItems: 'flex-start' }}>
-                <span className="post-avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 8 }}>{c.author.slice(0, 1)}</span>
+                <span className="post-avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 8 }}>
+                  {resolveAvatar(avatars, { name: c.author }) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={resolveAvatar(avatars, { name: c.author })} alt="" />
+                  ) : (
+                    c.author.slice(0, 1)
+                  )}
+                </span>
                 <div style={{ minWidth: 0 }}>
                   <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
                     {c.author}
@@ -140,7 +157,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         <div className="card rail-card">
           <div className="rail-title">作者</div>
           <div className="row" style={{ gap: 10 }}>
-            <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>{post.author.slice(0, 1)}</span>
+            <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>
+              {postAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={postAvatar} alt="" />
+              ) : (
+                post.author.slice(0, 1)
+              )}
+            </span>
             <div>
               <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
                 {post.author}

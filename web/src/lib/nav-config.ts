@@ -102,3 +102,35 @@ export function normalizeTabbar(raw: string | undefined): string[] {
 export function defaultSidebar(): string[] {
   return [...SIDEBAR_DEFAULT];
 }
+
+/**
+ * 导航高亮：带查询参数的分区必须参数也匹配。
+ *
+ * 之前只比 pathname，`/resources?game=minecraft`、`?category=整合包` 都会命中
+ * `/resources`，导致点一个分区四个全亮。
+ */
+export function isNavActive(
+  pathname: string,
+  search: { get(name: string): string | null },
+  href: string,
+): boolean {
+  const [path, query = ''] = href.split('?');
+
+  if (path === '/') return pathname === '/' && !query;
+  if (pathname !== path && !pathname.startsWith(path + '/')) return false;
+
+  if (query) {
+    const want = new URLSearchParams(query);
+    for (const [key, value] of want) {
+      if (search.get(key) !== value) return false;
+    }
+    return true;
+  }
+
+  // 资源库总入口：带 game/category 筛选时让位给具体分区
+  if (path === '/resources') {
+    return !search.get('game') && !search.get('category');
+  }
+
+  return true;
+}

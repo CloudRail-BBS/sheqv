@@ -9,7 +9,7 @@ import { listPosts } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
-import { countUsers, getBadgeMap } from '@/lib/users';
+import { countUsers, getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { getGroupMap, resolveGroup } from '@/lib/group-map';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
@@ -41,7 +41,7 @@ export default async function HomePage() {
     listOrgs('team').then((list) => list.slice(0, 3)),
   ]);
   const pointsSnap = user ? await getPoints() : null;
-  const [userTotal, stats, settings, news, slides, badges, achievements, groups] = await Promise.all([
+  const [userTotal, stats, settings, news, slides, badges, achievements, groups, avatars] = await Promise.all([
     countUsers(),
     forumStats(),
     getSettings(),
@@ -50,6 +50,7 @@ export default async function HomePage() {
     getBadgeMap(),
     getAchievementMap(),
     getGroupMap(),
+    getAvatarMap(),
   ]);
   const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
   const sponsorUrl = await afdianPageUrl();
@@ -67,7 +68,11 @@ export default async function HomePage() {
         <Carousel slides={slides} />
 
         <div id="composer">
-          <Composer nickname={user?.nickname ?? null} signed={communitySigned} />
+          <Composer
+            nickname={user?.nickname ?? null}
+            signed={communitySigned}
+            avatar={user?.avatar}
+          />
         </div>
 
         <div className="feed-tabs">
@@ -122,6 +127,7 @@ export default async function HomePage() {
             badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
             group={resolveGroup(groups, { id: f.authorId, name: f.author })}
             achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
+            avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
           />
         ))}
 
@@ -169,6 +175,7 @@ export default async function HomePage() {
             badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
             group={resolveGroup(groups, { id: f.authorId, name: f.author })}
             achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
+            avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
           />
         ))}
 

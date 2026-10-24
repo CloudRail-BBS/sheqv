@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { markdownToText } from '@/lib/markdown';
 import type { FeedItem } from '@/lib/data';
 import type { BadgeInfo } from '@/lib/badges';
 import type { EarnedBadge } from '@/lib/achievements';
@@ -17,12 +18,15 @@ export function PostCard({
   badge,
   group,
   achievements,
+  avatar,
 }: {
   item: Item;
   badge?: BadgeInfo;
   /** 作者的身份组（名字 + 颜色） */
   group?: UserGroup;
   achievements?: EarnedBadge[];
+  /** 作者头像；空则用昵称首字 */
+  avatar?: string;
 }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(item.likes);
@@ -43,7 +47,14 @@ export function PostCard({
   return (
     <article className="card post">
       <div className="post-head">
-        <div className="post-avatar">{item.author.slice(0, 1)}</div>
+        <div className="post-avatar">
+          {avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatar} alt="" />
+          ) : (
+            item.author.slice(0, 1)
+          )}
+        </div>
         <div>
           <div className="post-meta">
             <b>{item.author}</b>
@@ -71,7 +82,7 @@ export function PostCard({
       <h3 className="post-title">
         <Link href={href}>{item.title ?? item.body.slice(0, 30)}</Link>
       </h3>
-      <p className="post-body">{item.body}</p>
+      <p className="post-body">{markdownToText(item.body)}</p>
 
       <div className="post-tags">
         {item.tags.map((t) => (

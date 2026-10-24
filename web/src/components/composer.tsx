@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { MarkdownEditor } from './markdown-editor';
 
 const TOPICS = ['地图', '整合包', '材质', '约战', '招募', '提问'];
 
@@ -11,9 +12,11 @@ interface Props {
   nickname: string | null;
   /** 是否已签署社区公约 */
   signed: boolean;
+  /** 头像；空则用昵称首字 */
+  avatar?: string;
 }
 
-export function Composer({ nickname, signed }: Props) {
+export function Composer({ nickname, signed, avatar }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -21,6 +24,44 @@ export function Composer({ nickname, signed }: Props) {
   const [tags, setTags] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // 草稿：本地保存，刷新/误关不丢；发布成功后清掉
+  useEffect(() => {
+    if (!nickname) return;
+    try {
+      const raw = localStorage.getItem(`ba-draft-${nickname}`);
+      if (!raw) return;
+      const d = JSON.parse(raw) as { title?: string; body?: string; tags?: string[] };
+      if (d.body || d.title) {
+        setTitle(d.title ?? '');
+        setBody(d.body ?? '');
+        setTags(Array.isArray(d.tags) ? d.tags.slice(0, 3) : []);
+        setOpen(true);
+      }
+    } catch {
+      /* 坏草稿直接忽略 */
+    }
+  }, [nickname]);
+
+  useEffect(() => {
+    if (!nickname) return;
+    try {
+      if (!title.trim() && !body.trim() && tags.length === 0) {
+        localStorage.removeItem(`ba-draft-${nickname}`);
+      } else {
+        localStorage.setItem(`ba-draft-${nickname}`, JSON.stringify({ title, body, tags }));
+      }
+    } catch {
+      /* 隐私模式下 localStorage 可能被禁 */
+    }
+  }, [nickname, title, body, tags]);
+
+  const avatarNode = avatar ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="post-avatar-img" src={avatar} alt="" />
+  ) : (
+    nickname?.slice(0, 1) ?? '?'
+  );
 
   async function submit() {
     setBusy(true);
@@ -37,6 +78,11 @@ export function Composer({ nickname, signed }: Props) {
       setBody('');
       setTags([]);
       setOpen(false);
+      try {
+        localStorage.removeItem(`ba-draft-${nickname}`);
+      } catch {
+        /* ignore */
+      }
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : '发布失败');
@@ -70,7 +116,7 @@ export function Composer({ nickname, signed }: Props) {
     return (
       <div className="card composer">
         <div className="composer-top">
-          <div className="post-avatar">{nickname.slice(0, 1)}</div>
+          <div className="post-avatar">{avatarNode}</div>
           <div className="composer-input" style={{ color: 'var(--amber)' }}>
             签署《社区公约》后才能发帖
           </div>
@@ -88,7 +134,7 @@ export function Composer({ nickname, signed }: Props) {
   return (
     <div className="card composer">
       <div className="composer-top">
-        <div className="post-avatar">{nickname.slice(0, 1)}</div>
+        <div className="post-avatar">{avatarNode}</div>
         {open ? (
           <input
             className="input grow"
@@ -110,14 +156,15 @@ export function Composer({ nickname, signed }: Props) {
 
       {open && (
         <>
-          <textarea
-            className="input textarea"
-            style={{ marginTop: 10, width: '100%' }}
-            rows={4}
-            placeholder="正文（至少 10 字）。可以贴链接、写配置、讲清楚复现步骤。"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
+          <div style={{ marginTop: 10 }}>
+            <MarkdownEditor
+              value={body}
+              onChange={setBody}
+              rows={9}
+              placeholder="正文（至少 10 字）。可以贴链接、写配置、讲清楚复现步骤。"
+              onSubmit={submit}
+            />
+          </div>
           <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
             {TOPICS.map((t) => (
               <button
@@ -137,9 +184,8 @@ export function Composer({ nickname, signed }: Props) {
       )}
 
       <div className="composer-actions">
-        <span className="act">图片</span>
-        <span className="act">投票</span>
-        <span className="act">话题</span>
+        <span className="act">支持 Markdown</span>
+        <span className="act">图片可粘贴 / 拖入</span>
         {err ? (
           <span className="tip" style={{ color: 'var(--danger)' }}>
             {err}

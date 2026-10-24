@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { navItem, normalizeTabbar } from '@/lib/nav-config';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { isNavActive, navItem, normalizeTabbar } from '@/lib/nav-config';
 
 const ICONS: Record<string, React.ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5V21H3z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
@@ -46,6 +46,7 @@ const ICONS: Record<string, React.ReactNode> = {
 /** 移动端底部栏：后台配置 key 列表，固定 5 格；未知/不足自动补齐 */
 export function TabBar({ items }: { items?: string }) {
   const pathname = usePathname();
+  const search = useSearchParams();
   const keys = normalizeTabbar(items);
 
   return (
@@ -53,7 +54,7 @@ export function TabBar({ items }: { items?: string }) {
       {keys.map((key) => {
         const item = navItem(key);
         if (!item) return null;
-        const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href.split('?')[0]);
+        const active = isNavActive(pathname, search, item.href);
         return (
           <Link key={key} href={item.href} data-active={active}>
             <span className="tab-pill">
