@@ -59,3 +59,5 @@ apps/android/android/build
 apps/android/android/capacitor-cordova-android-plugins/build
 
 apps/android/releases/*.apk
+
+apps/desktop/releases/*.exe
