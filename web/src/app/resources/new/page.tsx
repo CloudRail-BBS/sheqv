@@ -33,7 +33,12 @@ export default async function NewResourcePage() {
 
   return (
     <div className="col-main">
-      <ResourceUpload teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))} />
+      <ResourceUpload
+        defaultOpen
+        teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
+        nickname={user.nickname}
+        avatar={user.avatar}
+      />
     </div>
   );
 }

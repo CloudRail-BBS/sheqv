@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/current-user';
 import { getDeveloperBoard, listResources } from '@/lib/resource-store';
 import { ResourceCard } from '@/components/resource-card';
+import { ResourceUpload } from '@/components/resource-upload';
+import { listMyDevTeams } from '@/lib/dev-team-store';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import {
@@ -48,6 +50,7 @@ export default async function ResourcesPage({
     }),
     getDeveloperBoard(),
   ]);
+  const teams = user ? await listMyDevTeams() : [];
 
   const totalLikes = items.reduce((n, r) => n + r.likeCount, 0);
   const totalDownloads = items.reduce((n, r) => n + r.downloadCount, 0);
@@ -63,9 +66,17 @@ export default async function ResourcesPage({
               地图、整合包、材质与工具 · 开发者与团队的作品都在这里
             </p>
           </div>
-          <Link href={user ? '/resources/new' : '/login'} className="btn btn-primary btn-sm">
-            {user ? '发布资源' : '登录后发布'}
-          </Link>
+          {user ? (
+            <ResourceUpload
+              teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
+              nickname={user.nickname}
+              avatar={user.avatar}
+            />
+          ) : (
+            <Link href="/login" className="btn btn-primary btn-sm">
+              登录后发布
+            </Link>
+          )}
         </div>
 
         <div className="res-stats">
