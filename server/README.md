@@ -41,6 +41,9 @@
 | GET/POST | `/api/v1/matches` | 约战列表 / 发起（需诚信公约） |
 | GET | `/api/v1/matches/{id}` | 约战详情 |
 | POST | `/api/v1/matches/{id}/accept` | 应战方负责人接受并锁定 |
+| GET | `/api/v1/app/latest?platform=&channel=` | 客户端最新版本 |
+| GET/POST | `/api/v1/admin/apps` | 后台版本列表 / 发布 |
+| PATCH/DELETE | `/api/v1/admin/apps/{id}` | 后台修改 / 删除版本 |
 | GET | `/api/v1/policies` | 已发布政策列表 |
 | GET | `/api/v1/policies/{slug}` | 政策详情 |
 | GET/POST | `/api/v1/admin/policies` | 后台政策列表 / 新建 |

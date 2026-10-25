@@ -38,6 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/sponsors'), lastModified: now, changeFrequency: 'weekly', priority: 0.4 },
     { url: url('/agreements'), lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
     { url: url('/policies'), lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
+    { url: url('/download'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
   ];
 
   const [posts, guilds, teams, news, resources, devTeams, policies] = await Promise.all([

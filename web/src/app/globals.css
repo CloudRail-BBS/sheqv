@@ -2994,3 +2994,23 @@ body:has(.auth-page) .app {
   .settings-nav-label { display: none; }
   .settings-nav-item { white-space: nowrap; }
 }
+
+/* 客户端下载页 */
+.download-group { margin-top: 18px; }
+.download-group h2 {
+  font-size: 12px; color: var(--muted); letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.download-card { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.download-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.download-head b { font-size: 14px; }
+.download-meta { font-size: 11px; }
+.download-notes {
+  font-size: 12px; color: var(--text-2); line-height: 1.7;
+  white-space: pre-wrap; max-height: 84px; overflow: hidden;
+}
+.download-btn { margin-top: auto; width: 100%; }
+@media (max-width: 700px) {
+  .download-grid { grid-template-columns: 1fr; }
+}

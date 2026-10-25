@@ -1,6 +1,7 @@
 pub mod achievements;
 pub mod admin;
 pub mod agreements;
+pub mod apps;
 pub mod audit;
 pub mod auth;
 pub mod email_auth;
@@ -72,6 +73,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agreements", get(agreements::list))
         .route("/api/v1/agreements/signatures", get(agreements::signatures))
         .route("/api/v1/agreements/sign", post(agreements::sign))
+        .route("/api/v1/app/latest", get(apps::latest))
         .route("/api/v1/matches", get(matches::list).post(matches::create))
         .route("/api/v1/matches/{id}", get(matches::get))
         .route("/api/v1/matches/{id}/accept", post(matches::accept))

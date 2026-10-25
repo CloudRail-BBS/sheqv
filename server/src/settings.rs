@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 51] = [
+pub const KEYS: [&str; 55] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -33,6 +33,11 @@ pub const KEYS: [&str; 51] = [
     "storageSecretKey",
     "storagePathPrefix",
     "storageForcePathStyle",
+    // 个推（Android 推送）
+    "getuiAppId",
+    "getuiAppKey",
+    "getuiAppSecret",
+    "getuiMasterSecret",
     "publicBaseUrl",
     "geetestId",
     "geetestKey",

@@ -18,6 +18,7 @@ const TABS = [
   { href: '/admin/agreements', label: '公约' },
   { href: '/admin/policies', label: '政策' },
   { href: '/admin/sponsors', label: '赞助' },
+  { href: '/admin/apps', label: '端管理' },
   { href: '/admin/settings', label: '设置' },
 ];
 

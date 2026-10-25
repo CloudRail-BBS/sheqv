@@ -20,6 +20,7 @@ pub mod afdian;
 pub mod agreements;
 pub mod announcements;
 pub mod audit;
+pub mod app_releases;
 pub mod auth;
 pub mod captcha;
 pub mod config;

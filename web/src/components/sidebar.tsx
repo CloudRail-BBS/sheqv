@@ -22,6 +22,7 @@ const I: Record<string, React.ReactNode> = {
   gift: <><path d="M4 9h16v11H4zM3 5h18v4H3zM12 5v15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 5c-1.8 0-4-1-4-2.5S10.5 1 12 5c1.5-4 4-4 4-2.5S13.8 5 12 5Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></>,
   bell: <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
   heart: <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
+  code: <path d="m8 6-5 6 5 6M16 6l5 6-5 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
   doc: <path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
 };
 
@@ -46,6 +47,7 @@ const ICON_BY_KEY: Record<string, React.ReactNode> = {
   sponsors: I.heart,
   agreements: I.doc,
   policies: I.doc,
+  download: I.code,
 };
 
 function Ico({ children }: { children: React.ReactNode }) {

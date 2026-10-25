@@ -36,6 +36,11 @@ export interface SiteSettings {
   storageSecretKey: string;
   storagePathPrefix: string;
   storageForcePathStyle: boolean;
+  /** 个推 Android 推送 */
+  getuiAppId: string;
+  getuiAppKey: string;
+  getuiAppSecret: string;
+  getuiMasterSecret: string;
   publicBaseUrl: string;
   geetestId: string;
   geetestKey: string;
@@ -99,6 +104,10 @@ const DEFAULTS: SiteSettings = {
   storageSecretKey: '',
   storagePathPrefix: 'uploads',
   storageForcePathStyle: true,
+  getuiAppId: '',
+  getuiAppKey: '',
+  getuiAppSecret: '',
+  getuiMasterSecret: '',
   publicBaseUrl: '',
   geetestId: '',
   geetestKey: '',
