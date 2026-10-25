@@ -51,6 +51,8 @@ export interface SiteSettings {
   githubClientSecret: string;
   cnkdClientId: string;
   cnkdClientSecret: string;
+  czlClientId: string;
+  czlClientSecret: string;
   footerText: string;
   footerIcp: string;
   footerLinks: string;
@@ -94,6 +96,7 @@ export interface SiteSettings {
   /** 仅公开投影提供：id + secret 是否都配好 */
   githubEnabled?: boolean;
   cnkdEnabled?: boolean;
+  czlEnabled?: boolean;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -129,6 +132,8 @@ const DEFAULTS: SiteSettings = {
   githubClientSecret: '',
   cnkdClientId: '',
   cnkdClientSecret: '',
+  czlClientId: '',
+  czlClientSecret: '',
   footerText: '',
   footerIcp: '',
   footerLinks: '',

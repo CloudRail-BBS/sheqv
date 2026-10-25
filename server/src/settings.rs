@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 66] = [
+pub const KEYS: [&str; 68] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -48,6 +48,8 @@ pub const KEYS: [&str; 66] = [
     "githubClientSecret",
     "cnkdClientId",
     "cnkdClientSecret",
+    "czlClientId",
+    "czlClientSecret",
     "footerText",
     "footerIcp",
     "footerLinks",
@@ -122,6 +124,8 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("githubClientSecret", json!(""));
     put("cnkdClientId", json!(""));
     put("cnkdClientSecret", json!(""));
+    put("czlClientId", json!(""));
+    put("czlClientSecret", json!(""));
     put("footerText", json!(""));
     put("footerIcp", json!(""));
     put("footerLinks", json!(""));

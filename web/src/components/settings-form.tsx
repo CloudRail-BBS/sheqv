@@ -117,6 +117,8 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         githubClientSecret: form.githubClientSecret,
         cnkdClientId: form.cnkdClientId,
         cnkdClientSecret: form.cnkdClientSecret,
+        czlClientId: form.czlClientId,
+        czlClientSecret: form.czlClientSecret,
         footerText: form.footerText,
         footerIcp: form.footerIcp,
         footerLinks: form.footerLinks,
@@ -530,6 +532,40 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         </div>
         <p className="small muted" style={{ marginTop: 6, wordBreak: 'break-all' }}>
           回调地址：<code>{runtime.effectiveBaseUrl}/api/v1/auth/oauth/cnkd/callback</code>
+        </p>
+
+        <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 12 }}>
+          <label className="field">
+            <span>
+              CZL Connect Client ID
+              {isOverride('czlClientId') && <em className="ovr">已覆盖</em>}
+            </span>
+            <input
+              className="input mono"
+              value={form.czlClientId}
+              onChange={(e) => setForm({ ...form, czlClientId: e.target.value })}
+              placeholder="CZL Connect 应用 Client ID"
+            />
+          </label>
+          <label className="field">
+            <span>
+              CZL Connect Client Secret
+              {isOverride('czlClientSecret') && <em className="ovr">已覆盖</em>}
+            </span>
+            <input
+              className="input mono"
+              type="password"
+              value={form.czlClientSecret}
+              onChange={(e) => setForm({ ...form, czlClientSecret: e.target.value })}
+              placeholder="仅服务端使用"
+            />
+          </label>
+        </div>
+        <p className="small muted" style={{ marginTop: 6, wordBreak: 'break-all' }}>
+          回调地址：<code>{runtime.effectiveBaseUrl}/api/v1/auth/oauth/czl/callback</code>
+        </p>
+        <p className="small muted" style={{ marginTop: 4 }}>
+          使用 CZL Connect OAuth2（scope: read）。ID 与 Secret 都填后，登录/注册页出现按钮。
         </p>
       </div>
 

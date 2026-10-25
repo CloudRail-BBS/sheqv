@@ -42,6 +42,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const providers = {
     github: Boolean(settings.githubEnabled),
     cnkd: Boolean(settings.cnkdEnabled),
+    czl: Boolean(settings.czlEnabled),
   };
 
   return (

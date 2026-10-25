@@ -65,6 +65,9 @@ pub async fn settings(State(st): State<AppState>) -> ApiResult<Response> {
         && !settings::text(&all, "cnkdClientSecret").is_empty();
     out.insert("githubEnabled".into(), json!(github_on));
     out.insert("cnkdEnabled".into(), json!(cnkd_on));
+    let czl_on = !settings::text(&all, "czlClientId").is_empty()
+        && !settings::text(&all, "czlClientSecret").is_empty();
+    out.insert("czlEnabled".into(), json!(czl_on));
 
     // 空字符串表示"用默认文案"，前端自己兜底
     let mut res = Json(json!({ "ok": true, "settings": Value::Object(out) })).into_response();

@@ -10,7 +10,7 @@
   站点设置（表 > 环境变量 > 默认）、首个用户的并发安全（advisory lock）
 - Phase 2：帖子 / 评论 / 点赞、公约与签署（表 + 旧 Cookie 双认）、站内信聚合
 - Phase 3：后台八组（用户 / 帖子 / 设置 / 公约 / 公告 / 轮播 / 赞助 / 爱发电），三条防锁死规则事务化
-- Phase 4：GitHub / CNKD 第三方登录（state + PKCE S256、回调换 token、`(provider, sub)` 建号）
+- Phase 4：GitHub / CNKD / CZL Connect 第三方登录（state + PKCE S256、回调换 token、`(provider, sub)` 建号）
 - 剩余：Phase 5 前端切换、Phase 6 运维
 
 ## 已实现接口
@@ -203,7 +203,7 @@ node scripts/loadtest.mjs --base http://127.0.0.1:8080 --path api/v1/posts \
 |---|---|
 | 公会 / 战队 / 约战 | 均已落库；约战支持发起、接受并锁定名单 |
 | 搜索分词 | 现在是 `ILIKE` 子串匹配；数据量大后要不要换分词待定 |
-| 真实 OAuth | 只测了本地分支，没连过 GitHub / CNKD 真实平台 |
+| 真实 OAuth | 只测了本地分支，没连过 GitHub / CNKD / CZL Connect 真实平台 |
 | 相对时间 | 后端只返 `createdAt`（毫秒），`time` 由前端算 |
 
 ## 约定

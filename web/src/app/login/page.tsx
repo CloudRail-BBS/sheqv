@@ -44,6 +44,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const providers = {
     github: Boolean(settings.githubEnabled),
     cnkd: Boolean(settings.cnkdEnabled),
+    czl: Boolean(settings.czlEnabled),
   };
 
   // 后台「登录页能力条」优先；没配则按当前可用的登录方式生成
@@ -65,6 +66,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     ...(settings.emailLoginEnabled ? [{ title: '邮箱验证码', desc: '收信即登录，免密码' }] : []),
     ...(providers.github ? [{ title: 'GitHub', desc: '授权登录，免注册' }] : []),
     ...(providers.cnkd ? [{ title: 'CNKD', desc: '一证通行，免注册' }] : []),
+    ...(providers.czl ? [{ title: 'CZL Connect', desc: '聚合登录，免注册' }] : []),
   ];
 
   const points = customPoints.length > 0 ? customPoints : methods.slice(0, 3);

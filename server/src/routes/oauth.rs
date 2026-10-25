@@ -78,6 +78,10 @@ fn provider_enabled(p: Provider, s: &Map<String, Value>) -> bool {
             !settings::text(s, "cnkdClientId").is_empty()
                 && !settings::text(s, "cnkdClientSecret").is_empty()
         }
+        Provider::Czl => {
+            !settings::text(s, "czlClientId").is_empty()
+                && !settings::text(s, "czlClientSecret").is_empty()
+        }
     }
 }
 
@@ -103,6 +107,7 @@ pub async fn start(
     let client_id = match p {
         Provider::Github => settings::text(&s, "githubClientId"),
         Provider::Cnkd => settings::text(&s, "cnkdClientId"),
+        Provider::Czl => settings::text(&s, "czlClientId"),
     };
 
     let state = oauth::create_state();
@@ -187,6 +192,10 @@ pub async fn callback(
         Provider::Cnkd => (
             settings::text(&s, "cnkdClientId"),
             settings::text(&s, "cnkdClientSecret"),
+        ),
+        Provider::Czl => (
+            settings::text(&s, "czlClientId"),
+            settings::text(&s, "czlClientSecret"),
         ),
     };
     let redirect_uri = oauth::callback_url(&base, p);
