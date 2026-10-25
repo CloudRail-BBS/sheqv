@@ -258,9 +258,6 @@ export function Composer({ nickname, signed, avatar }: Props) {
           />
           <div className={'composer-panel' + (expanded ? ' is-expanded' : '')}>
             <div className="composer-panel-head">
-              <span className="composer-head-icon" aria-hidden="true">
-                ✎
-              </span>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <b className="composer-head-title">创建帖子</b>
                 <div className="composer-head-sub">以 {nickname} 的身份发布</div>
