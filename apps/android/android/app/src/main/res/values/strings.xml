@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">云轨社区</string>
+    <string name="title_activity_main">云轨社区</string>
+    <string name="package_name">com.cloudrail.community</string>
+    <string name="custom_url_scheme">com.cloudrail.community</string>
+</resources>

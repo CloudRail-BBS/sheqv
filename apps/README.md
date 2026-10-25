@@ -1,7 +1,7 @@
 # 客户端工程
 
 - `desktop/`：Tauri 2，Windows EXE / macOS APP+DMG，远程加载线上 Web。
-- `android/`：Capacitor，Android APK，远程加载线上 Web，含 FileBridge 原生插件参考实现。
+- `android/`：Capacitor，Android APK，远程加载线上 Web；已生成 Android 工程并接入 FileBridge。
 
 ## 前置
 

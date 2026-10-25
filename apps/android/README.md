@@ -1,59 +1,72 @@
 # Capacitor Android 客户端
 
-当前目录是壳工程配置与原生文件插件参考实现，尚未生成完整 `android/` Gradle 工程。
+Android 工程已生成（`android/`），可在 Android Studio 打开或命令行构建。
 
-## 生成 Android 工程
+## 环境
 
-需要 JDK 17 或 21、Android Studio / Android SDK：
+- JDK 17 或 21
+- Android SDK：`platforms;android-34`、`build-tools;34.0.0`
+- Android Studio（可选）
+
+## 配置站点地址
 
 ```bash
 cd apps/android
-npm install
-npx cap add android
-npx cap sync android
-npx cap open android
+APP_URL=https://你的域名 npx cap sync android
 ```
 
-把 `native/FileBridgePlugin.kt` 放到：
+`capacitor.config.ts` 从 `APP_URL` 读取地址；不设置时使用占位域名。
+`allowNavigation` 自动取该域名的 host。
 
-```text
-android/app/src/main/java/com/cloudrail/community/FileBridgePlugin.kt
-```
-
-把 `native/file_paths.xml` 放到 `android/app/src/main/res/xml/file_paths.xml`，
-并把 `native/manifest-snippets.xml` 里的权限/provider 合并进 AndroidManifest。
-
-在 `MainActivity.java` / `.kt` 注册插件：
-
-```kotlin
-registerPlugin(FileBridgePlugin::class.java)
-```
-
-## 修改域名
-
-`capacitor.config.ts` 里的 `server.url` 与 `allowNavigation` 改成实际域名。
-`cleartext` 保持 false。
-
-## 构建
+## 构建 Debug APK
 
 ```bash
-cd android
+cd apps/android/android
+./gradlew assembleDebug
+```
+
+产物：
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## 构建 Release APK
+
+先准备自己的 keystore，并在 `android/app/build.gradle` 配置 signingConfig：
+
+```bash
 ./gradlew assembleRelease
 ```
 
-需要自己的 keystore；APK 直接分发，不走应用商店。
+直接分发 APK 需要自己承担签名、更新与安装未知应用提示。
 
-## 推送
+## 原生能力
 
-集成个推 Android SDK，拿到 CID 后上报服务端。后台 `/admin/apps` 已能保存
-AppID / AppKey / AppSecret / MasterSecret；服务端发送推送的 REST 调用还未接入。
+- `FileBridge` 已注册到 `MainActivity`：
+  - `saveUrlToDownloads`：DownloadManager 下载到公共下载目录
+  - `saveImageToGallery`：MediaStore 保存到 `Pictures/云轨社区`
+  - `saveAs`：SAF 用户选择位置
+  - `shareFile`：FileProvider + 系统分享
+  - `installApk`：应用内更新安装
+- 权限与 FileProvider 已写入 Manifest / `res/xml/file_paths.xml`。
+- 不使用 `MANAGE_EXTERNAL_STORAGE`。
+- Android 13+ 通知权限需在运行时请求。
 
-## 文件能力
+## 个推
 
-- 资源下载：`FileBridge.saveUrlToDownloads`
-- 证书/分享图：`FileBridge.saveImageToGallery`
-- 导出/另存为：`FileBridge.saveAs`（SAF）
-- 分享：`FileBridge.shareFile`
-- 安装更新：`FileBridge.installApk`
+1. 集成个推 Android SDK。
+2. 拿到 CID 后上报服务端（接口待接）。
+3. 后台 `/admin/apps` 已能保存 AppID / AppKey / AppSecret / MasterSecret。
+4. 服务端发送推送的 REST 调用还未接入。
 
-不要申请 `MANAGE_EXTERNAL_STORAGE`。
+## JS 调用
+
+远程页面可通过 Capacitor 注入的桥调用：
+
+```ts
+const { FileBridge } = (window as any).Capacitor.Plugins;
+await FileBridge.saveUrlToDownloads({ url, filename });
+```
+
+建议在 Web 端封装一层 `capabilities` 判断，只在 Android App 内调用。
