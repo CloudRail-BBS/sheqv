@@ -1,12 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MarkdownEditor } from './markdown-editor';
 
 const TOPICS = ['地图', '整合包', '材质', '约战', '招募', '提问'];
-const CATEGORIES = ['常规', '提问', '招募', '约战', '闲聊'];
+const CATEGORIES = [
+  { key: '常规', desc: '日常分享与讨论' },
+  { key: '提问', desc: '求解答、求助' },
+  { key: '招募', desc: '找人组队或加入' },
+  { key: '约战', desc: '发起比赛与约练' },
+  { key: '闲聊', desc: '随便聊聊' },
+];
+const CATEGORY_KEYS = CATEGORIES.map((c) => c.key);
 
 interface Props {
   /** 当前登录用户昵称；null 表示未登录 */
@@ -24,6 +31,8 @@ export function Composer({ nickname, signed, avatar }: Props) {
   const [body, setBody] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [category, setCategory] = useState('常规');
+  const [catOpen, setCatOpen] = useState(false);
+  const catRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -44,7 +53,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
         setTitle(d.title ?? '');
         setBody(d.body ?? '');
         setTags(Array.isArray(d.tags) ? d.tags.slice(0, 3) : []);
-        if (typeof d.category === 'string' && CATEGORIES.includes(d.category)) {
+        if (typeof d.category === 'string' && CATEGORY_KEYS.includes(d.category)) {
           setCategory(d.category);
         }
       }
@@ -68,6 +77,22 @@ export function Composer({ nickname, signed, avatar }: Props) {
       /* 隐私模式下 localStorage 可能被禁 */
     }
   }, [nickname, title, body, tags, category]);
+
+  useEffect(() => {
+    if (!catOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!catRef.current?.contains(e.target as Node)) setCatOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCatOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [catOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -263,26 +288,55 @@ export function Composer({ nickname, signed, avatar }: Props) {
             </div>
 
             <div className="composer-meta">
-              <label className="composer-cat">
+              <div className="composer-cat" ref={catRef}>
                 <span className="composer-meta-label">版块</span>
-                <select
-                  className="composer-select"
-                  value={category}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setCategory(next);
-                    if (next !== '常规') setTags((v) => v.slice(0, 2));
-                  }}
+                <button
+                  type="button"
+                  className="composer-cat-btn"
+                  aria-haspopup="listbox"
+                  aria-expanded={catOpen}
+                  onClick={() => setCatOpen((v) => !v)}
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <span>{category}</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m7 9 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                {catOpen && (
+                  <div className="composer-cat-menu" role="listbox">
+                    {CATEGORIES.map((c) => (
+                      <button
+                        key={c.key}
+                        type="button"
+                        className="composer-cat-option"
+                        data-on={category === c.key}
+                        role="option"
+                        aria-selected={category === c.key}
+                        onClick={() => {
+                          setCategory(c.key);
+                          if (c.key !== '常规') setTags((v) => v.slice(0, 2));
+                          setCatOpen(false);
+                        }}
+                      >
+                        <span>
+                          <b>{c.key}</b>
+                          <em>{c.desc}</em>
+                        </span>
+                        {category === c.key && (
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="composer-tags-line">
-                <span className="composer-meta-label">标签</span>
+                <span className="composer-meta-label">
+                  标签
+                  <em className="composer-meta-hint">最多 {category === '常规' ? 3 : 2} 个</em>
+                </span>
                 <div className="composer-topic-row">
                   {TOPICS.map((t) => {
                     const limit = category === '常规' ? 3 : 2;
@@ -290,7 +344,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
                       <button
                         key={t}
                         type="button"
-                        className="chip"
+                        className="composer-tag"
                         data-on={tags.includes(t)}
                         onClick={() =>
                           setTags((v) =>
@@ -300,7 +354,8 @@ export function Composer({ nickname, signed, avatar }: Props) {
                           )
                         }
                       >
-                        #{t}
+                        <span>#</span>
+                        {t}
                       </button>
                     );
                   })}
