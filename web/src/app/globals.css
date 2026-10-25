@@ -2936,3 +2936,61 @@ body:has(.auth-page) .app {
   .res-meta-grid { grid-template-columns: 1fr 1fr; padding-left: 0; }
   .res-composer-extra { grid-template-columns: 1fr; padding: 10px 14px; }
 }
+
+/* ── 后台设置：分区页 + 侧栏（补回丢失的样式） ── */
+
+.settings-layout {
+  display: grid; grid-template-columns: 188px minmax(0, 1fr);
+  gap: 14px; margin-top: 12px; align-items: start;
+}
+.settings-nav {
+  padding: 12px; position: sticky; top: 70px;
+}
+.settings-nav .rail-title { margin-bottom: 4px; }
+.settings-nav-group { margin-top: 12px; }
+.settings-nav-label {
+  padding: 0 9px; margin-bottom: 3px;
+  font-size: 9.5px; color: var(--muted); letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.settings-nav-item {
+  display: block; padding: 7px 9px; border-radius: 7px;
+  font-size: 12px; color: var(--text-2);
+  transition: background 0.14s, color 0.14s;
+}
+.settings-nav-item:hover { background: var(--panel-2); color: var(--text); }
+.settings-nav-item[data-active="true"] {
+  background: var(--blue-soft); color: var(--blue); font-weight: 600;
+}
+.settings-main { min-width: 0; }
+.settings-main-title { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+.settings-main-desc {
+  margin-top: 3px; font-size: 11.5px; color: var(--muted); line-height: 1.7;
+}
+
+.settings-sections > [data-section] { display: none; }
+.settings-sections[data-active-section="site"] > [data-section="site"],
+.settings-sections[data-active-section="nav"] > [data-section="nav"],
+.settings-sections[data-active-section="seo"] > [data-section="seo"],
+.settings-sections[data-active-section="storage"] > [data-section="storage"],
+.settings-sections[data-active-section="login"] > [data-section="login"],
+.settings-sections[data-active-section="moderation"] > [data-section="moderation"],
+.settings-sections[data-active-section="integrations"] > [data-section="integrations"],
+.settings-sections[data-active-section="content"] > [data-section="content"],
+.settings-sections[data-active-section="system"] > [data-section="system"] {
+  display: block;
+}
+.settings-save { margin-top: 14px; }
+
+@media (max-width: 860px) {
+  .settings-layout { grid-template-columns: 1fr; }
+  .settings-nav {
+    position: static; display: flex; gap: 8px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .settings-nav::-webkit-scrollbar { display: none; }
+  .settings-nav .rail-title { display: none; }
+  .settings-nav-group { display: flex; gap: 4px; margin-top: 0; flex: none; }
+  .settings-nav-label { display: none; }
+  .settings-nav-item { white-space: nowrap; }
+}
