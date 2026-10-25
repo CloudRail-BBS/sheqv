@@ -10,8 +10,7 @@
 
 ## 域名
 
-两个工程里的 `https://your-domain.example` 都要替换成实际站点地址，例如
-`https://bbs.example.com`。客户端只允许这个域名导航。
+两个工程默认加载 `https://crbbsx.com`。客户端只允许这个域名导航。
 
 ## 发布
 

@@ -12,7 +12,7 @@ Android 工程已生成（`android/`），可在 Android Studio 打开或命令�
 
 ```bash
 cd apps/android
-APP_URL=https://你的域名 npx cap sync android
+APP_URL=https://crbbsx.com npx cap sync android
 ```
 
 `capacitor.config.ts` 从 `APP_URL` 读取地址；不设置时使用占位域名。
