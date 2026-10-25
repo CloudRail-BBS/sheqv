@@ -61,3 +61,9 @@ apps/android/android/capacitor-cordova-android-plugins/build
 apps/android/releases/*.apk
 
 apps/desktop/releases/*.exe
+
+apps/android/keystore/
+
+apps/desktop/certs/
+
+apps/desktop/tauri.signing.conf.json

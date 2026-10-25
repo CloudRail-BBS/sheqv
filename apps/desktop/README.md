@@ -28,10 +28,10 @@ npm run build
 
 ## 签名
 
-- Windows 没有证书时 SmartScreen 会提示“未知发布者”；
-  后续配置 `bundle.windows.certificateThumbprint` 或 CI 签名。
+- 本地已生成自签代码签名证书：`apps/desktop/certs/`（已 gitignore）。
+- 当前 EXE / 安装包已用该证书签名；其他电脑仍需导入 `.cer` 才会信任。
+- 正式对外分发建议购买 OV/EV 代码签名证书，否则 SmartScreen 仍会提示。
 - macOS 需要 Apple Developer ID + notarization；否则 Gatekeeper 会拦截。
-  直接分发时用户需要右键打开或手动移除 quarantine。
 
 ## 自动更新
 

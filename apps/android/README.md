@@ -33,13 +33,17 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ## 构建 Release APK
 
-先准备自己的 keystore，并在 `android/app/build.gradle` 配置 signingConfig：
+项目已在 `android/app/build.gradle` 读取 `../keystore/keystore.properties`，
+用本地 release keystore 自动签名：
 
 ```bash
 ./gradlew assembleRelease
 ```
 
-直接分发 APK 需要自己承担签名、更新与安装未知应用提示。
+产物：`android/app/build/outputs/apk/release/app-release.apk`。
+
+keystore 与密码在 `apps/android/keystore/`（已 gitignore），请立刻离线备份；
+丢失后无法覆盖安装更新。
 
 ## 原生能力
 
