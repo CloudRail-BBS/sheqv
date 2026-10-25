@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { fmtNum, fmtSize, gameLabel, gameShort, gameTone, type ResourceView } from '@/lib/resource-types';
+import { UserHoverCard } from './user-hover-card';
 
 /**
  * 资源卡片。
@@ -26,7 +27,9 @@ export function ResourceCard({ item }: { item: ResourceView }) {
           <span>{item.category}</span>
           <span>·</span>
           <span className="res-author">
-            {item.author}
+            <UserHoverCard userId={item.authorId} name={item.author}>
+              <span>{item.author}</span>
+            </UserHoverCard>
             {item.authorDeveloper && <span className="dev-chip">开发者</span>}
           </span>
           {item.teamName && (

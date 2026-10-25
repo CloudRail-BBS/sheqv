@@ -10,6 +10,7 @@ import type { UserGroup } from '@/lib/users';
 import { UserBadge } from './user-badge';
 import { GroupTag } from './group-tag';
 import { AchievementChips } from './achievement-chips';
+import { UserHoverCard } from './user-hover-card';
 
 type Item = FeedItem & { href?: string };
 
@@ -57,7 +58,15 @@ export function PostCard({
         </div>
         <div>
           <div className="post-meta">
-            <b>{item.author}</b>
+            <UserHoverCard
+              userId={item.authorId}
+              name={item.author}
+              avatar={avatar}
+              badge={badge}
+              group={group}
+            >
+              <b>{item.author}</b>
+            </UserHoverCard>
             <UserBadge badge={badge} />
             <GroupTag group={group} size="sm" />
             <span className="sep">·</span>

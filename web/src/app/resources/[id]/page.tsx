@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserHoverCard } from '@/components/user-hover-card';
 import { notFound } from 'next/navigation';
 import { getRequestCaps } from '@/lib/request-caps';
 import { getCurrentUser } from '@/lib/current-user';
@@ -105,7 +106,9 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
               </span>
               <div>
                 <div className="row" style={{ gap: 6 }}>
-                  <b>{item.author}</b>
+                  <UserHoverCard userId={item.authorId} name={item.author}>
+                    <b>{item.author}</b>
+                  </UserHoverCard>
                   {item.authorDeveloper && <span className="dev-chip">开发者</span>}
                 </div>
                 <div className="small muted">

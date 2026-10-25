@@ -11,6 +11,7 @@ import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
+import { UserHoverCard } from '@/components/user-hover-card';
 import { buildMetadata } from '@/lib/seo';
 import { Markdown, markdownToText } from '@/lib/markdown';
 
@@ -84,7 +85,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             </div>
             <div>
               <div className="post-meta">
-                <b>{post.author}</b>
+                <UserHoverCard
+                  userId={post.authorId}
+                  name={post.author}
+                  avatar={postAvatar}
+                  badge={postBadge}
+                  group={postGroup}
+                >
+                  <b>{post.author}</b>
+                </UserHoverCard>
                 <UserBadge badge={postBadge} />
                 <GroupTag group={postGroup} size="sm" />
                 <span className="sep">·</span>
@@ -167,7 +176,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             </span>
             <div>
               <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
-                {post.author}
+                <UserHoverCard
+                  userId={post.authorId}
+                  name={post.author}
+                  avatar={postAvatar}
+                  badge={postBadge}
+                  group={postGroup}
+                >
+                  <span>{post.author}</span>
+                </UserHoverCard>
                 <UserBadge badge={postBadge} size="sm" />
                 <GroupTag group={postGroup} size="sm" />
               </div>
