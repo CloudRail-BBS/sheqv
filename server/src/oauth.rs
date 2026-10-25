@@ -19,7 +19,6 @@ pub const TTL_SECS: i64 = 600;
 pub enum Provider {
     Github,
     Cnkd,
-    Czl,
 }
 
 impl Provider {
@@ -27,7 +26,6 @@ impl Provider {
         match raw {
             "github" => Some(Provider::Github),
             "cnkd" => Some(Provider::Cnkd),
-            "czl" | "czlconnect" | "connect" => Some(Provider::Czl),
             _ => None,
         }
     }
@@ -36,7 +34,6 @@ impl Provider {
         match self {
             Provider::Github => "github",
             Provider::Cnkd => "cnkd",
-            Provider::Czl => "czl",
         }
     }
 }
@@ -114,18 +111,6 @@ pub fn authorize_url(
                 .append_pair("code_challenge_method", "S256");
             url.to_string()
         }
-        Provider::Czl => {
-            let mut url = url_with("https://connect.czl.net/oauth2/authorize");
-            url.query_pairs_mut()
-                .append_pair("response_type", "code")
-                .append_pair("client_id", client_id)
-                .append_pair("redirect_uri", redirect_uri)
-                .append_pair("scope", "read")
-                .append_pair("state", state)
-                .append_pair("code_challenge", challenge)
-                .append_pair("code_challenge_method", "S256");
-            url.to_string()
-        }
     }
 }
 
@@ -165,54 +150,37 @@ pub async fn exchange_code(
     redirect_uri: &str,
     verifier: &str,
 ) -> Result<String, OAuthError> {
-    let resp = match provider {
-        Provider::Czl => http
-            .post("https://connect.czl.net/api/oauth2/token")
-            .header("accept", "application/json")
-            .form(&[
-                ("grant_type", "authorization_code"),
-                ("client_id", client_id),
-                ("client_secret", client_secret),
-                ("code", code),
-                ("redirect_uri", redirect_uri),
-                ("code_verifier", verifier),
-            ])
-            .send()
-            .await
-            .map_err(|_| OAuthError::Failed("连不上 CZL Connect 授权接口".into()))?,
-        _ => {
-            let (url, body) = match provider {
-                Provider::Github => (
-                    "https://github.com/login/oauth/access_token",
-                    json!({
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "code": code,
-                        "redirect_uri": redirect_uri,
-                        "code_verifier": verifier,
-                    }),
-                ),
-                Provider::Cnkd => (
-                    "https://cloud.cnkd.fun/api-control/account/oauth/token",
-                    json!({
-                        "grant_type": "authorization_code",
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "code": code,
-                        "redirect_uri": redirect_uri,
-                        "code_verifier": verifier,
-                    }),
-                ),
-                Provider::Czl => unreachable!(),
-            };
-            http.post(url)
-                .header("accept", "application/json")
-                .json(&body)
-                .send()
-                .await
-                .map_err(|_| OAuthError::Failed("连不上平台授权接口".into()))?
-        }
+    let (url, body) = match provider {
+        Provider::Github => (
+            "https://github.com/login/oauth/access_token",
+            json!({
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "code_verifier": verifier,
+            }),
+        ),
+        Provider::Cnkd => (
+            "https://cloud.cnkd.fun/api-control/account/oauth/token",
+            json!({
+                "grant_type": "authorization_code",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "code_verifier": verifier,
+            }),
+        ),
     };
+
+    let resp = http
+        .post(url)
+        .header("accept", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|_| OAuthError::Failed("连不上平台授权接口".into()))?;
 
     let ok = resp.status().is_success();
     let data: Value = resp
@@ -241,19 +209,6 @@ pub async fn exchange_code(
                     data["error"]["message"]
                         .as_str()
                         .unwrap_or("CNKD 授权失败")
-                        .to_string(),
-                ));
-            }
-            Ok(token.to_string())
-        }
-        Provider::Czl => {
-            let token = data["access_token"].as_str().unwrap_or("");
-            if !ok || token.is_empty() {
-                return Err(OAuthError::Failed(
-                    data["error_description"]
-                        .as_str()
-                        .or_else(|| data["error"].as_str())
-                        .unwrap_or("CZL Connect 授权失败")
                         .to_string(),
                 ));
             }
@@ -364,43 +319,6 @@ pub async fn fetch_profile(
                 login,
                 display_name: info["displayName"].as_str().map(str::to_string),
                 avatar: info["avatarUrl"].as_str().map(str::to_string),
-            })
-        }
-        Provider::Czl => {
-            let resp = http
-                .get("https://connect.czl.net/api/oauth2/userinfo")
-                .header("accept", "application/json")
-                .bearer_auth(access_token)
-                .send()
-                .await
-                .map_err(|_| OAuthError::Failed("连不上 CZL Connect API".into()))?;
-
-            if !resp.status().is_success() {
-                let msg = read_error(resp).await;
-                return Err(OAuthError::Failed(msg));
-            }
-            let data: Value = resp
-                .json()
-                .await
-                .map_err(|_| OAuthError::Failed("CZL Connect 返回的不是合法 JSON".into()))?;
-
-            let id = data["id"]
-                .as_i64()
-                .or_else(|| data["id"].as_str().and_then(|s| s.parse().ok()));
-            let Some(id) = id else {
-                return Err(OAuthError::Failed("CZL Connect 资料缺少 id".into()));
-            };
-            let login = data["username"]
-                .as_str()
-                .filter(|s| !s.is_empty())
-                .or_else(|| data["nickname"].as_str())
-                .unwrap_or("czl_user");
-
-            Ok(Profile {
-                sub: id.to_string(),
-                login: login.to_string(),
-                display_name: data["nickname"].as_str().map(str::to_string),
-                avatar: data["avatar"].as_str().map(str::to_string),
             })
         }
     }

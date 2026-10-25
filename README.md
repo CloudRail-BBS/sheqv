@@ -16,7 +16,7 @@ Minecraft / Roblox 玩家社区 + 赛事确权平台。
 | 框架 | Next.js 15（App Router）+ React 19 + TypeScript |
 | 样式 | 手写 CSS，**零 UI 依赖**；深色为黑白灰阶，浅色为独立色值（CSS 变量） |
 | 存储 | 文件型 JSON（`$DATA_DIR/*.json`），原子写 + 进程内串行 |
-| 账号 | scrypt 密码哈希 + HMAC 签名会话 Cookie；支持用户名/邮箱、GitHub、CNKD、CZL Connect 登录 |
+| 账号 | scrypt 密码哈希 + HMAC 签名会话 Cookie；支持用户名/邮箱、GitHub、CNKD 登录 |
 | 配置 | 业务配置在后台 `/admin/settings`（含站点名与 Logo）；进程参数与密钥在 `.env` |
 | 人机验证 | GeeTest v4（注册 / 登录，服务端二次校验） |
 | 部署 | Docker（standalone 产物）/ systemd，反代用 nginx 或 Caddy |
@@ -63,7 +63,7 @@ npm run dev                   # http://localhost:8900（默认端口 8900）
 ## 已实现
 
 - **账号**：注册 / 登录 / 退出、首个用户即管理员、scrypt 哈希、签名会话
-- **登录**：用户名/邮箱 + 密码、GitHub OAuth、CNKD 一证通行、CZL Connect 聚合登录（OAuth 2.0 + PKCE），第三方首次登录自动建号
+- **登录**：用户名/邮箱 + 密码、GitHub OAuth、CNKD 一证通行（OAuth 2.0 + PKCE），第三方首次登录自动建号
 - **徽章**：按行为自动判定（发帖 / 评论 / 获赞 / 注册时长 / 赞助 / 管理员）
 - **社区**：Markdown 悬浮发帖弹窗（工具栏 / 预览 / 草稿 / 粘贴图片）、评论、点赞、搜索、空状态引导
 - **作者卡**：帖子/资源作者悬停显示头像、徽标、身份组、开发者与加入时间

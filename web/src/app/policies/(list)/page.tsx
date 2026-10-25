@@ -3,6 +3,8 @@ import { listPolicies } from '@/lib/policy-store';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   return buildMetadata({
     title: '政策与协议',

@@ -129,8 +129,8 @@ export function Geetest({ captchaId, onChange, resetKey }: Props) {
           return;
         }
 
-        // float 是内联滑块，比 bind 的按钮 + 弹窗更稳，也不会被父容器的 overflow 裁掉
-        init({ captchaId, product: 'float', hideBar: ['close'], language: 'zho' }, (captcha) => {
+        // bind 直接把验证组件嵌进容器；float 的悬浮按钮在弹窗里容易被裁掉
+        init({ captchaId, product: 'bind', hideBar: ['close'], language: 'zho' }, (captcha) => {
           if (disposed || !box.current) return;
           inst.current = captcha;
 

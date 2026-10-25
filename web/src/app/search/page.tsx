@@ -7,6 +7,8 @@ import { gameLabel, gameTone } from '@/lib/resource-types';
 import { listOrgs } from '@/lib/orgs';
 import { formatBytes } from '@/lib/capabilities';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   return buildMetadata({ title: '搜索', path: '/search', noIndex: true });
 }

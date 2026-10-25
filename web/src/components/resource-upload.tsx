@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { RESOURCE_CATEGORIES, RESOURCE_GAMES, RESOURCE_LICENSES } from '@/lib/resource-types';
 import { MarkdownEditor } from './markdown-editor';
@@ -45,6 +46,7 @@ export function ResourceUpload({
   triggerLabel?: string;
 }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -54,6 +56,8 @@ export function ResourceUpload({
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const [uploadName, setUploadName] = useState('');
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -198,7 +202,7 @@ export function ResourceUpload({
         </button>
       )}
 
-      {open && (
+      {mounted && open && createPortal(
         <div className="composer-modal" role="dialog" aria-modal="true" aria-label="发布资源">
           <button
             type="button"
@@ -392,7 +396,7 @@ export function ResourceUpload({
             />
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }

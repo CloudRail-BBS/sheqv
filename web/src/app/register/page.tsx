@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { buildMetadata } from '@/lib/seo';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { countUsers } from '@/lib/users';
 import { publicCaptchaId } from '@/lib/geetest';
 import { getSettings } from '@/lib/settings';
 import { RegisterForm } from '@/components/auth-forms';
-import { BrandMark } from '@/components/brand-mark';
+import { AuthModal } from '@/components/auth-modal';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,11 @@ const ERRORS: Record<string, string> = {
   oauth_failed: '第三方登录失败，请稍后再试',
 };
 
-export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await getCurrentUser();
   if (user) redirect('/me');
 
@@ -35,81 +39,56 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     publicCaptchaId(),
     searchParams,
   ]);
-
   const code = sp.error ?? '';
   const initialError = code ? (ERRORS[code] ?? '第三方登录失败，请稍后再试') : null;
-
   const providers = {
     github: Boolean(settings.githubEnabled),
     cnkd: Boolean(settings.cnkdEnabled),
-    czl: Boolean(settings.czlEnabled),
   };
 
+  if (!settings.allowRegister) {
+    return (
+      <AuthModal
+        settings={settings}
+        title="暂停注册"
+        desc="管理员暂时关闭了新账号注册，已有账号仍可正常登录。"
+        footer={<span>如果你已经有账号，直接登录即可。</span>}
+      >
+        <Link href="/login" className="btn btn-primary" style={{ width: '100%' }}>
+          去登录
+        </Link>
+      </AuthModal>
+    );
+  }
+
   return (
-    <div className="cols">
-      <div className="col-main">
-        <div className="auth-wrap">
-          {settings.allowRegister ? (
-            <RegisterForm
-              captchaId={captchaId}
-              providers={providers}
-              logo={<BrandMark settings={settings} />}
-              siteName={settings.siteName}
-              hint={settings.registerHint}
-              initialError={initialError}
-              isFirst={total === 0}
-            />
-          ) : (
-            <div className="card card-pad">
-              <h1 className="page-title" style={{ fontSize: 20 }}>
-                暂停注册
-              </h1>
-              <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
-                管理员暂时关闭了新账号注册。已有账号仍可正常登录。
-              </p>
-              <a href="/login" className="btn btn-primary" style={{ width: '100%', marginTop: 16 }}>
-                去登录
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">关于账号</div>
-          <div className="rule-list">
-            <div className="rule-row">
-              <span className="n">1</span>
-              <span>第一个注册的账号自动成为管理员，没有内置管理员账号</span>
-            </div>
-            <div className="rule-row">
-              <span className="n">2</span>
-              <span>密码用 scrypt 加盐哈希存储，服务端不可还原</span>
-            </div>
-            <div className="rule-row">
-              <span className="n">3</span>
-              <span>注册与登录都会做人机验证，防止机器人批量注册</span>
-            </div>
-            {(providers.github || providers.cnkd) && (
-              <div className="rule-row">
-                <span className="n">4</span>
-                <span>也可以直接用 GitHub / CNKD 登录，自动建号，无需另填密码</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="card rail-card">
-          <div className="rail-title">注册之后</div>
-          <p className="small muted" style={{ lineHeight: 1.8 }}>
-            还要签署《社区公约》才能发帖与评论；参与约战需要另外签署《诚信公约》。
-          </p>
-          <Link href="/agreements" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 10 }}>
-            查看两份公约
+    <AuthModal
+      settings={settings}
+      title={total === 0 ? '创建第一个账号' : '创建账号'}
+      desc={
+        total === 0
+          ? '这是本站的第一个账号，注册后自动成为管理员。'
+          : settings.registerHint || '注册后即可发帖、评论与签署公约。'
+      }
+      footer={
+        <span>
+          已有账号？{' '}
+          <Link href="/login" className="auth-link">
+            直接登录
           </Link>
-        </div>
-      </aside>
-    </div>
+        </span>
+      }
+    >
+      <RegisterForm
+        captchaId={captchaId}
+        providers={providers}
+        logo={null}
+        siteName={settings.siteName}
+        hint={settings.registerHint}
+        initialError={initialError}
+        isFirst={total === 0}
+        bare
+      />
+    </AuthModal>
   );
 }

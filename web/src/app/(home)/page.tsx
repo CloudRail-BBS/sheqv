@@ -23,6 +23,8 @@ import { PostCard } from '@/components/post-card';
 import { Carousel } from '@/components/carousel';
 import { buildMetadata, websiteJsonLd } from '@/lib/seo';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   return buildMetadata({ path: '/' });
 }

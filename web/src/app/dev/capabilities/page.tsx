@@ -13,6 +13,8 @@ import {
 import { ForceSwitch } from '@/components/force-switch';
 import { BootstrapProbe } from '@/components/bootstrap-probe';
 
+export const dynamic = 'force-dynamic';
+
 function withWechat(base: Capabilities): Capabilities {
   const out = JSON.parse(JSON.stringify(base)) as Capabilities;
   for (const [group, items] of Object.entries(WECHAT_OVERRIDES)) {

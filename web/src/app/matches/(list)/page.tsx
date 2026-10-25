@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   return buildMetadata({
     title: '约战',

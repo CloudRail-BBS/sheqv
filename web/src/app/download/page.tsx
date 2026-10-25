@@ -3,6 +3,8 @@ import { latestRelease } from '@/lib/app-store';
 import { APP_PLATFORMS, fmtBytes } from '@/lib/app-release-types';
 import { buildMetadata } from '@/lib/seo';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   return buildMetadata({
     title: '客户端下载',

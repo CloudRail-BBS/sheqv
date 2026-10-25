@@ -4,6 +4,8 @@ import { listActive } from '@/lib/agreement-store';
 import { SignAgreement } from '@/components/sign-agreement';
 import { getCurrentUser } from '@/lib/current-user';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AgreementsPage() {
   const user = await getCurrentUser();
   const agreements = await listActive();

@@ -10,7 +10,7 @@ import { badgeOf, type BadgeMap } from './badges';
  */
 
 export type Role = 'admin' | 'member';
-export type Provider = 'github' | 'cnkd' | 'czl';
+export type Provider = 'github' | 'cnkd';
 
 /** 身份组的展示快照：名字与颜色，权限判定永远在后端 */
 export interface UserGroup {

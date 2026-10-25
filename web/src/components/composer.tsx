@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { MarkdownEditor } from './markdown-editor';
 
@@ -26,6 +27,7 @@ interface Props {
 
 export function Composer({ nickname, signed, avatar }: Props) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -38,6 +40,8 @@ export function Composer({ nickname, signed, avatar }: Props) {
   const [err, setErr] = useState<string | null>(null);
 
   // 草稿：本地保存，刷新/误关不丢；发布成功后清掉
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     const onOpen = () => setOpen(true);
     window.addEventListener('open-composer', onOpen);
@@ -258,7 +262,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
         </div>
       </div>
 
-      {open && (
+      {mounted && open && createPortal(
         <div className="composer-modal" role="dialog" aria-modal="true" aria-label="创建帖子">
           <button
             type="button"
@@ -422,7 +426,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
             />
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }
