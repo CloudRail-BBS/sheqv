@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 43] = [
+pub const KEYS: [&str; 51] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -24,6 +24,15 @@ pub const KEYS: [&str; 43] = [
     "seoIndex",
     "seoVerification",
     "seoTwitter",
+    // 对象存储（S3 兼容：阿里云 OSS / 雨云 ROS）
+    "storageDriver",
+    "storageEndpoint",
+    "storageRegion",
+    "storageBucket",
+    "storageAccessKey",
+    "storageSecretKey",
+    "storagePathPrefix",
+    "storageForcePathStyle",
     "publicBaseUrl",
     "geetestId",
     "geetestKey",

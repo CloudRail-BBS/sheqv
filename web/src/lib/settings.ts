@@ -27,6 +27,15 @@ export interface SiteSettings {
   seoVerification: string;
   /** Twitter 分享卡片账号，如 @cloudrail */
   seoTwitter: string;
+  /** db = PostgreSQL bytea；s3 = 对象存储（阿里云 OSS / 雨云 ROS） */
+  storageDriver: string;
+  storageEndpoint: string;
+  storageRegion: string;
+  storageBucket: string;
+  storageAccessKey: string;
+  storageSecretKey: string;
+  storagePathPrefix: string;
+  storageForcePathStyle: boolean;
   publicBaseUrl: string;
   geetestId: string;
   geetestKey: string;
@@ -82,6 +91,14 @@ const DEFAULTS: SiteSettings = {
   seoIndex: true,
   seoVerification: '',
   seoTwitter: '',
+  storageDriver: 'db',
+  storageEndpoint: '',
+  storageRegion: '',
+  storageBucket: '',
+  storageAccessKey: '',
+  storageSecretKey: '',
+  storagePathPrefix: 'uploads',
+  storageForcePathStyle: true,
   publicBaseUrl: '',
   geetestId: '',
   geetestKey: '',

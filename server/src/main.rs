@@ -82,6 +82,7 @@ async fn serve() -> anyhow::Result<()> {
         http,
         ai_http,
         relay: arena_api::relay::Cache::default(),
+        object_store: arena_api::object_storage::Cache::default(),
         started_at: Instant::now(),
     };
 

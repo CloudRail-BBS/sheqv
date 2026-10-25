@@ -27,7 +27,8 @@
 | PATCH | `/api/v1/me` | 头衔与个人主页背景，保留字对普通用户拦截 |
 | GET | `/api/v1/me/chrome` | 顶栏合并读：站内信 + 积分胶囊（登录用户） |
 | POST | `/api/v1/me/media?kind=avatar\|background\|post` | 上传图片（原始字节，≤2MB，魔数校验） |
-| GET | `/api/v1/media/{id}` | 公开读图，长缓存 |
+| GET | `/api/v1/media/{id}` | 公开读图，长缓存（对象存储由后端代理） |
+| POST | `/api/v1/admin/storage/test` | 用当前表单值测试对象存储连接 |
 | GET | `/api/v1/posts[?q=]` | 帖子列表（含评论）；`q` 搜索标题/正文/标签 |
 | POST | `/api/v1/posts` | 需登录 + 社区公约；作者取自会话 |
 | POST | `/api/v1/posts/{id}/like` | 匿名可点、可重复（计数器语义） |

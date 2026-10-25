@@ -10,6 +10,7 @@ publish = false
 anyhow = "1"
 axum = { version = "0.8", features = ["macros"] }
 base64 = "0.22"
+bytes = "1"
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 hmac = "0.12"
@@ -46,6 +47,7 @@ subtle = "2"
 thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time", "net"] }
 tower = "0.5"
+object_store = { version = "0.12", features = ["aws"] }
 tower-http = { version = "0.7", features = ["trace", "compression-gzip", "timeout"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

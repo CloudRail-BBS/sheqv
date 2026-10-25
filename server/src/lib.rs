@@ -35,6 +35,7 @@ pub mod mailer;
 pub mod mcping;
 pub mod netcheck;
 pub mod notifications;
+pub mod object_storage;
 pub mod dev_teams;
 pub mod orgs;
 pub mod points;

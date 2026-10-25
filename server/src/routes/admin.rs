@@ -18,6 +18,7 @@ use crate::admin_auth::AdminActor;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::users;
+use crate::object_storage::{self, StorageConfig};
 use crate::{afdian, agreements, announcements, forum, settings, slides, sponsors};
 
 fn qs(q: &HashMap<String, String>, key: &str) -> String {
@@ -738,6 +739,29 @@ pub async fn delete_sponsor(
 }
 
 /// POST /api/v1/admin/afdian/sync —— 拉取并覆盖快照
+/// POST /api/v1/admin/storage/test —— 用表单当前值测试对象存储（不落库）
+pub async fn storage_test(_: AdminActor, body: Bytes) -> ApiResult<Response> {
+    let Some(payload) = parse_body(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let map = payload;
+    let Some(conf) = StorageConfig::from_values(&map).map_err(|e| {
+        ApiError::with_message(StatusCode::BAD_REQUEST, "storage_config", &e)
+    })? else {
+        return Err(ApiError::with_message(
+            StatusCode::BAD_REQUEST,
+            "storage_not_enabled",
+            "请先选择对象存储",
+        ));
+    };
+
+    object_storage::test(&conf).await.map_err(|e| {
+        ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_test_failed", &e)
+    })?;
+
+    Ok(Json(json!({ "ok": true, "message": "连接成功，已写入并删除测试对象" })).into_response())
+}
+
 pub async fn sync_afdian(State(st): State<AppState>, _: AdminActor) -> ApiResult<Response> {
     let s = settings::load(&st.pool, &st.cfg).await;
     let user_id = settings::text(&s, "afdianUserId");

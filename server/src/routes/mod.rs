@@ -238,6 +238,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/admin/users/{id}/group", patch(groups::assign))
         .route("/api/v1/admin/afdian/sync", post(admin::sync_afdian))
+        .route("/api/v1/admin/storage/test", post(admin::storage_test))
         .route(
             "/api/v1/admin/users/{id}/badges",
             patch(admin::patch_user_badges),

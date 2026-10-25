@@ -6,6 +6,9 @@
 
 use sqlx::PgPool;
 
+use crate::object_storage;
+use crate::state::AppState;
+
 /// 单张图片上限 2MB
 pub const MAX_BYTES: usize = 2 * 1024 * 1024;
 
@@ -30,7 +33,15 @@ pub fn kind_ok(kind: &str) -> bool {
     matches!(kind, "avatar" | "background" | "post")
 }
 
-pub async fn save(
+pub struct StoredMedia {
+    pub mime: String,
+    pub storage: String,
+    pub object_key: String,
+    pub bytes: Option<Vec<u8>>,
+}
+
+/// 存进 PostgreSQL（默认路径）
+pub async fn save_local(
     pool: &PgPool,
     user_id: &str,
     kind: &str,
@@ -39,8 +50,8 @@ pub async fn save(
 ) -> Result<String, sqlx::Error> {
     let id = crate::ids::next('m');
     sqlx::query(
-        "INSERT INTO user_media (id, user_id, kind, mime, bytes, size)
-         VALUES ($1,$2,$3,$4,$5,$6)",
+        "INSERT INTO user_media (id, user_id, kind, mime, bytes, size, storage, object_key)
+         VALUES ($1,$2,$3,$4,$5,$6,'db','')",
     )
     .bind(&id)
     .bind(user_id)
@@ -53,33 +64,80 @@ pub async fn save(
     Ok(id)
 }
 
-pub async fn load(pool: &PgPool, id: &str) -> Result<Option<(String, Vec<u8>)>, sqlx::Error> {
-    let row: Option<(String, Vec<u8>)> =
-        sqlx::query_as("SELECT mime, bytes FROM user_media WHERE id = $1")
-            .bind(id)
-            .fetch_optional(pool)
-            .await?;
-    Ok(row)
+/// 只记对象键，字节已经在桶里
+pub async fn save_object(
+    pool: &PgPool,
+    user_id: &str,
+    kind: &str,
+    mime: &str,
+    object_key: &str,
+    size: usize,
+) -> Result<String, sqlx::Error> {
+    let id = crate::ids::next('m');
+    sqlx::query(
+        "INSERT INTO user_media (id, user_id, kind, mime, bytes, size, storage, object_key)
+         VALUES ($1,$2,$3,$4,NULL,$5,'s3',$6)",
+    )
+    .bind(&id)
+    .bind(user_id)
+    .bind(kind)
+    .bind(mime)
+    .bind(size as i32)
+    .bind(object_key)
+    .execute(pool)
+    .await?;
+    Ok(id)
 }
 
-pub async fn delete_owned(pool: &PgPool, id: &str, user_id: &str) -> Result<bool, sqlx::Error> {
+pub async fn load(pool: &PgPool, id: &str) -> Result<Option<StoredMedia>, sqlx::Error> {
+    let row: Option<(String, String, String, Option<Vec<u8>>)> = sqlx::query_as(
+        "SELECT mime, storage, object_key, bytes FROM user_media WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(mime, storage, object_key, bytes)| StoredMedia {
+        mime,
+        storage,
+        object_key,
+        bytes,
+    }))
+}
+
+pub async fn delete_owned(st: &AppState, id: &str, user_id: &str) -> Result<bool, sqlx::Error> {
+    let row: Option<(String, String)> =
+        sqlx::query_as("SELECT storage, object_key FROM user_media WHERE id = $1 AND user_id = $2")
+            .bind(id)
+            .bind(user_id)
+            .fetch_optional(&st.pool)
+            .await?;
+    let Some((storage, object_key)) = row else {
+        return Ok(false);
+    };
+
+    if storage == "s3" && !object_key.is_empty() {
+        if let Ok(Some((store, _, _))) = st.object_store.resolve(&st.pool, st.cfg.as_ref()).await {
+            let _ = object_storage::delete(&store, &object_key).await;
+        }
+    }
+
     let done = sqlx::query("DELETE FROM user_media WHERE id = $1 AND user_id = $2")
         .bind(id)
         .bind(user_id)
-        .execute(pool)
+        .execute(&st.pool)
         .await?;
     Ok(done.rows_affected() > 0)
 }
 
 /// 只处理本站媒体地址 `/api/v1/media/{id}`；外部 URL 不碰
-pub async fn delete_url(pool: &PgPool, user_id: &str, url: &str) -> Result<bool, sqlx::Error> {
+pub async fn delete_url(st: &AppState, user_id: &str, url: &str) -> Result<bool, sqlx::Error> {
     let Some(id) = url.strip_prefix("/api/v1/media/") else {
         return Ok(false);
     };
     if id.is_empty() || id.contains('/') {
         return Ok(false);
     }
-    delete_owned(pool, id, user_id).await
+    delete_owned(st, id, user_id).await
 }
 
 #[cfg(test)]

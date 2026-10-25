@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteSettings } from '@/lib/settings';
+import type { SettingsSection } from '@/lib/settings-sections';
 import { BrandMark } from './brand-mark';
 import { NavSettings } from './nav-settings';
 
@@ -13,13 +14,63 @@ interface Props {
   overrides: Partial<Record<Key, string | boolean>>;
   /** 只读展示：这些必须留在环境变量里 */
   runtime: { effectiveBaseUrl: string; dataDir: string; port: string };
+  section?: SettingsSection;
 }
 
-export function SettingsForm({ settings, overrides, runtime }: Props) {
+export function SettingsForm({ settings, overrides, runtime, section = 'site' }: Props) {
   const router = useRouter();
   const [form, setForm] = useState(settings);
   const [busy, setBusy] = useState<Key | 'all' | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [storageBusy, setStorageBusy] = useState(false);
+  const [storageMsg, setStorageMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  function applyStoragePreset(preset: 'aliyun' | 'rainyun') {
+    if (preset === 'aliyun') {
+      setForm((f) => ({
+        ...f,
+        storageDriver: 's3',
+        storageEndpoint: 'https://s3.oss-cn-hangzhou.aliyuncs.com',
+        storageRegion: 'cn-hangzhou',
+        storageForcePathStyle: false,
+      }));
+    } else {
+      setForm((f) => ({
+        ...f,
+        storageDriver: 's3',
+        storageEndpoint: 'https://cn-sy1.rains3.com',
+        storageRegion: 'rainyun',
+        storageForcePathStyle: true,
+      }));
+    }
+    setStorageMsg(null);
+  }
+
+  async function testStorage() {
+    setStorageBusy(true);
+    setStorageMsg(null);
+    const res = await fetch('/api/v1/admin/storage/test', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        storageDriver: form.storageDriver,
+        storageEndpoint: form.storageEndpoint,
+        storageRegion: form.storageRegion,
+        storageBucket: form.storageBucket,
+        storageAccessKey: form.storageAccessKey,
+        storageSecretKey: form.storageSecretKey,
+        storagePathPrefix: form.storagePathPrefix,
+        storageForcePathStyle: form.storageForcePathStyle,
+      }),
+    }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as { message?: string } | null;
+    setStorageBusy(false);
+    if (!res?.ok) {
+      setStorageMsg({ kind: 'err', text: data?.message ?? '连接失败' });
+      return;
+    }
+    setStorageMsg({ kind: 'ok', text: data?.message ?? '连接成功' });
+  }
 
   const isOverride = (k: Key) => Object.prototype.hasOwnProperty.call(overrides, k);
 
@@ -40,6 +91,14 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         seoIndex: form.seoIndex,
         seoVerification: form.seoVerification,
         seoTwitter: form.seoTwitter,
+        storageDriver: form.storageDriver,
+        storageEndpoint: form.storageEndpoint,
+        storageRegion: form.storageRegion,
+        storageBucket: form.storageBucket,
+        storageAccessKey: form.storageAccessKey,
+        storageSecretKey: form.storageSecretKey,
+        storagePathPrefix: form.storagePathPrefix,
+        storageForcePathStyle: form.storageForcePathStyle,
         githubClientId: form.githubClientId,
         githubClientSecret: form.githubClientSecret,
         cnkdClientId: form.cnkdClientId,
@@ -100,8 +159,8 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
   }
 
   return (
-    <>
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+    <div className="settings-sections" data-active-section={section}>
+      <div className="card card-pad" data-section="site" style={{ marginBottom: 12 }}>
         <h3 style={{ fontSize: 13 }}>站点</h3>
         <label className="field" style={{ marginTop: 10, maxWidth: 360 }}>
           <span>
@@ -177,7 +236,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         )}
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="login">
         <h3 style={{ fontSize: 13 }}>人机验证（GeeTest v4）</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
           ID 与 KEY 都填才会启用；注册与登录都会校验。填完立即生效，不用重启。
@@ -214,7 +273,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </p>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="moderation">
         <h3 style={{ fontSize: 13 }}>内容审核</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           控制新帖是否先审后发。审核队列在{' '}
@@ -292,7 +351,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         )}
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="login">
         <h3 style={{ fontSize: 13 }}>邮箱验证码登录</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           开启后，登录页会多出「邮箱验证码」方式：输入账号绑定的邮箱，收到 6 位码即可登录，
@@ -380,7 +439,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </p>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="login">
         <h3 style={{ fontSize: 13 }}>第三方登录</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           ID 与 Secret 都填了才会在登录页出现对应按钮。回调地址必须与平台后台登记的**完全一致**。
@@ -449,7 +508,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </p>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="integrations">
         <h3 style={{ fontSize: 13 }}>爱发电赞助</h3>
         <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
           <label className="field">
@@ -490,7 +549,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </p>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="site">
         <h3 style={{ fontSize: 13 }}>功能开关</h3>
         <label className="check" style={{ marginTop: 12 }}>
           <input
@@ -510,18 +569,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </label>
       </div>
 
-      <div className="row" style={{ gap: 8 }}>
-        <button className="btn btn-primary" onClick={save} disabled={busy === 'all'}>
-          {busy === 'all' ? '保存中…' : '保存设置'}
-        </button>
-        {msg && (
-          <span className="small" style={{ color: msg.kind === 'ok' ? 'var(--accent)' : 'var(--danger)' }}>
-            {msg.text}
-          </span>
-        )}
-      </div>
-
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
         <h3 style={{ fontSize: 13 }}>页面文案</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           留空则使用内置默认文案。支持换行，超过两行的内容建议写短一些。
@@ -599,7 +647,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </label>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="seo">
         <div className="between" style={{ marginBottom: 4 }}>
           <h3 style={{ fontSize: 13 }}>SEO 与分享</h3>
           <span className="small muted">保存后立即生效</span>
@@ -707,7 +755,134 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         </p>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="storage">
+        <div className="between" style={{ marginBottom: 4 }}>
+          <h3 style={{ fontSize: 13 }}>对象存储</h3>
+          <span className="small muted">阿里云 OSS / 雨云 ROS（S3 兼容）</span>
+        </div>
+        <p className="small muted" style={{ lineHeight: 1.7 }}>
+          默认把图片存进 PostgreSQL；切换为对象存储后，新上传的图片写入桶，
+          旧图片仍可正常访问。桶可以保持私有，后端会代理读取。
+        </p>
+
+        <label className="field" style={{ marginTop: 12, maxWidth: 320 }}>
+          <span>存储方式</span>
+          <select
+            className="input"
+            value={form.storageDriver}
+            onChange={(e) => {
+              setForm({ ...form, storageDriver: e.target.value });
+              setStorageMsg(null);
+            }}
+          >
+            <option value="db">本地数据库（默认）</option>
+            <option value="s3">对象存储（S3 兼容）</option>
+          </select>
+        </label>
+
+        {form.storageDriver === 's3' && (
+          <>
+            <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => applyStoragePreset('aliyun')}>
+                填入阿里云默认值
+              </button>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => applyStoragePreset('rainyun')}>
+                填入雨云默认值
+              </button>
+              <span className="small muted">
+                只需再填 Bucket / AccessKey / SecretKey；阿里云大陆新用户若被限制，请填自定义域名 Endpoint
+              </span>
+            </div>
+
+            <div className="seo-grid">
+              <label className="field">
+                <span>Endpoint</span>
+                <input
+                  className="input mono"
+                  value={form.storageEndpoint}
+                  onChange={(e) => setForm({ ...form, storageEndpoint: e.target.value })}
+                  placeholder="https://s3.oss-cn-hangzhou.aliyuncs.com"
+                />
+              </label>
+              <label className="field">
+                <span>Region</span>
+                <input
+                  className="input mono"
+                  value={form.storageRegion}
+                  onChange={(e) => setForm({ ...form, storageRegion: e.target.value })}
+                  placeholder="cn-hangzhou / rainyun"
+                />
+              </label>
+              <label className="field">
+                <span>Bucket</span>
+                <input
+                  className="input mono"
+                  value={form.storageBucket}
+                  onChange={(e) => setForm({ ...form, storageBucket: e.target.value })}
+                  placeholder="my-bucket"
+                />
+              </label>
+              <label className="field">
+                <span>路径前缀</span>
+                <input
+                  className="input mono"
+                  value={form.storagePathPrefix}
+                  onChange={(e) => setForm({ ...form, storagePathPrefix: e.target.value })}
+                  placeholder="uploads"
+                />
+              </label>
+              <label className="field">
+                <span>AccessKey</span>
+                <input
+                  className="input mono"
+                  value={form.storageAccessKey}
+                  onChange={(e) => setForm({ ...form, storageAccessKey: e.target.value })}
+                  placeholder="AccessKey ID"
+                />
+              </label>
+              <label className="field">
+                <span>SecretKey</span>
+                <input
+                  className="input mono"
+                  type="password"
+                  value={form.storageSecretKey}
+                  onChange={(e) => setForm({ ...form, storageSecretKey: e.target.value })}
+                  placeholder="Secret Access Key"
+                />
+              </label>
+            </div>
+
+            <label className="switch-row">
+              <input
+                type="checkbox"
+                checked={form.storageForcePathStyle}
+                onChange={(e) => setForm({ ...form, storageForcePathStyle: e.target.checked })}
+              />
+              <span>
+                使用 Path-Style 地址
+                <em className="field-opt">雨云建议开启；阿里云用默认值即可</em>
+              </span>
+            </label>
+
+            <div className="row" style={{ gap: 8, marginTop: 12, alignItems: 'center' }}>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={testStorage} disabled={storageBusy}>
+                {storageBusy ? '测试中…' : '测试连接'}
+              </button>
+              {storageMsg && (
+                <span className="small" style={{ color: storageMsg.kind === 'ok' ? 'var(--blue)' : 'var(--danger)' }}>
+                  {storageMsg.text}
+                </span>
+              )}
+            </div>
+          </>
+        )}
+
+        <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
+          密钥保存在设置表里，请保护数据库备份。切换存储不会迁移旧图片；需要迁移时可继续用后台导出。
+        </p>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
         <h3 style={{ fontSize: 13 }}>页脚</h3>
         <label className="field" style={{ marginTop: 10, maxWidth: 460 }}>
           <span>
@@ -757,7 +932,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
 
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="nav">
         <div className="between" style={{ marginBottom: 4 }}>
           <h3 style={{ fontSize: 13 }}>导航</h3>
           <span className="small muted">保存后立即生效</span>
@@ -769,7 +944,7 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
         />
       </div>
 
-      <div className="card card-pad" style={{ marginTop: 12 }}>
+      <div className="card card-pad" style={{ marginTop: 12 }} data-section="system">
         <h3 style={{ fontSize: 13 }}>留在 .env 里的项（进程参数与密钥）</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           下面这些属于进程启动参数或密钥，改完需要重启服务：
@@ -804,6 +979,17 @@ export function SettingsForm({ settings, overrides, runtime }: Props) {
           密钥以明文保存在数据目录的设置文件里，备份或共享数据目录时请一并保护。
         </p>
       </div>
-    </>
+
+      <div className="row settings-save" style={{ gap: 8 }}>
+        <button className="btn btn-primary" onClick={save} disabled={busy === 'all'}>
+          {busy === 'all' ? '保存中…' : '保存设置'}
+        </button>
+        {msg && (
+          <span className="small" style={{ color: msg.kind === 'ok' ? 'var(--accent)' : 'var(--danger)' }}>
+            {msg.text}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

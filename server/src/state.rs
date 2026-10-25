@@ -17,5 +17,7 @@ pub struct AppState {
     pub ai_http: reqwest::Client,
     /// Rusted Warfare 中转站房间的进程内缓存（按中转站地址，TTL 见 `relay::CACHE_TTL`）
     pub relay: crate::relay::Cache,
+    /// 对象存储客户端缓存；后台改配置后按指纹重建
+    pub object_store: crate::object_storage::Cache,
     pub started_at: Instant,
 }

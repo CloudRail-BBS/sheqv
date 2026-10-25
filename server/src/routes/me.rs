@@ -11,7 +11,7 @@ use crate::current_user::CurrentUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::users;
-use crate::{media, notifications, points};
+use crate::{media, notifications, object_storage, points};
 
 /// POST /api/v1/me/media?kind=avatar|background|post
 ///
@@ -46,9 +46,31 @@ pub async fn upload_media(
         ));
     };
 
-    let id = media::save(&st.pool, &user.id, kind, mime, &body)
+    // 选了对象存储就上传到桶；否则继续走 PostgreSQL bytea
+    let object = st
+        .object_store
+        .resolve(&st.pool, st.cfg.as_ref())
         .await
-        .map_err(ApiError::internal)?;
+        .map_err(|e| {
+            ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e)
+        })?;
+
+    let id = if let Some((store, conf, true)) = object {
+        let object_id = crate::ids::next('o');
+        let key = conf.object_key(kind, &user.id, &object_id, mime);
+        object_storage::put(&store, &key, body.clone())
+            .await
+            .map_err(|e| {
+                ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e)
+            })?;
+        media::save_object(&st.pool, &user.id, kind, mime, &key, body.len())
+            .await
+            .map_err(ApiError::internal)?
+    } else {
+        media::save_local(&st.pool, &user.id, kind, mime, &body)
+            .await
+            .map_err(ApiError::internal)?
+    };
     let url = format!("/api/v1/media/{id}");
 
     if kind == "avatar" {
@@ -57,7 +79,7 @@ pub async fn upload_media(
             .map_err(ApiError::internal)?
         {
             if !user.avatar.is_empty() {
-                let _ = media::delete_url(&st.pool, &user.id, &user.avatar).await;
+                let _ = media::delete_url(&st, &user.id, &user.avatar).await;
             }
             return Ok(Json(json!({ "ok": true, "url": url, "user": updated })).into_response());
         }
@@ -70,7 +92,7 @@ pub async fn upload_media(
             .map_err(ApiError::internal)?
         {
             if !user.profile_bg.is_empty() {
-                let _ = media::delete_url(&st.pool, &user.id, &user.profile_bg).await;
+                let _ = media::delete_url(&st, &user.id, &user.profile_bg).await;
             }
             return Ok(Json(json!({ "ok": true, "url": url, "user": updated })).into_response());
         }
@@ -85,13 +107,38 @@ pub async fn media_file(State(st): State<AppState>, Path(id): Path<String>) -> A
     if id.len() > 40 || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
         return Err(ApiError::not_found());
     }
-    let Some((mime, bytes)) = media::load(&st.pool, &id)
+    let Some(row) = media::load(&st.pool, &id)
         .await
         .map_err(ApiError::internal)?
     else {
         return Err(ApiError::not_found());
     };
 
+    let bytes = if row.storage == "s3" {
+        let resolved = st
+            .object_store
+            .resolve(&st.pool, st.cfg.as_ref())
+            .await
+            .map_err(|e| {
+                ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e)
+            })?;
+        let Some((store, _, _)) = resolved else {
+            return Err(ApiError::with_message(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "storage_unavailable",
+                "对象存储未配置",
+            ));
+        };
+        object_storage::get(&store, &row.object_key)
+            .await
+            .map_err(|e| {
+                ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e)
+            })?
+    } else {
+        row.bytes.unwrap_or_default().into()
+    };
+
+    let mime = row.mime;
     let len = bytes.len();
     let mut res = Response::new(Body::from(bytes));
     let headers = res.headers_mut();
@@ -188,7 +235,7 @@ pub async fn patch_me(
             .await
             .map_err(ApiError::internal)?;
         if raw.is_empty() && !old.is_empty() {
-            let _ = media::delete_url(&st.pool, &user.id, &old).await;
+            let _ = media::delete_url(&st, &user.id, &old).await;
         }
     }
 
@@ -206,7 +253,7 @@ pub async fn patch_me(
             .await
             .map_err(ApiError::internal)?;
         if raw.is_empty() && !old.is_empty() {
-            let _ = media::delete_url(&st.pool, &user.id, &old).await;
+            let _ = media::delete_url(&st, &user.id, &old).await;
         }
     }
 

@@ -226,7 +226,7 @@ export default async function HomePage() {
               <Link key={g.id} href={`/guilds/${g.id}`} className="rail-item">
                 <span className="idx">{i + 1}</span>
                 <span className="crest a" style={{ width: 25, height: 25, fontSize: 10, borderRadius: 7, flex: 'none' }}>
-                  {g.tag}
+                  {g.name.slice(0, 1)}
                 </span>
                 <span
                   style={{
@@ -266,7 +266,7 @@ export default async function HomePage() {
                 <Link key={t.id} href={`/teams/${t.id}`} className="rail-item">
                   <span className="idx">{i + 1}</span>
                   <span className="crest b" style={{ width: 25, height: 25, fontSize: 9, borderRadius: 7, flex: 'none' }}>
-                    {t.tag}
+                    {t.name.slice(0, 1)}
                   </span>
                   <span
                     style={{
