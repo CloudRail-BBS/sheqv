@@ -36,6 +36,9 @@
 | GET | `/api/v1/agreements` | 生效中的公约 |
 | GET | `/api/v1/agreements/signatures` | 当前账号的签署状态 |
 | POST | `/api/v1/agreements/sign` | 写 `signatures` 表 + 兼容旧 `ag_*` Cookie |
+| GET/POST | `/api/v1/matches` | 约战列表 / 发起（需诚信公约） |
+| GET | `/api/v1/matches/{id}` | 约战详情 |
+| POST | `/api/v1/matches/{id}/accept` | 应战方负责人接受并锁定 |
 | GET | `/api/v1/policies` | 已发布政策列表 |
 | GET | `/api/v1/policies/{slug}` | 政策详情 |
 | GET/POST | `/api/v1/admin/policies` | 后台政策列表 / 新建 |
@@ -193,7 +196,7 @@ node scripts/loadtest.mjs --base http://127.0.0.1:8080 --path api/v1/posts \
 
 | 项 | 现状 |
 |---|---|
-| 公会 / 战队 / 约战 | 仍是前端 mock，未落库（不阻塞切换） |
+| 公会 / 战队 / 约战 | 均已落库；约战支持发起、接受并锁定名单 |
 | 搜索分词 | 现在是 `ILIKE` 子串匹配；数据量大后要不要换分词待定 |
 | 真实 OAuth | 只测了本地分支，没连过 GitHub / CNKD 真实平台 |
 | 相对时间 | 后端只返 `createdAt`（毫秒），`time` 由前端算 |

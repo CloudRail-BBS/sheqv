@@ -20,11 +20,13 @@ export function MarkdownEditor({
   variant = 'default',
   leading,
   actions,
+  maxLength,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
+  maxLength?: number;
   onSubmit?: () => void;
   variant?: 'default' | 'composer';
   /** 底部工具栏左侧（发帖时放头像/ME） */
@@ -214,6 +216,7 @@ export function MarkdownEditor({
       rows={rows}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      maxLength={maxLength}
       onPaste={onPaste}
       onDrop={onDrop}
       onKeyDown={onKeyDown}

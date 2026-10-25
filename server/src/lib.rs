@@ -32,6 +32,7 @@ pub mod groups;
 pub mod media;
 pub mod ids;
 pub mod mailer;
+pub mod matches;
 pub mod mcping;
 pub mod netcheck;
 pub mod notifications;

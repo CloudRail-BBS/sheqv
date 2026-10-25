@@ -1,26 +1,33 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getRequestCaps } from '@/lib/request-caps';
-import { GAME_LABEL, MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
-import { MatchActions } from '@/components/match-actions';
+import { getCurrentUser } from '@/lib/current-user';
 import { isTrustSigned } from '@/lib/agreement-state';
+import { getOrg } from '@/lib/orgs';
+import { getMatch } from '@/lib/match-store';
+import { MATCH_GAME_LABEL, MATCH_STATUS_LABEL, fmtMatchTime } from '@/lib/match-types';
+import { MatchAccept } from '@/components/match-accept';
 import { buildMetadata } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const match = MATCHES.find((m) => m.id === id);
+  const match = await getMatch(id);
   if (!match) return buildMetadata({ title: '约战', path: `/matches/${id}`, noIndex: true });
-  return buildMetadata({ title: '约战详情', path: `/matches/${id}` });
+  return buildMetadata({ title: match.title, path: `/matches/${id}` });
 }
 
 export default async function MatchDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const match = MATCHES.find((m) => m.id === id);
+  const [match, user, trustSigned] = await Promise.all([
+    getMatch(id),
+    getCurrentUser(),
+    isTrustSigned(),
+  ]);
   if (!match) notFound();
 
-  const caps = await getRequestCaps();
-  const trustSigned = await isTrustSigned();
-  const { evidenceVideoUpload } = caps.capabilities.match;
+  const opponent = await getOrg(match.opponentKind, match.opponentOrgId);
+  const canAccept =
+    Boolean(user) && opponent?.ownerId === user?.id && match.status === 'pending_accept';
+  const isCreator = user?.id === match.creatorId;
 
   return (
     <div className="cols">
@@ -34,41 +41,38 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
         <div className="card match-head">
           <div className="between">
             <div className="row wrap" style={{ gap: 6 }}>
-              <span className={'badge ' + (match.game === 'mc' ? 'badge-mc' : 'badge-rw')}>{GAME_LABEL[match.game]}</span>
-              <span className="badge">{match.format}</span>
-              <span
-                className={
-                  'badge ' +
-                  (match.status === 'disputed' ? 'badge-danger' : match.status === 'confirmed' ? 'badge-live' : 'badge-warn')
-                }
-              >
-                {MATCH_STATUS_LABEL[match.status]}
+              <span className={'badge ' + (match.game === 'minecraft' ? 'badge-mc' : 'badge-rw')}>
+                {MATCH_GAME_LABEL[match.game] ?? match.game}
               </span>
+              <span className="badge">{match.format}</span>
+              <span className="badge badge-warn">{MATCH_STATUS_LABEL[match.status]}</span>
             </div>
-            <span className="small muted">{match.deadline}</span>
+            <span className="small muted">创建于 {fmtMatchTime(match.createdAt)}</span>
           </div>
 
-          <div className="scoreboard">
+          <h1 className="page-title" style={{ fontSize: 22, marginTop: 14 }}>
+            {match.title}
+          </h1>
+
+          <div className="scoreboard" style={{ marginTop: 14 }}>
             <div className="side">
-              <div className="crest a">{match.guildA.tag}</div>
+              <div className="crest a">{match.creatorTag}</div>
               <div>
-                <div className="side-name">{match.guildA.name}</div>
-                <div className="side-sub">{match.guildA.submitted ? '已提交结果' : '未提交'}</div>
+                <div className="side-name">{match.creatorName}</div>
+                <div className="side-sub">{isCreator ? '发起方 · 你' : '发起方'}</div>
               </div>
             </div>
 
-            <div className="score">
-              {match.guildA.score ?? '–'}
-              <span>:</span>
-              {match.guildB.score ?? '–'}
-            </div>
+            <div className="score">VS</div>
 
             <div className="side right">
               <div>
-                <div className="side-name">{match.guildB.name}</div>
-                <div className="side-sub">{match.guildB.submitted ? '已提交结果' : '未提交'}</div>
+                <div className="side-name">{match.opponentName}</div>
+                <div className="side-sub">
+                  {opponent?.ownerId === user?.id ? '应战方 · 你' : '应战方'}
+                </div>
               </div>
-              <div className="crest b">{match.guildB.tag}</div>
+              <div className="crest b">{match.opponentTag}</div>
             </div>
           </div>
 
@@ -76,54 +80,48 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
             className="row wrap small muted"
             style={{ gap: 16, marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--line-soft)' }}
           >
-            <span>开赛 {match.scheduledAt}</span>
-            <span>地图 {match.maps.join(' / ')}</span>
-            {match.rosterLockedAt && <span>名单锁定 {match.rosterLockedAt}</span>}
+            <span>开赛 {fmtMatchTime(match.scheduledAt)}</span>
+            <span>地图 {match.maps.length > 0 ? match.maps.join(' / ') : '待定'}</span>
+            {match.acceptedAt && <span>名单锁定 {fmtMatchTime(match.acceptedAt)}</span>}
           </div>
         </div>
 
-        {match.rounds && (
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
-              <h3 style={{ fontSize: 13 }}>分局结果</h3>
-            </div>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>地图</th>
-                  <th>{match.guildA.name}</th>
-                  <th>{match.guildB.name}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {match.rounds.map((r) => (
-                  <tr key={r.map}>
-                    <td className="dim">{r.map}</td>
-                    <td className="mono" style={{ color: r.scoreA > r.scoreB ? 'var(--accent)' : undefined }}>
-                      {r.scoreA}
-                    </td>
-                    <td className="mono" style={{ color: r.scoreB > r.scoreA ? 'var(--accent)' : undefined }}>
-                      {r.scoreB}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {match.note && (
+          <div className="card card-pad">
+            <h3 style={{ fontSize: 13, marginBottom: 8 }}>备注</h3>
+            <p className="small dim" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
+              {match.note}
+            </p>
           </div>
         )}
 
         <div className="card card-pad">
           <h3 style={{ fontSize: 13, marginBottom: 14 }}>比赛时间线</h3>
           <div className="timeline">
-            {match.timeline.map((t, i) => (
-              <div key={i} className="tl-item" data-state={t.state}>
+            <div className="tl-item" data-state="done">
+              <span className="tl-dot" />
+              <div className="tl-time">{fmtMatchTime(match.createdAt)}</div>
+              <div className="tl-title">约战已发起</div>
+              <div className="tl-detail">{match.creatorName} 向 {match.opponentName} 发出约战申请</div>
+              <div className="tl-actor">系统</div>
+            </div>
+            {match.acceptedAt ? (
+              <div className="tl-item" data-state="done">
                 <span className="tl-dot" />
-                <div className="tl-time">{t.at}</div>
-                <div className="tl-title">{t.title}</div>
-                <div className="tl-detail">{t.detail}</div>
-                <div className="tl-actor">{t.actor}</div>
+                <div className="tl-time">{fmtMatchTime(match.acceptedAt)}</div>
+                <div className="tl-title">对方已接受</div>
+                <div className="tl-detail">名单已锁定，等待双方按约定时间开赛</div>
+                <div className="tl-actor">{match.opponentName}</div>
               </div>
-            ))}
+            ) : (
+              <div className="tl-item" data-state="waiting">
+                <span className="tl-dot" />
+                <div className="tl-time">等待中</div>
+                <div className="tl-title">等待应战方接受</div>
+                <div className="tl-detail">对方负责人接受后会锁定名单</div>
+                <div className="tl-actor">{match.opponentName}</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -133,24 +131,27 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
           <div className="card card-pad">
             <h3 style={{ fontSize: 13, marginBottom: 8 }}>先签署《诚信公约》</h3>
             <p className="small dim" style={{ lineHeight: 1.7 }}>
-              提交比分、确认结果与发起争议都需要先签署诚信公约。公约版本更新后需要重新签署。
+              发起、接受约战与后续结果确认都需要先签署诚信公约。
             </p>
             <Link href="/agreements" className="btn btn-primary btn-sm" style={{ width: '100%', marginTop: 12 }}>
               去签署
             </Link>
           </div>
-        ) : match.status === 'submitted' || match.status === 'disputed' || match.status === 'locked' ? (
-          <MatchActions
-            canVideo={evidenceVideoUpload}
-            evidenceVideoBytes={caps.limits.evidenceVideoBytes}
-            evidenceImageBytes={caps.limits.evidenceImageBytes}
-            initialStatus={match.status === 'locked' ? 'locked' : match.status === 'disputed' ? 'disputed' : 'submitted'}
-          />
+        ) : canAccept ? (
+          <MatchAccept id={match.id} />
         ) : (
           <div className="card card-pad">
-            <h3 style={{ fontSize: 13, marginBottom: 8 }}>结果已确认</h3>
-            <p className="small dim">
-              本场结果已锁定并计入 {match.guildA.name} 的公会战绩。7 天内可申请一次更正，由仲裁复核。
+            <h3 style={{ fontSize: 13, marginBottom: 8 }}>
+              {match.status === 'pending_accept'
+                ? isCreator
+                  ? '等待对方接受'
+                  : '等待应战方负责人处理'
+                : '名单已锁定'}
+            </h3>
+            <p className="small dim" style={{ lineHeight: 1.7 }}>
+              {match.status === 'pending_accept'
+                ? '对方负责人接受后，名单会锁定并进入比赛阶段。'
+                : '双方按约定时间开赛，结果将由双方独立提交。'}
             </p>
           </div>
         )}
@@ -159,11 +160,11 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
           <div className="rail-title">名单快照</div>
           <dl className="kv">
             <dt>状态</dt>
-            <dd>{match.rosterLockedAt ? '已锁定（只读）' : '未锁定'}</dd>
-            <dt>哈希</dt>
-            <dd className="mono">7f3a…c21</dd>
-            <dt>我的身份</dt>
-            <dd>{match.guildA.name} · 队长</dd>
+            <dd>{match.acceptedAt ? '已锁定（只读）' : '未锁定'}</dd>
+            <dt>发起方</dt>
+            <dd>{match.creatorName}</dd>
+            <dt>应战方</dt>
+            <dd>{match.opponentName}</dd>
           </dl>
           <p className="small muted" style={{ marginTop: 8, lineHeight: 1.7 }}>
             名单外人员参赛会判定违约，计入信誉记录。

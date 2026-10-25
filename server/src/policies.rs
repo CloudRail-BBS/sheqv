@@ -217,7 +217,7 @@ pub fn validate(title: &str, slug: &str) -> Option<&'static str> {
         return Some("标识只能使用 2–40 位小写字母、数字或短横线");
     }
     let title_len = title.trim().chars().count();
-    if title_len < 2 || title_len > 60 {
+    if !(2..=60).contains(&title_len) {
         return Some("标题需为 2–60 字");
     }
     None

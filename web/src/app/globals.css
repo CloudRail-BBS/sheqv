@@ -2888,3 +2888,25 @@ body:has(.auth-page) .app {
 
 .composer-panel .md-composer-editor .md-input { resize: none; }
 .md-toolbar:not(.md-toolbar-bottom) .md-emoji-pop { top: 34px; bottom: auto; }
+
+/* 发起约战弹窗 */
+.match-create-modal {
+  width: min(640px, 94vw);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+}
+.match-create-modal .seo-grid { max-width: none; }
+@media (max-width: 600px) {
+  .match-create-modal .seo-grid { grid-template-columns: 1fr; }
+}
+
+/* 帖子卡片预览：标题与摘要的层级再拉开一点 */
+.post { border-radius: 14px; padding: 18px 20px; }
+.post-title { font-size: 16px; margin: 1px 0 6px; line-height: 1.5; }
+.post-title a:hover { color: var(--blue); }
+.post-body { line-height: 1.82; }
+.post-tags { margin-top: 11px; }
+.post-foot { margin-top: 14px; }
+.composer-panel .md-preview .md-body { font-size: 14.5px; line-height: 1.9; }
+.composer-panel .md-preview .md-body h1 { font-size: 23px; }
+.composer-panel .md-preview .md-body h2 { font-size: 19px; }

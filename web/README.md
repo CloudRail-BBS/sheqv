@@ -81,7 +81,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/guilds` | 公会列表 + 公会战日程 |
 | `/teams` | 战队列表 + 出战名单 + 战绩；战队独立于公会 |
 | `/dev-teams` `/dev-teams/[id]` | 开发团队：团队头像、团队榜、作品与成员管理；可导出团队榜分享图 |
-| `/matches` `/matches/[id]` | 约战列表；详情含分局、时间线、确认/争议 |
+| `/matches` `/matches/[id]` | 约战列表与发起弹窗；详情含双方、时间线、接受并锁定名单 |
 | `/resources` `/resources/[id]` | 资源库：筛选 / 排序 / 点赞 / 下载（同用户同天去重） |
 | `/resources/new` | 发布资源：登录即可，首个资源自动点亮开发者身份 |
 | `/leaderboard` | 公会榜 / 战队榜 / 开发者个人榜 / 开发团队榜；可导出分享图 |

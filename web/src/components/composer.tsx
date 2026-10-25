@@ -91,6 +91,31 @@ export function Composer({ nickname, signed, avatar }: Props) {
   );
 
   async function submit() {
+    if (busy) return;
+    let finalTitle = title.trim();
+    let finalBody = body.trim();
+    // 标题栏直接粘链接时，先变成「站点名 + 链接正文」，再校验长度
+    if (/^https?:\/\/\S+$/.test(finalTitle) && !finalBody) {
+      try {
+        const host = new URL(finalTitle).hostname.replace(/^www\./, '');
+        finalBody = `[${finalTitle}](${finalTitle})`;
+        finalTitle = `${host} 分享`;
+      } catch {
+        /* 保留原文，交给服务端校验 */
+      }
+    }
+    if (finalTitle.length < 4 || finalTitle.length > 60) {
+      setErr('标题需为 4–60 字');
+      return;
+    }
+    if (finalBody.length < 10) {
+      setErr('正文至少 10 字');
+      return;
+    }
+    if (finalBody.length > 8000) {
+      setErr('正文不超过 8000 字');
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -99,7 +124,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
       const res = await fetch('/api/v1/posts', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title, body, tags: allTags }),
+        body: JSON.stringify({ title: finalTitle, body: finalBody, tags: allTags }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? data.error ?? '发布失败');
@@ -297,6 +322,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
               value={body}
               onChange={setBody}
               rows={12}
+              maxLength={8000}
               placeholder="在此输入。使用工具栏或 Markdown 进行格式化，拖动或粘贴图片。"
               onSubmit={submit}
               leading={
