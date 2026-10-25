@@ -143,8 +143,12 @@ impl Cache {
     pub async fn resolve(&self, pool: &PgPool, app: &Config) -> Result<ResolvedStore, String> {
         let merged = settings::load(pool, app).await;
         let enabled = settings::text(&merged, "storageDriver") == "s3";
-        let Some(conf) = StorageConfig::from_values(&merged)? else {
-            return Ok(None);
+        let conf = match StorageConfig::from_values(&merged) {
+            Ok(Some(conf)) => conf,
+            Ok(None) => return Ok(None),
+            // 本地模式填了半套对象存储字段也不该影响上传；只有选了 s3 才报错
+            Err(_) if !enabled => return Ok(None),
+            Err(e) => return Err(e),
         };
 
         let fp = conf.fingerprint();
