@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RESOURCE_CATEGORIES, RESOURCE_GAMES, RESOURCE_LICENSES } from '@/lib/resource-types';
 import { MarkdownEditor } from './markdown-editor';
@@ -50,6 +50,10 @@ export function ResourceUpload({
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadName, setUploadName] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -69,6 +73,49 @@ export function ResourceUpload({
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function uploadFile(file: File) {
+    if (uploading) return;
+    if (file.size > 100 * 1024 * 1024) {
+      setErr('资源文件不能超过 100MB');
+      return;
+    }
+    setErr(null);
+    setUploading(true);
+    setUploadPct(0);
+    const xhr = new XMLHttpRequest();
+    xhr.open(
+      'POST',
+      `/api/v1/me/resource-file?name=${encodeURIComponent(file.name)}`,
+      true,
+    );
+    xhr.setRequestHeader('content-type', file.type || 'application/octet-stream');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      setUploading(false);
+      type UploadRes = { url?: string; size?: number; message?: string };
+      let data: UploadRes | null = null;
+      try {
+        data = JSON.parse(xhr.responseText) as UploadRes;
+      } catch {
+        data = null;
+      }
+      if (xhr.status < 200 || xhr.status >= 300 || !data?.url) {
+        setErr(data?.message ?? '上传失败，请稍后再试');
+        return;
+      }
+      set('url', data.url);
+      if (data.size) set('sizeMb', (data.size / 1024 / 1024).toFixed(2));
+      setUploadName(file.name);
+    };
+    xhr.onerror = () => {
+      setUploading(false);
+      setErr('上传失败，请检查网络');
+    };
+    xhr.send(file);
+  }
+
   function close() {
     if (defaultOpen) {
       router.push('/resources');
@@ -79,6 +126,10 @@ export function ResourceUpload({
 
   async function submit() {
     if (busy) return;
+    if (uploading) {
+      setErr('文件还在上传，请稍候');
+      return;
+    }
     setErr(null);
     const title = form.title.trim();
     const url = form.url.trim();
@@ -86,8 +137,8 @@ export function ResourceUpload({
       setErr('标题需为 2–60 字');
       return;
     }
-    if (!/^https?:\/\/\S+$/i.test(url)) {
-      setErr('请填写 http/https 下载地址');
+    if (!/^https?:\/\/\S+$/i.test(url) && !url.startsWith('/api/v1/resource-files/')) {
+      setErr('请填写 http/https 下载地址，或上传本地文件');
       return;
     }
     const body = form.body.trim();
@@ -249,14 +300,44 @@ export function ResourceUpload({
                   maxLength={200}
                 />
               </label>
-              <label className="field">
+              <label className="field" style={{ gridColumn: '1 / -1' }}>
                 <span>下载地址</span>
                 <input
                   className="input mono"
                   value={form.url}
-                  onChange={(e) => set('url', e.target.value)}
-                  placeholder="https://…/resource.zip"
+                  onChange={(e) => {
+                    set('url', e.target.value);
+                    if (!e.target.value.startsWith('/api/v1/resource-files/')) setUploadName('');
+                  }}
+                  placeholder="https://…/resource.zip 或选择本地文件"
                 />
+                <div className="res-upload-line">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    hidden
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      if (f) uploadFile(f);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading || busy}
+                  >
+                    {uploading ? `上传中 ${uploadPct}%` : '选择本地文件'}
+                  </button>
+                  <span className="small muted">单文件 ≤100MB · 也可直接填外部链接</span>
+                  {uploadName && <span className="small" style={{ color: 'var(--blue)' }}>已上传：{uploadName}</span>}
+                </div>
+                {uploading && (
+                  <span className="res-upload-bar" aria-hidden="true">
+                    <i style={{ width: `${uploadPct}%` }} />
+                  </span>
+                )}
               </label>
               <label className="field">
                 <span>标签（逗号分隔，最多 6 个）</span>
@@ -298,7 +379,12 @@ export function ResourceUpload({
                   <button type="button" className="composer-discard" onClick={close} disabled={busy}>
                     舍弃
                   </button>
-                  <button type="button" className="composer-submit" onClick={submit} disabled={busy}>
+                  <button
+                    type="button"
+                    className="composer-submit"
+                    onClick={submit}
+                    disabled={busy || uploading}
+                  >
                     {busy ? '发布中…' : '发布资源'}
                   </button>
                 </>

@@ -266,8 +266,12 @@ pub fn validate(input: &NewResource<'_>) -> Option<String> {
         return Some("单个标签不能超过 12 字".into());
     }
     let url = input.url.trim();
-    if url.len() < 8 || url.len() > 500 || !(url.starts_with("http://") || url.starts_with("https://")) {
-        return Some("下载地址必须是 http(s) 链接".into());
+    let is_local_file = url.starts_with("/api/v1/resource-files/");
+    if url.len() < 8
+        || url.len() > 500
+        || (!is_local_file && !(url.starts_with("http://") || url.starts_with("https://")))
+    {
+        return Some("下载地址必须是 http(s) 链接或本站上传文件".into());
     }
     if len(input.version) > 24 {
         return Some("版本号不能超过 24 字".into());

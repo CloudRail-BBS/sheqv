@@ -12,6 +12,7 @@ pub mod me;
 pub mod notifications;
 pub mod orgs;
 pub mod points;
+pub mod resource_files;
 pub mod policies;
 pub mod oauth;
 pub mod posts;
@@ -38,6 +39,12 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/me/chrome", get(me::chrome))
+        .route(
+            "/api/v1/me/resource-file",
+            post(resource_files::upload)
+                .layer(DefaultBodyLimit::max(crate::resource_files::MAX_BYTES + 1024 * 1024)),
+        )
+        .route("/api/v1/resource-files/{id}", get(resource_files::download))
         .route(
             "/api/v1/me/media",
             post(me::upload_media).layer(DefaultBodyLimit::max(crate::media::MAX_BYTES + 1024 * 1024)),

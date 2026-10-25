@@ -45,6 +45,7 @@ pub mod resources;
 pub mod rewards;
 pub mod oauth;
 pub mod relay;
+pub mod resource_files;
 pub mod routes;
 pub mod servers;
 pub mod settings;

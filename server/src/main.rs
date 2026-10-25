@@ -97,7 +97,7 @@ async fn serve() -> anyhow::Result<()> {
         .layer(CompressionLayer::new())
         .layer(TimeoutLayer::with_status_code(
             axum::http::StatusCode::REQUEST_TIMEOUT,
-            Duration::from_secs(30),
+            Duration::from_secs(180),
         ))
         .layer(TraceLayer::new_for_http());
 

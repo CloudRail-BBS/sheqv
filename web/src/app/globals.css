@@ -2912,6 +2912,16 @@ body:has(.auth-page) .app {
 .composer-panel .md-preview .md-body h2 { font-size: 19px; }
 
 /* 资源发布弹窗：与发帖共用外壳，补资源字段区 */
+.res-upload-line {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 7px;
+}
+.res-upload-bar {
+  display: block; height: 3px; margin-top: 6px; border-radius: 3px;
+  background: var(--panel-3); overflow: hidden;
+}
+.res-upload-bar i {
+  display: block; height: 100%; background: var(--blue); transition: width 0.2s;
+}
 .res-composer-meta { align-items: start; }
 .res-meta-grid {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
