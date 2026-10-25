@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { MarkdownEditor } from './markdown-editor';
 
 const TOPICS = ['地图', '整合包', '材质', '约战', '招募', '提问'];
+const CATEGORIES = ['常规', '提问', '招募', '约战', '闲聊'];
 
 interface Props {
   /** 当前登录用户昵称；null 表示未登录 */
@@ -22,6 +23,8 @@ export function Composer({ nickname, signed, avatar }: Props) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [category, setCategory] = useState('常规');
+  const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -31,11 +34,19 @@ export function Composer({ nickname, signed, avatar }: Props) {
     try {
       const raw = localStorage.getItem(`ba-draft-${nickname}`);
       if (!raw) return;
-      const d = JSON.parse(raw) as { title?: string; body?: string; tags?: string[] };
+      const d = JSON.parse(raw) as {
+        title?: string;
+        body?: string;
+        tags?: string[];
+        category?: string;
+      };
       if (d.body || d.title) {
         setTitle(d.title ?? '');
         setBody(d.body ?? '');
         setTags(Array.isArray(d.tags) ? d.tags.slice(0, 3) : []);
+        if (typeof d.category === 'string' && CATEGORIES.includes(d.category)) {
+          setCategory(d.category);
+        }
       }
     } catch {
       /* 坏草稿直接忽略 */
@@ -45,15 +56,18 @@ export function Composer({ nickname, signed, avatar }: Props) {
   useEffect(() => {
     if (!nickname) return;
     try {
-      if (!title.trim() && !body.trim() && tags.length === 0) {
+      if (!title.trim() && !body.trim() && tags.length === 0 && category === '常规') {
         localStorage.removeItem(`ba-draft-${nickname}`);
       } else {
-        localStorage.setItem(`ba-draft-${nickname}`, JSON.stringify({ title, body, tags }));
+        localStorage.setItem(
+          `ba-draft-${nickname}`,
+          JSON.stringify({ title, body, tags, category }),
+        );
       }
     } catch {
       /* 隐私模式下 localStorage 可能被禁 */
     }
-  }, [nickname, title, body, tags]);
+  }, [nickname, title, body, tags, category]);
 
   useEffect(() => {
     if (!open) return;
@@ -80,16 +94,20 @@ export function Composer({ nickname, signed, avatar }: Props) {
     setBusy(true);
     setErr(null);
     try {
+      const allTags =
+        category === '常规' ? tags : Array.from(new Set([category, ...tags])).slice(0, 3);
       const res = await fetch('/api/v1/posts', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title, body, tags }),
+        body: JSON.stringify({ title, body, tags: allTags }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? data.error ?? '发布失败');
       setTitle('');
       setBody('');
       setTags([]);
+      setCategory('常规');
+      setExpanded(false);
       setOpen(false);
       try {
         localStorage.removeItem(`ba-draft-${nickname}`);
@@ -181,83 +199,139 @@ export function Composer({ nickname, signed, avatar }: Props) {
       </div>
 
       {open && (
-        <div className="composer-modal" role="dialog" aria-modal="true" aria-label="发布新帖">
+        <div className="composer-modal" role="dialog" aria-modal="true" aria-label="创建帖子">
           <button
             type="button"
             className="composer-backdrop"
             aria-label="关闭编辑器"
             onClick={() => setOpen(false)}
           />
-          <div className="composer-panel">
+          <div className={'composer-panel' + (expanded ? ' is-expanded' : '')}>
             <div className="composer-panel-head">
-              <div className="post-avatar">{avatarNode}</div>
-              <div style={{ minWidth: 0 }}>
-                <b style={{ fontSize: 14 }}>发布新帖</b>
-                <div className="small muted">以 {nickname} 的身份发布，即表示同意《社区公约》</div>
+              <span className="composer-head-icon" aria-hidden="true">
+                ✎
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <b className="composer-head-title">创建帖子</b>
+                <div className="composer-head-sub">以 {nickname} 的身份发布</div>
               </div>
-              <button
-                type="button"
-                className="composer-close"
-                aria-label="关闭"
-                onClick={() => setOpen(false)}
-              >
-                ×
-              </button>
+              <div className="composer-head-actions">
+                <button
+                  type="button"
+                  className="composer-icon-btn"
+                  aria-label={expanded ? '还原大小' : '放大编辑'}
+                  title={expanded ? '还原大小' : '放大编辑'}
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  {expanded ? '⤡' : '⤢'}
+                </button>
+                <button
+                  type="button"
+                  className="composer-icon-btn"
+                  aria-label="关闭"
+                  title="关闭"
+                  onClick={() => setOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="composer-meta">
+              <label className="composer-cat">
+                <span className="composer-meta-label">版块</span>
+                <select
+                  className="composer-select"
+                  value={category}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setCategory(next);
+                    if (next !== '常规') setTags((v) => v.slice(0, 2));
+                  }}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="composer-tags-line">
+                <span className="composer-meta-label">标签</span>
+                <div className="composer-topic-row">
+                  {TOPICS.map((t) => {
+                    const limit = category === '常规' ? 3 : 2;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        className="chip"
+                        data-on={tags.includes(t)}
+                        onClick={() =>
+                          setTags((v) =>
+                            v.includes(t)
+                              ? v.filter((x) => x !== t)
+                              : [...v, t].slice(0, limit),
+                          )
+                        }
+                      >
+                        #{t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <input
-              className="input composer-title"
-              placeholder="标题：一句话说清你要讲什么（4–60 字）"
+              className="composer-title-input"
+              placeholder="输入标题，或在此处粘贴链接"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={60}
               autoFocus
             />
 
-            <div style={{ marginTop: 10 }}>
-              <MarkdownEditor
-                value={body}
-                onChange={setBody}
-                rows={10}
-                placeholder="正文（至少 10 字）。可以贴链接、写配置、讲清楚复现步骤。"
-                onSubmit={submit}
-              />
-            </div>
-
-            <div className="row wrap composer-tags">
-              {TOPICS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className="chip"
-                  data-on={tags.includes(t)}
-                  onClick={() =>
-                    setTags((v) => (v.includes(t) ? v.filter((x) => x !== t) : [...v, t].slice(0, 3)))
-                  }
-                >
-                  #{t}
-                </button>
-              ))}
-              <span className="tip" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>
-                最多选 3 个话题
-              </span>
-            </div>
-
-            <div className="composer-modal-foot">
-              {err ? (
-                <span className="tip" style={{ color: 'var(--danger)' }}>
-                  {err}
+            <MarkdownEditor
+              variant="composer"
+              value={body}
+              onChange={setBody}
+              rows={12}
+              placeholder="在此输入。使用工具栏或 Markdown 进行格式化，拖动或粘贴图片。"
+              onSubmit={submit}
+              leading={
+                <span className="composer-me">
+                  <span className="composer-me-avatar">{avatarNode}</span>
+                  <b>ME</b>
                 </span>
-              ) : (
-                <span className="tip">草稿会自动保存在本机，发布成功后清空</span>
-              )}
-              <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)} disabled={busy}>
-                取消
-              </button>
-              <button type="button" className="btn btn-primary" onClick={submit} disabled={busy}>
-                {busy ? '发布中…' : '发布'}
-              </button>
-            </div>
+              }
+              actions={
+                <>
+                  <span className="composer-count">{body.length} 字</span>
+                  {err ? (
+                    <span className="composer-err">{err}</span>
+                  ) : (
+                    <span className="composer-saved">草稿已自动保存</span>
+                  )}
+                  <button
+                    type="button"
+                    className="composer-discard"
+                    onClick={() => setOpen(false)}
+                    disabled={busy}
+                  >
+                    舍弃
+                  </button>
+                  <button
+                    type="button"
+                    className="composer-submit"
+                    onClick={submit}
+                    disabled={busy}
+                  >
+                    {busy ? '发布中…' : '创建帖子'}
+                  </button>
+                </>
+              }
+            />
           </div>
         </div>
       )}

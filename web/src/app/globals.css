@@ -2719,3 +2719,160 @@ body:has(.auth-page) .app {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.10);
 }
+
+/* ── 发帖弹窗（Discourse 风格） ───────────── */
+
+.composer-panel {
+  width: min(880px, 94vw);
+  max-height: min(88vh, 920px);
+  padding: 0;
+  overflow: auto;
+}
+.composer-panel.is-expanded {
+  width: min(1080px, 96vw);
+  height: min(92vh, 1000px);
+  max-height: 92vh;
+}
+.composer-panel-head {
+  padding: 14px 18px 12px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  gap: 10px;
+}
+.composer-head-icon {
+  width: 28px; height: 28px; border-radius: 8px; flex: none;
+  display: grid; place-items: center;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text-2); font-size: 15px;
+}
+.composer-head-title { font-size: 14px; font-weight: 650; color: var(--text); }
+.composer-head-sub { margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+.composer-head-actions { display: flex; align-items: center; gap: 2px; }
+.composer-icon-btn {
+  width: 32px; height: 32px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--muted); font-size: 18px; line-height: 1;
+  cursor: pointer;
+}
+.composer-icon-btn:hover { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+
+.composer-meta {
+  display: grid; grid-template-columns: 170px minmax(0, 1fr);
+  gap: 0; border-bottom: 1px solid var(--line);
+  padding: 10px 18px; align-items: center;
+}
+.composer-cat {
+  display: flex; align-items: center; gap: 8px;
+  padding-right: 14px; border-right: 1px solid var(--line);
+  min-width: 0;
+}
+.composer-meta-label { font-size: 10.5px; color: var(--muted); flex: none; }
+.composer-select {
+  min-width: 0; flex: 1; height: 32px; padding: 0 26px 0 8px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); color: var(--text);
+  font-family: inherit; font-size: 12.5px; cursor: pointer;
+}
+.composer-select:focus { outline: none; border-color: var(--blue-line); }
+.composer-tags-line {
+  display: flex; align-items: center; gap: 8px;
+  padding-left: 14px; min-width: 0;
+}
+.composer-topic-row { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.composer-topic-row .chip { font-size: 10.5px; padding: 3px 8px; }
+
+.composer-title-input {
+  width: 100%; height: 62px; padding: 0 18px;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--text);
+  font-family: inherit; font-size: 19px; font-weight: 600;
+  letter-spacing: -0.015em; outline: none;
+}
+.composer-title-input::placeholder { color: var(--muted); font-weight: 500; }
+
+.composer-panel .md-composer-editor {
+  border: 0; border-radius: 0; background: transparent;
+}
+.composer-panel .md-composer-editor .md-input {
+  min-height: 300px; padding: 16px 18px;
+  font-size: 14px; line-height: 1.85;
+}
+.composer-panel .md-composer-editor .md-preview {
+  min-height: 300px; max-height: none; padding: 16px 18px;
+}
+.composer-panel .md-toolbar-bottom {
+  border-top: 1px solid var(--line); border-bottom: 0;
+  padding: 7px 12px; gap: 8px; background: var(--panel-2);
+  flex-wrap: wrap;
+}
+.composer-panel .md-toolbar-bottom .md-tools {
+  gap: 0; flex: 1 1 auto; min-width: 0;
+}
+.composer-panel .md-toolbar-bottom .md-tools button {
+  min-width: 28px; height: 27px; padding: 0 5px; font-size: 11.5px;
+}
+.md-leading { display: flex; align-items: center; flex: none; }
+.composer-me {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 7px 3px 3px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel);
+  font-size: 10px; font-weight: 650; color: var(--text-2);
+}
+.composer-me-avatar {
+  width: 24px; height: 24px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center; flex: none;
+  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: #fff; font-size: 10px;
+}
+.composer-me-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.md-toolbar-right {
+  display: flex; align-items: center; gap: 7px; margin-left: auto;
+}
+.composer-count { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.composer-saved { font-size: 10px; color: var(--muted); }
+.composer-err { font-size: 10px; color: var(--danger); max-width: 180px; }
+.composer-discard {
+  height: 34px; padding: 0 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text-2); font-size: 12px; cursor: pointer;
+  font-family: inherit;
+}
+.composer-discard:hover { background: var(--panel); color: var(--text); }
+.composer-submit {
+  height: 34px; padding: 0 18px; border: 0; border-radius: 8px;
+  background: var(--text); color: var(--panel);
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: opacity 0.14s;
+}
+.composer-submit:hover { opacity: 0.86; }
+.composer-submit:disabled, .composer-discard:disabled { opacity: 0.5; cursor: default; }
+.md-inline-err { padding: 4px 14px 8px; font-size: 10.5px; color: var(--danger); }
+
+.md-emoji-wrap { position: relative; display: inline-flex; }
+.md-emoji-pop {
+  position: absolute; right: 0; bottom: 34px; z-index: 5;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;
+  padding: 8px; width: 214px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 16px 40px -20px rgba(0, 0, 0, 0.6);
+}
+.md-emoji-pop button {
+  width: 30px; height: 30px; border: 0; border-radius: 6px;
+  background: transparent; cursor: pointer; font-size: 16px;
+}
+.md-emoji-pop button:hover { background: var(--panel-2); }
+
+@media (max-width: 700px) {
+  .composer-panel { width: 100%; height: 100dvh; max-height: none; border-radius: 0; border: 0; }
+  .composer-meta { grid-template-columns: 1fr; gap: 8px; padding: 10px 14px; }
+  .composer-cat { border-right: 0; padding-right: 0; }
+  .composer-tags-line { padding-left: 0; align-items: flex-start; }
+  .composer-title-input { height: 54px; font-size: 17px; padding: 0 14px; }
+  .composer-panel .md-composer-editor .md-input { min-height: 200px; padding: 14px; }
+  .composer-panel .md-composer-editor .md-preview { padding: 14px; }
+  .composer-panel-head { padding: 12px 14px 10px; }
+  .composer-panel .md-toolbar-bottom { padding: 7px 8px; }
+  .composer-count, .composer-saved { display: none; }
+  .md-toolbar-right { gap: 4px; }
+}
+
+.composer-panel .md-composer-editor .md-input { resize: none; }
+.md-toolbar:not(.md-toolbar-bottom) .md-emoji-pop { top: 34px; bottom: auto; }

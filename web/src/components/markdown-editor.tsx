@@ -1,13 +1,15 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Markdown } from '@/lib/markdown';
 
+const EMOJIS = ['👍', '🎉', '🔥', '😂', '❤️', '✅', '⚔️', '🧱', '🚀', '👀', '🤝', '💡'];
+
 /**
- * Discourse 风格的 Markdown 编辑器：
- * 工具栏 + 写/预览切换 + 拖拽/粘贴/选择图片上传 + Ctrl+B/I/K 快捷键。
+ * Markdown 编辑器。
  *
- * 正文仍是纯文本 Markdown，落库格式不变；渲染由 `lib/markdown.tsx` 负责。
+ * default：管理后台用，工具栏在顶部 + 写/预览切换 + 字数。
+ * composer：发帖弹窗用，无边框正文 + 底部工具栏，可传入头像与发布按钮。
  */
 export function MarkdownEditor({
   value,
@@ -15,17 +17,26 @@ export function MarkdownEditor({
   placeholder = '正文…',
   rows = 8,
   onSubmit,
+  variant = 'default',
+  leading,
+  actions,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
   onSubmit?: () => void;
+  variant?: 'default' | 'composer';
+  /** 底部工具栏左侧（发帖时放头像/ME） */
+  leading?: ReactNode;
+  /** 底部工具栏右侧（发帖时放取消/发布） */
+  actions?: ReactNode;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<'write' | 'preview'>('write');
   const [uploading, setUploading] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   function replaceSelection(before: string, after = '', placeholderText = '') {
@@ -114,86 +125,130 @@ export function MarkdownEditor({
     }
   }
 
+  const tools = (
+    <>
+      <button type="button" title="粗体 Ctrl+B" onClick={() => replaceSelection('**', '**', '粗体')}>
+        <b>B</b>
+      </button>
+      <button type="button" title="斜体 Ctrl+I" onClick={() => replaceSelection('*', '*', '斜体')}>
+        <i>I</i>
+      </button>
+      <button type="button" title="删除线" onClick={() => replaceSelection('~~', '~~', '删除线')}>
+        <s>S</s>
+      </button>
+      <button type="button" title="标题" onClick={() => prefixLine('## ')}>
+        H
+      </button>
+      <button type="button" title="引用" onClick={() => prefixLine('> ')}>
+        ❝
+      </button>
+      <button type="button" title="行内代码" onClick={() => replaceSelection('`', '`', 'code')}>
+        {'</>'}
+      </button>
+      <button type="button" title="代码块" onClick={() => replaceSelection('\n```\n', '\n```\n', '代码')}>
+        ⌗
+      </button>
+      <button type="button" title="链接 Ctrl+K" onClick={() => replaceSelection('[', '](https://)', '链接文字')}>
+        ↗
+      </button>
+      <button type="button" title="无序列表" onClick={() => prefixLine('- ')}>
+        •≡
+      </button>
+      <button type="button" title="有序列表" onClick={() => prefixLine('1. ')}>
+        1≡
+      </button>
+      <span className="md-sep" />
+      <button type="button" title="上传图片" onClick={() => fileRef.current?.click()} disabled={uploading}>
+        {uploading ? '上传中…' : '图片'}
+      </button>
+      <div className="md-emoji-wrap">
+        <button type="button" title="表情" onClick={() => setEmojiOpen((v) => !v)}>
+          ☺
+        </button>
+        {emojiOpen && (
+          <div className="md-emoji-pop">
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => {
+                  replaceSelection(e);
+                  setEmojiOpen(false);
+                }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void upload(f);
+        }}
+      />
+    </>
+  );
+
+  const tabs = (
+    <div className="md-tabs">
+      <button type="button" data-on={tab === 'write'} onClick={() => setTab('write')}>
+        写
+      </button>
+      <button type="button" data-on={tab === 'preview'} onClick={() => setTab('preview')}>
+        预览
+      </button>
+    </div>
+  );
+
+  const editor = tab === 'write' ? (
+    <textarea
+      ref={ref}
+      className="md-input"
+      rows={rows}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onPaste={onPaste}
+      onDrop={onDrop}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+    />
+  ) : (
+    <div className="md-preview">
+      {value.trim() ? <Markdown text={value} /> : <p className="muted">还没有内容。</p>}
+    </div>
+  );
+
+  if (variant === 'composer') {
+    return (
+      <div className="md-editor md-composer-editor">
+        {editor}
+        <div className="md-toolbar md-toolbar-bottom">
+          {leading && <div className="md-leading">{leading}</div>}
+          <div className="md-tools">{tools}</div>
+          <div className="md-toolbar-right">
+            {tabs}
+            {actions}
+          </div>
+        </div>
+        {err && <div className="md-inline-err">{err}</div>}
+      </div>
+    );
+  }
+
   return (
     <div className="md-editor">
       <div className="md-toolbar">
-        <div className="md-tools">
-          <button type="button" title="粗体 Ctrl+B" onClick={() => replaceSelection('**', '**', '粗体')}>
-            <b>B</b>
-          </button>
-          <button type="button" title="斜体 Ctrl+I" onClick={() => replaceSelection('*', '*', '斜体')}>
-            <i>I</i>
-          </button>
-          <button type="button" title="删除线" onClick={() => replaceSelection('~~', '~~', '删除线')}>
-            <s>S</s>
-          </button>
-          <span className="md-sep" />
-          <button type="button" title="标题" onClick={() => prefixLine('## ')}>
-            H
-          </button>
-          <button type="button" title="引用" onClick={() => prefixLine('> ')}>
-            ❝
-          </button>
-          <button type="button" title="行内代码" onClick={() => replaceSelection('`', '`', 'code')}>
-            {'</>'}
-          </button>
-          <button type="button" title="代码块" onClick={() => replaceSelection('\n```\n', '\n```\n', '代码')}>
-            ⌗
-          </button>
-          <button type="button" title="链接 Ctrl+K" onClick={() => replaceSelection('[', '](https://)', '链接文字')}>
-            ↗
-          </button>
-          <button type="button" title="无序列表" onClick={() => prefixLine('- ')}>
-            •≡
-          </button>
-          <button type="button" title="有序列表" onClick={() => prefixLine('1. ')}>
-            1≡
-          </button>
-          <span className="md-sep" />
-          <button type="button" title="上传图片" onClick={() => fileRef.current?.click()} disabled={uploading}>
-            {uploading ? '上传中…' : '图片'}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (f) void upload(f);
-            }}
-          />
-        </div>
-
-        <div className="md-tabs">
-          <button type="button" data-on={tab === 'write'} onClick={() => setTab('write')}>
-            写
-          </button>
-          <button type="button" data-on={tab === 'preview'} onClick={() => setTab('preview')}>
-            预览
-          </button>
-        </div>
+        <div className="md-tools">{tools}</div>
+        {tabs}
       </div>
-
-      {tab === 'write' ? (
-        <textarea
-          ref={ref}
-          className="md-input"
-          rows={rows}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onPaste={onPaste}
-          onDrop={onDrop}
-          onKeyDown={onKeyDown}
-          placeholder={`${placeholder}\n\n支持 Markdown：**粗体**、*斜体*、\`代码\`、> 引用、- 列表、[链接](https://…)\n可直接粘贴或拖入图片。`}
-        />
-      ) : (
-        <div className="md-preview">
-          {value.trim() ? <Markdown text={value} /> : <p className="muted">还没有内容。</p>}
-        </div>
-      )}
-
+      {editor}
       <div className="md-foot">
         <span>{value.length} 字</span>
         <span>支持 Markdown · 可拖入图片 · Ctrl+B / I / K</span>
