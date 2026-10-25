@@ -36,6 +36,22 @@
     ],
     "shortDescription": "云轨社区桌面客户端",
     "longDescription": "云轨社区：玩家社区、公会战队、联机大厅、资源库与赛事记录。",
-    "category": "SocialNetworking"
+    "category": "SocialNetworking",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp",
+        "uninstallerHeaderImage": "installer/header.bmp",
+        "compression": "lzma",
+        "startMenuFolder": "云轨社区"
+      }
+    }
   }
 }
