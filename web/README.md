@@ -89,6 +89,8 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 | `/sponsors` | 赞助者名单：累计金额 / 人数 / 前三名 / 完整列表（数据来自爱发电） |
 | `/agreements` | 公约签署：诚信公约 / 社区公约，含版本校验与签署凭证 |
 | `/p/[id]` | 帖子详情：Markdown 正文与配图、点赞、评论（需签社区公约） |
+| `/policies` `/policies/[slug]` | 政策中心：用户协议、免责声明、隐私政策等 |
+| `/agreements/[id]/certificate` | 公约签署证书（仅已签署当前版本） |
 | `/search?q=` | 全局搜索：帖子 / 资源 / 公会 / 战队 / 比赛 |
 | `/notifications` | 站内信：未读评论、待确认比赛、一键已读（顶栏另有快捷面板） |
 | `/rewards` | 福利中心：礼品卡（拆卡特效）、兑换码、抽奖 |

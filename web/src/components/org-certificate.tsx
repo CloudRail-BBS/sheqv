@@ -14,13 +14,27 @@ export function OrgCertificate({
   org,
   ownerName,
   brand,
+  disclaimer,
+  stampUrl = '/stamp.png',
 }: {
   org: Org;
   ownerName: string;
   brand: string;
+  disclaimer: string;
+  stampUrl?: string;
 }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const [ready, setReady] = useState(false);
+  const [stamp, setStamp] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setStamp(img);
+    img.src = stampUrl;
+    return () => {
+      img.onload = null;
+    };
+  }, [stampUrl]);
 
   useEffect(() => {
     const el = ref.current;
@@ -34,6 +48,7 @@ export function OrgCertificate({
       ownerName,
       brand,
       new Date().toISOString().slice(0, 10),
+      disclaimer,
     );
     // 把画好的内容拷到页面上的 canvas，避免再画一遍
     const ctx = el.getContext('2d');
@@ -42,7 +57,7 @@ export function OrgCertificate({
       setReady(true);
     }
     return () => setReady(false);
-  }, [org, ownerName, brand]);
+  }, [org, ownerName, brand, disclaimer, stamp]);
 
   return (
     <div className="cert-wrap">

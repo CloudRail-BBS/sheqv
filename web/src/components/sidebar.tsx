@@ -45,6 +45,7 @@ const ICON_BY_KEY: Record<string, React.ReactNode> = {
   announcements: I.bell,
   sponsors: I.heart,
   agreements: I.doc,
+  policies: I.doc,
 };
 
 function Ico({ children }: { children: React.ReactNode }) {

@@ -36,6 +36,10 @@
 | GET | `/api/v1/agreements` | 生效中的公约 |
 | GET | `/api/v1/agreements/signatures` | 当前账号的签署状态 |
 | POST | `/api/v1/agreements/sign` | 写 `signatures` 表 + 兼容旧 `ag_*` Cookie |
+| GET | `/api/v1/policies` | 已发布政策列表 |
+| GET | `/api/v1/policies/{slug}` | 政策详情 |
+| GET/POST | `/api/v1/admin/policies` | 后台政策列表 / 新建 |
+| PATCH/DELETE | `/api/v1/admin/policies/{slug}` | 后台修改 / 删除（内置不可删） |
 | GET | `/api/v1/notifications` | 评论通知 + 未读数（`no-store`） |
 | POST | `/api/v1/notifications/read` | 推进已读水位（只进不退） |
 | GET | `/api/v1/sponsors` | 公开赞助名单（只含展示中的，`no-store`） |

@@ -63,7 +63,14 @@ export function SignAgreement(props: Props) {
             <span className="small muted">
               {version} · {signedAt}
             </span>
-            <button className="btn btn-sm btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => setOpen(true)}>
+            <Link
+              href={`/agreements/${id}/certificate`}
+              className="btn btn-sm btn-primary"
+              style={{ marginLeft: 'auto' }}
+            >
+              签署证书
+            </Link>
+            <button className="btn btn-sm btn-ghost" onClick={() => setOpen(true)}>
               查看凭证
             </button>
           </div>
@@ -131,6 +138,11 @@ export function SignAgreement(props: Props) {
             )}
 
             <div className="row" style={{ marginTop: 18, justifyContent: 'flex-end' }}>
+              {signed && (
+                <Link href={`/agreements/${id}/certificate`} className="btn btn-primary">
+                  查看签署证书
+                </Link>
+              )}
               <button className="btn btn-ghost" onClick={() => setOpen(false)} disabled={busy}>
                 {signed ? '关闭' : '取消'}
               </button>

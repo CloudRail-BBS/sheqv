@@ -11,6 +11,7 @@ pub mod me;
 pub mod notifications;
 pub mod orgs;
 pub mod points;
+pub mod policies;
 pub mod oauth;
 pub mod posts;
 pub mod public;
@@ -63,6 +64,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agreements", get(agreements::list))
         .route("/api/v1/agreements/signatures", get(agreements::signatures))
         .route("/api/v1/agreements/sign", post(agreements::sign))
+        .route("/api/v1/policies", get(policies::list))
+        .route("/api/v1/policies/{slug}", get(policies::get))
         .route("/api/v1/notifications", get(notifications::list))
         .route("/api/v1/notifications/read", post(notifications::read))
         .route(

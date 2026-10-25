@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import {
+  DEFAULT_CERT_DISCLAIMER,
   renderCertificate,
   renderLeaderboardShare,
   renderOrgCard,
@@ -38,21 +39,45 @@ export function SharePreview() {
   const cert = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const rows = SAMPLE_ORGS.map((o, i) => toShareRow(o, i + 1, 'MC'));
-    const canvases = [
-      { host: board.current, el: renderLeaderboardShare({ title: '公会榜', gameLabel: '我的世界', rows, brand: '云轨社区 · 排行榜', date: '2026-10-24' }) },
-      { host: card.current, el: renderOrgCard(toShareOrg(SAMPLE_ORGS[0]), '云轨社区', '2026-10-24') },
-      { host: cert.current, el: renderCertificate(toShareOrg(SAMPLE_ORGS[0]), '榜测1', '云轨社区', '2026-10-24') },
-    ];
-    for (const { host, el } of canvases) {
-      if (!host) continue;
-      host.replaceChildren(el);
-      el.style.width = '100%';
-      el.style.height = 'auto';
-      el.style.borderRadius = '10px';
-      el.style.boxShadow = '0 10px 30px -20px rgba(0,0,0,.5)';
-      el.style.display = 'block';
-    }
+    let cancelled = false;
+
+    const draw = (stamp: HTMLImageElement | null) => {
+      if (cancelled) return;
+      const rows = SAMPLE_ORGS.map((o, i) => toShareRow(o, i + 1, 'MC'));
+      const canvases = [
+        { host: board.current, el: renderLeaderboardShare({ title: '公会榜', gameLabel: '我的世界', rows, brand: '云轨社区 · 排行榜', date: '2026-10-24' }) },
+        { host: card.current, el: renderOrgCard(toShareOrg(SAMPLE_ORGS[0]), '云轨社区', '2026-10-24') },
+        {
+          host: cert.current,
+          el: renderCertificate(
+            toShareOrg(SAMPLE_ORGS[0]),
+            '榜测1',
+            '云轨社区',
+            '2026-10-24',
+            DEFAULT_CERT_DISCLAIMER,
+            stamp,
+          ),
+        },
+      ];
+      for (const { host, el } of canvases) {
+        if (!host) continue;
+        host.replaceChildren(el);
+        el.style.width = '100%';
+        el.style.height = 'auto';
+        el.style.borderRadius = '10px';
+        el.style.boxShadow = '0 10px 30px -20px rgba(0,0,0,.5)';
+        el.style.display = 'block';
+      }
+    };
+
+    draw(null);
+    const img = new Image();
+    img.onload = () => draw(img);
+    img.src = '/stamp.png';
+    return () => {
+      cancelled = true;
+      img.onload = null;
+    };
   }, []);
 
   return (

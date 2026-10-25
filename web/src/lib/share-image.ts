@@ -648,11 +648,26 @@ export function renderOrgCard(org: ShareOrg, brand: string, date: string): HTMLC
 
 /* ── 负责人证书 1600×1131（A4 横向） ─────── */
 
+/** 证书编号：ASCII、稳定、不可枚举；同一签名每次生成一致 */
+export function certSerial(prefix: string, seed: string): string {
+  let h = 2166136261;
+  for (const ch of seed) {
+    h ^= ch.codePointAt(0) ?? 0;
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return `${prefix}-${h.toString(36).toUpperCase().padStart(6, '0').slice(0, 6)}`;
+}
+
+export const DEFAULT_CERT_DISCLAIMER =
+  '本证书由站内数据自动生成，仅证明相关账号在签发时的站内状态或签署行为，不构成官方资质、营业执照或法律意见；具体权利义务以站内《用户协议》《免责声明》为准。';
+
 export function renderCertificate(
   org: ShareOrg,
   ownerName: string,
   brand: string,
   date: string,
+  disclaimer: string = DEFAULT_CERT_DISCLAIMER,
+  stamp?: HTMLImageElement | null,
 ): HTMLCanvasElement {
   const W = 1600;
   const H = 1131;
@@ -736,16 +751,163 @@ export function renderCertificate(
   write(ctx, '当前状态', 760, 742, { size: 20, color: C.muted });
   write(ctx, org.statusLabel, 760, 782, { size: 30, weight: 600, color: C.ink });
 
+  // 核验提示
+  write(ctx, '可在站内「负责人证书」页核验', 200, 860, {
+    size: 18,
+    color: C.muted,
+  });
+
   // 落款
-  write(ctx, brand, 200, 960, { size: 26, weight: 600, color: C.ink });
-  write(ctx, '运营团队', 200, 998, { size: 20, color: C.muted });
-  write(ctx, date, W - 200, 960, { size: 26, weight: 600, color: C.ink, align: 'right' });
-  write(ctx, '签发日期', W - 200, 998, { size: 20, color: C.muted, align: 'right' });
+  write(ctx, brand, 200, 920, { size: 26, weight: 600, color: C.ink });
+  write(ctx, '运营团队', 200, 958, { size: 20, color: C.muted });
+  write(ctx, date, W - 200, 920, { size: 26, weight: 600, color: C.ink, align: 'right' });
+  write(ctx, '签发日期', W - 200, 958, { size: 20, color: C.muted, align: 'right' });
+
+  // 免责声明
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(200, 986);
+  ctx.lineTo(W - 200, 986);
+  ctx.stroke();
+  write(ctx, '免责声明', 200, 1010, { size: 16, weight: 600, color: C.ink2 });
+  wrap(ctx, disclaimer, 200, 1036, W - 400, 2, {
+    size: 14,
+    color: C.muted,
+    lineHeight: 18,
+  });
 
   // 水印徽记
   ctx.globalAlpha = 0.06;
   crest(ctx, org.tag, W - 380, 470, 300, { radius: 76, fontSize: 110 });
   ctx.globalAlpha = 1;
+
+  // 印章：叠在落款区域，不挡住编号与正文
+  if (stamp && stamp.complete && stamp.naturalWidth > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    // 印章压在签发日期上方，右对齐落款区
+    // 骑缝章：压在签发日期上，底部不遮住免责声明
+    ctx.drawImage(stamp, W - 330, 830, 160, 160);
+    ctx.restore();
+  }
+
+  return el;
+}
+
+
+/* ── 公约签署证书 1600×1131（A4 横向） ───── */
+
+export function renderAgreementCertificate(
+  agreement: { id: string; title: string; version: string; scope: string },
+  nickname: string,
+  signedAt: string,
+  brand: string,
+  date: string,
+  disclaimer: string = DEFAULT_CERT_DISCLAIMER,
+  stamp?: HTMLImageElement | null,
+): HTMLCanvasElement {
+  const W = 1600;
+  const H = 1131;
+  const [el, ctx] = canvas(W, H);
+
+  ctx.fillStyle = '#fbfcfe';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(62, 124, 255, 0.35)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(44, 44, W - 88, H - 88);
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(62, 62, W - 124, H - 124);
+
+  const corner = (x: number, y: number, sx: number, sy: number) => {
+    ctx.strokeStyle = C.blue;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x, y + sy * 46);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + sx * 46, y);
+    ctx.stroke();
+  };
+  corner(62, 62, 1, 1);
+  corner(W - 62, 62, -1, 1);
+  corner(62, H - 62, 1, -1);
+  corner(W - 62, H - 62, -1, -1);
+
+  write(ctx, brand, W / 2, 176, { size: 22, weight: 600, color: C.muted, align: 'center' });
+  write(ctx, '公约签署证书', W / 2, 300, {
+    size: 76,
+    weight: 700,
+    color: C.ink,
+    align: 'center',
+  });
+  write(ctx, 'CERTIFICATE OF AGREEMENT', W / 2, 348, {
+    size: 20,
+    color: C.muted,
+    align: 'center',
+    font: MONO,
+  });
+
+  ctx.fillStyle = C.blue;
+  ctx.fillRect(W / 2 - 40, 386, 80, 4);
+
+  write(ctx, '兹证明', 200, 500, { size: 26, color: C.ink2 });
+  write(ctx, nickname || '—', 320, 506, { size: 40, weight: 700, color: C.blue, maxWidth: 620 });
+  write(ctx, `已阅读并同意《${agreement.title}》${agreement.version} 的全部条款，`, 200, 590, {
+    size: 26,
+    color: C.ink2,
+    maxWidth: W - 400,
+  });
+  write(ctx, `并于 ${signedAt} 完成站内签署。`, 200, 642, {
+    size: 26,
+    color: C.ink2,
+    maxWidth: W - 400,
+  });
+
+  write(ctx, '证书编号', 200, 742, { size: 20, color: C.muted });
+  write(ctx, certSerial(`AGR-${agreement.id.toUpperCase()}`, nickname), 200, 782, {
+    size: 30,
+    weight: 600,
+    color: C.ink,
+    font: MONO,
+    maxWidth: 560,
+  });
+  write(ctx, '适用范围', 860, 742, { size: 20, color: C.muted });
+  write(ctx, agreement.scope, 860, 782, { size: 24, color: C.ink, maxWidth: 400 });
+
+  write(ctx, '可在站内「公约」页核验签署记录', 200, 860, { size: 18, color: C.muted });
+
+  write(ctx, brand, 200, 920, { size: 26, weight: 600, color: C.ink });
+  write(ctx, '运营团队', 200, 958, { size: 20, color: C.muted });
+  write(ctx, date, W - 200, 920, { size: 26, weight: 600, color: C.ink, align: 'right' });
+  write(ctx, '签发日期', W - 200, 958, { size: 20, color: C.muted, align: 'right' });
+
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(200, 986);
+  ctx.lineTo(W - 200, 986);
+  ctx.stroke();
+  write(ctx, '免责声明', 200, 1010, { size: 16, weight: 600, color: C.ink2 });
+  wrap(ctx, disclaimer, 200, 1036, W - 400, 2, {
+    size: 14,
+    color: C.muted,
+    lineHeight: 18,
+  });
+
+  ctx.globalAlpha = 0.06;
+  crest(ctx, '约', W - 380, 470, 300, { radius: 76, fontSize: 110 });
+  ctx.globalAlpha = 1;
+
+  if (stamp && stamp.complete && stamp.naturalWidth > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    // 印章压在签发日期上方，右对齐落款区
+    // 骑缝章：压在签发日期上，底部不遮住免责声明
+    ctx.drawImage(stamp, W - 330, 830, 160, 160);
+    ctx.restore();
+  }
 
   return el;
 }

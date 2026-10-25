@@ -61,6 +61,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
       { key: 'announcements', href: '/announcements', label: '公告', group: 'workspace' },
       { key: 'sponsors', href: '/sponsors', label: '赞助者', group: 'workspace' },
       { key: 'agreements', href: '/agreements', label: '公约', group: 'workspace' },
+      { key: 'policies', href: '/policies', label: '政策与协议', group: 'workspace' },
     ],
   },
 ];

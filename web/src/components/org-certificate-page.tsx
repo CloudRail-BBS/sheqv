@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSettings } from '@/lib/settings';
+import { certificateDisclaimer } from '@/lib/policy-store';
 import { getOrg } from '@/lib/orgs';
 import { KIND_LABEL, type OrgKind } from '@/lib/org-types';
 import { OrgCertificate } from '@/components/org-certificate';
@@ -16,7 +17,11 @@ export async function OrgCertificatePage({ kind, id }: { kind: OrgKind; id: stri
   const org = await getOrg(kind, id);
   if (!org) notFound();
 
-  const [user, settings] = await Promise.all([getCurrentUser(), getSettings()]);
+  const [user, settings, disclaimer] = await Promise.all([
+    getCurrentUser(),
+    getSettings(),
+    certificateDisclaimer(),
+  ]);
   const label = KIND_LABEL[kind];
   const base = kind === 'guild' ? '/guilds' : '/teams';
   const allowed = Boolean(user && (user.id === org.ownerId || user.isAdmin));
@@ -61,6 +66,7 @@ export async function OrgCertificatePage({ kind, id }: { kind: OrgKind; id: stri
         org={org}
         ownerName={org.owner || user!.nickname}
         brand={settings.siteName || '云轨社区'}
+        disclaimer={disclaimer}
       />
     </div>
   );

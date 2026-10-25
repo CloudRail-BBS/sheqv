@@ -39,6 +39,7 @@ pub mod object_storage;
 pub mod dev_teams;
 pub mod orgs;
 pub mod points;
+pub mod policies;
 pub mod resources;
 pub mod rewards;
 pub mod oauth;

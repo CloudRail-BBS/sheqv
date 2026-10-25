@@ -181,6 +181,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       <Link href="/agreements" style={{ marginLeft: 12 }}>
                         公约
                       </Link>
+                      <Link href="/policies" style={{ marginLeft: 12 }}>
+                        政策
+                      </Link>
                       <Link href="/login" style={{ marginLeft: 12 }}>
                         登录
                       </Link>

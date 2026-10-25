@@ -2311,6 +2311,39 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 [data-theme="light"] .md-toolbar { background: #f7f8fb; }
 [data-theme="light"] .md-tools button:hover { background: #fff; }
 
+/* ── 政策 / 协议 ─────────────────────────── */
+
+.policy-list { display: grid; gap: 10px; margin-top: 12px; }
+.policy-item {
+  display: block; padding: 16px 18px;
+  transition: border-color 0.16s, transform 0.16s;
+}
+.policy-item:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.policy-item h2 { font-size: 16px; letter-spacing: -0.01em; }
+.policy-item p { margin-top: 6px; font-size: 12.5px; line-height: 1.7; color: var(--text-2); }
+.policy-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px; font-size: 11px; color: var(--muted);
+}
+.policy-meta span { color: var(--blue); }
+.policy-doc { padding: 26px 32px; }
+.policy-summary {
+  margin-top: 16px; padding: 12px 14px; line-height: 1.8;
+  font-size: 13px; color: var(--text-2);
+  background: var(--blue-soft); border-left: 3px solid var(--blue);
+  border-radius: 0 8px 8px 0;
+}
+.policy-body { margin-top: 22px; }
+.policy-admin-list { display: grid; gap: 8px; }
+.policy-admin-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 16px; flex-wrap: wrap;
+}
+.policy-editor { margin-bottom: 12px; }
+@media (max-width: 560px) {
+  .policy-doc { padding: 20px 16px; }
+}
+
 /* ── 明暗主题 ───────────────────────────── */
 
 [data-theme="dark"] .ic-sun { display: none; }
