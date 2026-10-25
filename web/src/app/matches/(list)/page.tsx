@@ -8,6 +8,7 @@ import { MATCH_GAME_LABEL, MATCH_STATUS_LABEL, fmtMatchTime, type MatchStatus } 
 import { MatchCreate } from '@/components/match-create';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 
 export async function generateMetadata() {
   return buildMetadata({
@@ -36,13 +37,14 @@ export default async function MatchesPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status = '' } = await searchParams;
-  const [caps, user, trustSigned, guilds, teams, matches] = await Promise.all([
+  const [caps, user, trustSigned, guilds, teams, matches, settings] = await Promise.all([
     getRequestCaps(),
     getCurrentUser(),
     isTrustSigned(),
     listOrgs('guild'),
     listOrgs('team'),
     listMatches(status || undefined),
+    getSettings(),
   ]);
 
   const allOrgs = [...guilds, ...teams];
@@ -62,7 +64,7 @@ export default async function MatchesPage({
           <div>
             <h1 className="page-title">约战</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              发起申请 → 对方接受并锁定名单 → 比赛与结果确认
+              {settings.matchesHint || '发起申请 → 对方接受并锁定名单 → 比赛与结果确认'}
             </p>
           </div>
           <MatchCreate user={user} trustSigned={trustSigned} myOrgs={myOrgs} allOrgs={allOrgs} />

@@ -9,6 +9,20 @@ import { NavSettings } from './nav-settings';
 
 type Key = keyof SiteSettings;
 
+const HINT_FIELDS: { key: Key; label: string; placeholder: string }[] = [
+  { key: 'guildsHint', label: '公会页', placeholder: '公会是自己独立的社区单元：负责人、招募状态、战绩与榜单都只算公会自己。' },
+  { key: 'teamsHint', label: '战队页', placeholder: '战队独立于公会：不隶属于任何公会，有自己的负责人、自己的战绩、单独一张榜。' },
+  { key: 'matchesHint', label: '约战页', placeholder: '发起申请 → 对方接受并锁定名单 → 比赛与结果确认' },
+  { key: 'serversHint', label: '联机大厅', placeholder: 'Minecraft 服务器与 Rusted Warfare 联机房 · 人数与在线状态自动刷新' },
+  { key: 'resourcesHint', label: '资源库', placeholder: '地图、整合包、材质与工具 · 开发者与团队的作品都在这里' },
+  { key: 'devTeamsHint', label: '开发团队页', placeholder: '面向资源作者的团队：成员共同维护作品，团队单独上开发者榜。' },
+  { key: 'leaderboardHint', label: '排行榜', placeholder: '只统计双方确认或仲裁裁定的比赛 · 公会榜与战队榜分开计算' },
+  { key: 'pointsHint', label: '积分页', placeholder: '签到与社区行为都会累计积分，明细只增不减地记在下面' },
+  { key: 'rewardsHint', label: '福利中心', placeholder: '礼品卡、兑换码与抽奖 · 登录后可以拆卡、兑换与参与抽奖' },
+  { key: 'announcementsHint', label: '公告页', placeholder: '赛季规则、版本更新与仲裁结果都在这里，由管理员在后台发布。' },
+  { key: 'policiesHint', label: '政策页', placeholder: '使用本站服务前请阅读。政策由站点管理员维护，更新后立即生效。' },
+];
+
 interface Props {
   settings: SiteSettings;
   overrides: Partial<Record<Key, string | boolean>>;
@@ -110,6 +124,17 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         loginHint: form.loginHint,
         registerHint: form.registerHint,
         loginPoints: form.loginPoints,
+        guildsHint: form.guildsHint,
+        teamsHint: form.teamsHint,
+        matchesHint: form.matchesHint,
+        serversHint: form.serversHint,
+        resourcesHint: form.resourcesHint,
+        devTeamsHint: form.devTeamsHint,
+        leaderboardHint: form.leaderboardHint,
+        pointsHint: form.pointsHint,
+        rewardsHint: form.rewardsHint,
+        announcementsHint: form.announcementsHint,
+        policiesHint: form.policiesHint,
         publicBaseUrl: form.publicBaseUrl,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
@@ -645,6 +670,32 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
             style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
           />
         </label>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="pagehints">
+        <h3 style={{ fontSize: 13 }}>页面提示</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          显示在各页面标题下方；留空使用内置文案。建议一两句话，避免在手机上占太多高度。
+        </p>
+        <div className="seo-grid">
+          {HINT_FIELDS.map((f) => (
+            <label key={f.key} className="field" style={{ gridColumn: '1 / -1' }}>
+              <span>
+                {f.label}
+                {isOverride(f.key) && <em className="ovr">已覆盖</em>}
+              </span>
+              <textarea
+                className="input textarea"
+                rows={2}
+                value={String(form[f.key] ?? '')}
+                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                maxLength={200}
+                style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+              />
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }} data-section="seo">

@@ -26,7 +26,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'lottery', label: '抽奖' },
 ];
 
-export function RewardCenter({ initial }: { initial: RewardsSnapshot }) {
+export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint?: string }) {
   const router = useRouter();
   const [snap, setSnap] = useState(initial);
   const [tab, setTab] = useState<Tab>('cards');
@@ -188,7 +188,7 @@ export function RewardCenter({ initial }: { initial: RewardsSnapshot }) {
         <div>
           <h1 className="page-title">福利中心</h1>
           <p className="small muted" style={{ marginTop: 4, lineHeight: 1.8 }}>
-            礼品卡、兑换码与抽奖都在这里。礼品卡是点名发给你的，拆开时才有奖励。
+            {hint || '礼品卡、兑换码与抽奖都在这里。礼品卡是点名发给你的，拆开时才有奖励。'}
           </p>
         </div>
         <div className="rw-balance">

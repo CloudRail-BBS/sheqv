@@ -39,6 +39,16 @@ export function Composer({ nickname, signed, avatar }: Props) {
 
   // 草稿：本地保存，刷新/误关不丢；发布成功后清掉
   useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener('open-composer', onOpen);
+    if (window.location.hash === '#compose') {
+      setOpen(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    return () => window.removeEventListener('open-composer', onOpen);
+  }, []);
+
+  useEffect(() => {
     if (!nickname) return;
     try {
       const raw = localStorage.getItem(`ba-draft-${nickname}`);

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { listAnnouncements, type AnnouncementKind } from '@/lib/announcement-store';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,10 @@ const KIND_CLASS: Record<AnnouncementKind, string> = {
 const fmt = (ts: number) => new Date(ts).toISOString().slice(0, 10);
 
 export default async function AnnouncementsPage() {
-  const items = await listAnnouncements({ publishedOnly: true });
+  const [items, settings] = await Promise.all([
+    listAnnouncements({ publishedOnly: true }),
+    getSettings(),
+  ]);
   const pinned = items.filter((a) => a.pinned);
   const rest = items.filter((a) => !a.pinned);
 
@@ -34,7 +38,7 @@ export default async function AnnouncementsPage() {
           <div>
             <h1 className="page-title">公告</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              赛季规则、版本更新与仲裁结果都在这里，由管理员在后台发布。
+              {settings.announcementsHint || '赛季规则、版本更新与仲裁结果都在这里，由管理员在后台发布。'}
             </p>
           </div>
           <span className="badge">{items.length} 条</span>

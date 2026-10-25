@@ -6,6 +6,7 @@ import { ResourceUpload } from '@/components/resource-upload';
 import { listMyDevTeams } from '@/lib/dev-team-store';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 import {
   RESOURCE_CATEGORIES,
   RESOURCE_GAMES,
@@ -40,7 +41,7 @@ export default async function ResourcesPage({
 }) {
   const sp = await searchParams;
   const sort = sp.sort === 'likes' || sp.sort === 'downloads' ? sp.sort : 'new';
-  const [user, items, board] = await Promise.all([
+  const [user, items, board, settings] = await Promise.all([
     getCurrentUser(),
     listResources({
       game: sp.game,
@@ -49,6 +50,7 @@ export default async function ResourcesPage({
       sort: sort as 'new' | 'likes' | 'downloads',
     }),
     getDeveloperBoard(),
+    getSettings(),
   ]);
   const teams = user ? await listMyDevTeams() : [];
 
@@ -63,7 +65,7 @@ export default async function ResourcesPage({
           <div>
             <h1 className="page-title">资源库</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              地图、整合包、材质与工具 · 开发者与团队的作品都在这里
+              {settings.resourcesHint || '地图、整合包、材质与工具 · 开发者与团队的作品都在这里'}
             </p>
           </div>
           {user ? (

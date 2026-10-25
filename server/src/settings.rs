@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 55] = [
+pub const KEYS: [&str; 66] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -56,6 +56,18 @@ pub const KEYS: [&str; 55] = [
     "registerHint",
     // 登录页左侧能力条：每行「标题|描述」，最多 3 条；留空则用内置文案
     "loginPoints",
+    // 各列表页标题下的说明文案；留空用前端内置文案
+    "guildsHint",
+    "teamsHint",
+    "matchesHint",
+    "serversHint",
+    "resourcesHint",
+    "devTeamsHint",
+    "leaderboardHint",
+    "pointsHint",
+    "rewardsHint",
+    "announcementsHint",
+    "policiesHint",
     "allowRegister",
     "homeShowAnnouncements",
     // 邮箱验证码登录（SMTP 配置只落库，不下发给浏览器）
@@ -117,6 +129,17 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("loginHint", json!(""));
     put("registerHint", json!(""));
     put("loginPoints", json!(""));
+    put("guildsHint", json!(""));
+    put("teamsHint", json!(""));
+    put("matchesHint", json!(""));
+    put("serversHint", json!(""));
+    put("resourcesHint", json!(""));
+    put("devTeamsHint", json!(""));
+    put("leaderboardHint", json!(""));
+    put("pointsHint", json!(""));
+    put("rewardsHint", json!(""));
+    put("announcementsHint", json!(""));
+    put("policiesHint", json!(""));
     put("allowRegister", json!(true));
     put("homeShowAnnouncements", json!(true));
     // 默认关闭：开启前必须先把 SMTP 配通，否则用户点「发送验证码」只会看到失败

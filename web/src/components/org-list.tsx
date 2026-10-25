@@ -13,6 +13,7 @@ import {
 } from '@/lib/org-types';
 import { OrgCreate } from '@/components/org-create';
 import { EmptyState } from '@/components/empty-state';
+import { getSettings } from '@/lib/settings';
 
 const COPY = {
   guild: {
@@ -37,7 +38,12 @@ const COPY = {
  */
 export async function OrgList({ kind, game }: { kind: OrgKind; game?: string }) {
   const copy = COPY[kind];
-  const [orgs, user] = await Promise.all([listOrgs(kind, game), getCurrentUser()]);
+  const [orgs, user, settings] = await Promise.all([
+    listOrgs(kind, game),
+    getCurrentUser(),
+    getSettings(),
+  ]);
+  const lead = (kind === 'guild' ? settings.guildsHint : settings.teamsHint) || copy.lead;
   const activeGame = GAMES.find((g) => g.key === game);
   const base = kind === 'guild' ? '/guilds' : '/teams';
 
@@ -48,7 +54,7 @@ export async function OrgList({ kind, game }: { kind: OrgKind; game?: string }) 
           <div>
             <h1 className="page-title">{copy.title}</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              {copy.lead}
+              {lead}
             </p>
           </div>
           <Link href={`/leaderboard${activeGame ? `?game=${activeGame.key}` : ''}`} className="btn btn-sm btn-ghost">

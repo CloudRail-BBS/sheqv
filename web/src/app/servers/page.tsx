@@ -6,6 +6,7 @@ import { RelayBoard } from '@/components/relay-board';
 import { ServerUpload } from '@/components/server-upload';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,10 +34,11 @@ export default async function ServersPage({
   const active: 'minecraft' | 'rusted_warfare' =
     tab === 'rusted' ? 'rusted_warfare' : 'minecraft';
 
-  const [user, mc, rw] = await Promise.all([
+  const [user, mc, rw, settings] = await Promise.all([
     getCurrentUser(),
     listServers('minecraft'),
     active === 'rusted_warfare' ? listServers('rusted_warfare') : Promise.resolve([]),
+    getSettings(),
   ]);
   // 房间只在需要时拉：MC 那栏不该为此多等一次中转站请求
   const relay = active === 'rusted_warfare' ? await relaySnapshot() : null;
@@ -53,7 +55,7 @@ export default async function ServersPage({
           <div>
             <h1 className="page-title">联机大厅</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              Minecraft 服务器与 Rusted Warfare 联机房 · 人数与在线状态自动刷新
+              {settings.serversHint || 'Minecraft 服务器与 Rusted Warfare 联机房 · 人数与在线状态自动刷新'}
             </p>
           </div>
           <div className="row wrap" style={{ gap: 6 }}>

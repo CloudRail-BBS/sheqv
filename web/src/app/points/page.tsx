@@ -4,6 +4,7 @@ import { getPoints } from '@/lib/points';
 import { CHECKIN_BASE, STREAK_BONUS_MAX, fmtTime, reasonLabel } from '@/lib/point-types';
 import { CheckinCard } from '@/components/checkin-card';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export async function generateMetadata() {
 }
 
 export default async function PointsPage() {
-  const user = await getCurrentUser();
+  const [user, settings] = await Promise.all([getCurrentUser(), getSettings()]);
 
   if (!user) {
     return (
@@ -43,7 +44,7 @@ export default async function PointsPage() {
           <div>
             <h1 className="page-title">我的积分</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              签到与社区行为都会累计积分，明细只增不减地记在下面
+              {settings.pointsHint || '签到与社区行为都会累计积分，明细只增不减地记在下面'}
             </p>
           </div>
           <div className="row" style={{ gap: 6 }}>

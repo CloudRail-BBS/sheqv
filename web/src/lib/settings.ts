@@ -59,6 +59,17 @@ export interface SiteSettings {
   registerHint: string;
   /** 登录页左侧能力条：每行「标题|描述」，最多 3 条；留空用内置文案 */
   loginPoints: string;
+  guildsHint: string;
+  teamsHint: string;
+  matchesHint: string;
+  serversHint: string;
+  resourcesHint: string;
+  devTeamsHint: string;
+  leaderboardHint: string;
+  pointsHint: string;
+  rewardsHint: string;
+  announcementsHint: string;
+  policiesHint: string;
   allowRegister: boolean;
   homeShowAnnouncements: boolean;
   /** 邮箱验证码登录开关（SMTP 配置只在后台可见，公开投影里没有） */
@@ -125,6 +136,17 @@ const DEFAULTS: SiteSettings = {
   loginHint: '',
   registerHint: '',
   loginPoints: '',
+  guildsHint: '',
+  teamsHint: '',
+  matchesHint: '',
+  serversHint: '',
+  resourcesHint: '',
+  devTeamsHint: '',
+  leaderboardHint: '',
+  pointsHint: '',
+  rewardsHint: '',
+  announcementsHint: '',
+  policiesHint: '',
   allowRegister: true,
   homeShowAnnouncements: true,
   emailLoginEnabled: false,

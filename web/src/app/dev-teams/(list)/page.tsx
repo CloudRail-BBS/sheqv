@@ -46,8 +46,8 @@ export default async function DevTeamsPage({
           <div>
             <h1 className="page-title">开发团队</h1>
             <p className="small muted" style={{ marginTop: 4, lineHeight: 1.8 }}>
-              面向资源作者的团队：成员共同维护作品，团队单独上开发者榜。
-              与公会、约战战队是三套独立实体，互不隶属。
+              {settings.devTeamsHint ||
+                '面向资源作者的团队：成员共同维护作品，团队单独上开发者榜。与公会、约战战队是三套独立实体，互不隶属。'}
             </p>
           </div>
           <form action="/dev-teams" className="search page-search" style={{ width: 220 }}>

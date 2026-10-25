@@ -181,7 +181,7 @@ export default async function LeaderboardPage({
           <div>
             <h1 className="page-title">排行榜</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              只统计双方确认或仲裁裁定的比赛 · 公会榜与战队榜分开计算
+              {settings.leaderboardHint || '只统计双方确认或仲裁裁定的比赛 · 公会榜与战队榜分开计算'}
             </p>
           </div>
           <span className="badge">

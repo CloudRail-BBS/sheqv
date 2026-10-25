@@ -2989,6 +2989,7 @@ body:has(.auth-page) .app {
 .settings-sections[data-active-section="moderation"] > [data-section="moderation"],
 .settings-sections[data-active-section="integrations"] > [data-section="integrations"],
 .settings-sections[data-active-section="content"] > [data-section="content"],
+.settings-sections[data-active-section="pagehints"] > [data-section="pagehints"],
 .settings-sections[data-active-section="system"] > [data-section="system"] {
   display: block;
 }

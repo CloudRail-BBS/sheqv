@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/lib/current-user';
+import { isCommunitySigned } from '@/lib/agreement-state';
 import { getSettings } from '@/lib/settings';
 import { flatten } from '@/lib/notifications';
 import { getChrome } from '@/lib/chrome';
@@ -15,6 +16,7 @@ import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
 import { BrandMark } from '@/components/brand-mark';
 import { MobileMenu } from '@/components/mobile-menu';
+import { ComposerTrigger } from '@/components/composer-trigger';
 import { badgeOf } from '@/lib/badges';
 import { buildMetadata } from '@/lib/seo';
 
@@ -48,7 +50,11 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [caps, theme, user] = await Promise.all([getRequestCaps(), getTheme(), getCurrentUser()]);
   // 设置与顶栏数据并行；站内信 + 积分合并成一个接口，登录用户每页少一跳
-  const [settings, chrome] = await Promise.all([getSettings(), getChrome(user)]);
+  const [settings, chrome, communitySigned] = await Promise.all([
+    getSettings(),
+    getChrome(user),
+    user ? isCommunitySigned() : Promise.resolve(false),
+  ]);
   const customLinks = parseFooterLinks(settings.footerLinks);
   const notes = flatten({ comments: chrome.items, pending: [], unread: chrome.unread });
   const pointsChip = user ? { points: chrome.points, todayDone: chrome.todayDone } : null;
@@ -97,9 +103,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
                 <ThemeToggle />
 
-                <Link href="/#composer" className="btn btn-primary btn-sm hide-mobile">
-                  发帖
-                </Link>
+                <ComposerTrigger loggedIn={Boolean(user)} signed={communitySigned} />
 
                 {pointsChip && (
                   <Link href="/points" className="points-chip" title="积分与签到">

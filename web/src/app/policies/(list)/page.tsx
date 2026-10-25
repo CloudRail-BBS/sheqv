@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { listPolicies } from '@/lib/policy-store';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 
 export async function generateMetadata() {
   return buildMetadata({
@@ -11,7 +12,7 @@ export async function generateMetadata() {
 }
 
 export default async function PoliciesPage() {
-  const items = await listPolicies();
+  const [items, settings] = await Promise.all([listPolicies(), getSettings()]);
 
   return (
     <div className="cols">
@@ -20,7 +21,7 @@ export default async function PoliciesPage() {
           <div>
             <h1 className="page-title">政策与协议</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              使用本站服务前请阅读。政策由站点管理员维护，更新后立即生效。
+              {settings.policiesHint || '使用本站服务前请阅读。政策由站点管理员维护，更新后立即生效。'}
             </p>
           </div>
           <span className="badge mono">{items.length} 份</span>
