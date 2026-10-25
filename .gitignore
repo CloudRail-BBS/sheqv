@@ -43,3 +43,12 @@ Thumbs.db
 # 工作台项目数据（不属于代码）
 .workbuddy
 *.genie
+
+# 客户端工程
+apps/desktop/node_modules
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+apps/android/node_modules
+apps/android/android/.gradle
+apps/android/android/build
+apps/android/android/app/build

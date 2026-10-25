@@ -42,7 +42,7 @@ export default async function DevTeamsPage({
   return (
     <div className="cols">
       <div className="col-main">
-        <div className="between" style={{ alignItems: 'flex-end' }}>
+        <div className="between page-head" style={{ alignItems: 'flex-end' }}>
           <div>
             <h1 className="page-title">开发团队</h1>
             <p className="small muted" style={{ marginTop: 4, lineHeight: 1.8 }}>
@@ -50,7 +50,7 @@ export default async function DevTeamsPage({
               与公会、约战战队是三套独立实体，互不隶属。
             </p>
           </div>
-          <form action="/dev-teams" className="search" style={{ width: 220 }}>
+          <form action="/dev-teams" className="search page-search" style={{ width: 220 }}>
             <input name="q" defaultValue={q ?? ''} placeholder="搜索团队" aria-label="搜索开发团队" />
           </form>
         </div>

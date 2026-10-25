@@ -400,6 +400,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .feed-tabs .sort { margin-left: auto; font-size: 11.5px; color: #8a8a90; padding-right: 8px; }
 
+/* 页面级搜索：不要复用顶栏的移动端隐藏规则 */
+.page-search { flex: 0 0 220px; width: 220px; max-width: 100%; }
+.page-head { flex-wrap: nowrap; }
+.page-head > div:first-child { min-width: 0; flex: 1 1 auto; }
+@media (max-width: 700px) {
+  .page-head { flex-wrap: wrap; }
+  .page-search { flex: 1 0 100%; width: 100%; }
+}
+
 /* ── post card ───────────────────────────── */
 
 .post {
@@ -795,7 +804,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 
 @media (max-width: 560px) {
-  .search { display: none; }
+  .topbar .search { display: none; }
   .res-grid { grid-template-columns: 1fr; }
   .gcard-grid { grid-template-columns: 1fr; }
   .guild-grid { grid-template-columns: 1fr; }
@@ -1357,7 +1366,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 @media (max-width: 860px) {
   .app { padding: 14px 14px 82px; }
   .sidebar { display: none; }
-  .search { display: none; }
+  .topbar .search { display: none; }
   .only-mobile { display: grid; }
   .hide-mobile { display: none !important; }
   .topbar-in { padding: 0 14px; gap: 8px; }
@@ -3014,3 +3023,73 @@ body:has(.auth-page) .app {
 @media (max-width: 700px) {
   .download-grid { grid-template-columns: 1fr; }
 }
+
+/* ── 移动端快捷侧边栏 ─────────────────── */
+
+.mobile-menu-btn { display: none; }
+@media (max-width: 860px) {
+  .mobile-menu-btn { display: grid; }
+}
+
+.mobile-drawer-mask {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(10, 16, 28, 0.42);
+  backdrop-filter: blur(3px);
+  animation: drawerMask 0.18s ease-out both;
+}
+.mobile-drawer {
+  width: min(330px, 88vw); height: 100%;
+  overflow-y: auto; padding: 16px 12px calc(22px + env(safe-area-inset-bottom));
+  background: var(--panel); border-right: 1px solid var(--line);
+  box-shadow: 24px 0 60px -30px rgba(0, 0, 0, 0.55);
+  animation: drawerIn 0.2s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.mobile-drawer-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; padding: 0 6px 12px;
+}
+.mobile-drawer-head b { display: block; font-size: 15px; }
+.mobile-drawer-head span { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+.mobile-drawer-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; margin: 0 0 8px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2);
+}
+.mobile-drawer-avatar {
+  width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex: none;
+  display: grid; place-items: center;
+  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: #fff; font-size: 14px;
+}
+.mobile-drawer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mobile-drawer-user > div { min-width: 0; flex: 1; }
+.mobile-drawer-user b { display: block; font-size: 13px; }
+.mobile-drawer-user span { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+.mobile-drawer-section { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.mobile-drawer-label {
+  padding: 0 8px 4px; font-size: 9.5px; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.mobile-drawer-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 8px; border-radius: 9px;
+  font-size: 13px; color: var(--text-2);
+}
+.mobile-drawer-item:hover, .mobile-drawer-item[data-active="true"] {
+  background: var(--blue-soft); color: var(--blue);
+}
+.mobile-drawer-item svg { width: 17px; height: 17px; flex: none; }
+.mobile-drawer-count {
+  margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px;
+  display: grid; place-items: center; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 10px;
+}
+.mobile-drawer-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding: 12px 8px 0; border-top: 1px solid var(--line-soft);
+  font-size: 11px; color: var(--muted);
+}
+.mobile-drawer-foot a:hover { color: var(--blue); }
+
+@keyframes drawerMask { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawerIn { from { transform: translateX(-18px); opacity: 0.4; } to { transform: none; opacity: 1; } }

@@ -14,6 +14,7 @@ import { NotificationBell } from '@/components/notification-bell';
 import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
 import { BrandMark } from '@/components/brand-mark';
+import { MobileMenu } from '@/components/mobile-menu';
 import { badgeOf } from '@/lib/badges';
 import { buildMetadata } from '@/lib/seo';
 
@@ -64,6 +65,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CapProvider state={caps}>
           <header className="topbar">
             <div className="topbar-in">
+              <MobileMenu
+                siteName={settings.siteName}
+                user={user}
+                adminVisible={caps.capabilities.admin.console}
+                points={pointsChip?.points ?? 0}
+                unread={chrome.unread}
+              />
               <Link href="/" className="brand">
                 <BrandMark settings={settings} />
                 {settings.siteName}
@@ -79,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </form>
 
               <div className="topbar-right">
-                <Link href="/resources" className="icon-btn only-mobile" aria-label="搜索">
+                <Link href="/search" className="icon-btn only-mobile" aria-label="搜索">
                   <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
                     <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />

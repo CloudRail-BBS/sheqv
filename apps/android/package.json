@@ -1,0 +1,26 @@
+{
+  "name": "blockarena-android",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "sync": "cap sync android",
+    "open": "cap open android",
+    "add": "cap add android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7",
+    "@capacitor/app": "^7",
+    "@capacitor/browser": "^7",
+    "@capacitor/core": "^7",
+    "@capacitor/filesystem": "^7",
+    "@capacitor/keyboard": "^7",
+    "@capacitor/local-notifications": "^7",
+    "@capacitor/push-notifications": "^7",
+    "@capacitor/share": "^7",
+    "@capacitor/status-bar": "^7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7",
+    "typescript": "^5.6.0"
+  }
+}
