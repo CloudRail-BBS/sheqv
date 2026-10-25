@@ -2441,6 +2441,18 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 [data-theme="light"] .topbar { background: var(--glass-strong); border-bottom-color: rgba(21, 26, 35, 0.06); }
 [data-theme="light"] .post { background-image: none; }
+/* 浅色主题不要用深色 hover 边框：统一成冷灰蓝 */
+[data-theme="light"] .post:hover,
+[data-theme="light"] .res-card:hover,
+[data-theme="light"] .match-row:hover,
+[data-theme="light"] .gcard:hover,
+[data-theme="light"] .team-card:hover,
+[data-theme="light"] .an-item:hover,
+[data-theme="light"] .dev-team-card:hover,
+[data-theme="light"] .policy-item:hover {
+  border-color: #c9d6e6;
+}
+[data-theme="light"] .composer-input:hover { border-color: #c9d6e6; }
 [data-theme="light"] .post-tags .badge { background: var(--panel-2); color: var(--text-2); }
 [data-theme="light"] .table th { background: #fafafa; }
 [data-theme="light"] .table tbody tr:hover td { background: #ffffff; }
