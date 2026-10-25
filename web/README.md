@@ -64,7 +64,7 @@ $DATA_DIR/.session-secret     未配 SESSION_SECRET 时自动生成的会话密�
 写入用「临时文件 + rename」，进程内串行化；断电不会留半个 JSON。
 **文件存储只支持单实例**——要多副本先把 `lib/json-store.ts` 换成数据库。
 
-业务配置全部在后台 `/admin/settings`（站点名、GeeTest、爱发电、开放注册、对外地址），存 `$DATA_DIR/settings.json`，
+业务配置全部在后台 `/admin/settings/[section]`（站点、导航、SEO、对象存储、登录、审核等分区），存 `settings` 表，
 改完立即生效。**进程参数与密钥**（`PORT` / `DATA_DIR` / `SESSION_SECRET` / `ADMIN_TOKEN`）放 `.env`，
 模板见 `.env.example`。
 
