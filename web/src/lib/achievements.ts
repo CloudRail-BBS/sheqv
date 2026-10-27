@@ -5,7 +5,7 @@ import { apiGetOr } from './api-client';
  * 目录仍在前端留一份：个人主页的「未达成」进度条需要它。
  */
 
-export type BadgeTone = 'blue' | 'red' | 'gray';
+export type BadgeTone = 'blue' | 'gold' | 'red' | 'gray';
 
 export interface Achievement {
   id: string;
@@ -19,8 +19,8 @@ export interface EarnedBadge extends Achievement {
 }
 
 export const CATALOG: Achievement[] = [
-  { id: 'founder', name: '创始成员', desc: '站内第一个注册账号', tone: 'red' },
-  { id: 'admin', name: '管理员', desc: '拥有站点管理权限', tone: 'red' },
+  { id: 'founder', name: '创始成员', desc: '站内第一个注册账号', tone: 'gold' },
+  { id: 'admin', name: '管理员', desc: '拥有站点管理权限', tone: 'blue' },
   { id: 'first-post', name: '初次发声', desc: '发布第一篇帖子', tone: 'blue' },
   { id: 'writer', name: '笔耕不辍', desc: '累计发布 10 篇帖子', tone: 'blue' },
   { id: 'talker', name: '热心回复', desc: '累计发表 20 条评论', tone: 'blue' },

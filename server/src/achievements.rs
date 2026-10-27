@@ -26,13 +26,13 @@ pub const CATALOG: [Badge; 8] = [
         id: "founder",
         name: "创始成员",
         desc: "站内第一个注册账号",
-        tone: "red",
+        tone: "gold",
     },
     Badge {
         id: "admin",
         name: "管理员",
         desc: "拥有站点管理权限",
-        tone: "red",
+        tone: "blue",
     },
     Badge {
         id: "first-post",

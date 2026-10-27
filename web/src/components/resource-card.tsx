@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { fmtNum, fmtSize, gameLabel, gameShort, gameTone, type ResourceView } from '@/lib/resource-types';
+import { fmtNum, fmtSize, gameLabel, gameTone, type ResourceView } from '@/lib/resource-types';
 import { UserHoverCard } from './user-hover-card';
 
 /**
@@ -15,9 +15,6 @@ export function ResourceCard({ item }: { item: ResourceView }) {
     <Link href={`/resources/${item.id}`} className="card res-card">
       <div className={'res-cover cover-' + tone}>
         <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
-        <span className="glyph" aria-hidden="true">
-          {gameShort(item.game)}
-        </span>
         {item.version && <span className="ver">{item.version}</span>}
       </div>
 

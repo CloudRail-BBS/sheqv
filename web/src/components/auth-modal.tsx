@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { SiteSettings } from '@/lib/settings';
 import { BrandMark } from './brand-mark';
 
@@ -17,7 +20,10 @@ export function AuthModal({
   children: ReactNode;
   footer?: ReactNode;
 }) {
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const panel = (
     <div className="auth-modal-page">
       <div className="auth-modal-card">
         <div className="auth-modal-head">
@@ -38,4 +44,8 @@ export function AuthModal({
       </div>
     </div>
   );
+
+  // 挂到 body：登录页在 .content 里，父级的入场动画会把它变成
+  // position:fixed 的包含块，导致遮罩只盖住内容区、侧栏从底部漏出来。
+  return mounted ? createPortal(panel, document.body) : panel;
 }

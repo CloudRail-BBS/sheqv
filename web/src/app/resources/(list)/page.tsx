@@ -81,11 +81,28 @@ export default async function ResourcesPage({
           )}
         </div>
 
-        <div className="res-stats">
-          <span><b className="mono">{items.length}</b> 个资源</span>
-          <span><b className="mono">{fmtNum(totalLikes)}</b> 次点赞</span>
-          <span><b className="mono">{fmtNum(totalDownloads)}</b> 次下载</span>
-          <span className="muted">按当前筛选统计</span>
+        <div className="res-toolbar">
+          <div className="res-stats">
+            <span><b className="mono">{items.length}</b> 个资源</span>
+            <span><b className="mono">{fmtNum(totalLikes)}</b> 次点赞</span>
+            <span><b className="mono">{fmtNum(totalDownloads)}</b> 次下载</span>
+          </div>
+          <div className="row res-sort" style={{ gap: 6 }}>
+            {[
+              { key: 'new', label: '最新' },
+              { key: 'likes', label: '最多点赞' },
+              { key: 'downloads', label: '最多下载' },
+            ].map((s) => (
+              <Link
+                key={s.key}
+                href={buildQuery(base, { sort: s.key === 'new' ? undefined : s.key })}
+                className="chip"
+                data-on={sort === s.key}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
@@ -120,29 +137,11 @@ export default async function ResourcesPage({
           ))}
         </div>
 
-        <div className="between" style={{ marginTop: 14, marginBottom: 10 }}>
-          <div className="row" style={{ gap: 6 }}>
-            {[
-              { key: 'new', label: '最新' },
-              { key: 'likes', label: '最多点赞' },
-              { key: 'downloads', label: '最多下载' },
-            ].map((s) => (
-              <Link
-                key={s.key}
-                href={buildQuery(base, { sort: s.key === 'new' ? undefined : s.key })}
-                className="chip"
-                data-on={sort === s.key}
-              >
-                {s.label}
-              </Link>
-            ))}
-          </div>
-          {sp.q && (
-            <span className="small muted">
-              搜索「{sp.q}」· <Link href={buildQuery(base, { q: undefined })}>清除</Link>
-            </span>
-          )}
-        </div>
+        {sp.q && (
+          <p className="small muted" style={{ marginBottom: 10 }}>
+            搜索「{sp.q}」· <Link href={buildQuery(base, { q: undefined })}>清除</Link>
+          </p>
+        )}
 
         {items.length === 0 ? (
           <div className="card" style={{ padding: 8 }}>
@@ -208,17 +207,20 @@ export default async function ResourcesPage({
           </Link>
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">当前筛选</div>
-          <dl className="kv">
-            <dt>游戏</dt>
-            <dd>{sp.game ? gameLabel(sp.game) : '全部'}</dd>
-            <dt>分类</dt>
-            <dd>{sp.category || '全部'}</dd>
-            <dt>排序</dt>
-            <dd>{sort === 'likes' ? '点赞' : sort === 'downloads' ? '下载' : '最新'}</dd>
-          </dl>
-        </div>
+        {/* 只有真的筛过才显示，否则这张卡只是把上面的选项再抄一遍 */}
+        {(sp.game || sp.category || sp.q || sort !== 'new') && (
+          <div className="card rail-card">
+            <div className="rail-title">当前筛选</div>
+            <dl className="kv">
+              <dt>游戏</dt>
+              <dd>{sp.game ? gameLabel(sp.game) : '全部'}</dd>
+              <dt>分类</dt>
+              <dd>{sp.category || '全部'}</dd>
+              <dt>排序</dt>
+              <dd>{sort === 'likes' ? '点赞' : sort === 'downloads' ? '下载' : '最新'}</dd>
+            </dl>
+          </div>
+        )}
       </aside>
     </div>
   );

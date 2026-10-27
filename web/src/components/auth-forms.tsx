@@ -251,12 +251,14 @@ export function RegisterForm(props: CommonProps & { isFirst: boolean }) {
         {busy ? '创建中…' : '注册并登录'}
       </button>
 
-      <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>
-        已有账号？
-        <Link href="/login" className="auth-link">
-          直接登录
-        </Link>
-      </p>
+      {!bare && (
+        <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>
+          已有账号？
+          <Link href="/login" className="auth-link">
+            直接登录
+          </Link>
+        </p>
+      )}
     </form>
   );
 }
@@ -488,12 +490,14 @@ export function LoginForm(props: CommonProps) {
         {busy ? (mode === 'password' ? '登录中…' : '验证中…') : '登录'}
       </button>
 
-      <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>
-        还没有账号？
-        <Link href="/register" className="auth-link">
-          注册
-        </Link>
-      </p>
+      {!bare && (
+        <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>
+          还没有账号？
+          <Link href="/register" className="auth-link">
+            注册
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

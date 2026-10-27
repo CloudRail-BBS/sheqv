@@ -73,8 +73,13 @@ export function PostCard({
             {item.guild}
             {item.pinned && <span className="post-pin">置顶</span>}
           </div>
-          <div className="post-meta">{item.time}</div>
-          <AchievementChips badges={achievements} size="sm" />
+          <div className="post-sub">
+            <span>{item.time}</span>
+            <AchievementChips
+              badges={achievements?.filter((b) => !(badge?.admin && b.id === 'admin'))}
+              size="sm"
+            />
+          </div>
         </div>
         {item.kind === 'match' && (
           <Link href="/matches" className="badge badge-warn" style={{ marginLeft: 'auto' }}>

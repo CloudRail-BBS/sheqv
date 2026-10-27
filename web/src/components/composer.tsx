@@ -188,20 +188,21 @@ export function Composer({ nickname, signed, avatar }: Props) {
 
   if (!nickname) {
     return (
-      <div className="card composer">
+      <div className="card composer composer-guest">
         <div className="composer-top">
           <div className="post-avatar">?</div>
-          <div className="composer-input" style={{ color: 'var(--muted)' }}>
-            登录后即可发帖、评论与签署公约
+          <div className="composer-guest-text">
+            <b>登录后参与讨论</b>
+            <span>发帖、评论与签署公约都需要先登录</span>
           </div>
-          <Link href="/register" className="btn btn-primary">
-            注册
-          </Link>
-        </div>
-        <div className="composer-actions">
-          <span className="tip">
-            已有账号？<Link href="/login" style={{ color: 'var(--blue)' }}>直接登录</Link>
-          </span>
+          <div className="composer-guest-acts">
+            <Link href="/login" className="btn btn-sm btn-ghost">
+              登录
+            </Link>
+            <Link href="/register" className="btn btn-sm btn-primary">
+              注册
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -209,18 +210,16 @@ export function Composer({ nickname, signed, avatar }: Props) {
 
   if (!signed) {
     return (
-      <div className="card composer">
+      <div className="card composer composer-guest">
         <div className="composer-top">
           <div className="post-avatar">{avatarNode}</div>
-          <div className="composer-input" style={{ color: 'var(--amber)' }}>
-            签署《社区公约》后才能发帖
+          <div className="composer-guest-text">
+            <b>先签署《社区公约》</b>
+            <span>发帖、评论与上传资源都要求先签署</span>
           </div>
-          <Link href="/agreements" className="btn btn-primary">
+          <Link href="/agreements" className="btn btn-sm btn-primary">
             去签署
           </Link>
-        </div>
-        <div className="composer-actions">
-          <span className="tip">发帖、评论与上传资源都要求先签署社区公约</span>
         </div>
       </div>
     );

@@ -103,7 +103,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
                 <ThemeToggle />
 
-                <ComposerTrigger loggedIn={Boolean(user)} signed={communitySigned} />
+                {/* 未登录时不显示「发帖」：点了也是去登录，只会和「注册」抢注意力 */}
+                {user && (
+                  <ComposerTrigger
+                    loggedIn
+                    signed={communitySigned}
+                    className="btn btn-primary btn-sm hide-mobile"
+                  />
+                )}
 
                 {pointsChip && (
                   <Link href="/points" className="points-chip" title="积分与签到">
