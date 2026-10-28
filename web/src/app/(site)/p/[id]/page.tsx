@@ -61,6 +61,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   };
 
   const op = who(post.author, post.authorId);
+  // 「个人」是早期发帖写死的占位值，不是公会名；空值同样不展示
+  const guildName = post.guild && post.guild !== '个人' ? post.guild : '';
   const pending = post.status === 'pending';
   const rejected = post.status === 'rejected';
   const unpublished = pending || rejected;
@@ -90,8 +92,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         {/* 主题头：标题、作者、统计与快捷回复，楼层里不再重复 */}
         <header className="card card-pad thread-head" id="top">
           <div className="thread-kicker">
-            <span>{post.guild}公会</span>
-            <span>·</span>
+            {guildName && (
+              <>
+                <span>{guildName}公会</span>
+                <span>·</span>
+              </>
+            )}
             <span>{post.time}</span>
             <span>·</span>
             <span>{post.comments} 条回复</span>
@@ -136,13 +142,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               >
                 <b>{post.author}</b>
               </UserHoverCard>
+              {/* 标签与成就挂一行：作者横带只占两行，不把楼层顶得很高 */}
               <div className="floor-tags">
                 <NameBadges badge={op.badge} group={op.group} size="sm" />
+                <AchievementChips
+                  badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
+                  size="sm"
+                />
               </div>
-              <AchievementChips
-                badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
-                size="sm"
-              />
             </div>
           </aside>
 
@@ -258,7 +265,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 </UserHoverCard>
                 <NameBadges badge={op.badge} group={op.group} size="sm" />
               </div>
-              <div className="small muted">{post.guild}公会</div>
+              <div className="small muted">{guildName ? `${guildName}公会` : '个人发布'}</div>
               <AchievementChips
                 badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
                 size="sm"

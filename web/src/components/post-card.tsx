@@ -32,6 +32,8 @@ export function PostCard({
   const [likes, setLikes] = useState(item.likes);
   const [saved, setSaved] = useState(false);
   const href = item.href ?? '/';
+  // 「个人」是早期发帖时写死的占位值，不是公会；空值与它都不展示
+  const guildName = item.guild && item.guild !== '个人' ? item.guild : '';
 
   async function like() {
     if (liked) return;
@@ -67,16 +69,20 @@ export function PostCard({
               <b>{item.author}</b>
             </UserHoverCard>
             <NameBadges badge={badge} group={group} size="sm" />
-            <span className="sep">·</span>
-            {item.guild}
-            {item.pinned && <span className="post-pin">置顶</span>}
-          </div>
-          <div className="post-sub">
-            <span>{item.time}</span>
             <AchievementChips
               badges={achievements?.filter((b) => !(badge?.admin && b.id === 'admin'))}
               size="sm"
             />
+            {guildName && (
+              <>
+                <span className="sep">·</span>
+                {guildName}
+              </>
+            )}
+            {item.pinned && <span className="post-pin">置顶</span>}
+          </div>
+          <div className="post-sub">
+            <span>{item.time}</span>
           </div>
         </div>
         {item.kind === 'match' && (

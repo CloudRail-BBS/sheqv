@@ -260,7 +260,8 @@ pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<Str
     .bind(&id)
     .bind(input.title)
     .bind(input.body)
-    .bind("个人")
+    // 公会名暂时留空：没有公会体系的真实归属前，别写「个人」这种占位值
+    .bind("")
     .bind(tags)
     .bind(user_id)
     .bind(input.status)

@@ -4485,42 +4485,43 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .res-deps p { margin-top: 3px; font-size: 12px; color: var(--text-2); line-height: 1.7; }
 
 /* ── 楼层 ─────────────────────────────────
-   左栏是作者（头像 / 昵称 / 身份），右栏是内容与楼层号。
-   桌面 168px 固定左栏，≤700 收成横向一条，正文占满整行。 */
+   作者信息是卡片顶部的一条横带（头像 / 昵称 / 身份），正文在下面铺满整宽。
+   桌面与移动端用同一套结构，只有内边距与头像尺寸随宽度微调；
+   左右分栏会让正文只有 60% 宽度，长回复读起来很累。 */
 
 .floor {
-  display: grid;
-  grid-template-columns: 168px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   padding: 0;
   overflow: hidden;
 }
 
 .floor-side {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 14px 14px 16px;
-  border-right: 1px solid var(--line-soft);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--line-soft);
   background: var(--panel-2);
   min-width: 0;
 }
 
 .floor-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   flex: none;
   display: grid;
   place-items: center;
   overflow: hidden;
   background: linear-gradient(150deg, var(--blue), var(--blue-2));
   color: #fff;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
 }
 .floor-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.floor-who { min-width: 0; }
+.floor-who { flex: 1; min-width: 0; }
 .floor-who b {
   display: inline-block;
   max-width: 100%;
@@ -4531,10 +4532,10 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   white-space: nowrap;
   vertical-align: bottom;
 }
-.floor-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.floor-side .bz-list { margin-top: 4px; }
+.floor-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
+.floor-tags .bz-list { margin-left: 0; }
 
-.floor-main { padding: 13px 16px 15px; min-width: 0; }
+.floor-main { padding: 15px 18px 16px; min-width: 0; }
 
 .floor-head {
   display: flex;
@@ -4600,8 +4601,6 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 .floor-acts { display: flex; gap: 6px; flex-wrap: wrap; }
 
-.floor-op .floor-main { padding-top: 14px; }
-.floor-op .page-title { margin-top: 2px; }
 
 /* 底部回复框 */
 .comment-form .textarea { margin-top: 2px; }
@@ -4614,19 +4613,12 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .comment-form-foot .btn { margin-left: auto; }
 
 @media (max-width: 700px) {
-  .floor { grid-template-columns: minmax(0, 1fr); }
-  .floor-side {
-    flex-direction: row;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 12px;
-    border-right: 0;
-    border-bottom: 1px solid var(--line-soft);
-  }
+  .floor-side { gap: 9px; padding: 10px 13px; }
   .floor-avatar { width: 32px; height: 32px; border-radius: 9px; font-size: 14px; }
   .floor-who b { font-size: 12.5px; }
+  /* 窄屏放不下成就徽章，身份组标签保留 */
   .floor-side .bz-list { display: none; }
-  .floor-main { padding: 12px 13px 14px; }
+  .floor-main { padding: 12px 14px 14px; }
   .floor-time { font-size: 11px; }
   .floor-reply { height: 28px; }
 }
@@ -5227,10 +5219,8 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .thread-head-foot .btn { margin-left: auto; }
-.floor-main { padding: 16px 20px 18px; }
 .floor-body { line-height: 1.85; }
 @media (max-width: 700px) {
   .thread-head { padding: 14px 14px 12px; }
   .thread-title { font-size: 19px; }
-  .floor-main { padding: 13px 14px 15px; }
 }
