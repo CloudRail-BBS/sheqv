@@ -14,7 +14,7 @@ use crate::state::AppState;
 use crate::{announcements, settings, slides};
 
 /// 可以给浏览器看的键
-const PUBLIC_KEYS: [&str; 24] = [
+const PUBLIC_KEYS: [&str; 25] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -39,6 +39,7 @@ const PUBLIC_KEYS: [&str; 24] = [
     "tabbarItems",
     "allowRegister",
     "homeShowAnnouncements",
+    "feedLayout",
     // 只告诉前端「能不能用」，SMTP 的 host/user/pass 一律不下发
     "emailLoginEnabled",
 ];
