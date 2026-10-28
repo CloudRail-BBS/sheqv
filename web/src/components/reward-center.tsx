@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { fmtCardDate, type RewardsSnapshot } from '@/lib/reward-types';
 import { fmtNum } from '@/lib/resource-types';
@@ -26,16 +27,49 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'lottery', label: '抽奖' },
 ];
 
-export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint?: string }) {
+export function RewardCenter({
+  initial,
+  hint,
+  initialTab = 'cards',
+}: {
+  initial: RewardsSnapshot;
+  hint?: string;
+  initialTab?: Tab;
+}) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [snap, setSnap] = useState(initial);
-  const [tab, setTab] = useState<Tab>('cards');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [code, setCode] = useState('');
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const [rolling, setRolling] = useState(false);
   const [rollName, setRollName] = useState('');
+
+  useEffect(() => setMounted(true), []);
+
+  // 有弹窗时锁滚动、支持 Esc；顶部栏被漏在遮罩外的问题靠 Portal 解决
+  useEffect(() => {
+    if (!reveal) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setReveal(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [reveal]);
+
+  /** 切页签顺便改 URL：刷新/分享回来还在同一页 */
+  function switchTab(next: Tab) {
+    setTab(next);
+    const url = next === 'cards' ? '/rewards' : `/rewards?tab=${next}`;
+    window.history.replaceState(null, '', url);
+  }
 
   const particles = useMemo(() => {
     if (!reveal) return [];
@@ -185,26 +219,49 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
   return (
     <>
       <div className="rw-head">
-        <div>
+        <div className="rw-head-main">
+          <span className="rw-kicker">REWARDS</span>
           <h1 className="page-title">福利中心</h1>
-          <p className="small muted" style={{ marginTop: 4, lineHeight: 1.8 }}>
+          <p className="rw-sub">
             {hint || '礼品卡、兑换码与抽奖都在这里。礼品卡是点名发给你的，拆开时才有奖励。'}
           </p>
         </div>
         <div className="rw-balance">
-          <span>我的积分</span>
-          <b className="mono">{fmtNum(snap.points)}</b>
-          <Link href="/points" className="small">
+          <span className="rw-balance-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                d="m12 3.6 2.5 5.2 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <div className="rw-balance-main">
+            <span>我的积分</span>
+            <b className="mono">{fmtNum(snap.points)}</b>
+          </div>
+          <Link href="/points" className="rw-balance-link">
             明细 →
           </Link>
         </div>
       </div>
 
-      <div className="rw-tabs">
+      <div className="rw-tabs" role="tablist" aria-label="福利分类">
         {TABS.map((t) => (
-          <button key={t.key} className="srv-tab" data-on={tab === t.key} onClick={() => setTab(t.key)}>
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            className="rw-tab"
+            data-on={tab === t.key}
+            onClick={() => switchTab(t.key)}
+          >
             {t.label}
             {t.key === 'cards' && snap.cards.length > 0 && <span className="n">{snap.cards.length}</span>}
+            {t.key === 'lottery' && snap.prizes.length > 0 && <span className="n">{snap.prizes.length}</span>}
           </button>
         ))}
       </div>
@@ -216,15 +273,30 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
       )}
 
       {tab === 'cards' && (
-        <>
+        <div role="tabpanel" aria-label="我的礼品卡" className="rw-panel">
           {snap.cards.length === 0 ? (
-            <div className="card card-pad">
-              <p className="small muted" style={{ lineHeight: 1.8 }}>
-                卡包是空的。管理员发放、抽奖抽到，都会出现在这里。
-              </p>
-              <button className="btn btn-sm btn-ghost" style={{ marginTop: 10 }} onClick={() => setTab('lottery')}>
-                去抽一张
-              </button>
+            <div className="card rw-empty">
+              <span className="rw-empty-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <path
+                    d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5zM4 8.5h16M12 4v16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <b>卡包还是空的</b>
+              <p>管理员发放、抽奖抽到，都会出现在这里。拆开时才结算奖励。</p>
+              <div className="rw-empty-acts">
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => switchTab('lottery')}>
+                  去抽一张
+                </button>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => switchTab('code')}>
+                  我有兑换码
+                </button>
+              </div>
             </div>
           ) : (
             <div className="gift-grid">
@@ -251,6 +323,7 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
                     </div>
                   </div>
                   <button
+                    type="button"
                     className="gc-seal"
                     onClick={() => openCard(c.id)}
                     disabled={busy === c.id}
@@ -279,11 +352,11 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {tab === 'code' && (
-        <div className="rw-code">
+        <div className="rw-code" role="tabpanel" aria-label="兑换码">
           <div className="card card-pad">
             <h3 style={{ fontSize: 15 }}>输入兑换码</h3>
             <p className="small muted" style={{ marginTop: 6, lineHeight: 1.8 }}>
@@ -310,7 +383,7 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
       )}
 
       {tab === 'lottery' && (
-        <div className="rw-lottery">
+        <div className="rw-lottery" role="tabpanel" aria-label="抽奖">
           <section className="lottery-stage">
             <div className="lt-glow" aria-hidden="true" />
             <div className="lt-kicker">LUCKY DRAW</div>
@@ -376,13 +449,24 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
         </div>
       )}
 
-      {reveal && (
-        <div className="gift-burst" role="dialog" aria-modal="true" aria-label="获得奖励">
-          <div className="gb-glow" style={{ background: `radial-gradient(circle, ${reveal.theme}66, transparent 68%)` }} />
+      {mounted && reveal && createPortal(
+        <div
+          className="gift-burst"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gift-title"
+          onClick={() => setReveal(null)}
+        >
+          <div
+            className="gb-glow"
+            aria-hidden="true"
+            style={{ background: `radial-gradient(circle, ${reveal.theme}66, transparent 68%)` }}
+          />
           {particles.map((p) => (
             <i
               key={p.i}
               className="gb-particle"
+              aria-hidden="true"
               style={{
                 ['--tx' as string]: `${p.x}px`,
                 ['--ty' as string]: `${p.y}px`,
@@ -393,22 +477,29 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
             />
           ))}
 
-          <div className="gb-panel" style={{ ['--gb' as string]: reveal.theme } as CSSProperties}>
-            <button className="gb-x" onClick={() => setReveal(null)} aria-label="关闭">
+          <div
+            className="gb-panel"
+            style={{ ['--gb' as string]: reveal.theme } as CSSProperties}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button type="button" className="gb-x" onClick={() => setReveal(null)} aria-label="关闭">
               ×
             </button>
-            <div className="gb-top-kicker">专属礼品卡</div>
-            <div className="gb-heading">{reveal.heading}</div>
+
+            <div className="gb-top-kicker">CLOUDRAIL GIFT</div>
+            <h2 className="gb-heading" id="gift-title">{reveal.heading}</h2>
 
             <div className="gb-ticket">
               <div className="gb-ticket-head">
-                <span className="gb-brand">CLOUDRAIL</span>
-                <span className="gb-serial mono">2026 · GIFT</span>
+                <span className="gb-brand">云轨社区</span>
+                <span className="gb-serial mono">
+                  NO.{new Date().toISOString().slice(0, 10).replace(/-/g, '')}
+                </span>
               </div>
               <div className="gb-ticket-title">{reveal.title}</div>
               {(reveal.points > 0 || reveal.giftPoints) && (
                 <div className="gb-ticket-points">
-                  <b className="mono">{reveal.points > 0 ? reveal.points : reveal.giftPoints}</b>
+                  <b className="mono">+{reveal.points > 0 ? reveal.points : reveal.giftPoints}</b>
                   <span>积分</span>
                 </div>
               )}
@@ -421,30 +512,38 @@ export function RewardCenter({ initial, hint }: { initial: RewardsSnapshot; hint
                     : '奖励已到账'}
               </div>
               <span className="gb-seal" aria-hidden="true">
-                <i>GIFT</i>
-                <b>拆</b>
+                <i>OPENED</i>
+                <b>已拆</b>
               </span>
             </div>
 
-            <div className="gb-result">
+            <p className="gb-result">
               {reveal.rewardKind === 'title' && reveal.rewardValue
                 ? `头衔「${reveal.rewardValue}」已到账`
-                : reveal.note || `${reveal.title} 已发放到你的账号`}
-              {reveal.rewardKind === 'title' && reveal.note && (
-                <div className="gb-note">{reveal.note}</div>
-              )}
-            </div>
+                : reveal.note ||
+                  (reveal.points > 0
+                    ? '积分已存入你的账户，可在积分明细里查看'
+                    : '奖励已发放到你的账号')}
+            </p>
 
             <div className="gb-actions">
-              <button className="gb-primary" onClick={() => setReveal(null)}>
+              <button type="button" className="gb-primary" autoFocus onClick={() => setReveal(null)}>
                 收下
               </button>
-              <Link href="/rewards" className="gb-secondary">
+              <button
+                type="button"
+                className="gb-secondary"
+                onClick={() => {
+                  setReveal(null);
+                  switchTab('cards');
+                }}
+              >
                 查看卡包
-              </Link>
+              </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

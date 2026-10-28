@@ -11,7 +11,13 @@ export async function generateMetadata() {
   return buildMetadata({ title: '福利中心', path: '/rewards', noIndex: true });
 }
 
-export default async function RewardsPage() {
+export default async function RewardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
+  const initialTab = tab === 'code' || tab === 'lottery' ? tab : 'cards';
   const [user, settings] = await Promise.all([getCurrentUser(), getSettings()]);
   const hint = settings.rewardsHint || '礼品卡、兑换码与抽奖都在这里。礼品卡是点名发给你的，拆开时才有奖励。';
 
@@ -35,7 +41,7 @@ export default async function RewardsPage() {
 
   return (
     <div className="col-main">
-      <RewardCenter initial={snapshot} hint={hint} />
+      <RewardCenter initial={snapshot} hint={hint} initialTab={initialTab} />
     </div>
   );
 }
