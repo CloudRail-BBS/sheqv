@@ -344,6 +344,13 @@ pub async fn permissions_of(pool: &PgPool, user_id: &str) -> Result<Vec<String>,
     Ok(perms.map(|v| strings(&v)).unwrap_or_default())
 }
 
+/// 未分组用户的兜底能力。
+///
+/// 历史上注册不写 `group_id`，而 `can()` 对 NULL 组一律拒绝，
+/// 结果普通用户连帖子都发不了。未分组按「普通成员」的最小集合处理，
+/// 分组之后以组的权限为准（组里没勾的权限仍然不给）。
+pub const MEMBER_BASELINE: [&str; 3] = ["post.create", "comment.create", "resource.publish"];
+
 pub async fn can(pool: &PgPool, user_id: &str, permission: &str) -> Result<bool, sqlx::Error> {
     // 管理员判定优先走 SQL，避免为一次判定拉全量权限
     let is_admin: Option<String> = sqlx::query_scalar("SELECT role FROM users WHERE id = $1")
@@ -360,10 +367,13 @@ pub async fn can(pool: &PgPool, user_id: &str, permission: &str) -> Result<bool,
     .fetch_optional(pool)
     .await?;
 
-    Ok(perms
-        .flatten()
-        .map(|v| strings(&v).iter().any(|p| p == permission))
-        .unwrap_or(false))
+    match perms {
+        // 有组：严格按组配置
+        Some(Some(v)) => Ok(strings(&v).iter().any(|p| p == permission)),
+        // 没组（老账号或没建默认组）：给普通成员的基础能力
+        Some(None) => Ok(MEMBER_BASELINE.contains(&permission)),
+        None => Ok(false),
+    }
 }
 
 /// 进组前必须签署的公约 id

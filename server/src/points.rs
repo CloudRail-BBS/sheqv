@@ -6,7 +6,7 @@
 //! 2. **签到按上海时区的一天算**。用 `current_date` 会在 UTC 服务器上把 0–8 点的签到
 //!    记到前一天，所以统一写 `(now() AT TIME ZONE 'Asia/Shanghai')::date`。
 
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::Serialize;
 use sqlx::PgPool;
 
@@ -22,7 +22,7 @@ pub const CHECKIN_BASE: i64 = 10;
 pub const STREAK_BONUS_MAX: i64 = 7;
 
 /// 与前端约定：这些 reason 会显示成中文
-pub const REASON_LABELS: [(&str, &str); 8] = [
+pub const REASON_LABELS: [(&str, &str); 12] = [
     ("post", "发帖"),
     ("comment", "评论"),
     ("checkin", "签到"),
@@ -31,6 +31,11 @@ pub const REASON_LABELS: [(&str, &str); 8] = [
     ("gift", "礼品卡"),
     ("lottery", "抽奖消耗"),
     ("lottery_prize", "抽奖奖励"),
+    // 删除内容时的冲正：名字带「冲正」，一眼能看出不是惩罚
+    ("post_revoke", "删帖冲正"),
+    ("comment_revoke", "删评论冲正"),
+    ("resource_revoke", "删资源冲正"),
+    ("admin", "管理员调整"),
 ];
 
 #[derive(Debug, Serialize)]
@@ -136,6 +141,103 @@ pub async fn award_in(
     .await?;
 
     Ok(balance.unwrap_or(0) as i64)
+}
+
+/// 冲正一笔行为奖励（删帖 / 删评论 / 删资源）。
+///
+/// 为什么必须在**删除的同一个事务**里做：先发分再删内容，中间任何一步失败都会
+/// 留下「分还在、内容没了」的差值，反复「发布 → 删除」就能刷分。
+/// 余额用 GREATEST(0, …) 兜底，用户已经把分花掉时最多归零，不会出现负分。
+pub async fn revoke_in(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: &str,
+    amount: i64,
+    reason: &str,
+    reference: Option<&str>,
+) -> Result<i64, sqlx::Error> {
+    if amount <= 0 {
+        let balance: Option<i32> = sqlx::query_scalar("SELECT points FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&mut **tx)
+            .await?;
+        return Ok(balance.unwrap_or(0) as i64);
+    }
+
+    // 只扣到 0 为止，并且按**实际扣除额**记流水：
+    // 账本要能对得上（sum(delta) == users.points），不能写一条 -20 却只扣了 5。
+    let balance: Option<i32> =
+        sqlx::query_scalar("SELECT points FROM users WHERE id = $1 FOR UPDATE")
+            .bind(user_id)
+            .fetch_optional(&mut **tx)
+            .await?;
+    let actual = (balance.unwrap_or(0) as i64).min(amount);
+    if actual <= 0 {
+        return Ok(balance.unwrap_or(0) as i64);
+    }
+    award_in(tx, user_id, -actual, reason, reference).await
+}
+
+/* ── 后台 ───────────────────────────────── */
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminRow {
+    pub id: String,
+    pub nickname: String,
+    pub username: String,
+    pub points: i64,
+    /// 最近一次变动的 reason（没有流水时为空）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_at: Option<i64>,
+}
+
+/// 后台积分列表：按余额倒序，`q` 匹配昵称或用户名
+pub async fn admin_list(
+    pool: &PgPool,
+    q: &str,
+    limit: i64,
+) -> Result<Vec<AdminRow>, sqlx::Error> {
+    let like = format!("%{}%", q.trim());
+    sqlx::query_as(
+        "SELECT u.id, u.nickname, u.username, u.points::bigint AS points,
+                l.reason AS last_reason,
+                (EXTRACT(EPOCH FROM l.created_at) * 1000)::bigint AS last_at
+           FROM users u
+           LEFT JOIN LATERAL (
+                SELECT reason, created_at FROM point_logs
+                 WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1
+           ) l ON true
+          WHERE ($1 = '%%' OR u.nickname ILIKE $1 OR u.username ILIKE $1)
+          ORDER BY u.points DESC, u.created_at ASC
+          LIMIT $2",
+    )
+    .bind(&like)
+    .bind(limit.clamp(1, 200))
+    .fetch_all(pool)
+    .await
+}
+
+/// 某个人的最近流水（后台对账用）
+pub async fn logs_of(pool: &PgPool, user_id: &str, limit: i64) -> Result<Vec<PointLog>, sqlx::Error> {
+    let rows: Vec<(String, i32, String, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT id, delta, reason, created_at FROM point_logs
+          WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2",
+    )
+    .bind(user_id)
+    .bind(limit.clamp(1, 100))
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(id, delta, reason, at)| PointLog {
+            id,
+            delta: delta as i64,
+            reason,
+            at: at.timestamp_millis(),
+        })
+        .collect())
 }
 
 /// 顶栏用的轻量读数：只要余额与今天是否已签到。

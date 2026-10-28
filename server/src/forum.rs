@@ -328,21 +328,74 @@ pub async fn like(pool: &PgPool, post_id: &str) -> Result<Option<i64>, sqlx::Err
 
 /// 后台删一条评论（楼层）。评论删除后楼层号会重排，这是预期行为：
 /// 楼层是「当前第几楼」，不是永久编号。
+///
+/// 删楼同时冲正评论积分，否则「评论 +2 → 删评论」又是一个刷分口子。
 pub async fn delete_comment(pool: &PgPool, comment_id: &str) -> Result<bool, sqlx::Error> {
-    let done = sqlx::query("DELETE FROM comments WHERE id = $1")
-        .bind(comment_id)
-        .execute(pool)
-        .await?;
-    Ok(done.rows_affected() > 0)
+    let mut tx = pool.begin().await?;
+    let author: Option<String> =
+        sqlx::query_scalar("DELETE FROM comments WHERE id = $1 RETURNING author_id")
+            .bind(comment_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let Some(author) = author else {
+        tx.rollback().await?;
+        return Ok(false);
+    };
+    crate::points::revoke_in(
+        &mut tx,
+        &author,
+        crate::points::COMMENT_REWARD,
+        "comment_revoke",
+        Some(comment_id),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(true)
 }
 
+/// 删帖。评论会被外键级联删除，所以先把评论作者统计出来，
+/// 再连同帖子本身的发帖分一起冲正。
 pub async fn delete(pool: &PgPool, post_id: &str) -> Result<bool, sqlx::Error> {
-    let affected = sqlx::query("DELETE FROM posts WHERE id = $1")
-        .bind(post_id)
-        .execute(pool)
-        .await?
-        .rows_affected();
-    Ok(affected > 0)
+    let mut tx = pool.begin().await?;
+
+    let comment_rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT author_id, count(*)::bigint FROM comments WHERE post_id = $1 GROUP BY author_id",
+    )
+    .bind(post_id)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let author: Option<String> =
+        sqlx::query_scalar("DELETE FROM posts WHERE id = $1 RETURNING author_id")
+            .bind(post_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let Some(author) = author else {
+        tx.rollback().await?;
+        return Ok(false);
+    };
+
+    crate::points::revoke_in(
+        &mut tx,
+        &author,
+        crate::points::POST_REWARD,
+        "post_revoke",
+        Some(post_id),
+    )
+    .await?;
+    for (commenter, count) in comment_rows {
+        crate::points::revoke_in(
+            &mut tx,
+            &commenter,
+            count * crate::points::COMMENT_REWARD,
+            "comment_revoke",
+            Some(post_id),
+        )
+        .await?;
+    }
+
+    tx.commit().await?;
+    Ok(true)
 }
 
 pub async fn stats(pool: &PgPool) -> Result<(i64, i64, i64), sqlx::Error> {

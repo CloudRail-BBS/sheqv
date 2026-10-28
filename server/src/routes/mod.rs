@@ -132,6 +132,14 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/admin/comments/{id}",
             axum::routing::delete(admin::delete_comment),
         )
+        .route(
+            "/api/v1/admin/points",
+            get(admin::list_points).post(admin::adjust_points),
+        )
+        .route(
+            "/api/v1/admin/points/{id}/logs",
+            get(admin::point_logs),
+        )
         .route("/api/v1/admin/title-requests", get(titles::admin_list))
         .route(
             "/api/v1/admin/title-requests/{id}",

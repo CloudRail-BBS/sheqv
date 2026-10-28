@@ -39,6 +39,14 @@ export const REASON_LABEL: Record<string, string> = {
   post: '发帖',
   comment: '评论',
   checkin: '签到',
+  resource: '发布资源',
+  redeem: '兑换码',
+  gift: '礼品卡',
+  lottery: '抽奖消耗',
+  lottery_prize: '抽奖奖励',
+  post_revoke: '删帖冲正',
+  comment_revoke: '删评论冲正',
+  resource_revoke: '删资源冲正',
   admin: '管理员调整',
 };
 

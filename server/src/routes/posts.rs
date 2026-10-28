@@ -228,10 +228,22 @@ pub async fn comment(
         return Err(ApiError::not_found());
     };
 
-    if let Err(e) =
-        points::award(&st.pool, &user.id, points::COMMENT_REWARD, "comment", Some(&comment.id)).await
-    {
-        tracing::warn!(comment = %comment.id, error = %e, "发放评论积分失败");
+    // 自己给自己评论不发分：否则「发帖 → 自己刷评论 → 删帖」也能刷
+    let self_comment: bool = sqlx::query_scalar("SELECT author_id = $2 FROM posts WHERE id = $1")
+        .bind(&post_id)
+        .bind(&user.id)
+        .fetch_optional(&st.pool)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(false);
+    if !self_comment {
+        if let Err(e) =
+            points::award(&st.pool, &user.id, points::COMMENT_REWARD, "comment", Some(&comment.id))
+                .await
+        {
+            tracing::warn!(comment = %comment.id, error = %e, "发放评论积分失败");
+        }
     }
 
     Ok((

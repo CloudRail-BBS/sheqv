@@ -87,13 +87,13 @@ export function AdminAudit() {
       | null;
 
     if (!res?.ok) {
-      setMsg({ kind: 'err', text: data?.message ?? 'AI 调用失败' });
+      setMsg({ kind: 'err', text: data?.message ?? '内容安全接口调用失败' });
       return;
     }
     const v = data?.verdict;
     setMsg({
       kind: 'ok',
-      text: `AI 可用：risky=${v?.risky}，score=${v?.score?.toFixed(2)}，${v?.reason || '无说明'}`,
+      text: `接口可用：risky=${v?.risky}，${v?.reason || '无说明'}`,
     });
   }
 
@@ -105,7 +105,7 @@ export function AdminAudit() {
         </h3>
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-sm btn-ghost" onClick={testAi} disabled={testing}>
-            {testing ? '测试中…' : '测试 AI 配置'}
+            {testing ? '测试中…' : '测试内容安全配置'}
           </button>
           <button className="btn btn-sm btn-ghost" onClick={() => void load()}>
             刷新
@@ -140,7 +140,7 @@ export function AdminAudit() {
 
               {p.aiReason && (
                 <p className="small muted" style={{ marginTop: 8 }}>
-                  AI 判定：
+                  内容安全判定：
                   {typeof p.aiScore === 'number' && `风险 ${p.aiScore.toFixed(2)} · `}
                   {p.aiReason}
                   {p.aiLabels && p.aiLabels.length > 0 && `（${p.aiLabels.join('、')}）`}

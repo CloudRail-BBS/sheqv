@@ -33,7 +33,11 @@ interface Props {
 
 export function SettingsForm({ settings, overrides, runtime, section = 'site' }: Props) {
   const router = useRouter();
-  const [form, setForm] = useState(settings);
+  // 老库里的 `ai` 是换腾讯云之前的审核模式，进表单时归一成 `tms`，
+  // 否则下拉框没有匹配项会显示成「关闭」。保存一次就落成新值了。
+  const [form, setForm] = useState(() =>
+    settings.postAuditMode === 'ai' ? { ...settings, postAuditMode: 'tms' } : settings,
+  );
   const [busy, setBusy] = useState<Key | 'all' | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [storageBusy, setStorageBusy] = useState(false);
@@ -151,10 +155,10 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         smtpFrom: form.smtpFrom,
         smtpSecure: form.smtpSecure,
         postAuditMode: form.postAuditMode,
-        aiBaseUrl: form.aiBaseUrl,
-        aiApiKey: form.aiApiKey,
-        aiModel: form.aiModel,
-        aiPrompt: form.aiPrompt,
+        tmsSecretId: form.tmsSecretId,
+        tmsSecretKey: form.tmsSecretKey,
+        tmsRegion: form.tmsRegion,
+        tmsBizType: form.tmsBizType,
         sidebarItems: form.sidebarItems,
         tabbarItems: form.tabbarItems,
       }),
@@ -316,62 +320,70 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
             onChange={(e) => setForm({ ...form, postAuditMode: e.target.value })}
           >
             <option value="off">关闭 — 发帖即发布</option>
-            <option value="ai">AI 预审 — 可疑内容转人工</option>
+            <option value="tms">腾讯云内容安全 — 可疑内容转人工</option>
             <option value="all">全部人工 — 所有新帖都待审</option>
           </select>
         </label>
 
-        {form.postAuditMode !== 'off' && (
+        {form.postAuditMode === 'tms' && (
           <>
             <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
-              AI 走 OpenAI 兼容接口（`/chat/completions`）。**调用失败会一律转入人工**，不会直接放行。
+              使用腾讯云「文本内容安全」（TextModeration）。判定为 Normal 直接发布，
+              Review / Block 转入人工；**调用失败也会转入人工**，不会直接放行。
+              密钥在{' '}
+              <a
+                href="https://console.cloud.tencent.com/cam/capi"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'var(--blue)' }}
+              >
+                访问管理
+              </a>{' '}
+              里创建，建议只授予 TMS 只读权限。
             </p>
 
-            <div className="adm-form" style={{ gridTemplateColumns: '1.4fr 1fr', marginTop: 10 }}>
+            <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
               <label className="field">
-                <span>接口地址</span>
+                <span>SecretId</span>
                 <input
-                  className="input"
-                  value={form.aiBaseUrl}
-                  onChange={(e) => setForm({ ...form, aiBaseUrl: e.target.value })}
-                  placeholder="https://api.openai.com/v1"
+                  className="input mono"
+                  value={form.tmsSecretId}
+                  onChange={(e) => setForm({ ...form, tmsSecretId: e.target.value })}
+                  placeholder="AKID…"
                 />
               </label>
               <label className="field">
-                <span>模型</span>
+                <span>SecretKey</span>
                 <input
-                  className="input"
-                  value={form.aiModel}
-                  onChange={(e) => setForm({ ...form, aiModel: e.target.value })}
-                  placeholder="gpt-4o-mini"
+                  className="input mono"
+                  type="password"
+                  value={form.tmsSecretKey}
+                  onChange={(e) => setForm({ ...form, tmsSecretKey: e.target.value })}
+                  autoComplete="new-password"
+                  placeholder="只在服务端使用"
+                />
+              </label>
+              <label className="field">
+                <span>地域</span>
+                <input
+                  className="input mono"
+                  value={form.tmsRegion}
+                  onChange={(e) => setForm({ ...form, tmsRegion: e.target.value })}
+                  placeholder="ap-guangzhou"
+                />
+              </label>
+              <label className="field">
+                <span>
+                  BizType<em className="field-opt">可空，用默认策略</em>
+                </span>
+                <input
+                  className="input mono"
+                  value={form.tmsBizType}
+                  onChange={(e) => setForm({ ...form, tmsBizType: e.target.value })}
+                  placeholder="1000000000"
                 />
               </label>
             </div>
-
-            <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
-              <span>API Key</span>
-              <input
-                className="input"
-                type="password"
-                value={form.aiApiKey}
-                onChange={(e) => setForm({ ...form, aiApiKey: e.target.value })}
-                autoComplete="new-password"
-              />
-            </label>
-
-            <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
-              <span>
-                审核提示词<em className="field-opt">留空用内置规则</em>
-              </span>
-              <textarea
-                className="input textarea"
-                rows={3}
-                value={form.aiPrompt}
-                onChange={(e) => setForm({ ...form, aiPrompt: e.target.value })}
-                placeholder={'模型只需输出 {"risky":bool,"score":0-1,"labels":[],"reason":""}'}
-                style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
-              />
-            </label>
           </>
         )}
       </div>

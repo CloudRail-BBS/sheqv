@@ -625,12 +625,33 @@ pub async fn patch(
     get(pool, "", id).await
 }
 
+/// 删除资源，并在同一事务里冲正发布时发的积分。
+///
+/// 不做冲正的话「发布 +20 → 删除」可以无限刷分（20 分一次抽奖）。
 pub async fn delete(pool: &PgPool, id: &str) -> Result<bool, sqlx::Error> {
-    let done = sqlx::query("DELETE FROM resources WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await?;
-    Ok(done.rows_affected() > 0)
+    let mut tx = pool.begin().await?;
+
+    let author: Option<String> =
+        sqlx::query_scalar("DELETE FROM resources WHERE id = $1 RETURNING author_id")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let Some(author) = author else {
+        tx.rollback().await?;
+        return Ok(false);
+    };
+
+    crate::points::revoke_in(
+        &mut tx,
+        &author,
+        crate::points::RESOURCE_REWARD,
+        "resource_revoke",
+        Some(id),
+    )
+    .await?;
+
+    tx.commit().await?;
+    Ok(true)
 }
 
 /// 切换点赞。返回 (已点赞, 最新点赞数)

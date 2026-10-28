@@ -957,3 +957,92 @@ pub async fn delete_comment(
     }
     Ok(Json(json!({ "ok": true })).into_response())
 }
+
+/* ── 积分 ─────────────────────────────────
+   后台要能查看排行、按人查流水、手动加减分（补偿 / 扣回刷分）。 */
+
+/// GET /api/v1/admin/points?q=&limit=
+pub async fn list_points(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Query(q): Query<HashMap<String, String>>,
+) -> ApiResult<Response> {
+    let keyword = qs(&q, "q");
+    let limit = qs(&q, "limit").parse::<i64>().unwrap_or(100);
+    let items = crate::points::admin_list(&st.pool, &keyword, limit)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+/// GET /api/v1/admin/points/{userId}/logs
+pub async fn point_logs(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Path(user_id): Path<String>,
+) -> ApiResult<Response> {
+    let items = crate::points::logs_of(&st.pool, &user_id, 30)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+/// POST /api/v1/admin/points —— { userId, delta, note? }
+///
+/// 用途：活动补偿、扣回刷来的分。`delta` 为负时余额不会低于 0。
+pub async fn adjust_points(
+    State(st): State<AppState>,
+    actor: AdminActor,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Some(obj) = parse_body(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let user_id = obj
+        .get("userId")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if user_id.is_empty() {
+        return Err(ApiError::invalid_input("缺少用户"));
+    }
+    let delta = obj.get("delta").and_then(|v| v.as_i64()).unwrap_or(0);
+    if delta == 0 || delta.abs() > 10_000 {
+        return Err(ApiError::invalid_input("变动值需在 ±10000 之间且不能为 0"));
+    }
+    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM users WHERE id = $1")
+        .bind(&user_id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(ApiError::internal)?;
+    if exists.is_none() {
+        return Err(ApiError::not_found());
+    }
+
+    let balance = crate::points::award(
+        &st.pool,
+        &user_id,
+        delta,
+        "admin",
+        actor.user_id(),
+    )
+    .await
+    .map_err(ApiError::internal)?;
+
+    let _ = crate::notifications::push(
+        &st.pool,
+        &user_id,
+        "system",
+        "积分调整",
+        &format!(
+            "管理员把你的积分{}了 {} 分，当前余额 {balance}。",
+            if delta > 0 { "增加" } else { "扣除" },
+            delta.abs()
+        ),
+        "/points",
+    )
+    .await;
+
+    Ok(Json(json!({ "ok": true, "points": balance })).into_response())
+}

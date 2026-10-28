@@ -80,10 +80,11 @@ pub const KEYS: [&str; 72] = [
     "smtpSecure",
     // 内容审核：off / ai / all
     "postAuditMode",
-    "aiBaseUrl",
-    "aiApiKey",
-    "aiModel",
-    "aiPrompt",
+    // 腾讯云内容安全（文本审核）。密钥只存库，不落日志
+    "tmsSecretId",
+    "tmsSecretKey",
+    "tmsRegion",
+    "tmsBizType",
     // 导航：逗号分隔的 key，空串 = 前端内置默认
     // 浏览器推送：密钥首次启动自动生成，subject 为联系邮箱或站点地址
     // 关于社区：介绍正文与加入说明（纯文本，前台按段落渲染）
@@ -161,10 +162,10 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("smtpSecure", json!(true));
     // 默认关闭审核，保持「发帖即发布」的现有体验
     put("postAuditMode", json!("off"));
-    put("aiBaseUrl", json!(""));
-    put("aiApiKey", json!(""));
-    put("aiModel", json!("gpt-4o-mini"));
-    put("aiPrompt", json!(""));
+    put("tmsSecretId", json!(""));
+    put("tmsSecretKey", json!(""));
+    put("tmsRegion", json!("ap-guangzhou"));
+    put("tmsBizType", json!(""));
     put("pushAnnounce", json!(false));
     put("aboutIntro", json!(""));
     put("aboutJoin", json!(""));

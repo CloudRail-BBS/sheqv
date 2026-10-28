@@ -4865,6 +4865,21 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   .badge-style-desc { display: none; }
 }
 
+/* 后台：积分 */
+.adm-point-adjust { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.adm-point-adjust .input { height: 28px; font-size: 12px; }
+.adm-point-logs {
+  margin-top: 6px; padding: 6px 8px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  display: flex; flex-direction: column; gap: 3px; min-width: 220px;
+}
+.adm-point-log {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--text-2);
+}
+.adm-point-log .mono:first-child { width: 46px; flex: none; font-weight: 600; }
+.adm-point-log .small { margin-left: auto; }
+
 /* 后台报名审核 */
 .tn-admin-entries { display: flex; flex-direction: column; }
 .tn-admin-row {

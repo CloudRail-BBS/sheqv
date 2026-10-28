@@ -1,13 +1,13 @@
-//! 内容审核：AI 预审 + 人工复核。
+//! 内容审核：**腾讯云内容安全（TMS）** 预审 + 人工复核。
 //!
 //! 三种策略（后台 `postAuditMode`）：
-//! - `off`  直接发布（默认，保持原行为）
-//! - `ai`   先过 AI：判定风险或调用失败 → 进待审队列；通过则直接发布
-//! - `all`  全部进待审队列，只由人工放行
+//! - `off`   直接发布（默认）
+//! - `tms`   先过腾讯云文本内容安全：`Pass` 直接发布，`Review` / `Block` 进待审
+//! - `all`   全部进待审队列，只由人工放行
 //!
-//! **AI 调用失败一律进待审**，不放行——宁可多一条人工，也不要把可疑内容直接放出去。
-
-use std::time::Duration;
+//! 旧的 `ai` 值仍认（历史数据），语义与 `tms` 相同。
+//!
+//! **调用失败一律进待审**，不放行——宁可多一条人工，也不要把可疑内容直接放出去。
 
 use chrono::Utc;
 use serde::Serialize;
@@ -20,58 +20,17 @@ use crate::settings;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
     Off,
-    Ai,
+    Smart,
     All,
 }
 
 pub fn mode(s: &Map<String, Value>) -> Mode {
     match settings::text(s, "postAuditMode").as_str() {
-        "ai" => Mode::Ai,
+        // `ai` 是旧值，老库里可能还是它；语义已经换成腾讯云
+        "tms" | "ai" => Mode::Smart,
         "all" => Mode::All,
         _ => Mode::Off,
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct AiConfig {
-    pub base_url: String,
-    pub api_key: String,
-    pub model: String,
-    pub prompt: String,
-}
-
-const DEFAULT_PROMPT: &str = "你是中文社区的内容审核员。判断用户帖子是否违反以下规则：\
-涉及色情、暴力威胁、仇恨歧视、违法犯罪交易、恶意广告与刷屏、泄露他人隐私。\
-只输出 JSON，不要解释，格式：\
-{\"risky\": true 或 false, \"score\": 0 到 1 的小数, \"labels\": [\"spam\"], \"reason\": \"不超过 40 字的中文说明\"}";
-
-pub fn ai_config(s: &Map<String, Value>) -> Option<AiConfig> {
-    let base_url = settings::text(s, "aiBaseUrl").trim().to_string();
-    let api_key = settings::text(s, "aiApiKey").trim().to_string();
-    if base_url.is_empty() || api_key.is_empty() {
-        return None;
-    }
-    let prompt = {
-        let p = settings::text(s, "aiPrompt").trim().to_string();
-        if p.is_empty() {
-            DEFAULT_PROMPT.to_string()
-        } else {
-            p
-        }
-    };
-    Some(AiConfig {
-        base_url: base_url.trim_end_matches('/').to_string(),
-        api_key,
-        model: {
-            let m = settings::text(s, "aiModel").trim().to_string();
-            if m.is_empty() {
-                "gpt-4o-mini".to_string()
-            } else {
-                m
-            }
-        },
-        prompt,
-    })
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -81,77 +40,6 @@ pub struct Verdict {
     pub score: f32,
     pub labels: Vec<String>,
     pub reason: String,
-}
-
-/// 从模型回复里抠出 JSON（有些模型会包一层 ```json 或前后加解释）
-fn extract_json(raw: &str) -> Option<Value> {
-    let start = raw.find('{')?;
-    let end = raw.rfind('}')?;
-    if end <= start {
-        return None;
-    }
-    serde_json::from_str(&raw[start..=end]).ok()
-}
-
-/// 调一次 OpenAI 兼容的 `/chat/completions`
-pub async fn ai_review(
-    http: &reqwest::Client,
-    cfg: &AiConfig,
-    title: &str,
-    body: &str,
-) -> Result<Verdict, String> {
-    let url = format!("{}/chat/completions", cfg.base_url);
-    let content = format!("标题：{title}\n正文：{body}");
-
-    let resp = http
-        .post(&url)
-        .bearer_auth(&cfg.api_key)
-        .timeout(Duration::from_secs(25))
-        .json(&json!({
-            "model": cfg.model,
-            "temperature": 0,
-            "messages": [
-                { "role": "system", "content": cfg.prompt },
-                { "role": "user", "content": content }
-            ]
-        }))
-        .send()
-        .await
-        .map_err(|e| format!("请求失败：{e}"))?;
-
-    let status = resp.status();
-    let text = resp
-        .text()
-        .await
-        .map_err(|e| format!("读取响应失败：{e}"))?;
-    if !status.is_success() {
-        return Err(format!(
-            "上游返回 {status}：{}",
-            text.chars().take(200).collect::<String>()
-        ));
-    }
-
-    let parsed: Value = serde_json::from_str(&text).map_err(|e| format!("响应不是 JSON：{e}"))?;
-    let content = parsed["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or_else(|| "响应里没有 choices[0].message.content".to_string())?;
-
-    let obj = extract_json(content).ok_or_else(|| format!("模型输出不是 JSON：{content}"))?;
-
-    Ok(Verdict {
-        risky: obj["risky"].as_bool().unwrap_or(false),
-        score: obj["score"].as_f64().unwrap_or(0.0) as f32,
-        labels: obj["labels"]
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|v| v.as_str())
-                    .map(str::to_string)
-                    .collect()
-            })
-            .unwrap_or_default(),
-        reason: obj["reason"].as_str().unwrap_or("").to_string(),
-    })
 }
 
 /// 发帖前的判定结果：写库时用 status，AI 判过的话把 verdict 记进流水
@@ -175,22 +63,36 @@ pub async fn precheck(
             status: "pending",
             verdict: None,
         },
-        Mode::Ai => {
-            let Some(cfg) = ai_config(s) else {
-                // 开了 AI 审核却没配凭证：保守进待审，别静默放行
-                tracing::warn!("postAuditMode=ai 但未配置 aiBaseUrl / aiApiKey，全部转入人工审核");
+        Mode::Smart => {
+            let Some(cfg) = crate::tms::config(s) else {
+                // 开了智能审核却没配密钥：保守进待审，别静默放行
+                tracing::warn!("postAuditMode=tms 但未配置腾讯云密钥，全部转入人工审核");
                 return Precheck {
                     status: "pending",
                     verdict: None,
                 };
             };
-            match ai_review(http, &cfg, title, body).await {
-                Ok(v) => Precheck {
-                    status: if v.risky { "pending" } else { "published" },
-                    verdict: Some(v),
+            match crate::tms::moderate(http, &cfg, title, body).await {
+                Ok(None) => Precheck {
+                    status: "published",
+                    verdict: Some(Verdict {
+                        risky: false,
+                        score: 0.0,
+                        labels: vec![],
+                        reason: "腾讯云：Normal".into(),
+                    }),
+                },
+                Ok(Some(reason)) => Precheck {
+                    status: "pending",
+                    verdict: Some(Verdict {
+                        risky: true,
+                        score: 1.0,
+                        labels: vec!["tms".into()],
+                        reason,
+                    }),
                 },
                 Err(err) => {
-                    tracing::warn!(error = %err, "AI 审核失败，转入人工");
+                    tracing::warn!(error = %err, "腾讯云内容安全调用失败，转入人工");
                     Precheck {
                         status: "pending",
                         verdict: None,
@@ -359,23 +261,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn json_can_be_wrapped() {
-        let raw = "好的：\n```json\n{\"risky\": true, \"score\": 0.8, \"labels\": [\"spam\"], \"reason\": \"广告\"}\n```";
-        let v = extract_json(raw).expect("应能抠出 JSON");
-        assert_eq!(v["risky"], true);
-        assert_eq!(v["labels"][0], "spam");
-    }
-
-    #[test]
-    fn non_json_returns_none() {
-        assert!(extract_json("我觉得没问题").is_none());
-    }
-
-    #[test]
     fn mode_parsing() {
         let mut m = Map::new();
+        // 旧值 ai 与新的 tms 都按智能审核处理
         m.insert("postAuditMode".into(), Value::String("ai".into()));
-        assert_eq!(mode(&m), Mode::Ai);
+        assert_eq!(mode(&m), Mode::Smart);
+        m.insert("postAuditMode".into(), Value::String("tms".into()));
+        assert_eq!(mode(&m), Mode::Smart);
         m.insert("postAuditMode".into(), Value::String("all".into()));
         assert_eq!(mode(&m), Mode::All);
         m.insert("postAuditMode".into(), Value::String("off".into()));

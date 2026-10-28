@@ -47,6 +47,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/tournaments', label: '赛事', icon: 'shield' },
       { href: '/admin/tasks', label: '任务', icon: 'check' },
       { href: '/admin/rewards', label: '福利与抽奖', icon: 'gift' },
+      { href: '/admin/points', label: '积分', icon: 'coin' },
       { href: '/admin/sponsors', label: '赞助', icon: 'heart' },
       { href: '/admin/settings/integrations', label: '赞助对接', icon: 'link' },
     ],
@@ -103,6 +104,7 @@ const ICONS = {
   key: 'M15 8a4 4 0 1 0-3.6 3.97L9 14.4l-1.6-1.6L6 14.2l1.6 1.6L6 17.4 7.6 19l1.6-1.6L10.8 19l1.4-1.4-1.6-1.6 2-2A4 4 0 0 0 15 8',
   badge: 'M12 3l2.4 1.8 3 .2.9 2.9 2.1 2.1-1.5 2.6.3 3-2.8 1.2L14.6 19 12 18l-2.6 1-1.8-2.2-2.8-1.2.3-3L3.6 10l2.1-2.1.9-2.9 3-.2z',
   palette: 'M12 21a9 9 0 1 1 9-9c0 2.2-1.8 3-3.4 3H16a2 2 0 0 0-1.4 3.4c.5.6.2 1.6-.6 1.9-.6.5-1.3.7-2 .7M7.5 10.5h.01M10 7.5h.01M14 7.5h.01M16.5 10.5h.01',
+  coin: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5v9M9.5 10.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4',
 } as const;
 
 function Icon({ d }: { d: string }) {

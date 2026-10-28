@@ -467,8 +467,9 @@ pub async fn create(
     let id = crate::ids::next('u');
 
     let inserted = sqlx::query(
-        "INSERT INTO users (id, username, nickname, password_hash, email, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now())",
+        "INSERT INTO users (id, username, nickname, password_hash, email, role, created_at, group_id)
+         VALUES ($1, $2, $3, $4, $5, $6, now(),
+                 (SELECT id FROM groups WHERE is_default ORDER BY weight DESC LIMIT 1))",
     )
     .bind(&id)
     .bind(&username)
