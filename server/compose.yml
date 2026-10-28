@@ -67,6 +67,8 @@ services:
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       APP_VERSION: ${APP_VERSION:-2026.10.24}
+      # 可选：留空则缓存与限流走进程内；要用 Redis 见下方 redis 服务（profile: cache）
+      REDIS_URL: ${REDIS_URL:-}
     volumes:
       # 只放 .session-secret；多实例部署必须显式配 SESSION_SECRET
       - session-secret:/data
@@ -94,6 +96,34 @@ services:
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "5" }
+
+  # 可选缓存：`docker compose --profile cache up -d` 才会启动。
+  # 单实例不配也能跑（自动降级为进程内），多实例部署建议打开。
+  redis:
+    image: redis:7-alpine
+    container_name: blockarena-redis
+    restart: unless-stopped
+    profiles: ["cache"]
+    command:
+      - redis-server
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    networks:
+      - arena
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
 networks:
   arena:

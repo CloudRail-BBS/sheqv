@@ -14,6 +14,7 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::PgPool;
 
+use crate::cache::Cache;
 use crate::ids;
 
 /// 每分钟最多发多少条，超过就拒绝（防刷屏）
@@ -161,6 +162,7 @@ pub async fn thread(
 /// 发消息。会话不存在就建。
 pub async fn send(
     pool: &PgPool,
+    cache: &Cache,
     me: &str,
     peer: &str,
     body: &str,
@@ -176,16 +178,11 @@ pub async fn send(
         return Err(SendError::SelfTalk);
     }
 
-    // 限流：最近一分钟自己发了多少条
-    let recent: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM dm_messages
-          WHERE sender_id = $1 AND created_at > now() - interval '1 minute'",
-    )
-    .bind(me)
-    .fetch_one(pool)
-    .await
-    .map_err(SendError::Db)?;
-    if recent >= RATE_PER_MINUTE {
+    // 限流：走缓存计数（Redis 或进程内），不再每发一条都 count 一次表
+    let hits = cache
+        .incr(&format!("rl:dm:{me}"), std::time::Duration::from_secs(60))
+        .await;
+    if hits > RATE_PER_MINUTE {
         return Err(SendError::TooFast);
     }
 

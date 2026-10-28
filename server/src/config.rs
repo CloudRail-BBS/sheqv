@@ -29,6 +29,8 @@ pub struct Config {
     pub rw_relay_url: String,
     /// 放行 198.18.0.0/15（fake-ip 代理环境专用，默认关）
     pub allow_fake_ip: bool,
+    /// 可选 Redis（缓存与限流）；不配就用进程内实现
+    pub redis_url: Option<String>,
     /// 只在显式配置时生效；缺省走 `$DATA_DIR/.session-secret`
     session_secret_env: Option<String>,
 }
@@ -81,6 +83,7 @@ impl Config {
             rw_relay_url: non_empty("RW_RELAY_URL")
                 .map(|u| u.trim_end_matches('/').to_string())
                 .unwrap_or_else(|| "http://101.43.41.22:46784".to_string()),
+            redis_url: non_empty("REDIS_URL"),
             allow_fake_ip: flag("PROBE_ALLOW_FAKE_IP", false),
             session_secret_env: non_empty("SESSION_SECRET"),
         })

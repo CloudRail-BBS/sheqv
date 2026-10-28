@@ -262,11 +262,24 @@ async fn user_stats(pool: &sqlx::PgPool, id: &str) -> Result<UserStats, sqlx::Er
 
 /// GET /api/v1/stats —— 首页与后台都要用的三个计数（不含任何敏感信息）
 pub async fn stats(State(st): State<AppState>) -> ApiResult<Response> {
+    // 首页每屏都取这三个数，30 秒缓存足够；配了 Redis 就是跨进程共享
+    const KEY: &str = "cache:public:stats";
+    if let Some(cached) = st.cache.get(KEY).await {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&cached) {
+            let mut res = Json(v).into_response();
+            no_store(&mut res);
+            return Ok(res);
+        }
+    }
+
     let (posts, comments, likes) = crate::forum::stats(&st.pool)
         .await
         .map_err(ApiError::internal)?;
-    let mut res = Json(json!({ "ok": true, "posts": posts, "comments": comments, "likes": likes }))
-        .into_response();
+    let body = json!({ "ok": true, "posts": posts, "comments": comments, "likes": likes });
+    if let Ok(text) = serde_json::to_string(&body) {
+        st.cache.set(KEY, &text, std::time::Duration::from_secs(30)).await;
+    }
+    let mut res = Json(body).into_response();
     no_store(&mut res);
     Ok(res)
 }

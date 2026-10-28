@@ -148,6 +148,16 @@ pub async fn login(
         return Err(ApiError::invalid_input("请填写用户名和密码"));
     }
 
+    // 同一账号每分钟最多试 10 次；成功登录后清零，避免误伤记错密码的人
+    let rl_key = format!("rl:login:{}", username.trim().to_lowercase());
+    if st.cache.incr(&rl_key, std::time::Duration::from_secs(60)).await > 10 {
+        return Err(ApiError::with_message(
+            StatusCode::TOO_MANY_REQUESTS,
+            "too_fast",
+            "登录尝试过于频繁，请一分钟后再试",
+        ));
+    }
+
     let s = settings::load(&st.pool, &st.cfg).await;
     let outcome = captcha::verify(&st.http, &st.cfg, &s, payload.captcha.as_ref()).await;
     if let Some(err) = captcha_error(outcome) {
@@ -170,6 +180,9 @@ pub async fn login(
             "该账号已被封禁，请联系管理员",
         ));
     }
+
+    // 成功即清零：正常用户不该被之前几次手滑拖住
+    st.cache.del(&rl_key).await;
 
     let token = session::issue_token(
         st.session_secret.as_slice(),

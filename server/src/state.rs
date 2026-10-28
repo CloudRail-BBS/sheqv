@@ -19,5 +19,7 @@ pub struct AppState {
     pub relay: crate::relay::Cache,
     /// 对象存储客户端缓存；后台改配置后按指纹重建
     pub object_store: crate::object_storage::Cache,
+    /// 可选 Redis；未配置时内部自动降级
+    pub cache: crate::cache::Cache,
     pub started_at: Instant,
 }

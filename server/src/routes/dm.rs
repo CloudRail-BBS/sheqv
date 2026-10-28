@@ -83,7 +83,7 @@ pub async fn send(
         return Err(ApiError::not_found());
     }
 
-    match dm::send(&st.pool, &me.id, &peer, text).await {
+    match dm::send(&st.pool, &st.cache, &me.id, &peer, text).await {
         Ok(message) => Ok(Json(json!({ "ok": true, "message": message })).into_response()),
         Err(SendError::Empty) => Err(ApiError::invalid_input("消息不能为空")),
         Err(SendError::TooLong) => Err(ApiError::invalid_input(format!(

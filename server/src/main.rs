@@ -78,12 +78,20 @@ async fn serve() -> anyhow::Result<()> {
         "arena-api 已就绪"
     );
 
+    let (cache, cache_warn) = arena_api::cache::connect(cfg.redis_url.as_deref()).await;
+    match &cache_warn {
+        Some(msg) => tracing::warn!("{msg}"),
+        None if cache.is_redis() => tracing::info!("Redis 已连接：缓存与限流走 Redis"),
+        None => tracing::info!("未配置 REDIS_URL：缓存与限流使用进程内实现"),
+    }
+
     let state = AppState {
         pool,
         cfg: Arc::new(cfg.clone()),
         session_secret: Arc::new(session_secret),
         http,
         ai_http,
+        cache,
         relay: arena_api::relay::Cache::default(),
         object_store: arena_api::object_storage::Cache::default(),
         started_at: Instant::now(),
