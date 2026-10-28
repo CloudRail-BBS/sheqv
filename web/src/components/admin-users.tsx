@@ -6,6 +6,7 @@ import { badgeOf, TITLE_MAX } from '@/lib/badges';
 import type { GroupOption } from '@/lib/groups';
 import type { UserGroup } from '@/lib/users';
 import { UserBadge } from './user-badge';
+import { VerifyMark } from './verify-mark';
 
 export interface AdminUserRow {
   id: string;
@@ -17,6 +18,9 @@ export interface AdminUserRow {
   notifReadAt?: number;
   banned?: boolean;
   title?: string;
+  /** 认证标记与说明 */
+  verifyKind?: string;
+  verifyLabel?: string;
   /** 身份组 id；为空表示未分组 */
   groupId?: string;
   /** 身份组的名字与颜色 */
@@ -141,7 +145,10 @@ export function AdminUsers({
               return (
                 <tr key={u.id}>
                   <td>
-                    {u.nickname}
+                    <span className="row" style={{ gap: 5, display: 'inline-flex', verticalAlign: 'middle' }}>
+                      {u.nickname}
+                      <VerifyMark kind={u.verifyKind} label={u.verifyLabel} />
+                    </span>
                     {isSelf && <span className="badge badge-ghost" style={{ marginLeft: 6 }}>自己</span>}
                   </td>
                   <td className="mono small muted">@{u.username}</td>
@@ -220,7 +227,7 @@ export function AdminUsers({
                       </div>
                     ) : (
                       <div className="row" style={{ gap: 6 }}>
-                        <UserBadge badge={badgeOf({ role: u.role, title: u.title })} size="sm" />
+                        <UserBadge badge={badgeOf(u)} size="sm" />
                         <button
                           className="btn btn-sm btn-ghost"
                           onClick={() => {
