@@ -99,6 +99,11 @@
 | POST | `/api/v1/rewards/cards/{id}/open` | 拆礼品卡（仅收件人） |
 | POST | `/api/v1/rewards/redeem` | 兑换码兑换 |
 | POST | `/api/v1/rewards/lottery` | 扣 20 积分抽一次 |
+| GET | `/api/v1/tasks` | 我的任务进度 |
+| POST | `/api/v1/tasks/{id}/claim` | 领取任务奖励 |
+| GET | `/api/v1/tournaments` | 赛事列表（不含草稿） |
+| GET | `/api/v1/tournaments/{id}` | 赛事详情 + 已通过队伍 + 我的报名 |
+| POST/DELETE | `/api/v1/tournaments/{id}/signup` | 报名 / 取消报名 |
 
 | GET | `/api/v1/admin/orgs` | 后台：两张榜一起给 |
 | PATCH/DELETE | `/api/v1/admin/orgs/{kind}/{id}` | 校准积分·战绩（唯一写入口）/ 删除 |

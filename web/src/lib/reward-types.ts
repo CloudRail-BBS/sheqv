@@ -10,6 +10,8 @@ export interface GiftCard {
   rewardPoints: number;
   rewardKind: string;
   rewardValue: string;
+  rewardImage: string;
+  rewardDesc: string;
   assignedUserId?: string;
   usedAt?: number;
   expiresAt?: number;
@@ -22,6 +24,10 @@ export interface Prize {
   kind: string;
   points: number;
   theme: string;
+  /** 自定义奖品（kind=custom） */
+  customTitle: string;
+  customDesc: string;
+  customImage: string;
   stock?: number;
   weight: number;
   enabled: boolean;

@@ -32,6 +32,9 @@ pub struct CardView {
     pub reward_points: i64,
     pub reward_kind: String,
     pub reward_value: String,
+    /// 自定义奖品的图片与说明（实物 / 周边 / 激活码）
+    pub reward_image: String,
+    pub reward_desc: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assigned_user_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,6 +55,8 @@ struct CardRow {
     reward_points: i32,
     reward_kind: String,
     reward_value: String,
+    reward_image: String,
+    reward_desc: String,
     assigned_user_id: Option<String>,
     used_by: Option<String>,
     used_at: Option<DateTime<Utc>>,
@@ -60,7 +65,8 @@ struct CardRow {
 }
 
 const CARD_COLUMNS: &str = "id, kind, code, title, note, theme, reward_points, reward_kind,
-        reward_value, assigned_user_id, used_by, used_at, expires_at, created_at";
+        reward_value, reward_image, reward_desc,
+        assigned_user_id, used_by, used_at, expires_at, created_at";
 
 impl CardRow {
     fn into_view(self) -> CardView {
@@ -74,6 +80,8 @@ impl CardRow {
             reward_points: self.reward_points as i64,
             reward_kind: self.reward_kind,
             reward_value: self.reward_value,
+            reward_image: self.reward_image,
+            reward_desc: self.reward_desc,
             assigned_user_id: self.assigned_user_id,
             used_at: self.used_at.map(|t| t.timestamp_millis()),
             expires_at: self.expires_at.map(|t| t.timestamp_millis()),
@@ -173,6 +181,9 @@ pub struct Opened {
     pub reward_points: i64,
     pub reward_kind: String,
     pub reward_value: String,
+    pub reward_image: String,
+    pub reward_desc: String,
+    pub note: String,
     pub balance: i64,
 }
 
@@ -225,6 +236,9 @@ pub async fn open(pool: &PgPool, user_id: &str, card_id: &str) -> Result<Opened,
         reward_points: card.reward_points as i64,
         reward_kind: card.reward_kind,
         reward_value: card.reward_value,
+        reward_image: card.reward_image,
+        reward_desc: card.reward_desc,
+        note: card.note,
         balance,
     })
 }
@@ -282,6 +296,9 @@ pub async fn redeem(pool: &PgPool, user_id: &str, raw: &str) -> Result<Opened, R
         reward_points: card.reward_points as i64,
         reward_kind: card.reward_kind,
         reward_value: card.reward_value,
+        reward_image: card.reward_image,
+        reward_desc: card.reward_desc,
+        note: card.note,
         balance,
     })
 }
@@ -296,6 +313,8 @@ pub struct NewCard<'a> {
     pub reward_points: i64,
     pub reward_kind: &'a str,
     pub reward_value: &'a str,
+    pub reward_image: &'a str,
+    pub reward_desc: &'a str,
     pub assigned_user_id: Option<&'a str>,
     pub count: i64,
     pub expires_days: i64,
@@ -308,8 +327,14 @@ pub async fn create(pool: &PgPool, admin_id: Option<&str>, input: &NewCard<'_>) 
     if input.title.trim().is_empty() || input.title.trim().chars().count() > 30 {
         return Err(RewardError::Invalid("卡名需 1–30 字".into()));
     }
-    if !matches!(input.reward_kind, "" | "title") {
+    if !matches!(input.reward_kind, "" | "title" | "custom") {
         return Err(RewardError::Invalid("奖励类型不正确".into()));
+    }
+    if input.reward_kind == "custom" && input.reward_value.trim().is_empty() {
+        return Err(RewardError::Invalid("自定义奖品要写清奖品名称".into()));
+    }
+    if input.reward_desc.trim().chars().count() > 300 {
+        return Err(RewardError::Invalid("奖品说明不能超过 300 字".into()));
     }
     if input.kind == "gift" && input.assigned_user_id.is_none() {
         return Err(RewardError::Invalid("礼品卡必须指定收件人".into()));
@@ -350,8 +375,8 @@ pub async fn create(pool: &PgPool, admin_id: Option<&str>, input: &NewCard<'_>) 
         let row: CardRow = sqlx::query_as(&format!(
             "INSERT INTO gift_cards
                  (id, kind, code, title, note, theme, reward_points, reward_kind, reward_value,
-                  assigned_user_id, expires_at, created_by)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+                  reward_image, reward_desc, assigned_user_id, expires_at, created_by)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
              RETURNING {CARD_COLUMNS}"
         ))
         .bind(&id)
@@ -363,6 +388,8 @@ pub async fn create(pool: &PgPool, admin_id: Option<&str>, input: &NewCard<'_>) 
         .bind(input.reward_points as i32)
         .bind(input.reward_kind)
         .bind(input.reward_value.trim())
+        .bind(input.reward_image.trim())
+        .bind(input.reward_desc.trim())
         .bind(input.assigned_user_id)
         .bind(expires)
         .bind(admin_id)
@@ -401,6 +428,10 @@ pub struct PrizeView {
     pub kind: String,
     pub points: i64,
     pub theme: String,
+    /// 自定义奖品：名称 / 说明 / 图片
+    pub custom_title: String,
+    pub custom_desc: String,
+    pub custom_image: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stock: Option<i64>,
     pub weight: i64,
@@ -409,8 +440,9 @@ pub struct PrizeView {
 
 pub async fn prizes(pool: &PgPool) -> Result<Vec<PrizeView>, sqlx::Error> {
     sqlx::query_as(
-        "SELECT id, name, kind, points::bigint AS points, gift_theme AS theme, stock::bigint AS stock,
-                weight::bigint AS weight, enabled
+        "SELECT id, name, kind, points::bigint AS points, gift_theme AS theme,
+                custom_title, custom_desc, custom_image,
+                stock::bigint AS stock, weight::bigint AS weight, enabled
            FROM lottery_prizes ORDER BY created_at ASC",
     )
     .fetch_all(pool)
@@ -422,6 +454,9 @@ pub struct PrizeInput<'a> {
     pub kind: &'a str,
     pub points: i64,
     pub theme: &'a str,
+    pub custom_title: &'a str,
+    pub custom_desc: &'a str,
+    pub custom_image: &'a str,
     pub weight: i64,
     pub stock: Option<i64>,
     pub enabled: bool,
@@ -431,13 +466,21 @@ pub async fn create_prize(pool: &PgPool, input: &PrizeInput<'_>) -> Result<Strin
     if input.name.trim().is_empty() {
         return Err(RewardError::Invalid("奖品名不能为空".into()));
     }
-    if !matches!(input.kind, "points" | "gift" | "none") {
+    if !matches!(input.kind, "points" | "gift" | "custom" | "none") {
         return Err(RewardError::Invalid("奖品类型不正确".into()));
+    }
+    if input.kind == "custom" && input.custom_title.trim().is_empty() {
+        return Err(RewardError::Invalid("自定义奖品要写清名称".into()));
+    }
+    if input.custom_desc.trim().chars().count() > 300 {
+        return Err(RewardError::Invalid("奖品说明不能超过 300 字".into()));
     }
     let id = crate::ids::next('z');
     sqlx::query(
-        "INSERT INTO lottery_prizes (id, name, kind, points, gift_title, gift_theme, weight, stock, enabled)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        "INSERT INTO lottery_prizes
+             (id, name, kind, points, gift_title, gift_theme,
+              custom_title, custom_desc, custom_image, weight, stock, enabled)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
     )
     .bind(&id)
     .bind(input.name.trim())
@@ -445,6 +488,9 @@ pub async fn create_prize(pool: &PgPool, input: &PrizeInput<'_>) -> Result<Strin
     .bind(input.points as i32)
     .bind(input.name.trim())
     .bind(if input.theme.trim().is_empty() { "#3e7cff" } else { input.theme.trim() })
+    .bind(input.custom_title.trim())
+    .bind(input.custom_desc.trim())
+    .bind(input.custom_image.trim())
     .bind(input.weight.clamp(1, 10000) as i32)
     .bind(input.stock)
     .bind(input.enabled)
@@ -493,6 +539,9 @@ struct DrawPrize {
     points: i32,
     gift_title: String,
     gift_theme: String,
+    custom_title: String,
+    custom_desc: String,
+    custom_image: String,
     weight: i32,
     stock: Option<i32>,
 }
@@ -505,13 +554,18 @@ pub struct DrawResult {
     pub gift_points: i64,
     pub theme: String,
     pub card_id: Option<String>,
+    /// 自定义奖品的展示信息（卡片里也有一份，这里给抽奖弹窗直接用）
+    pub custom_title: String,
+    pub custom_desc: String,
+    pub custom_image: String,
     pub balance: i64,
 }
 
 /// 扣积分 → 按权重抽 → 发奖，全程一个事务
 pub async fn draw(pool: &PgPool, user_id: &str) -> Result<DrawResult, RewardError> {
     let list: Vec<DrawPrize> = sqlx::query_as(
-        "SELECT id, name, kind, points, gift_title, gift_theme, weight, stock
+        "SELECT id, name, kind, points, gift_title, gift_theme,
+                custom_title, custom_desc, custom_image, weight, stock
            FROM lottery_prizes
           WHERE enabled AND (stock IS NULL OR stock > 0)",
     )
@@ -604,6 +658,31 @@ pub async fn draw(pool: &PgPool, user_id: &str) -> Result<DrawResult, RewardErro
             card_id = Some(id);
             gift_points = picked.points as i64;
         }
+        "custom" => {
+            let title = if picked.custom_title.trim().is_empty() {
+                picked.name.clone()
+            } else {
+                picked.custom_title.clone()
+            };
+            let id = crate::ids::next('k');
+            let card_code = make_code();
+            sqlx::query(
+                "INSERT INTO gift_cards
+                     (id, kind, code, title, note, theme, reward_points, reward_kind, reward_value,
+                      reward_image, reward_desc, assigned_user_id, created_by)
+                 VALUES ($1,'gift',$2,$3,$4,$5,0,'custom',$3,$6,$4,$7,NULL)",
+            )
+            .bind(&id)
+            .bind(&card_code)
+            .bind(&title)
+            .bind(&picked.custom_desc)
+            .bind(&picked.gift_theme)
+            .bind(&picked.custom_image)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+            card_id = Some(id);
+        }
         _ => {}
     }
 
@@ -634,6 +713,9 @@ pub async fn draw(pool: &PgPool, user_id: &str) -> Result<DrawResult, RewardErro
         gift_points,
         theme: picked.gift_theme.clone(),
         card_id,
+        custom_title: picked.custom_title.clone(),
+        custom_desc: picked.custom_desc.clone(),
+        custom_image: picked.custom_image.clone(),
         balance,
     })
 }

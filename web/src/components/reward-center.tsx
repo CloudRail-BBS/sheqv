@@ -18,6 +18,9 @@ interface Reveal {
   rewardValue?: string;
   theme: string;
   note?: string;
+  /** 自定义奖品：图片与领取说明 */
+  image?: string;
+  desc?: string;
   expiresAt?: number;
 }
 
@@ -107,6 +110,9 @@ export function RewardCenter({
       points: number;
       rewardKind: string;
       rewardValue: string;
+      rewardImage: string;
+      rewardDesc: string;
+      note: string;
       balance: number;
     };
     setSnap((s) => ({ ...s, cards: s.cards.filter((c) => c.id !== id), points: data.balance }));
@@ -118,7 +124,9 @@ export function RewardCenter({
       rewardValue: data.rewardValue,
       theme: card?.theme || '#3e7cff',
       expiresAt: card?.expiresAt,
-      note: card?.note,
+      note: data.note || card?.note,
+      image: data.rewardImage || card?.rewardImage,
+      desc: data.rewardDesc || card?.rewardDesc,
     });
     router.refresh();
   }
@@ -144,6 +152,9 @@ export function RewardCenter({
       points: number;
       rewardKind: string;
       rewardValue: string;
+      rewardImage: string;
+      rewardDesc: string;
+      note: string;
       balance: number;
     };
     setCode('');
@@ -155,6 +166,9 @@ export function RewardCenter({
       rewardKind: data.rewardKind,
       rewardValue: data.rewardValue,
       theme: '#22c55e',
+      note: data.note,
+      image: data.rewardImage,
+      desc: data.rewardDesc,
     });
     router.refresh();
   }
@@ -176,7 +190,15 @@ export function RewardCenter({
     const res = await fetch('/api/v1/rewards/lottery', { method: 'POST' }).catch(() => null);
     const data = res?.ok
       ? ((await res.json()) as {
-          prize: { name: string; kind: string; points: number; theme: string };
+          prize: {
+            name: string;
+            kind: string;
+            points: number;
+            theme: string;
+            customTitle: string;
+            customDesc: string;
+            customImage: string;
+          };
           giftPoints?: number;
           cardId?: string | null;
           balance: number;
@@ -202,16 +224,23 @@ export function RewardCenter({
     }));
     setReveal({
       heading: '好运已开奖',
-      title: data.prize.name,
+      title:
+        data.prize.kind === 'custom' && data.prize.customTitle
+          ? data.prize.customTitle
+          : data.prize.name,
       points: data.prize.kind === 'points' ? data.prize.points : 0,
       giftPoints: data.giftPoints ?? 0,
       theme: data.prize.theme || '#3e7cff',
+      image: data.prize.kind === 'custom' ? data.prize.customImage : undefined,
+      desc: data.prize.kind === 'custom' ? data.prize.customDesc : undefined,
       note:
         data.prize.kind === 'gift'
           ? '礼品卡已放进卡包，记得去拆开'
-          : data.prize.kind === 'none'
-            ? '下次手气会更好'
-            : undefined,
+          : data.prize.kind === 'custom'
+            ? '奖品已放进卡包，凭卡号联系管理员领取'
+            : data.prize.kind === 'none'
+              ? '下次手气会更好'
+              : undefined,
     });
     router.refresh();
   }
@@ -318,8 +347,14 @@ export function RewardCenter({
                   <div className="gc-perf" aria-hidden="true" />
                   <div className="gc-bottom">
                     <div className="gc-worth">
-                      <b className="mono">{c.rewardPoints}</b>
-                      <span>积分</span>
+                      {c.rewardKind === 'custom' ? (
+                        <b className="gc-custom">{c.rewardValue || '实物奖品'}</b>
+                      ) : (
+                        <>
+                          <b className="mono">{c.rewardPoints}</b>
+                          <span>积分</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <button
@@ -496,6 +531,10 @@ export function RewardCenter({
                   NO.{new Date().toISOString().slice(0, 10).replace(/-/g, '')}
                 </span>
               </div>
+              {reveal.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="gb-item-img" src={reveal.image} alt="" />
+              )}
               <div className="gb-ticket-title">{reveal.title}</div>
               {(reveal.points > 0 || reveal.giftPoints) && (
                 <div className="gb-ticket-points">
@@ -520,7 +559,8 @@ export function RewardCenter({
             <p className="gb-result">
               {reveal.rewardKind === 'title' && reveal.rewardValue
                 ? `头衔「${reveal.rewardValue}」已到账`
-                : reveal.note ||
+                : reveal.desc ||
+                  reveal.note ||
                   (reveal.points > 0
                     ? '积分已存入你的账户，可在积分明细里查看'
                     : '奖励已发放到你的账号')}

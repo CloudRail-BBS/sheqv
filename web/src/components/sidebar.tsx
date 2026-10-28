@@ -31,6 +31,8 @@ const ICON_BY_KEY: Record<string, React.ReactNode> = {
   guilds: I.shield,
   teams: I.users,
   matches: I.sword,
+  tournaments: I.sword,
+  tasks: I.doc,
   servers: I.server,
   resources: I.box,
   'dev-teams': I.users,

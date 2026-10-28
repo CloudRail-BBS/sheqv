@@ -56,5 +56,7 @@ pub mod servers;
 pub mod settings;
 pub mod slides;
 pub mod sponsors;
+pub mod tasks;
+pub mod tournaments;
 pub mod state;
 pub mod users;

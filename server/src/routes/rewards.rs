@@ -101,6 +101,9 @@ pub async fn open(
         "points": opened.points,
         "rewardKind": opened.reward_kind,
         "rewardValue": opened.reward_value,
+        "rewardImage": opened.reward_image,
+        "rewardDesc": opened.reward_desc,
+        "note": opened.note,
         "balance": opened.balance,
     }))
     .into_response())
@@ -125,6 +128,9 @@ pub async fn redeem(
         "points": opened.points,
         "rewardKind": opened.reward_kind,
         "rewardValue": opened.reward_value,
+        "rewardImage": opened.reward_image,
+        "rewardDesc": opened.reward_desc,
+        "note": opened.note,
         "balance": opened.balance,
     }))
     .into_response())
@@ -142,6 +148,9 @@ pub async fn draw(State(st): State<AppState>, CurrentUser(user): CurrentUser) ->
             "kind": result.kind,
             "points": result.points,
             "theme": result.theme,
+            "customTitle": result.custom_title,
+            "customDesc": result.custom_desc,
+            "customImage": result.custom_image,
         },
         "giftPoints": result.gift_points,
         "cardId": result.card_id,
@@ -208,6 +217,8 @@ pub async fn admin_create_card(
         reward_points: number(&obj, "rewardPoints").clamp(0, 1_000_000),
         reward_kind: &text(&obj, "rewardKind"),
         reward_value: &text(&obj, "rewardValue"),
+        reward_image: &text(&obj, "rewardImage"),
+        reward_desc: &text(&obj, "rewardDesc"),
         assigned_user_id: assigned.as_deref(),
         count: number(&obj, "count").clamp(1, 100),
         expires_days: number(&obj, "expiresDays").clamp(0, 3650),
@@ -256,6 +267,9 @@ pub async fn admin_create_prize(
         kind: &text(&obj, "kind"),
         points: number(&obj, "points").clamp(0, 1_000_000),
         theme: &text(&obj, "theme"),
+        custom_title: &text(&obj, "customTitle"),
+        custom_desc: &text(&obj, "customDesc"),
+        custom_image: &text(&obj, "customImage"),
         weight: number(&obj, "weight").clamp(1, 10000),
         stock: obj.get("stock").and_then(|v| v.as_i64()),
         enabled: obj.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),

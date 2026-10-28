@@ -40,6 +40,8 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/groups', label: '身份组', icon: 'tag' },
       { href: '/admin/orgs', label: '公会与战队', icon: 'users' },
       { href: '/admin/servers', label: '联机大厅', icon: 'server' },
+      { href: '/admin/tournaments', label: '赛事', icon: 'shield' },
+      { href: '/admin/tasks', label: '任务', icon: 'check' },
       { href: '/admin/rewards', label: '福利与抽奖', icon: 'gift' },
       { href: '/admin/sponsors', label: '赞助', icon: 'heart' },
     ],

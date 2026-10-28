@@ -129,6 +129,7 @@ export function MobileMenu({
               {item('/guilds', '公会', I.shield)}
               {item('/teams', '战队', I.users)}
               {item('/matches', '约战', I.sword)}
+              {item('/tournaments', '赛事', I.sword)}
               {item('/leaderboard', '排行榜', I.chart)}
             </div>
 
@@ -143,6 +144,7 @@ export function MobileMenu({
                 unread > 0 ? <span className="mobile-drawer-count">{unread}</span> : null,
               )}
               {item('/points', '积分与签到', I.star)}
+              {item('/tasks', '任务中心', I.doc)}
               {item('/download', '客户端下载', I.code)}
             </div>
 

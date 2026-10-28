@@ -13,6 +13,8 @@ const CARD_EMPTY = {
   rewardPoints: 50,
   rewardKind: '',
   rewardValue: '',
+  rewardImage: '',
+  rewardDesc: '',
   count: 5,
   expiresDays: 30,
 };
@@ -24,6 +26,9 @@ const PRIZE_EMPTY = {
   theme: '#3e7cff',
   weight: 20,
   stock: '',
+  customTitle: '',
+  customDesc: '',
+  customImage: '',
 };
 
 export function AdminRewards() {
@@ -100,6 +105,9 @@ export function AdminRewards() {
         theme: pf.theme,
         weight: Number(pf.weight) || 1,
         stock: pf.stock === '' ? null : Number(pf.stock),
+        customTitle: pf.customTitle,
+        customDesc: pf.customDesc,
+        customImage: pf.customImage,
       }),
     }).catch(() => null);
     setBusy(false);
@@ -201,19 +209,43 @@ export function AdminRewards() {
               <select className="input" value={form.rewardKind} onChange={(e) => setForm({ ...form, rewardKind: e.target.value })}>
                 <option value="">仅积分</option>
                 <option value="title">同时送头衔</option>
+                <option value="custom">自定义奖品（实物 / 激活码）</option>
               </select>
             </label>
             <label className="field">
-              <span>头衔（2–8 字）</span>
+              <span>{form.rewardKind === 'title' ? '头衔（2–8 字）' : '奖品名称'}</span>
               <input
                 className="input"
                 value={form.rewardValue}
                 onChange={(e) => setForm({ ...form, rewardValue: e.target.value })}
-                disabled={form.rewardKind !== 'title'}
-                placeholder="红石匠"
-                maxLength={8}
+                disabled={form.rewardKind === ''}
+                placeholder={form.rewardKind === 'title' ? '红石匠' : '例如：定制键帽'}
+                maxLength={form.rewardKind === 'title' ? 8 : 30}
               />
             </label>
+            {form.rewardKind === 'custom' && (
+              <>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>奖品图片地址（可空）</span>
+                  <input
+                    className="input mono"
+                    value={form.rewardImage}
+                    onChange={(e) => setForm({ ...form, rewardImage: e.target.value })}
+                    placeholder="https://…"
+                  />
+                </label>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>领取说明（可空）</span>
+                  <input
+                    className="input"
+                    value={form.rewardDesc}
+                    onChange={(e) => setForm({ ...form, rewardDesc: e.target.value })}
+                    placeholder="例如：凭卡号联系管理员，7 天内发货"
+                    maxLength={300}
+                  />
+                </label>
+              </>
+            )}
             <label className="field">
               <span>卡片主题色</span>
               <input className="input" value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })} />
@@ -262,6 +294,7 @@ export function AdminRewards() {
               <select className="input" value={pf.kind} onChange={(e) => setPf({ ...pf, kind: e.target.value })}>
                 <option value="points">积分</option>
                 <option value="gift">礼品卡（卡内含积分）</option>
+                <option value="custom">自定义奖品（实物 / 激活码）</option>
                 <option value="none">谢谢参与</option>
               </select>
             </label>
@@ -293,6 +326,39 @@ export function AdminRewards() {
               <span>主题色</span>
               <input className="input" value={pf.theme} onChange={(e) => setPf({ ...pf, theme: e.target.value })} />
             </label>
+            {pf.kind === 'custom' && (
+              <>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>奖品名称（中奖后显示）</span>
+                  <input
+                    className="input"
+                    value={pf.customTitle}
+                    onChange={(e) => setPf({ ...pf, customTitle: e.target.value })}
+                    placeholder="例如：定制键帽 · 云轨款"
+                    maxLength={30}
+                  />
+                </label>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>图片地址（可空）</span>
+                  <input
+                    className="input mono"
+                    value={pf.customImage}
+                    onChange={(e) => setPf({ ...pf, customImage: e.target.value })}
+                    placeholder="https://…"
+                  />
+                </label>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>领取说明</span>
+                  <input
+                    className="input"
+                    value={pf.customDesc}
+                    onChange={(e) => setPf({ ...pf, customDesc: e.target.value })}
+                    placeholder="中奖后自动进卡包，凭卡号联系管理员领取"
+                    maxLength={300}
+                  />
+                </label>
+              </>
+            )}
           </div>
 
           <button className="btn btn-primary btn-sm" type="submit" disabled={busy} style={{ marginTop: 12 }}>

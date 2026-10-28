@@ -25,6 +25,8 @@ pub mod resources;
 pub mod rewards;
 pub mod servers;
 pub mod sponsors;
+pub mod tasks;
+pub mod tournaments;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
@@ -225,6 +227,38 @@ pub fn router(state: AppState) -> Router {
             patch(servers::patch).delete(servers::remove),
         )
         .route("/api/v1/servers/{id}/probe", post(servers::refresh))
+        .route("/api/v1/tasks", get(tasks::list))
+        .route("/api/v1/tasks/{id}/claim", post(tasks::claim))
+        .route(
+            "/api/v1/admin/tasks",
+            get(tasks::admin_list).post(tasks::admin_create),
+        )
+        .route(
+            "/api/v1/admin/tasks/{id}",
+            patch(tasks::admin_patch).delete(tasks::admin_delete),
+        )
+        .route("/api/v1/tournaments", get(tournaments::list))
+        .route("/api/v1/tournaments/{id}", get(tournaments::detail))
+        .route(
+            "/api/v1/tournaments/{id}/signup",
+            post(tournaments::signup).delete(tournaments::cancel),
+        )
+        .route(
+            "/api/v1/admin/tournaments",
+            get(tournaments::admin_list).post(tournaments::admin_create),
+        )
+        .route(
+            "/api/v1/admin/tournaments/{id}",
+            patch(tournaments::admin_patch).delete(tournaments::admin_delete),
+        )
+        .route(
+            "/api/v1/admin/tournaments/{id}/entries",
+            get(tournaments::admin_entries),
+        )
+        .route(
+            "/api/v1/admin/tournaments/entries/{entryId}",
+            patch(tournaments::admin_review),
+        )
         .route("/api/v1/me/servers", get(servers::mine))
         .route("/api/v1/relay/rooms", get(servers::rooms))
         .route("/api/v1/admin/users/{id}/developer", patch(admin::set_developer))
