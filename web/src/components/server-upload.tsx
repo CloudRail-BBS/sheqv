@@ -128,7 +128,16 @@ export function ServerUpload({
           <div className="composer-panel srv-modal">
             <div className="composer-panel-head">
               <span className="composer-head-icon" aria-hidden="true">
-                ⇪
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M4 5h16v6H4zM4 15h16v4H4zM7.5 8h.01M7.5 17h.01"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </span>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <b className="composer-head-title">上传服务器</b>
@@ -154,7 +163,7 @@ export function ServerUpload({
                 </button>
               </div>
             ) : (
-              <form onSubmit={submit}>
+              <form onSubmit={submit} className="srv-form-wrap">
                 <div className="seg srv-kind">
                   <button
                     type="button"
@@ -267,9 +276,7 @@ export function ServerUpload({
                 )}
 
                 <div className="srv-modal-foot">
-                  <span className="small muted">
-                    提交后进入审核队列，通常很快；填错可以在「我的提交」里删掉重传。
-                  </span>
+                  <span className="small muted">填错可以在「我的提交」里删掉重传。</span>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={close} disabled={busy}>
                     取消
                   </button>
