@@ -294,7 +294,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 /* ── composer ────────────────────────────── */
 
-.composer { padding: 14px 16px 0; transition: border-color 0.16s, box-shadow 0.16s; }
+.composer { padding: 14px 16px; transition: border-color 0.16s, box-shadow 0.16s; }
 .composer:focus-within { border-color: var(--blue-line); box-shadow: 0 0 0 3px var(--ring); }
 .composer-top { display: flex; align-items: flex-start; gap: 10px; }
 .composer-input {
@@ -304,12 +304,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   transition: border-color 0.15s;
 }
 .composer-input:hover { border-color: var(--hover-bd); }
-.composer-actions {
-  display: flex; align-items: center; gap: 2px; margin-top: 11px; padding: 9px 0;
-  border-top: 1px solid var(--line-soft);
-}
-.composer-actions .tip { margin-left: auto; font-size: 11px; color: var(--text-3); }
-.composer-actions .act { font-size: 12px; }
 .composer-trigger { cursor: pointer; }
 .composer-trigger:hover { border-color: var(--line-strong); }
 

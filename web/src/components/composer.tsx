@@ -254,11 +254,6 @@ export function Composer({ nickname, signed, avatar }: Props) {
             发帖
           </button>
         </div>
-        <div className="composer-actions">
-          <span className="act">支持 Markdown</span>
-          <span className="act">图片可粘贴 / 拖入</span>
-          <span className="tip">点击打开独立编辑窗口</span>
-        </div>
       </div>
 
       {mounted && open && createPortal(
