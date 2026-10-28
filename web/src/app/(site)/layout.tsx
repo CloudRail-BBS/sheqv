@@ -138,7 +138,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </header>
 
       <div className="app">
-        <Sidebar items={settings.sidebarItems} />
+        <Sidebar items={settings.sidebarItems} dmUnread={chrome.dmUnread} />
         <div className="content">{children}</div>
       </div>
 

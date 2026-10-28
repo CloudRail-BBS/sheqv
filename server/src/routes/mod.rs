@@ -6,6 +6,7 @@ pub mod audit;
 pub mod auth;
 pub mod email_auth;
 pub mod dev_teams;
+pub mod dm;
 pub mod groups;
 pub mod health;
 pub mod matches;
@@ -86,6 +87,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/admin/push", get(push::overview))
         .route("/api/v1/admin/push/send", post(push::send))
         .route("/api/v1/admin/push/subscriptions", delete(push::prune))
+        .route("/api/v1/dm", get(dm::list))
+        .route("/api/v1/dm/unread", get(dm::unread))
+        .route("/api/v1/dm/{peerId}", get(dm::thread).post(dm::send))
+        .route("/api/v1/dm/{peerId}/read", post(dm::read))
         .route("/api/v1/notifications", get(notifications::list))
         .route("/api/v1/notifications/read", post(notifications::read))
         .route(

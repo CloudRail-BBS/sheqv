@@ -14,9 +14,11 @@ export interface Chrome {
   unread: number;
   points: number;
   todayDone: boolean;
+  /** 私信未读（侧栏徽标） */
+  dmUnread: number;
 }
 
-const EMPTY: Chrome = { items: [], unread: 0, points: 0, todayDone: false };
+const EMPTY: Chrome = { items: [], unread: 0, points: 0, todayDone: false, dmUnread: 0 };
 
 export const getChrome = cache(async (user: PublicUser | null): Promise<Chrome> => {
   if (!user) return EMPTY;
@@ -24,6 +26,7 @@ export const getChrome = cache(async (user: PublicUser | null): Promise<Chrome> 
   const data = await apiGetOr<{
     notifications?: { items?: Note[]; unread?: number };
     points?: { points?: number; todayDone?: boolean };
+    dm?: { unread?: number };
   }>('/api/v1/me/chrome', {});
 
   return {
@@ -31,5 +34,6 @@ export const getChrome = cache(async (user: PublicUser | null): Promise<Chrome> 
     unread: data.notifications?.unread ?? 0,
     points: data.points?.points ?? 0,
     todayDone: data.points?.todayDone ?? false,
+    dmUnread: data.dm?.unread ?? 0,
   };
 });

@@ -135,6 +135,7 @@ export function MobileMenu({
             <div className="mobile-drawer-section">
               <div className="mobile-drawer-label">我的</div>
               {item('/me', '我的主页', I.user)}
+              {item('/messages', '私信', I.bell)}
               {item(
                 '/notifications',
                 '站内消息',

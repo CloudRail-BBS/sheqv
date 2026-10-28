@@ -162,6 +162,9 @@ pub async fn chrome(
     let (items, unread) = notifications::feed(&st.pool, Some(&user))
         .await
         .map_err(ApiError::internal)?;
+    let dm_unread = crate::dm::unread_total(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
     let (points, today_done) = points::chip(&st.pool, &user.id)
         .await
         .map_err(ApiError::internal)?
@@ -171,6 +174,7 @@ pub async fn chrome(
         "ok": true,
         "notifications": { "items": items, "unread": unread },
         "points": { "points": points, "todayDone": today_done },
+        "dm": { "unread": dm_unread },
     }))
     .into_response();
     res.headers_mut()

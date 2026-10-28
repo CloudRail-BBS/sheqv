@@ -40,6 +40,7 @@ const ICON_BY_KEY: Record<string, React.ReactNode> = {
   modpacks: I.layers,
   tools: I.tool,
   me: I.user,
+  messages: I.bell,
   points: I.star,
   groups: I.tag,
   rewards: I.gift,
@@ -64,7 +65,7 @@ function Ico({ children }: { children: React.ReactNode }) {
  * `items` 是后台配置的 key 有序列表；为空时用默认（全部）。
  * 分组顺序固定，组内顺序按配置；未知 key 自动忽略。
  */
-export function Sidebar({ items }: { items?: string }) {
+export function Sidebar({ items, dmUnread = 0 }: { items?: string; dmUnread?: number }) {
   const pathname = usePathname();
   const search = useSearchParams();
   const keys = parseNav(items, SIDEBAR_DEFAULT);
@@ -82,6 +83,9 @@ export function Sidebar({ items }: { items?: string }) {
               <Link key={item.key} href={item.href} className="side-item" data-active={on(item.href)}>
                 <Ico>{ICON_BY_KEY[item.key] ?? I.box}</Ico>
                 {item.label}
+                {item.key === 'messages' && dmUnread > 0 && (
+                  <span className="cnt dm-cnt">{dmUnread > 99 ? '99+' : dmUnread}</span>
+                )}
               </Link>
             ))}
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import type { BadgeInfo } from '@/lib/badges';
 import type { PublicUser, UserGroup } from '@/lib/users';
@@ -159,6 +160,12 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
 
             {joined && <div className="uhc-meta">加入于 {joined}</div>}
             {!userId && <div className="uhc-meta">站内用户</div>}
+
+            {userId && (
+              <Link href={`/messages?to=${encodeURIComponent(userId)}`} className="uhc-action">
+                发私信
+              </Link>
+            )}
           </div>,
           document.body,
         )}
