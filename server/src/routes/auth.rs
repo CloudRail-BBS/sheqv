@@ -48,6 +48,8 @@ fn captcha_error(result: CaptchaResult) -> Option<ApiError> {
     match result {
         CaptchaResult::Pass | CaptchaResult::Skipped => None,
         CaptchaResult::Failed(reason) => {
+            // 排障用：reason 里可能是 missing_captcha / 上游错误码，只进日志不进响应
+            tracing::warn!(reason = %reason, "人机验证未通过");
             // 只把已知的三个码透出去，避免把上游的任意字符串当错误码
             let code = match reason.as_str() {
                 "missing_captcha" => "missing_captcha",

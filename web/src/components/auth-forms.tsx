@@ -55,6 +55,20 @@ const CNKD_ICON = (
   </svg>
 );
 
+/** 人机验证失败时给一句能指导动作的提示，别只重复后端那句通用文案 */
+function captchaMessage(code?: string): string | null {
+  switch (code) {
+    case 'missing_captcha':
+      return '人机验证没有加载完成，请刷新页面后重试';
+    case 'captcha_unreachable':
+      return '人机验证服务暂时不可用，请稍后再试';
+    case 'captcha_failed':
+      return '人机验证未通过，请重新完成验证';
+    default:
+      return null;
+  }
+}
+
 async function post(url: string, body: unknown) {
   const res = await fetch(url, {
     method: 'POST',
@@ -157,7 +171,7 @@ export function RegisterForm(props: CommonProps & { isFirst: boolean }) {
     setBusy(false);
 
     if (!ok) {
-      setErr(data?.message ?? data?.error ?? '注册失败');
+      setErr(captchaMessage(data?.error) ?? data?.message ?? data?.error ?? '注册失败');
       setCaptcha(null);
       setResetKey((k) => k + 1);
       return;
@@ -307,7 +321,7 @@ export function LoginForm(props: CommonProps) {
     setBusy(false);
 
     if (!ok) {
-      setErr(data?.message ?? '用户名或密码不正确');
+      setErr(captchaMessage(data?.error) ?? data?.message ?? '用户名或密码不正确');
       setCaptcha(null);
       setResetKey((k) => k + 1);
       return;

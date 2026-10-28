@@ -42,8 +42,9 @@ pub async fn verify(
     settings: &Map<String, Value>,
     payload: Option<&CaptchaPayload>,
 ) -> CaptchaResult {
-    let id = settings::text(settings, "geetestId");
-    let key = settings::text(settings, "geetestKey");
+    // 后台是复制粘贴进来的，首尾空格/换行很常见；带空格去校验一定失败
+    let id = settings::text(settings, "geetestId").trim().to_string();
+    let key = settings::text(settings, "geetestKey").trim().to_string();
     if id.is_empty() || key.is_empty() {
         return CaptchaResult::Skipped;
     }
@@ -87,8 +88,12 @@ pub async fn verify(
             if data["status"] == "success" && data["result"] == "success" {
                 CaptchaResult::Pass
             } else {
+                // 不同版本的返回字段不完全一样：reason / code / msg 都看一眼，
+                // 只用于日志与错误码归类，不会原样回给前端
                 let reason = data["reason"]
                     .as_str()
+                    .or_else(|| data["code"].as_str())
+                    .or_else(|| data["msg"].as_str())
                     .unwrap_or("captcha_failed")
                     .to_string();
                 CaptchaResult::Failed(reason)

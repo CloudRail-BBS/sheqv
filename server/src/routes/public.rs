@@ -58,6 +58,16 @@ pub async fn settings(State(st): State<AppState>) -> ApiResult<Response> {
             out.insert(key.to_string(), v.clone());
         }
     }
+    // 人机验证：只有 id + key 都配好才下发 id。
+    // 只配 id 时服务端会跳过校验（key 为空），前端却会渲染一个「验了也没用」的组件；
+    // 反过来，前端如果靠 geetestKey 判断是否渲染，普通访客永远拿不到 key → 组件整个不出现，
+    // 提交时后端又要求验证，就变成「人机验证未通过」。判断统一放这里，前端只认 id。
+    let geetest_on = !settings::text(&all, "geetestId").trim().is_empty()
+        && !settings::text(&all, "geetestKey").trim().is_empty();
+    if !geetest_on {
+        out.insert("geetestId".into(), json!(""));
+    }
+
     // 第三方登录是否可用：只看 id+secret 是否都配了，**不下发 secret 本身**
     let github_on = !settings::text(&all, "githubClientId").is_empty()
         && !settings::text(&all, "githubClientSecret").is_empty();
