@@ -297,11 +297,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .composer-top { display: flex; align-items: flex-start; gap: 10px; }
 .composer-input {
   flex: 1; min-width: 0; min-height: 38px; border-radius: 9px; border: 1px solid var(--line);
-  background: var(--bg-soft); color: #66768a; font-size: 13.5px;
+  background: var(--bg-soft); color: var(--muted); font-size: 13.5px;
   display: flex; align-items: center; padding: 8px 12px; cursor: text;
   transition: border-color 0.15s;
 }
-.composer-input:hover { border-color: #2f2f34; }
+.composer-input:hover { border-color: var(--hover-bd); }
 .composer-actions {
   display: flex; align-items: center; gap: 2px; margin-top: 11px; padding: 9px 0;
   border-top: 1px solid var(--line-soft);
@@ -450,7 +450,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .post-meta { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
 .post-meta b { color: var(--text); font-weight: 550; font-size: 12.5px; }
-.post-meta .sep { margin: 0 5px; color: #3a4757; }
+.post-meta .sep { margin: 0 5px; color: var(--line); }
 /* 作者信息第二行：时间 + 成就，两行封顶，别把卡片头部撑成三行 */
 .post-sub {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -699,7 +699,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   border-color: rgba(255, 255, 255, 0.28); color: #cfe0ff;
 }
 .score { font-size: 27px; letter-spacing: -0.02em; font-family: ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-.score span { color: #60728a; font-size: 16px; margin: 0 6px; }
+.score span { color: var(--muted); font-size: 16px; margin: 0 6px; }
 .side-name { font-size: 14px; font-weight: 600; }
 .side-sub { font-size: 11px; color: var(--muted); }
 
@@ -762,10 +762,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   outline: none; transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input:focus { border-color: rgba(255, 255, 255, 0.45); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08); }
-.input::placeholder { color: #5d6b7d; }
+.input::placeholder { color: var(--text-3); }
 
 .meter { height: 5px; border-radius: 999px; background: var(--panel-3); overflow: hidden; }
-.meter i { display: block; height: 100%; background: linear-gradient(90deg, #d4d4d8, #f4f4f5); transition: width 0.18s linear; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue-line), var(--blue)); transition: width 0.18s linear; }
 
 .modal-mask {
   position: fixed; inset: 0; z-index: 90; display: grid; place-items: center;
@@ -778,9 +778,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .steps { margin: 12px 0 0; padding-left: 18px; color: var(--text-2); font-size: 12.5px; line-height: 1.95; }
 .hint-box {
-  border: 1px solid var(--line); border-left: 2px solid var(--amber);
-  background: rgba(255, 255, 255, 0.05); border-radius: 8px;
-  padding: 9px 11px; font-size: 11.5px; line-height: 1.7; color: #d9c39a;
+  border: 1px solid var(--line); border-left: 2px solid var(--warn);
+  background: var(--panel-2); border-radius: 8px;
+  padding: 9px 11px; font-size: 11.5px; line-height: 1.7; color: var(--text-2);
 }
 
 /* ── guild / team ────────────────────────── */
@@ -805,7 +805,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .rec { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
 .rec b { color: var(--text); font-weight: 600; }
 .winbar { flex: 1; height: 3px; border-radius: 2px; background: var(--panel-3); overflow: hidden; min-width: 40px; }
-.winbar i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #d4d4d8, #f4f4f5); }
+.winbar i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--blue-line), var(--blue)); }
 
 /* ── leaderboard ─────────────────────────── */
 
@@ -3021,28 +3021,35 @@ body:has(.auth-page) .app {
 
 /* ── 后台设置：分区页 + 侧栏（补回丢失的样式） ── */
 
-.settings-layout {
-  display: grid; grid-template-columns: 188px minmax(0, 1fr);
-  gap: 14px; margin-top: 12px; align-items: start;
-}
+/* 设置分区：控制台已经有左侧导航，再来一条竖排就会变成「双轨」。
+   这里改成标题下的胶囊行，分组用小标签标注。 */
+.settings-layout { display: block; margin-top: 4px; }
 .settings-nav {
-  padding: 12px; position: sticky; top: 70px;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 12px; margin-bottom: 12px;
+  position: static;
 }
-.settings-nav .rail-title { margin-bottom: 4px; }
-.settings-nav-group { margin-top: 12px; }
+.settings-nav .rail-title { display: none; }
+.settings-nav-group {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin: 0;
+}
 .settings-nav-label {
-  padding: 0 9px; margin-bottom: 3px;
-  font-size: 9.5px; color: var(--muted); letter-spacing: 0.08em;
+  width: 76px; flex: none; padding: 0; margin: 0;
+  font-size: 9.5px; color: var(--text-3); letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .settings-nav-item {
-  display: block; padding: 7px 9px; border-radius: 7px;
+  display: inline-flex; align-items: center;
+  padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel);
   font-size: 12px; color: var(--text-2);
-  transition: background 0.14s, color 0.14s;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
-.settings-nav-item:hover { background: var(--panel-2); color: var(--text); }
+.settings-nav-item:hover { background: var(--panel-2); color: var(--text); border-color: var(--hover-bd); }
 .settings-nav-item[data-active="true"] {
-  background: var(--blue-soft); color: var(--blue); font-weight: 600;
+  background: var(--blue-soft); border-color: var(--blue-line);
+  color: var(--blue); font-weight: 600;
 }
 .settings-main { min-width: 0; }
 .settings-main-title { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
@@ -3484,3 +3491,244 @@ body:has(.auth-page) .app {
   .btn { height: 36px; }
   .btn-sm { height: 32px; }
 }
+
+/* ── 后台控制台外壳 ───────────────────────
+   与前台完全独立：没有顶栏搜索、没有侧栏导航、没有页脚和底部栏。
+   左侧固定导航 + 右侧内容，移动端折叠成抽屉。 */
+
+.console {
+  display: grid;
+  grid-template-columns: 234px minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.console-side {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 10px 10px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow-y: auto;
+}
+
+.console-brand {
+  display: flex; align-items: center; gap: 9px;
+  padding: 2px 8px 11px;
+  border-bottom: 1px solid var(--line-soft);
+  min-width: 0;
+}
+.console-brand .brand-mark { width: 28px; height: 28px; border-radius: 9px; flex: none; }
+.console-brand span { min-width: 0; }
+.console-brand b {
+  display: block; font-size: 13px; font-weight: 650; letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.console-brand em {
+  display: block; margin-top: 1px; font-style: normal;
+  font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3);
+}
+
+.console-nav { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.console-nav-group { display: flex; flex-direction: column; gap: 1px; }
+.console-nav-label {
+  padding: 0 8px 4px; font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3);
+}
+.console-nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 8px; border-radius: 8px;
+  font-size: 13px; color: var(--text-2);
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.console-nav-item svg { width: 16px; height: 16px; flex: none; opacity: 0.8; }
+.console-nav-item:hover { background: var(--panel-2); color: var(--text); }
+.console-nav-item[data-active="true"] {
+  background: var(--blue-soft); color: var(--blue); font-weight: 600;
+}
+.console-nav-item[data-active="true"] svg { opacity: 1; }
+
+.console-side-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 8px 2px; border-top: 1px solid var(--line-soft);
+  font-size: 11.5px; color: var(--text-3);
+}
+.console-side-link:hover { color: var(--blue); }
+.console-ver { font-family: ui-monospace, monospace; font-size: 10px; }
+
+.console-body { display: flex; flex-direction: column; min-width: 0; }
+
+.console-topbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--glass-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+.console-crumb { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 13px; }
+.console-crumb-root { color: var(--text-3); }
+.console-crumb-root:hover { color: var(--text); }
+.console-crumb-sep { color: var(--line); }
+.console-crumb b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.console-top-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.console-user {
+  width: 28px; height: 28px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: #fff; font-size: 12px; font-weight: 700;
+}
+
+.console-main {
+  width: 100%; max-width: 1280px; margin: 0 auto;
+  padding: 20px 22px 56px;
+}
+.console-main .col-main { max-width: none; gap: 14px; }
+
+.console-burger { display: none; }
+
+.console-denied {
+  min-height: 100vh; display: grid; place-items: center;
+  padding: 24px; background: var(--bg);
+}
+.console-denied .card { max-width: 460px; }
+
+.console-drawer-mask {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(10, 16, 28, 0.42);
+  backdrop-filter: blur(3px);
+  animation: drawerMask 0.18s ease-out both;
+}
+.console-drawer {
+  width: min(268px, 84vw); height: 100%;
+  padding: calc(14px + env(safe-area-inset-top)) 10px calc(16px + env(safe-area-inset-bottom));
+  background: var(--panel); border-right: 1px solid var(--line);
+  box-shadow: 24px 0 60px -30px rgba(0, 0, 0, 0.55);
+  overflow-y: auto;
+  animation: drawerIn 0.2s var(--ease) both;
+}
+
+@media (max-width: 960px) {
+  .console { grid-template-columns: minmax(0, 1fr); }
+  .console-side { display: none; }
+  .console-burger {
+    display: grid; place-items: center;
+    width: 32px; height: 32px; flex: none;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel); color: var(--text-2); cursor: pointer;
+  }
+  .console-burger:hover { background: var(--panel-2); color: var(--text); }
+  .console-topbar { padding: 0 14px; height: 52px; }
+  .console-main { padding: 16px 14px 44px; }
+}
+
+/* ── 推送开关与推送卡片 ─────────────────── */
+
+.push-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 9px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel);
+  color: var(--text-2); font-family: inherit; font-size: 12px;
+  cursor: pointer; transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+.push-toggle svg { width: 15px; height: 15px; flex: none; }
+.push-toggle:hover { background: var(--panel-2); color: var(--text); border-color: var(--hover-bd); }
+.push-toggle[data-on="true"] {
+  background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue);
+}
+.push-toggle:disabled { opacity: 0.55; cursor: not-allowed; }
+.push-toggle.is-loading {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  animation: skShimmer 1.2s linear infinite;
+  background-image: linear-gradient(90deg, var(--panel-2), var(--panel-3), var(--panel-2));
+  background-size: 320px 100%;
+}
+
+.push-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; margin-bottom: 12px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel);
+}
+.push-card-main { min-width: 0; flex: 1; }
+.push-card-main b { display: block; font-size: 13px; }
+.push-card-main span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.65; }
+.push-card-main em {
+  display: block; margin-top: 4px; font-style: normal;
+  font-size: 11.5px; color: var(--blue);
+}
+@media (max-width: 560px) {
+  .push-card { flex-direction: column; align-items: stretch; }
+  .push-card .btn { width: 100%; }
+}
+
+/* ── 控制台内的通用块 ───────────────────── */
+
+.console-stats {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px; margin-bottom: 12px;
+}
+.console-stat { padding: 12px 14px; }
+.console-stat b {
+  display: block; font-size: 22px; font-weight: 700;
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+}
+.console-stat span { display: block; margin-top: 1px; font-size: 11.5px; color: var(--muted); }
+
+.console-h3 { font-size: 13.5px; font-weight: 650; letter-spacing: -0.01em; }
+.console-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+}
+
+.console-form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-top: 12px;
+}
+.console-msg { font-size: 12px; }
+.console-msg.ok { color: var(--ok); }
+.console-msg.err { color: var(--danger); }
+.console-key {
+  display: block; margin-top: 10px; padding: 9px 11px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); color: var(--text-2);
+  font-size: 11px; line-height: 1.7; word-break: break-all;
+}
+
+@media (max-width: 700px) {
+  .console-stats { grid-template-columns: 1fr 1fr; }
+  .console-form { grid-template-columns: 1fr; }
+}
+
+/* 根级 404（无外壳，居中一张卡） */
+.notfound-screen {
+  min-height: 100vh; display: grid; place-items: center;
+  padding: 24px; background: var(--bg);
+}
+.notfound-card { max-width: 420px; text-align: center; }
+.notfound-code {
+  display: block; margin-bottom: 10px;
+  font-family: ui-monospace, monospace; font-size: 12px;
+  letter-spacing: 0.3em; color: var(--text-3);
+}
+
+/* 侧栏里的推送卡片：不重复画边框，纵向排列 */
+.rail-card .push-card {
+  margin: 0; padding: 0; border: 0; background: transparent;
+  flex-direction: column; align-items: stretch; gap: 10px;
+}
+.rail-card .push-card .btn { width: 100%; }
+
+/* 后台表格里的小号按钮：比 btn-sm 再小一档，只用于行内开关 */
+.adm-mini {
+  height: 22px; padding: 0 7px;
+  font-size: 10.5px; border-radius: 6px;
+}
+/* 表格里的操作列一律不换行，避免三行按钮把行高撑成 80px */
+.table td .row { min-width: 0; }
+
+/* 表格里的日期 / 用户名不要折行，列宽交给内容决定 */
+.table td.mono, .table th { white-space: nowrap; }

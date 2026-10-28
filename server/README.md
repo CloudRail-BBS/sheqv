@@ -50,6 +50,12 @@
 | PATCH/DELETE | `/api/v1/admin/policies/{slug}` | 后台修改 / 删除（内置不可删） |
 | GET | `/api/v1/notifications` | 评论通知 + 未读数（`no-store`） |
 | POST | `/api/v1/notifications/read` | 推进已读水位（只进不退） |
+| GET | `/api/v1/push/key` | 取 VAPID 公钥（首次调用顺便生成密钥对） |
+| POST | `/api/v1/push/subscribe` | 保存浏览器订阅（endpoint 唯一，重复订阅更新归属） |
+| POST | `/api/v1/push/unsubscribe` | 删除订阅 |
+| GET | `/api/v1/admin/push` | 后台概览：订阅数、最近发送、公钥与联系主体 |
+| POST | `/api/v1/admin/push/send` | 发送推送（`all` / `signed_in` / `admins`） |
+| DELETE | `/api/v1/admin/push/subscriptions` | 清理连续失败的订阅 |
 | GET | `/api/v1/sponsors` | 公开赞助名单（只含展示中的，`no-store`） |
 | GET | `/api/v1/settings` | 站点设置白名单投影（不含任何 secret，附 `githubEnabled`/`cnkdEnabled`） |
 | GET | `/api/v1/users` · `/users/{id}` | 公开用户列表 / 单个公开资料（**不含 email**） |

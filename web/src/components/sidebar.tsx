@@ -64,7 +64,7 @@ function Ico({ children }: { children: React.ReactNode }) {
  * `items` 是后台配置的 key 有序列表；为空时用默认（全部）。
  * 分组顺序固定，组内顺序按配置；未知 key 自动忽略。
  */
-export function Sidebar({ adminVisible, items }: { adminVisible: boolean; items?: string }) {
+export function Sidebar({ items }: { items?: string }) {
   const pathname = usePathname();
   const search = useSearchParams();
   const keys = parseNav(items, SIDEBAR_DEFAULT);
@@ -87,15 +87,6 @@ export function Sidebar({ adminVisible, items }: { adminVisible: boolean; items?
           </div>
         );
       })}
-
-      {adminVisible && (
-        <div className="side-group">
-          <div className="side-label">管理</div>
-          <Link href="/admin" className="side-item" data-active={on('/admin')}>
-            <Ico>{I.cog}</Ico>管理后台
-          </Link>
-        </div>
-      )}
     </aside>
   );
 }

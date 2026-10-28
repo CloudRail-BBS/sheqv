@@ -6,7 +6,6 @@ import { badgeOf, TITLE_MAX } from '@/lib/badges';
 import type { GroupOption } from '@/lib/groups';
 import type { UserGroup } from '@/lib/users';
 import { UserBadge } from './user-badge';
-import { GroupTag } from './group-tag';
 
 export interface AdminUserRow {
   id: string;
@@ -131,7 +130,7 @@ export function AdminUsers({
               <th>注册</th>
               <th>最后登录</th>
               <th>状态</th>
-              <th style={{ width: 190 }}>操作</th>
+              <th style={{ width: 216 }}>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -147,42 +146,33 @@ export function AdminUsers({
                   </td>
                   <td className="mono small muted">@{u.username}</td>
                   <td>
-                    <span className={'badge ' + (u.role === 'admin' ? 'badge-live' : 'badge-ghost')}>
-                      {u.role === 'admin' ? '管理员' : '成员'}
-                    </span>
-                    <div className="row" style={{ gap: 5, marginTop: 5 }}>
+                    <div className="row wrap" style={{ gap: 5 }}>
+                      <span className={'badge ' + (u.role === 'admin' ? 'badge-live' : 'badge-ghost')}>
+                        {u.role === 'admin' ? '管理员' : '成员'}
+                      </span>
                       {u.developer ? (
-                        <span className="dev-chip">开发者</span>
+                        <>
+                          <span className="dev-chip">开发者</span>
+                          <button
+                            className="btn btn-sm btn-ghost adm-mini"
+                            onClick={() => toggleDeveloper(u.id, false)}
+                            disabled={busyId === u.id}
+                          >
+                            取消
+                          </button>
+                        </>
                       ) : (
                         <button
-                          className="btn btn-sm btn-ghost"
-                          style={{ height: 20, fontSize: 10, padding: '0 6px' }}
+                          className="btn btn-sm btn-ghost adm-mini"
                           onClick={() => toggleDeveloper(u.id, true)}
                           disabled={busyId === u.id}
                         >
                           设为开发者
                         </button>
                       )}
-                      {u.developer && (
-                        <button
-                          className="btn btn-sm btn-ghost"
-                          style={{ height: 20, fontSize: 10, padding: '0 6px' }}
-                          onClick={() => toggleDeveloper(u.id, false)}
-                          disabled={busyId === u.id}
-                        >
-                          取消
-                        </button>
-                      )}
                     </div>
                   </td>
                   <td>
-                    <div style={{ marginBottom: 5 }}>
-                      {u.group ? (
-                        <GroupTag group={u.group} size="sm" />
-                      ) : (
-                        <span className="small muted">未分组</span>
-                      )}
-                    </div>
                     <select
                       className="input"
                       style={{ height: 28, width: 118, fontSize: 12, padding: '0 6px' }}
@@ -251,7 +241,7 @@ export function AdminUsers({
                     </span>
                   </td>
                   <td>
-                    <div className="row wrap" style={{ gap: 6 }}>
+                    <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
                       <button
                         className="btn btn-sm btn-ghost"
                         disabled={busyId === u.id || locked}

@@ -36,13 +36,11 @@ const I = {
 export function MobileMenu({
   siteName,
   user,
-  adminVisible,
   points,
   unread,
 }: {
   siteName: string;
   user: PublicUser | null;
-  adminVisible: boolean;
   points: number;
   unread: number;
 }) {
@@ -146,15 +144,6 @@ export function MobileMenu({
               {item('/points', '积分与签到', I.star)}
               {item('/download', '客户端下载', I.code)}
             </div>
-
-            {adminVisible && (
-              <div className="mobile-drawer-section">
-                <div className="mobile-drawer-label">管理</div>
-                {item('/admin', '管理后台', I.cog)}
-                {item('/admin/audit', '内容审核', I.shield)}
-                {item('/admin/apps', '端管理', I.code)}
-              </div>
-            )}
 
             <div className="mobile-drawer-section">
               <div className="mobile-drawer-label">分类</div>

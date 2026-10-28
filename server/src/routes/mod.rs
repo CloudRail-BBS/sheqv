@@ -18,6 +18,7 @@ pub mod policies;
 pub mod oauth;
 pub mod posts;
 pub mod public;
+pub mod push;
 pub mod resources;
 pub mod rewards;
 pub mod servers;
@@ -79,6 +80,12 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/matches/{id}/accept", post(matches::accept))
         .route("/api/v1/policies", get(policies::list))
         .route("/api/v1/policies/{slug}", get(policies::get))
+        .route("/api/v1/push/key", get(push::key))
+        .route("/api/v1/push/subscribe", post(push::subscribe))
+        .route("/api/v1/push/unsubscribe", post(push::unsubscribe))
+        .route("/api/v1/admin/push", get(push::overview))
+        .route("/api/v1/admin/push/send", post(push::send))
+        .route("/api/v1/admin/push/subscriptions", delete(push::prune))
         .route("/api/v1/notifications", get(notifications::list))
         .route("/api/v1/notifications/read", post(notifications::read))
         .route(
