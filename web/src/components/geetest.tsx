@@ -38,6 +38,10 @@ interface Props {
   resetKey: number;
 }
 
+// gt4.js 会自己拉 gcaptcha4.css。那份样式里带大量 IE 时代的写法
+// （`\9`、`*width`、`filter:alpha`、`-o-min-device-pixel-ratio`、`-ms-clear`），
+// Firefox 会逐条警告「解析…的值时出错」。这是正常噪声，不影响组件渲染，
+// 资源在 GeeTest 的 CDN 上，无法在不动第三方资源的前提下去掉。
 const CDN = ['https://static.geetest.com/v4/gt4.js', 'https://static.geetest.com.cn/v4/gt4.js'];
 
 let loading: Promise<void> | null = null;
