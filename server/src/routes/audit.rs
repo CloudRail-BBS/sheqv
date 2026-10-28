@@ -110,30 +110,21 @@ pub async fn test(
         .unwrap_or("这是一条用于验证审核接口的测试内容。");
 
     let s = settings::load(&st.pool, &st.cfg).await;
-    let Some(cfg) = crate::tms::config(&s) else {
+    let Some(cfg) = audit::ai_config(&s) else {
         return Err(ApiError::with_message(
             StatusCode::BAD_REQUEST,
-            "tms_not_configured",
-            "请先填写腾讯云 SecretId / SecretKey",
+            "ai_not_configured",
+            "请先填写 AI 接口地址与密钥",
         ));
     };
 
-    match crate::tms::moderate(&st.ai_http, &cfg, title, body_text).await {
-        Ok(None) => Ok(Json(json!({
-            "ok": true,
-            "verdict": { "risky": false, "score": 0.0, "labels": [], "reason": "腾讯云：Normal" }
-        }))
-        .into_response()),
-        Ok(Some(reason)) => Ok(Json(json!({
-            "ok": true,
-            "verdict": { "risky": true, "score": 1.0, "labels": ["tms"], "reason": reason }
-        }))
-        .into_response()),
+    match audit::ai_review(&st.ai_http, &cfg, title, body_text).await {
+        Ok(v) => Ok(Json(json!({ "ok": true, "verdict": v })).into_response()),
         Err(err) => {
-            tracing::warn!(error = %err, "腾讯云内容安全自测失败");
+            tracing::warn!(error = %err, "AI 审核自测失败");
             Err(ApiError::with_message(
                 StatusCode::BAD_GATEWAY,
-                "tms_failed",
+                "ai_failed",
                 // 这里把原因带出去，管理员正在排障，需要看到上游说了什么
                 format!("调用失败：{err}"),
             ))

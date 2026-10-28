@@ -86,15 +86,15 @@ export interface SiteSettings {
   smtpFrom: string;
   /** true = 465 直连 TLS；false = 587 STARTTLS */
   smtpSecure: boolean;
-  /** 帖子审核策略：off 关闭 / tms 腾讯云内容安全 / all 全部人工 */
+  /** 帖子审核策略：off 关闭 / ai AI 预审 / all 全部人工 */
   postAuditMode: string;
-  /** 腾讯云内容安全（文本审核） */
-  tmsSecretId: string;
-  tmsSecretKey: string;
-  /** 默认 ap-guangzhou */
-  tmsRegion: string;
-  /** 可空：控制台配的自定义业务策略 */
-  tmsBizType: string;
+  /** AI 预审：OpenAI 兼容接口 */
+  aiBaseUrl: string;
+  aiApiKey: string;
+  /** 默认 gpt-4o-mini */
+  aiModel: string;
+  /** 留空用内置审核提示词 */
+  aiPrompt: string;
   /** 侧边栏 / 移动端底部栏的 key 列表（逗号分隔，空串用内置默认） */
   sidebarItems: string;
   tabbarItems: string;
@@ -167,10 +167,10 @@ const DEFAULTS: SiteSettings = {
   smtpFrom: '',
   smtpSecure: true,
   postAuditMode: 'off',
-  tmsSecretId: '',
-  tmsSecretKey: '',
-  tmsRegion: 'ap-guangzhou',
-  tmsBizType: '',
+  aiBaseUrl: '',
+  aiApiKey: '',
+  aiModel: 'gpt-4o-mini',
+  aiPrompt: '',
   sidebarItems: '',
   tabbarItems: '',
 };

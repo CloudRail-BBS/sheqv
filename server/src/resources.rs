@@ -962,6 +962,11 @@ mod tests {
             version: "1.0.0",
             license: "MIT",
             size_bytes: 1024,
+            // 0022 之后新增的元信息：老测试没跟上字段，编译会直接报 missing
+            game_versions: "",
+            loaders: "",
+            deps: "",
+            source_url: "",
         }
     }
 
