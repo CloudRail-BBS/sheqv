@@ -2,6 +2,7 @@ import { getAdminGate } from '@/lib/admin-auth';
 import { AdminDenied } from '@/components/admin-denied';
 import { AdminPush } from '@/components/admin-push';
 import { PushToggle } from '@/components/push-toggle';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ export default async function AdminPushPage() {
       </div>
     );
   }
+
+  const settings = await getSettings();
 
   return (
     <div className="col-main">
@@ -30,7 +33,7 @@ export default async function AdminPushPage() {
 
       <PushToggle variant="wide" />
 
-      <AdminPush />
+      <AdminPush pushAnnounce={settings.pushAnnounce} />
     </div>
   );
 }

@@ -43,6 +43,8 @@ export interface PublicUser {
   profileBg?: string;
   /** 头像；空则用昵称首字 */
   avatar?: string;
+  /** 名片统计（仅单人接口下发） */
+  stats?: { posts: number; comments: number; points: number };
   email?: string;
   providers?: string[];
   badges?: string[];

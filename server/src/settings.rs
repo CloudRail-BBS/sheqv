@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 69] = [
+pub const KEYS: [&str; 72] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -86,6 +86,10 @@ pub const KEYS: [&str; 69] = [
     "aiPrompt",
     // 导航：逗号分隔的 key，空串 = 前端内置默认
     // 浏览器推送：密钥首次启动自动生成，subject 为联系邮箱或站点地址
+    // 关于社区：介绍正文与加入说明（纯文本，前台按段落渲染）
+    "pushAnnounce",
+    "aboutIntro",
+    "aboutJoin",
     "vapidPublicKey",
     "vapidPrivateKey",
     "vapidSubject",
@@ -161,6 +165,9 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("aiApiKey", json!(""));
     put("aiModel", json!("gpt-4o-mini"));
     put("aiPrompt", json!(""));
+    put("pushAnnounce", json!(false));
+    put("aboutIntro", json!(""));
+    put("aboutJoin", json!(""));
     put("vapidPublicKey", json!(""));
     put("vapidPrivateKey", json!(""));
     put("vapidSubject", json!(""));

@@ -370,7 +370,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   outline: none;
 }
 .user-hover-card {
-  position: fixed; z-index: 120; width: 286px;
+  position: fixed; z-index: 120; width: 300px;
   padding: 14px; border-radius: 12px;
   background: var(--panel); border: 1px solid var(--line);
   box-shadow: 0 22px 60px -26px rgba(10, 16, 28, 0.65);
@@ -3895,4 +3895,113 @@ body:has(.auth-page) .app {
 }
 .uhc-action:hover {
   background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue);
+}
+
+/* 名片三格统计（主题 / 回帖 / 积分） */
+.uhc-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  margin-top: 12px; padding: 9px 2px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
+}
+.uhc-stats > div { text-align: center; border-left: 1px solid var(--line-soft); }
+.uhc-stats > div:first-child { border-left: 0; }
+.uhc-stats b {
+  display: block; font-size: 15px; font-weight: 700;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+}
+.uhc-stats span { display: block; margin-top: 1px; font-size: 10px; color: var(--muted); }
+
+.uhc-action {
+  display: block; margin-top: 10px; padding: 7px 10px;
+  border: 1px solid var(--blue-line); border-radius: 9px;
+  background: var(--blue-soft); color: var(--blue);
+  font-size: 12.5px; font-weight: 600; text-align: center;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+}
+.uhc-action:hover {
+  background: var(--blue); border-color: var(--blue); color: #fff;
+}
+
+/* ── 关于社区 ───────────────────────────── */
+
+.about-hero { display: flex; flex-direction: column; gap: 6px; padding: 22px 24px; }
+.about-kicker {
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-3); font-weight: 600;
+}
+.about-lead { font-size: 13.5px; color: var(--text-2); line-height: 1.85; max-width: 62ch; }
+.about-text { margin-top: 8px; font-size: 13px; color: var(--text-2); line-height: 1.95; max-width: 72ch; }
+.about-text p + p { margin-top: 10px; }
+.about-text.muted { color: var(--muted); }
+
+.about-section { margin-top: 4px; }
+.about-people {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 10px; margin-top: 10px;
+}
+.about-person { display: flex; gap: 12px; padding: 14px 15px; }
+.about-avatar {
+  width: 52px; height: 52px; border-radius: 14px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: #fff; font-size: 20px; font-weight: 700;
+}
+.about-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.about-person-main { min-width: 0; }
+.about-person-main b { font-size: 14px; font-weight: 650; }
+.about-role { display: block; margin-top: 2px; font-size: 11.5px; color: var(--blue); }
+.about-person-main p {
+  margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.7;
+}
+
+.about-partners {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px; margin-top: 10px;
+}
+.about-partner {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  transition: border-color 0.14s, transform 0.14s;
+}
+a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1px); }
+.about-logo {
+  width: 38px; height: 38px; border-radius: 10px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text-2); font-size: 15px; font-weight: 700;
+}
+.about-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.about-partner-main { min-width: 0; }
+.about-partner-main b { display: block; font-size: 13px; font-weight: 600; }
+.about-partner-main span {
+  display: block; margin-top: 1px; font-size: 11.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 后台：关于社区的两个名单 */
+.about-admin-list { border-top: 1px solid var(--line-soft); }
+.about-admin-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-bottom: 1px solid var(--line-soft);
+}
+.about-admin-row[data-editing="true"] { align-items: flex-start; background: var(--panel-2); }
+.about-admin-mark {
+  width: 32px; height: 32px; border-radius: 9px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text-2); font-size: 12px; font-weight: 700;
+}
+.about-admin-mark img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.about-admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.about-admin-main b { font-size: 13px; font-weight: 600; }
+.about-admin-fields { flex: 1; display: grid; gap: 6px; min-width: 0; }
+.about-admin-acts { display: flex; gap: 4px; flex: none; }
+.about-admin-add {
+  display: grid; grid-template-columns: 1.1fr 1fr 1.5fr auto;
+  gap: 8px; padding: 12px 16px;
+}
+
+@media (max-width: 700px) {
+  .about-hero { padding: 18px 16px; }
+  .about-admin-add { grid-template-columns: 1fr; }
+  .about-admin-row { flex-wrap: wrap; }
 }

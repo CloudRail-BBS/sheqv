@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { initialOf } from '@/lib/initials';
 import { createPortal } from 'react-dom';
 import type { BadgeInfo } from '@/lib/badges';
 import type { PublicUser, UserGroup } from '@/lib/users';
@@ -139,7 +140,7 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={shownAvatar} alt="" />
                 ) : (
-                  shownName.slice(0, 1)
+                  initialOf(shownName)
                 )}
               </span>
               <div style={{ minWidth: 0 }}>
@@ -147,7 +148,25 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
                   {shownName}
                   <UserBadge badge={badge} size="sm" />
                 </div>
-                <div className="uhc-handle">@{shown?.username || 'user'}</div>
+                <div className="uhc-handle">
+                  {shownGroup ? shownGroup.name : `@${shown?.username || 'user'}`}
+                </div>
+              </div>
+            </div>
+
+            {/* 参考论坛名片：三个数字比一串标签更快建立印象 */}
+            <div className="uhc-stats">
+              <div>
+                <b>{shown?.stats ? shown.stats.posts : '—'}</b>
+                <span>主题</span>
+              </div>
+              <div>
+                <b>{shown?.stats ? shown.stats.comments : '—'}</b>
+                <span>回帖</span>
+              </div>
+              <div>
+                <b>{shown?.stats ? shown.stats.points : '—'}</b>
+                <span>积分</span>
               </div>
             </div>
 
@@ -163,7 +182,7 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
 
             {userId && (
               <Link href={`/messages?to=${encodeURIComponent(userId)}`} className="uhc-action">
-                发私信
+                发送消息
               </Link>
             )}
           </div>,

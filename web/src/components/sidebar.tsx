@@ -48,6 +48,7 @@ const ICON_BY_KEY: Record<string, React.ReactNode> = {
   sponsors: I.heart,
   agreements: I.doc,
   policies: I.doc,
+  about: I.heart,
   download: I.code,
 };
 

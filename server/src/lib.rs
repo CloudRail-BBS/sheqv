@@ -14,6 +14,7 @@
 //! - `routes`       HTTP 接口
 //! - `errors`       错误码与中文文案的唯一出口
 
+pub mod about;
 pub mod achievements;
 pub mod admin_auth;
 pub mod afdian;

@@ -158,6 +158,7 @@ export function MobileMenu({
               <div className="mobile-drawer-label">站内</div>
               {item('/policies', '政策与协议', I.doc)}
               {item('/agreements', '公约与签署', I.doc)}
+              {item('/about', '关于社区', I.doc)}
             </div>
 
             {user && (

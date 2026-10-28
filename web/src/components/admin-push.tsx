@@ -36,13 +36,14 @@ const timeText = (ts: number) =>
  * 订阅是浏览器生成的，后台只能看到数量与设备信息，看不到具体是谁的设备；
  * 推送内容必须是「对所有人都有意义」的公告类信息，别拿来当站内信群发。
  */
-export function AdminPush() {
+export function AdminPush({ pushAnnounce = false }: { pushAnnounce?: boolean }) {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   const [subject, setSubject] = useState('');
+  const [autoAnnounce, setAutoAnnounce] = useState(pushAnnounce);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('/');
@@ -198,6 +199,28 @@ export function AdminPush() {
             </select>
           </label>
         </div>
+
+        <label className="row" style={{ marginTop: 12, gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={autoAnnounce}
+            onChange={async (e) => {
+              const next = e.target.checked;
+              setAutoAnnounce(next);
+              const res = await fetch('/api/v1/admin/settings', {
+                method: 'PATCH',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ pushAnnounce: next }),
+              }).catch(() => null);
+              setMsg(
+                res?.ok
+                  ? { kind: 'ok', text: next ? '已开启：发公告时自动推送' : '已关闭自动推送' }
+                  : { kind: 'err', text: '保存失败' },
+              );
+            }}
+          />
+          <span className="small">发布公告时自动推送给全部订阅</span>
+        </label>
 
         <div className="row" style={{ marginTop: 12, gap: 8 }}>
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void send()}>

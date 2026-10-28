@@ -1,3 +1,4 @@
+pub mod about;
 pub mod achievements;
 pub mod admin;
 pub mod agreements;
@@ -68,6 +69,15 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/users", get(public::users))
         .route("/api/v1/users/{id}", get(public::user))
         .route("/api/v1/stats", get(public::stats))
+        .route("/api/v1/about", get(about::public))
+        .route(
+            "/api/v1/admin/about",
+            get(about::admin_list).post(about::admin_create),
+        )
+        .route(
+            "/api/v1/admin/about/{id}",
+            patch(about::admin_patch).delete(about::admin_remove),
+        )
         .route("/api/v1/slides", get(public::slides))
         .route("/api/v1/sponsors", get(sponsors::list))
         .route("/api/v1/achievements", get(achievements::map))

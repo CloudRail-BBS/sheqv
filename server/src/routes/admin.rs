@@ -469,6 +469,29 @@ pub async fn create_announcement(
     .await
     .map_err(ApiError::internal)?;
 
+    // 公告发布即推送：后台开关（pushAnnounce）打开才发，失败不影响公告本身
+    if item.published {
+        let s = settings::load(&st.pool, &st.cfg).await;
+        if settings::flag(&s, "pushAnnounce", false) {
+            let payload = crate::push::PushPayload {
+                title: item.title.clone(),
+                body: item.body.chars().take(90).collect(),
+                url: format!("/announcements/{}", item.id),
+                tag: format!("announce-{}", item.id),
+            };
+            let st_bg = st.clone();
+            tokio::spawn(async move {
+                let Ok(keys) = crate::push::ensure_keys(&st_bg.pool, &st_bg.cfg).await else {
+                    return;
+                };
+                let (ok, fail) =
+                    crate::push::broadcast(&st_bg.http, &st_bg.pool, &keys, &payload, "all").await;
+                let _ = crate::push::record(&st_bg.pool, &payload, "all", ok, fail, "auto:announce")
+                    .await;
+            });
+        }
+    }
+
     Ok((
         StatusCode::CREATED,
         Json(json!({ "ok": true, "item": item })),

@@ -23,6 +23,7 @@ import { PostCard } from '@/components/post-card';
 import { Carousel } from '@/components/carousel';
 import { buildMetadata, websiteJsonLd } from '@/lib/seo';
 import { initialOf } from '@/lib/initials';
+import { PushToggle } from '@/components/push-toggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -210,6 +211,15 @@ export default async function HomePage() {
               <span>待确认</span>
             </div>
           </div>
+        </div>
+
+        {/* 首页也给一个订阅入口：速览与公告属于站点级消息，不需要先登录 */}
+        <div className="card rail-card">
+          <div className="rail-title">速览推送</div>
+          <p className="small muted" style={{ lineHeight: 1.8 }}>
+            新公告、赛季速览会直接弹到系统通知里，关掉页面也能收到。
+          </p>
+          <PushToggle variant="wide" />
         </div>
 
         <div className="card rail-card">

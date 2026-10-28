@@ -49,6 +49,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
     items: [
       { href: '/admin/agreements', label: '公约', icon: 'shield' },
       { href: '/admin/policies', label: '政策', icon: 'doc' },
+      { href: '/admin/about', label: '关于社区', icon: 'users' },
       { href: '/admin/apps', label: '端管理', icon: 'code' },
       { href: '/admin/push', label: '网页推送', icon: 'send' },
       { href: '/admin/settings', label: '设置', icon: 'cog' },

@@ -177,6 +177,17 @@ pub struct PublicProfile {
     pub profile_bg: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub avatar: String,
+    /// 名片上的数字：主题 / 回帖 / 积分。只有单人接口会填，列表接口不带。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stats: Option<UserStats>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserStats {
+    pub posts: i64,
+    pub comments: i64,
+    pub points: i64,
 }
 
 /// GET /api/v1/users/{id}
@@ -199,6 +210,7 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         developer_since: row.developer_at.map(|t| t.timestamp_millis()),
         profile_bg: row.profile_bg.clone(),
         avatar: row.avatar.clone(),
+        stats: Some(user_stats(&st.pool, &row.id).await.map_err(ApiError::internal)?),
     };
 
     Ok(Json(json!({ "ok": true, "user": profile })).into_response())
@@ -225,12 +237,27 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
             developer_since: row.developer_at.map(|t| t.timestamp_millis()),
             profile_bg: row.profile_bg.clone(),
             avatar: row.avatar.clone(),
+            stats: None,
         })
         .collect();
 
     let mut res = Json(json!({ "ok": true, "items": items })).into_response();
     no_store(&mut res);
     Ok(res)
+}
+
+/// 名片上的三个数字。一次查询取齐，别在这里拆成三次往返。
+async fn user_stats(pool: &sqlx::PgPool, id: &str) -> Result<UserStats, sqlx::Error> {
+    let row: (i64, i64, i64) = sqlx::query_as(
+        "SELECT
+           (SELECT count(*) FROM posts WHERE author_id = $1 AND status = 'published'),
+           (SELECT count(*) FROM comments WHERE author_id = $1),
+           (SELECT coalesce(points, 0) FROM users WHERE id = $1)",
+    )
+    .bind(id)
+    .fetch_one(pool)
+    .await?;
+    Ok(UserStats { posts: row.0, comments: row.1, points: row.2 })
 }
 
 /// GET /api/v1/stats —— 首页与后台都要用的三个计数（不含任何敏感信息）

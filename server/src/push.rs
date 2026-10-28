@@ -272,3 +272,29 @@ pub async fn broadcast(
     }
     (ok, fail)
 }
+
+/// 记录一次发送（后台手动与自动触发共用）
+pub async fn record(
+    pool: &PgPool,
+    payload: &PushPayload,
+    audience: &str,
+    ok: usize,
+    fail: usize,
+    by: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO push_messages (id, title, body, url, audience, sent_count, fail_count, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+    )
+    .bind(crate::ids::next('m'))
+    .bind(&payload.title)
+    .bind(&payload.body)
+    .bind(&payload.url)
+    .bind(audience)
+    .bind(ok as i32)
+    .bind(fail as i32)
+    .bind(by)
+    .execute(pool)
+    .await?;
+    Ok(())
+}

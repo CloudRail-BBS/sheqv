@@ -55,6 +55,11 @@ export interface SiteSettings {
   footerIcp: string;
   footerLinks: string;
   meGuestText: string;
+  /** 关于社区：介绍正文与加入说明（纯文本，空行分段） */
+  aboutIntro: string;
+  aboutJoin: string;
+  /** 公告发布时是否自动推送 */
+  pushAnnounce: boolean;
   loginHint: string;
   registerHint: string;
   /** 登录页左侧能力条：每行「标题|描述」，最多 3 条；留空用内置文案 */
@@ -133,6 +138,9 @@ const DEFAULTS: SiteSettings = {
   footerIcp: '',
   footerLinks: '',
   meGuestText: '',
+  aboutIntro: '',
+  aboutJoin: '',
+  pushAnnounce: false,
   loginHint: '',
   registerHint: '',
   loginPoints: '',
