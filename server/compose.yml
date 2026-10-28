@@ -67,13 +67,15 @@ services:
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       APP_VERSION: ${APP_VERSION:-2026.10.24}
-      # 可选：留空则缓存与限流走进程内；要用 Redis 见下方 redis 服务（profile: cache）
-      REDIS_URL: ${REDIS_URL:-}
+      # 默认连下面的 redis 服务；想退回进程内实现就把这里显式设成空字符串
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     volumes:
       # 只放 .session-secret；多实例部署必须显式配 SESSION_SECRET
       - session-secret:/data
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       # 容器内 8080 → 宿主机回环 8860。8080 留给服务器上已有的服务。
@@ -97,13 +99,12 @@ services:
       driver: json-file
       options: { max-size: "10m", max-file: "5" }
 
-  # 可选缓存：`docker compose --profile cache up -d` 才会启动。
-  # 单实例不配也能跑（自动降级为进程内），多实例部署建议打开。
+  # 缓存与限流。默认随栈启动（不配也能跑：API 连不上会降级为进程内）。
+  # 不想用 Redis 就 `docker compose up -d db api`，或把 REDIS_URL 设成空字符串。
   redis:
     image: redis:7-alpine
     container_name: blockarena-redis
     restart: unless-stopped
-    profiles: ["cache"]
     command:
       - redis-server
       - --appendonly
