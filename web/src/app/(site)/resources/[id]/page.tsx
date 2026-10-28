@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getResource } from '@/lib/resource-store';
 import { ResourceActions } from '@/components/resource-actions';
 import { buildMetadata } from '@/lib/seo';
+import { AuditProgress } from '@/components/audit-progress';
 import { fmtNum, fmtSize, gameLabel, gameTone } from '@/lib/resource-types';
 
 export const dynamic = 'force-dynamic';
@@ -48,12 +49,25 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
           <span>{item.category}</span>
         </div>
 
+        {item.status !== 'published' && (
+          <div style={{ marginBottom: 12 }}>
+            <AuditProgress
+              status={item.status as 'pending' | 'rejected' | 'hidden'}
+              createdAt={item.createdAt}
+              reviewedAt={item.reviewedAt}
+              rejectReason={item.rejectReason}
+            />
+          </div>
+        )}
+
         <article className="card card-pad res-detail">
           <div className="row wrap" style={{ gap: 6, marginBottom: 10 }}>
             <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
             <span className="badge">{item.category}</span>
             {item.version && <span className="badge badge-ghost">v{item.version}</span>}
             {item.status === 'hidden' && <span className="badge badge-danger">已下架</span>}
+            {item.status === 'pending' && <span className="badge badge-warn">审核中</span>}
+            {item.status === 'rejected' && <span className="badge badge-danger">未通过</span>}
           </div>
 
           <h1 className="page-title" style={{ marginBottom: 8 }}>{item.title}</h1>

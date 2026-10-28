@@ -17,7 +17,7 @@ use crate::current_user::{CurrentUser, MaybeUser};
 use crate::errors::{ApiError, ApiResult};
 use crate::resources::{self, NewResource, ResourcePatch};
 use crate::state::AppState;
-use crate::{groups, points};
+use crate::{audit, groups, points, settings};
 
 fn parse_body(body: &[u8]) -> Option<Map<String, Value>> {
     serde_json::from_slice::<Value>(body)
@@ -186,9 +186,18 @@ pub async fn create(
         }
     }
 
-    let id = resources::create(&st.pool, &user.id, &input, &file_ids)
+    // 与发帖同一套审核策略：off 直接发布、ai 先过模型、all 全部待审
+    let s = settings::load(&st.pool, &st.cfg).await;
+    let text = format!("{}\n{}", input.summary, input.body);
+    let pre = audit::precheck(&s, &st.ai_http, input.title, &text).await;
+
+    let id = resources::create(&st.pool, &user.id, &input, &file_ids, pre.status)
         .await
         .map_err(ApiError::internal)?;
+
+    if let Some(v) = &pre.verdict {
+        audit::record_ai_for(&st.pool, "resource", &id, v).await;
+    }
 
     // 发资源加分；失败只记日志，不影响发布
     if let Err(e) = points::award(

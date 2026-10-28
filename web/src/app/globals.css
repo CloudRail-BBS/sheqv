@@ -5231,3 +5231,122 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   .thread-head { padding: 14px 14px 12px; }
   .thread-title { font-size: 19px; }
 }
+
+/* ── 渐进式图片（模糊占位 → 清晰） ─────────
+   盒子按宽高比先占位，加载前后不跳版；
+   小图铺底 + blur(20px) 提供同色调底，原图落位后 500ms 淡入并缩回 1 倍。 */
+.simg {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  background: var(--panel-3);
+  border-radius: inherit;
+}
+.simg-lqip,
+.simg-full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.simg-lqip {
+  filter: blur(20px);
+  transform: scale(1.04);
+  opacity: 1;
+  transition: opacity 0.5s var(--ease);
+}
+.simg[data-ready="true"] .simg-lqip { opacity: 0; }
+.simg-full {
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+.simg-full[data-loaded="true"] { opacity: 1; transform: scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .simg-lqip,
+  .simg-full { transition: none; }
+  .simg-full { opacity: 1; transform: none; }
+}
+
+/* ── 审核进度 ───────────────────────────── */
+.audit-card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel);
+}
+.audit-card[data-state="pending"] { border-color: var(--warn-line); background: var(--warn-soft); }
+.audit-card[data-state="rejected"] { border-color: var(--danger-line); background: var(--danger-soft); }
+.audit-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.audit-head b { font-size: 13px; }
+.audit-link {
+  margin-left: auto; font-size: 12px; color: var(--blue);
+  text-decoration: none;
+}
+.audit-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.audit-steps {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  counter-reset: step;
+}
+.audit-step {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: 12px; color: var(--muted);
+}
+.audit-dot {
+  width: 20px; height: 20px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--text-3);
+}
+.audit-step[data-state="done"] { color: var(--text-2); }
+.audit-step[data-state="done"] .audit-dot {
+  background: var(--ok-soft); border-color: var(--ok-line); color: var(--ok);
+}
+.audit-step[data-state="now"] { color: var(--text); font-weight: 600; }
+.audit-step[data-state="now"] .audit-dot {
+  background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn);
+}
+.audit-step[data-state="fail"] { color: var(--danger); font-weight: 600; }
+.audit-step[data-state="fail"] .audit-dot {
+  background: var(--danger-soft); border-color: var(--danger-line); color: var(--danger);
+}
+.audit-step-key { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audit-step-at {
+  margin-left: auto; font-size: 10.5px; color: var(--text-3);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.audit-hint { margin: 0; font-size: 11.5px; line-height: 1.7; color: var(--text-2); }
+.audit-reason {
+  margin: 0; padding: 8px 10px; border-radius: 8px;
+  background: var(--panel); border: 1px solid var(--danger-line);
+  font-size: 12px; line-height: 1.7; color: var(--text-2);
+  white-space: pre-wrap; word-break: break-word;
+}
+.audit-reason b { margin-right: 6px; color: var(--danger); }
+
+/* 列表里的迷你进度：三条小格 + 状态 */
+.audit-mini { display: inline-flex; align-items: center; gap: 8px; }
+.audit-mini-bar { display: inline-flex; gap: 3px; }
+.audit-mini-bar i {
+  width: 16px; height: 3px; border-radius: 2px; background: var(--line);
+}
+.audit-mini-bar i[data-on] { background: var(--ok); }
+.audit-mini-bar i[data-fail] { background: var(--danger); }
+.audit-mini[data-state="pending"] .audit-mini-bar i:first-child { background: var(--warn); }
+
+@media (max-width: 560px) {
+  .audit-steps { grid-template-columns: 1fr; gap: 6px; }
+  .audit-step-at { margin-left: 0; }
+  .audit-step-key { overflow: visible; }
+}
+
+/* 正文图片：边框与圆角挂在占位盒上，内部的模糊层/原图不再各画一圈 */
+.md-image .simg {
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.md-image .simg img { border: 0; border-radius: 0; max-width: none; }
+.simg-noscript { opacity: 1; transform: none; }

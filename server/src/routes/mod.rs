@@ -50,6 +50,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/me/chrome", get(me::chrome))
+        .route("/api/v1/me/submissions", get(me::submissions))
+        .route("/api/v1/media/sizes", get(me::media_sizes))
         .route(
             "/api/v1/me/title-requests",
             get(titles::mine).post(titles::create),
@@ -393,6 +395,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/servers/{id}",
             patch(servers::admin_patch).delete(servers::admin_delete),
+        )
+        .route(
+            "/api/v1/admin/audit/resources",
+            get(audit::pending_resources),
+        )
+        .route(
+            "/api/v1/admin/audit/resources/{id}",
+            post(audit::review_resource),
         )
         .route("/api/v1/admin/audit/posts", get(audit::pending))
         .route("/api/v1/admin/audit/posts/{id}", post(audit::review))

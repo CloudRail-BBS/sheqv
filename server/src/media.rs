@@ -117,6 +117,59 @@ pub async fn load(pool: &PgPool, id: &str) -> Result<Option<StoredMedia>, sqlx::
     }))
 }
 
+/// 记录原图宽高（前端用来提前锁定图片框比例）
+pub async fn set_dims(
+    pool: &PgPool,
+    id: &str,
+    w: u32,
+    h: u32,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE user_media SET width = $2, height = $3 WHERE id = $1")
+        .bind(id)
+        .bind(w as i32)
+        .bind(h as i32)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// 批量取尺寸。老图没记过宽高时，本地图读一次文件头并写回；S3 的跳过。
+pub async fn sizes(
+    pool: &PgPool,
+    ids: &[String],
+) -> Result<std::collections::HashMap<String, (u32, u32)>, sqlx::Error> {
+    use std::collections::HashMap;
+
+    let mut out: HashMap<String, (u32, u32)> = HashMap::new();
+    if ids.is_empty() {
+        return Ok(out);
+    }
+
+    let rows: Vec<(String, Option<i32>, Option<i32>, Option<Vec<u8>>, String)> = sqlx::query_as(
+        "SELECT id, width, height, bytes, storage FROM user_media WHERE id = ANY($1)",
+    )
+    .bind(ids)
+    .fetch_all(pool)
+    .await?;
+
+    for (id, w, h, bytes, storage) in rows {
+        if let (Some(w), Some(h)) = (w, h) {
+            out.insert(id, (w as u32, h as u32));
+            continue;
+        }
+        if storage != "db" {
+            continue;
+        }
+        let Some(body) = bytes else { continue };
+        let Some((w, h)) = dimensions(&body) else {
+            continue;
+        };
+        let _ = set_dims(pool, &id, w, h).await;
+        out.insert(id, (w, h));
+    }
+    Ok(out)
+}
+
 /* ── 缩略图 ───────────────────────────────
    原图存 `user_media`，缩过的按 `(media_id, width)` 缓存在 `media_variants`：
    第一次请求算一次，之后直接读，浏览器端再长缓存一年。

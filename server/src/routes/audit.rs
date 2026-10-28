@@ -89,6 +89,69 @@ pub async fn review(
     Ok(Json(json!({ "ok": true, "pendingCount": pending_count })).into_response())
 }
 
+/// GET /api/v1/admin/audit/resources —— 待审资源
+pub async fn pending_resources(State(st): State<AppState>, maybe: MaybeUser) -> ApiResult<Response> {
+    require_reviewer(&st, maybe).await?;
+
+    let items = crate::resources::pending(&st.pool, 100)
+        .await
+        .map_err(ApiError::internal)?;
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*)::bigint FROM resources WHERE status = 'pending'")
+            .fetch_one(&st.pool)
+            .await
+            .map_err(ApiError::internal)?;
+
+    Ok(Json(json!({ "ok": true, "items": items, "pendingCount": count })).into_response())
+}
+
+/// POST /api/v1/admin/audit/resources/{id}  body: { approve: bool, reason?: string }
+pub async fn review_resource(
+    State(st): State<AppState>,
+    maybe: MaybeUser,
+    Path(id): Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    require_reviewer(&st, maybe).await?;
+
+    let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let approve = payload
+        .get("approve")
+        .and_then(|v| v.as_bool())
+        .ok_or_else(|| ApiError::new(StatusCode::BAD_REQUEST, "invalid_body"))?;
+    let reason = payload.get("reason").and_then(|v| v.as_str()).unwrap_or("");
+    if !approve && reason.trim().is_empty() {
+        return Err(ApiError::invalid_input("拒绝时请填写原因"));
+    }
+
+    let Some((author, title)) = crate::resources::review(&st.pool, &id, approve, reason)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+
+    let (head, text) = if approve {
+        ("资源已通过审核", format!("「{title}」已出现在资源库。"))
+    } else {
+        (
+            "资源未通过审核",
+            format!("「{title}」没有通过：{reason}。改完可以重新提交。"),
+        )
+    };
+    let href = format!("/resources/{id}");
+    let _ = crate::notifications::push(&st.pool, &author, "resource", head, &text, &href).await;
+
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*)::bigint FROM resources WHERE status = 'pending'")
+            .fetch_one(&st.pool)
+            .await
+            .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "pendingCount": count })).into_response())
+}
+
 /// POST /api/v1/admin/audit/test —— 用当前 AI 配置跑一次样例，返回原始判定
 ///
 /// 后台「测试」按钮用它：不真正发帖也能确认 baseUrl / key / model 是否通。

@@ -46,6 +46,9 @@ pub struct PostView {
     pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reject_reason: Option<String>,
+    /// 审核时间（通过或驳回）；未审时不下发
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reviewed_at: Option<i64>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -61,6 +64,7 @@ struct PostRow {
     like_count: i32,
     status: String,
     reject_reason: Option<String>,
+    reviewed_at: Option<DateTime<Utc>>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -74,7 +78,8 @@ struct CommentRow {
 }
 
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
-        u.nickname AS author, p.created_at, p.like_count, p.status, p.reject_reason
+        u.nickname AS author, p.created_at, p.like_count, p.status, p.reject_reason,
+        p.reviewed_at
    FROM posts p JOIN users u ON u.id = p.author_id";
 
 fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
@@ -104,6 +109,7 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         is_new: true,
         status: row.status,
         reject_reason: row.reject_reason,
+        reviewed_at: row.reviewed_at.map(|t| t.timestamp_millis()),
     }
 }
 

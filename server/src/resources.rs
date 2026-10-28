@@ -77,6 +77,12 @@ pub struct ResourceView {
     pub download_count: i64,
     pub liked: bool,
     pub status: String,
+    /// 驳回原因；只有 rejected 时有值
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reject_reason: Option<String>,
+    /// 审核时间（通过或驳回）；未审为 None
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reviewed_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -148,6 +154,8 @@ struct Row {
     download_count: i32,
     liked: bool,
     status: String,
+    reject_reason: Option<String>,
+    reviewed_at: Option<DateTime<Utc>>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -192,6 +200,8 @@ impl Row {
             download_count: self.download_count as i64,
             liked: self.liked,
             status: self.status,
+            reject_reason: self.reject_reason,
+            reviewed_at: self.reviewed_at.map(|t| t.timestamp_millis()),
             created_at: self.created_at.timestamp_millis(),
             updated_at: self.updated_at.timestamp_millis(),
         }
@@ -206,7 +216,7 @@ const COLUMNS: &str = "r.id, r.title, r.summary, r.body, r.game, r.category, r.t
         r.game_versions, r.loaders, r.deps, r.source_url,
         (SELECT count(*) FROM resource_attachments a WHERE a.resource_id = r.id) AS file_count,
         r.like_count, r.download_count,
-        r.status, r.created_at, r.updated_at,
+        r.status, r.reject_reason, r.reviewed_at, r.created_at, r.updated_at,
         (rl.user_id IS NOT NULL) AS liked";
 
 const FROM: &str = "FROM resources r
@@ -453,11 +463,13 @@ pub async fn attach(
     Ok(attached)
 }
 
+/// `status` 由调用方按审核策略决定：pending（进待审）或 published（直接上线）
 pub async fn create(
     pool: &PgPool,
     author_id: &str,
     input: &NewResource<'_>,
     file_ids: &[String],
+    status: &str,
 ) -> Result<String, sqlx::Error> {
     let id = crate::ids::next('r');
     let url = effective_url(input.url, file_ids);
@@ -466,8 +478,9 @@ pub async fn create(
     sqlx::query(
         "INSERT INTO resources
              (id, title, summary, body, game, category, tags, author_id, team_id,
-              url, version, license, size_bytes, game_versions, loaders, deps, source_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",
+              url, version, license, size_bytes, game_versions, loaders, deps, source_url,
+              status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)",
     )
     .bind(&id)
     .bind(input.title.trim())
@@ -486,6 +499,7 @@ pub async fn create(
     .bind(input.loaders.trim())
     .bind(input.deps.trim())
     .bind(input.source_url.trim())
+    .bind(status)
     .execute(&mut *tx)
     .await?;
 
@@ -797,6 +811,70 @@ pub async fn download_file(
 }
 
 /// 后台下架 / 恢复
+/// 驳回 / 通过资源；返回作者与标题，供路由层发站内信
+pub async fn review(
+    pool: &PgPool,
+    id: &str,
+    approve: bool,
+    reason: &str,
+) -> Result<Option<(String, String)>, sqlx::Error> {
+    let row: Option<(String, String)> = sqlx::query_as(
+        "WITH upd AS (
+             UPDATE resources
+                SET status = CASE WHEN $2 THEN 'published' ELSE 'rejected' END,
+                    reject_reason = CASE WHEN $2 THEN NULL ELSE NULLIF($3, '') END,
+                    reviewed_at = now(),
+                    updated_at = now()
+              WHERE id = $1 AND status = 'pending'
+              RETURNING author_id, title
+         )
+         SELECT author_id, title FROM upd",
+    )
+    .bind(id)
+    .bind(approve)
+    .bind(reason.trim())
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// 待审资源（后台审核页用）
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingResource {
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+    pub author: String,
+    pub author_id: String,
+    pub game: String,
+    pub category: String,
+    pub created_at: i64,
+    pub ai_reason: Option<String>,
+}
+
+pub async fn pending(pool: &PgPool, limit: i64) -> Result<Vec<PendingResource>, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT r.id, r.title, r.summary, u.nickname AS author, r.author_id,
+                r.game, r.category,
+                (extract(epoch FROM r.created_at) * 1000)::bigint AS created_at,
+                l.reason AS ai_reason
+           FROM resources r
+           JOIN users u ON u.id = r.author_id
+           LEFT JOIN LATERAL (
+                SELECT reason FROM audit_logs
+                 WHERE target_type = 'resource' AND target_id = r.id AND source = 'ai'
+                 ORDER BY created_at DESC LIMIT 1
+           ) l ON true
+          WHERE r.status = 'pending'
+          ORDER BY r.created_at ASC
+          LIMIT $1",
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await
+}
+
 pub async fn set_status(pool: &PgPool, id: &str, status: &str) -> Result<bool, sqlx::Error> {
     let done = sqlx::query("UPDATE resources SET status = $2, updated_at = now() WHERE id = $1")
         .bind(id)

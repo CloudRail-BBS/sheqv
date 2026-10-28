@@ -1,5 +1,14 @@
 import type { ReactNode } from 'react';
 import { MEDIA_W, mediaUrl } from './media';
+import { SmartImage } from '@/components/smart-image';
+
+/** 图片尺寸表：正文里的图片只有 URL，尺寸由调用方批量查好传进来，用来锁死占位框 */
+export type ImageSizes = Record<string, { w: number; h: number }>;
+
+function mediaIdOf(src: string): string | null {
+  const m = /^\/api\/v1\/media\/([A-Za-z0-9]+)/.exec(src);
+  return m ? m[1] : null;
+}
 
 /**
  * 极简 Markdown 渲染。
@@ -25,7 +34,7 @@ function safeUrl(raw: string, image = false): string | null {
 let seq = 0;
 const nextKey = () => `md-${(seq += 1)}`;
 
-function inline(text: string): ReactNode[] {
+function inline(text: string, sizes?: ImageSizes): ReactNode[] {
   const pattern =
     /(\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|\*[^*]+\*|_[^_]+_|`[^`]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/g;
   const out: ReactNode[] = [];
@@ -37,23 +46,28 @@ function inline(text: string): ReactNode[] {
     const token = match[0];
 
     if (token.startsWith('**') || token.startsWith('__')) {
-      out.push(<strong key={nextKey()}>{inline(token.slice(2, -2))}</strong>);
+      out.push(<strong key={nextKey()}>{inline(token.slice(2, -2), sizes)}</strong>);
     } else if (token.startsWith('~~')) {
-      out.push(<del key={nextKey()}>{inline(token.slice(2, -2))}</del>);
+      out.push(<del key={nextKey()}>{inline(token.slice(2, -2), sizes)}</del>);
     } else if (token.startsWith('`')) {
       out.push(<code key={nextKey()}>{token.slice(1, -1)}</code>);
     } else if (token.startsWith('![')) {
       const m = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
       const src = m ? safeUrl(m[2], true) : null;
       if (m && src) {
+        const dim = (() => {
+          const id = mediaIdOf(src);
+          return id ? sizes?.[id] : undefined;
+        })();
         out.push(
           <span className="md-image" key={nextKey()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={mediaUrl(src, MEDIA_W.hero)}
+            {/* 渐进加载：模糊小图占位 → 500ms 变清晰；盒子按真实宽高锁死，不跳版 */}
+            <SmartImage
+              src={mediaUrl(src, MEDIA_W.hero) ?? src}
               alt={m[1] || '图片'}
-              loading="lazy"
-              decoding="async"
+              width={dim?.w}
+              height={dim?.h}
+              sizes="(max-width: 700px) 100vw, 720px"
             />
           </span>,
         );
@@ -73,7 +87,7 @@ function inline(text: string): ReactNode[] {
         out.push(token);
       }
     } else if (token.startsWith('*') || token.startsWith('_')) {
-      out.push(<em key={nextKey()}>{inline(token.slice(1, -1))}</em>);
+      out.push(<em key={nextKey()}>{inline(token.slice(1, -1), sizes)}</em>);
     } else {
       out.push(token);
     }
@@ -93,7 +107,7 @@ function isBlockStart(line: string): boolean {
   );
 }
 
-function blocks(text: string): ReactNode[] {
+function blocks(text: string, sizes?: ImageSizes): ReactNode[] {
   const lines = text.replace(/\r\n/g, '\n').split('\n');
   const out: ReactNode[] = [];
   let i = 0;
@@ -125,7 +139,7 @@ function blocks(text: string): ReactNode[] {
     const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     if (heading) {
       const level = heading[1].length;
-      const content = inline(heading[2]);
+      const content = inline(heading[2], sizes);
       if (level === 1) out.push(<h1 key={nextKey()}>{content}</h1>);
       else if (level === 2) out.push(<h2 key={nextKey()}>{content}</h2>);
       else out.push(<h3 key={nextKey()}>{content}</h3>);
@@ -140,7 +154,7 @@ function blocks(text: string): ReactNode[] {
         i += 1;
       }
       out.push(
-        <blockquote key={nextKey()}>{blocks(quote.join('\n'))}</blockquote>,
+        <blockquote key={nextKey()}>{blocks(quote.join('\n'), sizes)}</blockquote>,
       );
       continue;
     }
@@ -154,7 +168,7 @@ function blocks(text: string): ReactNode[] {
       out.push(
         <ul key={nextKey()}>
           {items.map((item) => (
-            <li key={nextKey()}>{inline(item)}</li>
+            <li key={nextKey()}>{inline(item, sizes)}</li>
           ))}
         </ul>,
       );
@@ -170,7 +184,7 @@ function blocks(text: string): ReactNode[] {
       out.push(
         <ol key={nextKey()}>
           {items.map((item) => (
-            <li key={nextKey()}>{inline(item)}</li>
+            <li key={nextKey()}>{inline(item, sizes)}</li>
           ))}
         </ol>,
       );
@@ -192,7 +206,7 @@ function blocks(text: string): ReactNode[] {
       <p key={nextKey()}>
         {para.map((p, idx) => (
           <span key={`${p.slice(0, 8)}-${idx}`}>
-            {inline(p)}
+            {inline(p, sizes)}
             {idx < para.length - 1 && <br />}
           </span>
         ))}
@@ -203,8 +217,17 @@ function blocks(text: string): ReactNode[] {
   return out;
 }
 
-export function Markdown({ text, className = 'md-body' }: { text: string; className?: string }) {
-  return <div className={className}>{blocks(text)}</div>;
+export function Markdown({
+  text,
+  className = 'md-body',
+  imageSizes,
+}: {
+  text: string;
+  className?: string;
+  /** 站内图片的宽高表（见 `lib/media-sizes.ts`），用来提前锁定图片框 */
+  imageSizes?: ImageSizes;
+}) {
+  return <div className={className}>{blocks(text, imageSizes)}</div>;
 }
 
 /** 给摘要/搜索用：去掉常见 Markdown 标记 */

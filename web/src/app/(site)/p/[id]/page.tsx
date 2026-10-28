@@ -13,6 +13,8 @@ import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
 import { UserHoverCard } from '@/components/user-hover-card';
 import { buildMetadata } from '@/lib/seo';
+import { AuditProgress } from '@/components/audit-progress';
+import { getImageSizes } from '@/lib/media-sizes';
 import { Markdown, markdownToText } from '@/lib/markdown';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +62,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     };
   };
 
+  const imageSizes = await getImageSizes(post.body).catch(() => ({}));
   const op = who(post.author, post.authorId);
   // 「个人」是早期发帖写死的占位值，不是公会名；空值同样不展示
   const guildName = post.guild && post.guild !== '个人' ? post.guild : '';
@@ -161,7 +164,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <time className="floor-time">{post.time}</time>
             </div>
 
-            <Markdown text={post.body} className="md-body post-md" />
+            <Markdown text={post.body} className="md-body post-md" imageSizes={imageSizes} />
 
             <div className="floor-foot">
               {unpublished ? (
@@ -229,7 +232,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         )}
 
         {unpublished ? (
-          <div className="card card-pad small muted">审核通过后才能点赞和回复。</div>
+          <AuditProgress
+            status={post.status === 'rejected' ? 'rejected' : 'pending'}
+            createdAt={post.createdAt}
+            reviewedAt={post.reviewedAt}
+            rejectReason={post.rejectReason}
+          />
         ) : (
           <CommentComposer
             postId={post.id}

@@ -9,6 +9,8 @@ import { LogoutButton } from '@/components/logout-button';
 import { TitleRequestForm } from '@/components/title-request';
 import { listMyTitleRequests } from '@/lib/titles';
 import { VerificationRequestForm } from '@/components/verification-request';
+import { AuditProgress } from '@/components/audit-progress';
+import { listMySubmissions } from '@/lib/submissions';
 import { listMyVerifyRequests } from '@/lib/verifications';
 import { UserBadge } from '@/components/user-badge';
 import { VerifyMark } from '@/components/verify-mark';
@@ -60,7 +62,7 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests, verifyRequests] =
+  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests, verifyRequests, submissions] =
     await Promise.all([
       listPosts(),
       listActive(),
@@ -71,6 +73,7 @@ export default async function MePage() {
       listMyDevTeams(),
       listMyTitleRequests(),
       listMyVerifyRequests(),
+      listMySubmissions(),
     ]);
   const myGroup = groups.find((g) => g.id === user.group?.id);
   const myGuilds = allGuilds.filter((g) => g.ownerId === user.id);
@@ -286,6 +289,54 @@ export default async function MePage() {
           <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
             徽章由行为自动判定（发帖、评论、获赞、注册时长等），不需要申请。
           </p>
+        </div>
+
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
+            <h3 style={{ fontSize: 13 }}>审核进度</h3>
+            <span className="small muted">
+              {submissions.pendingCount > 0
+                ? `${submissions.pendingCount} 条等待审核`
+                : '帖子与资源都在这里'}
+            </span>
+          </div>
+
+          {submissions.items.length === 0 ? (
+            <p className="small muted" style={{ padding: '18px 16px' }}>
+              还没有投稿。发帖或发布资源后，审核状态会出现在这里。
+            </p>
+          ) : (
+            submissions.items.slice(0, 6).map((s) => (
+              <Link
+                key={`${s.kind}-${s.id}`}
+                href={s.href}
+                className="rail-item"
+                style={{ padding: '11px 16px', borderTop: '1px solid var(--line-soft)', gap: 10 }}
+              >
+                <span className="badge badge-ghost" style={{ flex: 'none' }}>
+                  {s.kind === 'post' ? '帖子' : '资源'}
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {s.title}
+                </span>
+                <AuditProgress compact status={s.status} />
+              </Link>
+            ))
+          )}
+
+          {submissions.items.some((s) => s.status === 'rejected') && (
+            <p className="small muted" style={{ padding: '10px 16px', borderTop: '1px solid var(--line-soft)' }}>
+              被驳回的条目点进去能看到具体原因，改完重新提交即可。
+            </p>
+          )}
         </div>
 
         <div className="card" style={{ overflow: 'hidden' }}>

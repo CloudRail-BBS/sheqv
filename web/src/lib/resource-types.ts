@@ -50,6 +50,10 @@ export interface ResourceView {
   downloadCount: number;
   liked: boolean;
   status: string;
+  /** 驳回原因（仅 rejected） */
+  rejectReason?: string;
+  /** 审核时间（毫秒） */
+  reviewedAt?: number;
   createdAt: number;
   updatedAt: number;
 }

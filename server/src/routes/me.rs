@@ -73,6 +73,11 @@ pub async fn upload_media(
     };
     let url = format!("/api/v1/media/{id}");
 
+    // 顺手记下原图宽高：前端渲染时据此提前锁定图片框，加载前后不跳版
+    if let Some((w, h)) = media::dimensions(&body) {
+        let _ = media::set_dims(&st.pool, &id, w, h).await;
+    }
+
     if kind == "avatar" {
         if let Some(updated) = users::set_avatar(&st.pool, &user.id, &url)
             .await
@@ -194,6 +199,102 @@ fn image_response(bytes: Vec<u8>, mime: &str, id: &str, width: u32) -> Response 
     );
     headers.insert(header::ETAG, etag.parse().expect("ASCII"));
     res
+}
+
+/// GET /api/v1/media/sizes?ids=a,b,c —— 批量取原图宽高
+///
+/// 正文里的图片只有 URL，没有尺寸；前端渲染前先问一次（最多 24 张），
+/// 用真实宽高把占位框定死，避免加载完成时整页跳动。
+pub async fn media_sizes(
+    State(st): State<AppState>,
+    Query(q): Query<HashMap<String, String>>,
+) -> ApiResult<Response> {
+    let ids: Vec<String> = q
+        .get("ids")
+        .map(|raw| {
+            raw.split(',')
+                .map(str::trim)
+                .filter(|v| !v.is_empty() && v.len() <= 40 && v.chars().all(|c| c.is_ascii_alphanumeric()))
+                .take(24)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let map = media::sizes(&st.pool, &ids)
+        .await
+        .map_err(ApiError::internal)?;
+    let items: serde_json::Map<String, Value> = map
+        .into_iter()
+        .map(|(id, (w, h))| (id, json!({ "w": w, "h": h })))
+        .collect();
+
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+/// GET /api/v1/me/submissions —— 我的投稿（帖子 + 资源，含待审与驳回）
+///
+/// 「审核进度」用它：状态、驳回原因、提交与审核时间都给全，
+/// 前端据此画「已提交 → 审核中 → 已发布」的三步进度。
+pub async fn submissions(
+    State(st): State<AppState>,
+    CurrentUser(user): CurrentUser,
+) -> ApiResult<Response> {
+    let posts: Vec<(String, String, String, Option<String>, i64, Option<i64>)> = sqlx::query_as(
+        "SELECT id, COALESCE(NULLIF(title, ''), left(body, 40)), status, reject_reason,
+                (extract(epoch FROM created_at) * 1000)::bigint AS created_at,
+                (extract(epoch FROM reviewed_at) * 1000)::bigint AS reviewed_at
+           FROM posts WHERE author_id = $1 ORDER BY created_at DESC LIMIT 50",
+    )
+    .bind(&user.id)
+    .fetch_all(&st.pool)
+    .await
+    .map_err(ApiError::internal)?;
+
+    let resources: Vec<(String, String, String, Option<String>, i64, Option<i64>)> = sqlx::query_as(
+        "SELECT id, title, status, reject_reason,
+                (extract(epoch FROM created_at) * 1000)::bigint AS created_at,
+                (extract(epoch FROM reviewed_at) * 1000)::bigint AS reviewed_at
+           FROM resources WHERE author_id = $1 ORDER BY created_at DESC LIMIT 50",
+    )
+    .bind(&user.id)
+    .fetch_all(&st.pool)
+    .await
+    .map_err(ApiError::internal)?;
+
+    let pack = |rows: Vec<(String, String, String, Option<String>, i64, Option<i64>)>,
+                kind: &str| -> Vec<Value> {
+        rows.into_iter()
+            .map(|(id, title, status, reason, created, reviewed)| {
+                let href = if kind == "post" {
+                    format!("/p/{id}")
+                } else {
+                    format!("/resources/{id}")
+                };
+                json!({
+                    "id": id,
+                    "kind": kind,
+                    "title": title,
+                    "status": status,
+                    "rejectReason": reason,
+                    "createdAt": created,
+                    "reviewedAt": reviewed,
+                    "href": href,
+                })
+            })
+            .collect()
+    };
+
+    let pending = posts.iter().filter(|p| p.2 == "pending").count()
+        + resources.iter().filter(|r| r.2 == "pending").count();
+
+    Ok(Json(json!({
+        "ok": true,
+        "pendingCount": pending,
+        "posts": pack(posts, "post"),
+        "resources": pack(resources, "resource"),
+    }))
+    .into_response())
 }
 
 /// GET /api/v1/me/chrome —— 顶栏一次取齐：站内信 + 积分胶囊。

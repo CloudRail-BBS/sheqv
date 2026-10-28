@@ -336,11 +336,16 @@ pub async fn counts(pool: &PgPool) -> Result<(i64, i64), sqlx::Error> {
 
 /// 记录 AI 判定（发帖成功后调用，target_id 此时才存在）
 pub async fn record_ai(pool: &PgPool, post_id: &str, v: &Verdict) {
+    record_ai_for(pool, "post", post_id, v).await;
+}
+
+/// 记录一条 AI 判定；`target_type` 区分帖子与资源
+pub async fn record_ai_for(pool: &PgPool, target_type: &str, target_id: &str, v: &Verdict) {
     let _ = record(
         pool,
         NewLog {
-            target_type: "post",
-            target_id: post_id,
+            target_type,
+            target_id,
             decision: if v.risky { "pending" } else { "approve" },
             source: "ai",
             actor_id: None,

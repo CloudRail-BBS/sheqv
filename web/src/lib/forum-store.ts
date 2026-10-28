@@ -37,6 +37,8 @@ export interface PostView {
   status?: PostStatus;
   /** 未通过审核时的原因 */
   rejectReason?: string;
+  /** 审核时间（毫秒）；未审为空 */
+  reviewedAt?: number;
   href: string;
 }
 
