@@ -14,6 +14,7 @@ import {
 import { OrgCreate } from '@/components/org-create';
 import { EmptyState } from '@/components/empty-state';
 import { getSettings } from '@/lib/settings';
+import { initialOf } from '@/lib/initials';
 
 const COPY = {
   guild: {
@@ -92,7 +93,7 @@ export async function OrgList({ kind, game }: { kind: OrgKind; game?: string }) 
             {orgs.map((o, i) => (
               <Link key={o.id} href={`${base}/${o.id}`} className="card gcard org-card">
                 <div className="gcard-top">
-                  <div className="crest a">{o.tag}</div>
+                  <div className="crest a">{initialOf(o.tag || o.name)}</div>
                   <div style={{ minWidth: 0 }}>
                     <div className="side-name">{o.name}</div>
                     <div className="gcard-sub">

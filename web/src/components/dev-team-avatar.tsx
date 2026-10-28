@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { initialOf } from '@/lib/initials';
 
 /**
  * 开发团队头像。
@@ -40,7 +41,7 @@ export function DevTeamAvatar({
           width: size,
           height: size,
           borderRadius: radius,
-          fontSize: Math.max(8, Math.round(size * 0.3)),
+          fontSize: Math.max(10, Math.round(size * 0.42)),
           background: `color-mix(in srgb, ${color} 16%, transparent)`,
           color,
           borderColor: `color-mix(in srgb, ${color} 36%, transparent)`,
@@ -48,7 +49,7 @@ export function DevTeamAvatar({
       }
       aria-label={team.name}
     >
-      {team.tag}
+      {initialOf(team.tag || team.name)}
     </span>
   );
 }

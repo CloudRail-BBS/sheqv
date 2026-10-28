@@ -9,6 +9,7 @@ import { MatchCreate } from '@/components/match-create';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
+import { initialOf } from '@/lib/initials';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,8 +104,8 @@ export default async function MatchesPage({
 
           {matches.map((m) => (
             <Link key={m.id} href={`/matches/${m.id}`} className="card match-row">
-              <div className="crest a" style={{ width: 34, height: 34, fontSize: 11 }}>
-                {m.creatorTag}
+              <div className="crest a" style={{ width: 34, height: 34, fontSize: 16 }}>
+                {initialOf(m.creatorTag)}
               </div>
               <div style={{ minWidth: 0 }}>
                 <div className="title">{m.title}</div>
@@ -175,8 +176,8 @@ export default async function MatchesPage({
             )}
             {myOrgs.map((o) => (
               <Link key={`${o.kind}:${o.id}`} href={`/${o.kind}s/${o.id}`} className="rail-item">
-                <span className="crest a" style={{ width: 22, height: 22, fontSize: 9, borderRadius: 6 }}>
-                  {o.tag}
+                <span className="crest a" style={{ width: 22, height: 22, fontSize: 11, borderRadius: 6 }}>
+                  {initialOf(o.tag || o.name)}
                 </span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {o.name}

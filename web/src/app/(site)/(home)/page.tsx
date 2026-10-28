@@ -22,6 +22,7 @@ import { Composer } from '@/components/composer';
 import { PostCard } from '@/components/post-card';
 import { Carousel } from '@/components/carousel';
 import { buildMetadata, websiteJsonLd } from '@/lib/seo';
+import { initialOf } from '@/lib/initials';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,8 +145,8 @@ export default async function HomePage() {
             </div>
             <div className="mcard-teams">
               <span className="t">
-                <span className="crest a" style={{ width: 30, height: 30, fontSize: 11, borderRadius: 8 }}>
-                  {live.guildA.tag}
+                <span className="crest a" style={{ width: 30, height: 30, fontSize: 14, borderRadius: 8 }}>
+                  {initialOf(live.guildA.tag || live.guildA.name)}
                 </span>
                 {live.guildA.name}
               </span>
@@ -155,7 +156,7 @@ export default async function HomePage() {
               <span className="t">
                 {live.guildB.name}
                 <span className="crest b" style={{ width: 30, height: 30, fontSize: 11, borderRadius: 8 }}>
-                  {live.guildB.tag}
+                  {initialOf(live.guildB.tag || live.guildB.name)}
                 </span>
               </span>
             </div>
@@ -227,8 +228,8 @@ export default async function HomePage() {
             {topGuilds.map((g, i) => (
               <Link key={g.id} href={`/guilds/${g.id}`} className="rail-item">
                 <span className="idx">{i + 1}</span>
-                <span className="crest a" style={{ width: 25, height: 25, fontSize: 10, borderRadius: 7, flex: 'none' }}>
-                  {g.name.slice(0, 1)}
+                <span className="crest a" style={{ width: 25, height: 25, fontSize: 12, borderRadius: 7, flex: 'none' }}>
+                  {initialOf(g.name)}
                 </span>
                 <span
                   style={{
@@ -267,7 +268,7 @@ export default async function HomePage() {
             {topTeams.map((t, i) => (
                 <Link key={t.id} href={`/teams/${t.id}`} className="rail-item">
                   <span className="idx">{i + 1}</span>
-                  <span className="crest b" style={{ width: 25, height: 25, fontSize: 9, borderRadius: 7, flex: 'none' }}>
+                  <span className="crest b" style={{ width: 25, height: 25, fontSize: 12, borderRadius: 7, flex: 'none' }}>
                     {t.name.slice(0, 1)}
                   </span>
                   <span

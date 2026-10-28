@@ -6,6 +6,7 @@ import { listResources } from '@/lib/resource-store';
 import { gameLabel, gameTone } from '@/lib/resource-types';
 import { listOrgs } from '@/lib/orgs';
 import { formatBytes } from '@/lib/capabilities';
+import { initialOf } from '@/lib/initials';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <div className="card" style={{ overflow: 'hidden' }}>
               {guilds.map((g) => (
                 <Link key={g.id} href={`/guilds/${g.id}`} className="rail-item" style={{ padding: '12px 16px' }}>
-                  <span className="crest a" style={{ width: 24, height: 24, fontSize: 9, borderRadius: 6 }}>{g.tag}</span>
+                  <span className="crest a" style={{ width: 24, height: 24, fontSize: 12, borderRadius: 6 }}>{initialOf(g.tag || g.name)}</span>
                   <span>{g.name}</span>
                   <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>{g.members} 人</span>
                 </Link>
@@ -108,7 +109,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <div className="card" style={{ overflow: 'hidden' }}>
               {teams.map((t) => (
                 <Link key={t.id} href={`/teams/${t.id}`} className="rail-item" style={{ padding: '12px 16px' }}>
-                  <span className="crest a" style={{ width: 24, height: 24, fontSize: 8.5, borderRadius: 6 }}>{t.tag}</span>
+                  <span className="crest a" style={{ width: 24, height: 24, fontSize: 12, borderRadius: 6 }}>{initialOf(t.tag || t.name)}</span>
                   <span>{t.name}</span>
                   <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>{t.wins}-{t.losses}</span>
                 </Link>

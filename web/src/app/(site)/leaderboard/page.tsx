@@ -22,6 +22,7 @@ import { getDeveloperBoard } from '@/lib/resource-store';
 import { fmtNum } from '@/lib/resource-types';
 import { DevTeamAvatar } from '@/components/dev-team-avatar';
 import { DevTeamShare } from '@/components/dev-team-share';
+import { initialOf } from '@/lib/initials';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,7 +88,7 @@ function Board({
                   className={'card pcard' + (i === 0 ? ' top' : '')}
                 >
                   <span className="rk">#{i + 1}</span>
-                  <div className="crest a cr">{o.tag}</div>
+                  <div className="crest a cr">{initialOf(o.tag || o.name)}</div>
                   <div className="nm">{o.name}</div>
                   <div className="sub">
                     {gameLabel(o.game)} · {played(o)} 场 · {winRateText(o)}
@@ -123,9 +124,9 @@ function Board({
                           <Link href={`${base}/${o.id}`} className="name-cell">
                             <span
                               className="crest a"
-                              style={{ width: 24, height: 24, fontSize: 8.5, borderRadius: 6 }}
+                              style={{ width: 24, height: 24, fontSize: 12, borderRadius: 6 }}
                             >
-                              {o.tag}
+                              {initialOf(o.tag || o.name)}
                             </span>
                             <b>{o.name}</b>
                           </Link>
@@ -330,9 +331,9 @@ export default async function LeaderboardPage({
                   <Link key={item.id} href={`/${kind}s/${item.id}`} className="rail-item">
                     <span
                       className="crest a"
-                      style={{ width: 26, height: 26, fontSize: 8.5, borderRadius: 6, flex: 'none' }}
+                      style={{ width: 26, height: 26, fontSize: 12, borderRadius: 6, flex: 'none' }}
                     >
-                      {item.tag}
+                      {initialOf(item.tag || item.name)}
                     </span>
                     <span style={{ minWidth: 0 }}>
                       <span className="small" style={{ display: 'block' }}>

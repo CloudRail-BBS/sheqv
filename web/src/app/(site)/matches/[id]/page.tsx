@@ -7,6 +7,7 @@ import { getMatch } from '@/lib/match-store';
 import { MATCH_GAME_LABEL, MATCH_STATUS_LABEL, fmtMatchTime } from '@/lib/match-types';
 import { MatchAccept } from '@/components/match-accept';
 import { buildMetadata } from '@/lib/seo';
+import { initialOf } from '@/lib/initials';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,7 +57,7 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
 
           <div className="scoreboard" style={{ marginTop: 14 }}>
             <div className="side">
-              <div className="crest a">{match.creatorTag}</div>
+              <div className="crest a">{initialOf(match.creatorTag)}</div>
               <div>
                 <div className="side-name">{match.creatorName}</div>
                 <div className="side-sub">{isCreator ? '发起方 · 你' : '发起方'}</div>
@@ -72,7 +73,7 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
                   {opponent?.ownerId === user?.id ? '应战方 · 你' : '应战方'}
                 </div>
               </div>
-              <div className="crest b">{match.opponentTag}</div>
+              <div className="crest b">{initialOf(match.opponentTag)}</div>
             </div>
           </div>
 

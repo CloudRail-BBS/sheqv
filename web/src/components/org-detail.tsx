@@ -13,6 +13,7 @@ import {
   type OrgKind,
 } from '@/lib/org-types';
 import { OrgOwnerPanel } from '@/components/org-owner-panel';
+import { initialOf } from '@/lib/initials';
 
 const COPY = {
   guild: { title: '公会', base: '/guilds', other: '战队', otherBase: '/teams' },
@@ -50,7 +51,7 @@ export async function OrgDetail({ kind, id }: { kind: OrgKind; id: string }) {
 
         <div className="card card-pad org-hero">
           <div className="org-hero-top">
-            <div className="crest a org-crest">{org.tag}</div>
+            <div className="crest a org-crest">{initialOf(org.tag || org.name)}</div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="row wrap" style={{ gap: 8 }}>
                 <h1 className="page-title" style={{ fontSize: 22 }}>

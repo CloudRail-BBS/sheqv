@@ -10,6 +10,7 @@
  */
 
 import type { ShareRow } from './org-types';
+import { initialOf } from './initials';
 
 export type { ShareRow };
 
@@ -207,9 +208,9 @@ function crest(
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  const label = [...tag].slice(0, 3).join('');
-  write(ctx, label, x + size / 2, y + size / 2 + (opts.fontSize ?? size * 0.3) * 0.36, {
-    size: opts.fontSize ?? size * 0.3,
+  const label = initialOf(tag);
+  write(ctx, label, x + size / 2, y + size / 2 + (opts.fontSize ?? size * 0.4) * 0.36, {
+    size: opts.fontSize ?? size * 0.4,
     weight: 700,
     color: opts.color ?? C.blue,
     align: 'center',
@@ -272,7 +273,7 @@ function avatar(
   crest(ctx, tag, x, y, size, {
     bg: color || C.blue,
     color: '#ffffff',
-    fontSize: size * 0.31,
+    fontSize: size * 0.42,
   });
 }
 
