@@ -252,7 +252,7 @@ async fn user_stats(pool: &sqlx::PgPool, id: &str) -> Result<UserStats, sqlx::Er
         "SELECT
            (SELECT count(*) FROM posts WHERE author_id = $1 AND status = 'published'),
            (SELECT count(*) FROM comments WHERE author_id = $1),
-           (SELECT coalesce(points, 0) FROM users WHERE id = $1)",
+           (SELECT coalesce(points, 0)::bigint FROM users WHERE id = $1)",
     )
     .bind(id)
     .fetch_one(pool)

@@ -55,6 +55,8 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ left: 0, top: 0 });
   const [profile, setProfile] = useState<PublicUser | null>(null);
+  /** 请求结束（无论成败）。失败时隐藏统计块，而不是留三个破折号 */
+  const [tried, setTried] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -62,7 +64,9 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
     if (!open || !userId || profile) return;
     let alive = true;
     void loadProfile(userId).then((p) => {
-      if (alive) setProfile(p);
+      if (!alive) return;
+      setProfile(p);
+      setTried(true);
     });
     return () => {
       alive = false;
@@ -110,6 +114,8 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
   const shownAvatar = shown?.avatar || avatar;
   const shownGroup = shown?.group || group;
   const joined = joinDate(shown?.createdAt);
+  // 只有「有 id」才谈得上统计；加载中先占位，拉不到就整块隐藏
+  const showStats = Boolean(userId) && (!tried || Boolean(shown?.stats));
 
   return (
     <>
@@ -148,34 +154,36 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
                   {shownName}
                   <UserBadge badge={badge} size="sm" />
                 </div>
-                <div className="uhc-handle">
-                  {shownGroup ? shownGroup.name : `@${shown?.username || 'user'}`}
+                <div className="uhc-handle">@{shown?.username || 'user'}</div>
+              </div>
+            </div>
+
+            {/* 参考论坛名片：三个数字比一串标签更快建立印象。
+                没拉到资料时不渲染，留三个破折号比不显示更像坏了。 */}
+            {showStats && (
+              <div className="uhc-stats">
+                <div>
+                  <b>{shown?.stats ? shown.stats.posts : '–'}</b>
+                  <span>主题</span>
+                </div>
+                <div>
+                  <b>{shown?.stats ? shown.stats.comments : '–'}</b>
+                  <span>回帖</span>
+                </div>
+                <div>
+                  <b>{shown?.stats ? shown.stats.points : '–'}</b>
+                  <span>积分</span>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* 参考论坛名片：三个数字比一串标签更快建立印象 */}
-            <div className="uhc-stats">
-              <div>
-                <b>{shown?.stats ? shown.stats.posts : '—'}</b>
-                <span>主题</span>
+            {(shownGroup || shown?.developer || shown?.title) && (
+              <div className="uhc-tags">
+                {shownGroup && <GroupTag group={shownGroup} size="sm" />}
+                {shown?.developer && <span className="dev-chip">开发者</span>}
+                {shown?.title && <span className="badge badge-ghost">{shown.title}</span>}
               </div>
-              <div>
-                <b>{shown?.stats ? shown.stats.comments : '—'}</b>
-                <span>回帖</span>
-              </div>
-              <div>
-                <b>{shown?.stats ? shown.stats.points : '—'}</b>
-                <span>积分</span>
-              </div>
-            </div>
-
-            <div className="uhc-tags">
-              {shownGroup && <GroupTag group={shownGroup} size="sm" />}
-              {shown?.developer && <span className="dev-chip">开发者</span>}
-              {shown?.isAdmin && <span className="badge badge-warn">管理员</span>}
-              {shown?.title && <span className="badge badge-ghost">{shown.title}</span>}
-            </div>
+            )}
 
             {joined && <div className="uhc-meta">加入于 {joined}</div>}
             {!userId && <div className="uhc-meta">站内用户</div>}

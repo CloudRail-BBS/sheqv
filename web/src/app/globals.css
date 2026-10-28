@@ -7,6 +7,8 @@
   --panel-3: #1d1d21;
   --line: #26262b;
   --line-soft: #1e1e22;
+  /* 悬停边框的旧名字，保留别名避免遗漏调用点；新代码用 --hover-bd */
+  --line-strong: #3a3a40;
   --text: #f4f4f5;
   --text-2: #c4c4c8;
   --muted: #8a8a90;
@@ -293,7 +295,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* ── composer ────────────────────────────── */
 
 .composer { padding: 14px 16px 0; transition: border-color 0.16s, box-shadow 0.16s; }
-.composer:focus-within { border-color: rgba(255, 255, 255, 0.35); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06); }
+.composer:focus-within { border-color: var(--blue-line); box-shadow: 0 0 0 3px var(--ring); }
 .composer-top { display: flex; align-items: flex-start; gap: 10px; }
 .composer-input {
   flex: 1; min-width: 0; min-height: 38px; border-radius: 9px; border: 1px solid var(--line);
@@ -2486,6 +2488,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --panel-3: #eaeef6;
   --line: #e3e8f0;
   --line-soft: #eef2f8;
+  --line-strong: #c3d2e4;
   --text: #151a23;
   --text-2: #3d4757;
   --muted: #6b7688;
@@ -3204,7 +3207,7 @@ body:has(.auth-page) .app {
   font-family: inherit; font-size: 12.5px; cursor: pointer;
   transition: border-color 0.14s, background 0.14s;
 }
-.composer-cat-btn:hover { border-color: var(--line-strong, #c9d6e6); background: var(--panel-2); }
+.composer-cat-btn:hover { border-color: var(--line-strong); background: var(--panel-2); }
 .composer-cat-btn[aria-expanded="true"] { border-color: var(--blue-line); box-shadow: 0 0 0 3px var(--blue-soft); }
 .composer-cat-btn svg { width: 14px; height: 14px; color: var(--muted); flex: none; }
 .composer-cat-menu {
@@ -3239,7 +3242,7 @@ body:has(.auth-page) .app {
   cursor: pointer; transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
 .composer-tag span { color: var(--muted); }
-.composer-tag:hover { border-color: var(--line-strong, #c9d6e6); background: var(--panel-2); }
+.composer-tag:hover { border-color: var(--line-strong); background: var(--panel-2); }
 .composer-tag[data-on="true"] {
   background: var(--blue-soft); border-color: var(--blue-line);
   color: var(--blue); font-weight: 600;
