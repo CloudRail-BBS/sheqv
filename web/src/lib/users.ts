@@ -39,6 +39,11 @@ export interface PublicUser {
   /** 头衔外观（后台审核时定），空则用默认样式 */
   titleStyle?: string;
   titleEffect?: string;
+  /** 认证标记：blue（个人）/ red（机构） */
+  verifyKind?: string;
+  /** 认证说明，鼠标悬停展示 */
+  verifyLabel?: string;
+  verifiedAt?: number;
   /** 身份组 id（未分组时不返回） */
   groupId?: string;
   /** 身份组的名字与颜色（未分组时不返回） */

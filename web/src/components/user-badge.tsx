@@ -8,7 +8,8 @@ import type { BadgeInfo } from '@/lib/badges';
  * 没配就按角色回落（管理员实心 + 扫光，普通头衔品牌蓝）。
  */
 export function UserBadge({ badge, size }: { badge?: BadgeInfo | null; size?: 'sm' }) {
-  if (!badge) return null;
+  // 只有认证没有头衔时 badge.label 为空：这里不出空胶囊，认证印记由 VerifyMark 负责
+  if (!badge || !badge.label) return null;
   const style = badge.style || (badge.admin ? 'solid' : 'blue');
   const effect = badge.effect || (badge.admin ? 'shine' : '');
   return (

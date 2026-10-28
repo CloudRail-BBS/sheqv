@@ -90,7 +90,7 @@ pub async fn feed(
     .await?;
 
     let mut unread = 0usize;
-    let mut items: Vec<Note> = rows
+    let items: Vec<Note> = rows
         .into_iter()
         .map(|r| {
             let at = r.created_at.timestamp_millis();

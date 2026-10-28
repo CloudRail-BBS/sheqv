@@ -8,6 +8,8 @@
  * 这个文件是纯函数 + 类型，客户端组件也能安全引用（不要在这里 import 服务端存储）。
  */
 
+import { isVerifyKind } from './verify-types';
+
 /** 外观样式键；与 CSS 的 `[data-bs="…"]` 一一对应 */
 export type BadgeStyle =
   | 'plain'
@@ -57,6 +59,10 @@ export interface BadgeInfo {
   style?: string;
   /** 特效 */
   effect?: string;
+  /** 认证标记：blue / red（认证与头衔是两件事，可能只有认证没有头衔） */
+  verifyKind?: string;
+  /** 认证说明，悬停展示 */
+  verifyLabel?: string;
 }
 
 /** key 形如 `id:u123` 或 `name:风蚀`，方便老数据（只有昵称）也能命中 */
@@ -116,15 +122,22 @@ export function badgeOf(user: {
   title?: string;
   titleStyle?: string;
   titleEffect?: string;
+  verifyKind?: string;
+  verifyLabel?: string;
 }): BadgeInfo | null {
   const admin = user.role === 'admin';
   const label = (user.title ?? '').trim() || (admin ? ADMIN_LABEL : '');
-  if (!label) return null;
+  const verifyKind = isVerifyKind(user.verifyKind) ? user.verifyKind : '';
+  const verifyLabel = (user.verifyLabel ?? '').trim();
+  // 认证是独立标记：没有头衔的认证用户也要在名字后面露出印记
+  if (!label && !verifyKind) return null;
   return {
     label,
     admin,
     style: user.titleStyle || undefined,
     effect: user.titleEffect || undefined,
+    verifyKind: verifyKind || undefined,
+    verifyLabel: verifyLabel || undefined,
   };
 }
 

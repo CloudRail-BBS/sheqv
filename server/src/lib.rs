@@ -59,6 +59,7 @@ pub mod sponsors;
 pub mod tasks;
 pub mod titles;
 pub mod tms;
+pub mod verifications;
 pub mod tournaments;
 pub mod state;
 pub mod users;

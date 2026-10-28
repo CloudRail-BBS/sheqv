@@ -23,6 +23,7 @@ export const NOTE_KIND_LABEL: Record<string, string> = {
   comment: '评论',
   gift: '礼品卡',
   title: '头衔',
+  verify: '认证',
   tournament: '赛事',
   server: '联机',
   task: '任务',

@@ -31,6 +31,12 @@
   --violet: #b9a2ff;
   --violet-soft: rgba(185, 162, 255, 0.13);
   --violet-line: rgba(185, 162, 255, 0.30);
+  /* 红标认证：品牌红，不参与「错误 / 删除」的语义色 */
+  --seal-red: #f0736f;
+  --seal-red-soft: rgba(240, 115, 111, 0.14);
+  --seal-red-line: rgba(240, 115, 111, 0.34);
+  /* 认证印记里对勾的颜色 */
+  --vmark-ink: #ffffff;
   --btn-bg: linear-gradient(180deg, #fafafa, #e4e4e7);
   --btn-bg-hover: linear-gradient(180deg, #ffffff, #ededf0);
   --btn-bd: #ffffff;
@@ -1301,6 +1307,127 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .title-history li + li { border-top: 1px solid var(--line-soft); }
 .title-history-name { font-weight: 600; color: var(--text-2); }
 .title-history li .small { margin-left: auto; }
+
+/* ── 认证印记（蓝标 / 红标） ───────────────
+   蓝标圆形、红标八角星，色觉不同也能靠轮廓区分；
+   颜色只走 --blue / --seal-red，深浅主题各自定义，不在组件里写死。 */
+
+.vmark {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none; width: 15px; height: 15px; line-height: 0;
+  vertical-align: -2px;
+}
+.vmark svg { display: block; width: 100%; height: 100%; }
+.vmark .vmark-tick { stroke: var(--vmark-ink); }
+.vmark[data-vk="blue"] { color: var(--blue); }
+.vmark[data-vk="red"] { color: var(--seal-red); }
+.vmark[data-size="lg"] { width: 18px; height: 18px; vertical-align: -3px; }
+
+/* ── 认证申请（我的页） ─────────────────── */
+
+.verify-request { display: flex; flex-direction: column; gap: 10px; }
+.verify-current { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.verify-current b { font-size: 12.5px; }
+.verify-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.verify-pending { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.verify-subject { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.verify-note {
+  margin: 0; padding: 7px 10px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  font-size: 11.5px; color: var(--text-2); line-height: 1.7;
+}
+.verify-form {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel-2);
+}
+.verify-kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.verify-kind {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px; border-radius: 10px; text-align: left;
+  border: 1px solid var(--line); background: var(--panel);
+  color: var(--text); font-family: inherit; cursor: pointer;
+  transition: border-color 0.14s var(--ease), background 0.14s var(--ease);
+}
+.verify-kind:hover { border-color: var(--hover-bd); }
+.verify-kind[data-on="true"] {
+  border-color: var(--blue-line); background: var(--blue-soft); box-shadow: var(--ring);
+}
+.verify-kind[data-vk="red"][data-on="true"] {
+  border-color: var(--seal-red-line); background: var(--seal-red-soft);
+  box-shadow: 0 0 0 3px var(--seal-red-soft);
+}
+.verify-kind-head { display: flex; align-items: center; gap: 7px; }
+.verify-kind-head b { font-size: 12.5px; }
+.verify-kind-head .small { margin-left: auto; }
+.verify-kind-hint { font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+.verify-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.verify-preview-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.verify-preview-name { font-size: 13px; }
+.verify-history {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.verify-history li {
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 4px; font-size: 12px;
+}
+.verify-history li + li { border-top: 1px solid var(--line-soft); }
+.verify-history-name { font-weight: 600; color: var(--text-2); }
+.verify-history li .small:last-child { margin-left: auto; }
+
+@media (max-width: 700px) {
+  .verify-kinds { grid-template-columns: 1fr; }
+  .verify-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 认证审核（后台） ───────────────────── */
+
+.verify-grant { display: flex; flex-direction: column; }
+.verify-grant .between { align-items: flex-start; gap: 12px; }
+.verify-grant-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.verify-grant-preview {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-2);
+}
+.verify-review { display: flex; flex-direction: column; gap: 10px; }
+.verify-review-row { display: flex; flex-direction: column; gap: 8px; }
+.verify-review-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.verify-review-avatar {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--panel-3); color: var(--text-2); font-size: 11px;
+}
+.verify-review-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.verify-review-requested {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--text-2);
+}
+.verify-review-meta {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px; margin: 0;
+}
+.verify-review-meta div { display: flex; flex-direction: column; gap: 2px; }
+.verify-review-meta dt {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3);
+}
+.verify-review-meta dd {
+  margin: 0; font-size: 12.5px; color: var(--text-2); word-break: break-all;
+}
+.verify-review-evidence {
+  margin: 0; padding: 8px 10px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  font-size: 12px; line-height: 1.75; color: var(--text-2);
+  white-space: pre-wrap; word-break: break-word;
+}
+.verify-review-controls {
+  display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .verify-review-meta { grid-template-columns: 1fr 1fr; }
+  .verify-review-controls { grid-template-columns: 1fr; }
+}
 
 
 
@@ -2753,6 +2880,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --violet: #6d4fd0;
   --violet-soft: rgba(109, 79, 208, 0.10);
   --violet-line: rgba(109, 79, 208, 0.24);
+  --seal-red: #d92d20;
+  --seal-red-soft: rgba(217, 45, 32, 0.10);
+  --seal-red-line: rgba(217, 45, 32, 0.26);
+  --vmark-ink: #ffffff;
   /* 主按钮改为蓝色渐变，与参考站的「登录控制台」按钮同款 */
   --btn-bg: linear-gradient(180deg, #5b8dff, #3e7cff);
   --btn-bg-hover: linear-gradient(180deg, #6d9aff, #4b86ff);

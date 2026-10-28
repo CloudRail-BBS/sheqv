@@ -27,6 +27,7 @@ pub mod servers;
 pub mod sponsors;
 pub mod tasks;
 pub mod titles;
+pub mod verifications;
 pub mod tournaments;
 
 use axum::Router;
@@ -53,6 +54,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/me/title-requests/{id}",
             axum::routing::delete(titles::cancel),
+        )
+        .route(
+            "/api/v1/me/verification-requests",
+            get(verifications::mine).post(verifications::create),
+        )
+        .route(
+            "/api/v1/me/verification-requests/{id}",
+            axum::routing::delete(verifications::cancel),
         )
         .route(
             "/api/v1/me/resource-file",
@@ -139,6 +148,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/points/{id}/logs",
             get(admin::point_logs),
+        )
+        .route(
+            "/api/v1/admin/verification-requests",
+            get(verifications::admin_list),
+        )
+        .route(
+            "/api/v1/admin/verification-requests/{id}",
+            patch(verifications::admin_review),
         )
         .route("/api/v1/admin/title-requests", get(titles::admin_list))
         .route(

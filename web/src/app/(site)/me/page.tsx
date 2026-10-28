@@ -8,7 +8,10 @@ import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
 import { TitleRequestForm } from '@/components/title-request';
 import { listMyTitleRequests } from '@/lib/titles';
+import { VerificationRequestForm } from '@/components/verification-request';
+import { listMyVerifyRequests } from '@/lib/verifications';
 import { UserBadge } from '@/components/user-badge';
+import { VerifyMark } from '@/components/verify-mark';
 import { GroupTag } from '@/components/group-tag';
 import { ImageClearButton, ImageUploadButton } from '@/components/image-upload';
 import { badgeOf } from '@/lib/badges';
@@ -56,7 +59,7 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests] =
+  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests, verifyRequests] =
     await Promise.all([
       listPosts(),
       listActive(),
@@ -66,6 +69,7 @@ export default async function MePage() {
       listOrgs('team'),
       listMyDevTeams(),
       listMyTitleRequests(),
+      listMyVerifyRequests(),
     ]);
   const myGroup = groups.find((g) => g.id === user.group?.id);
   const myGuilds = allGuilds.filter((g) => g.ownerId === user.id);
@@ -118,6 +122,7 @@ export default async function MePage() {
           <div style={{ minWidth: 0 }}>
             <div className="row" style={{ gap: 7 }}>
               <span className="me-name">{user.nickname}</span>
+              <VerifyMark kind={user.verifyKind} label={user.verifyLabel} size="lg" />
               <UserBadge badge={badgeOf(user)} />
               <GroupTag group={user.group} />
               {user.developer && <span className="dev-chip">开发者</span>}
@@ -240,6 +245,18 @@ export default async function MePage() {
             currentEffect={user.titleEffect}
             isAdmin={user.isAdmin}
             requests={titleRequests}
+          />
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="between" style={{ marginBottom: 8 }}>
+            <h3 style={{ fontSize: 13 }}>认证</h3>
+            <span className="small muted">蓝标 = 个人，红标 = 机构</span>
+          </div>
+          <VerificationRequestForm
+            currentKind={user.verifyKind}
+            currentLabel={user.verifyLabel}
+            requests={verifyRequests}
           />
         </div>
 

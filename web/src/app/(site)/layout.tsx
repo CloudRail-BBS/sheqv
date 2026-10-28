@@ -9,6 +9,7 @@ import { flatten } from '@/lib/notifications';
 import { getChrome } from '@/lib/chrome';
 import { NotificationBell } from '@/components/notification-bell';
 import { UserBadge } from '@/components/user-badge';
+import { VerifyMark } from '@/components/verify-mark';
 import { GroupTag } from '@/components/group-tag';
 import { BrandMark } from '@/components/brand-mark';
 import { MobileMenu } from '@/components/mobile-menu';
@@ -120,6 +121,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
                   )}
                 </span>
                 <span className="user-name">{user.nickname}</span>
+                <VerifyMark kind={user.verifyKind} label={user.verifyLabel} />
                 <UserBadge badge={badgeOf(user)} size="sm" />
                 <GroupTag group={user.group} size="sm" />
               </Link>

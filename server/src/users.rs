@@ -70,6 +70,11 @@ pub struct UserRow {
     /// 头衔外观（枚举值，具体色值在 CSS）
     pub title_style: String,
     pub title_effect: String,
+    /// 认证：blue（个人）/ red（机构）/ 空（未认证）
+    pub verify_kind: String,
+    /// 认证说明，鼠标悬停时展示
+    pub verify_label: String,
+    pub verified_at: Option<DateTime<Utc>>,
     pub badges: Value,
     pub notif_read_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
@@ -89,12 +94,13 @@ pub struct UserRow {
     pub avatar: String,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
+const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, verify_kind, verify_label, verified_at, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
 
 /// 读用户时统一带出组的展示信息。
 /// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
 const SELECT_USER: &str = "SELECT u.id, u.username, u.nickname, u.password_hash, u.email, u.role,
-        u.created_at, u.banned, u.title, u.title_style, u.title_effect, u.badges,
+        u.created_at, u.banned, u.title, u.title_style, u.title_effect,
+        u.verify_kind, u.verify_label, u.verified_at, u.badges,
         u.notif_read_at, u.last_login_at, u.group_id,
         u.developer_at, u.profile_bg, u.avatar,
         g.name AS group_name, g.color AS group_color, g.slug AS group_slug,
@@ -129,6 +135,14 @@ pub struct PublicUser {
     pub title_style: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub title_effect: String,
+    /// 认证标记：blue / red；空串不下发
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub verify_kind: String,
+    /// 认证说明（如「云轨社区运营组」）
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub verify_label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified_at: Option<i64>,
     /// 身份组 id（公开接口只透传 id，具体权限永远在后端判）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_id: Option<String>,
@@ -209,6 +223,9 @@ impl UserRow {
             title: self.title.clone(),
             title_style: self.title_style.clone(),
             title_effect: self.title_effect.clone(),
+            verify_kind: self.verify_kind.clone(),
+            verify_label: self.verify_label.clone(),
+            verified_at: self.verified_at.map(|t| t.timestamp_millis()),
             group_id: self.group_id.clone(),
             group: self.group_tag(),
             email: self.email.clone(),

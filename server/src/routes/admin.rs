@@ -83,6 +83,39 @@ pub async fn patch_user(
     let banned = payload.get("banned").and_then(|v| v.as_bool());
     let has_title = payload.contains_key("title");
 
+    // 认证：后台可以直接授予 / 取消，不必等用户提交申请（官方账号、合作方常用）
+    let has_verify = payload.contains_key("verifyKind") || payload.contains_key("verifyLabel");
+    let mut verify: Option<(String, String)> = None;
+    if has_verify {
+        let kind = payload
+            .get("verifyKind")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if !kind.is_empty() && !crate::verifications::valid_kind(&kind) {
+            return Err(ApiError::invalid_input("认证类型只能是 blue / red / 空"));
+        }
+        let label = payload
+            .get("verifyLabel")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if label.chars().count() > crate::verifications::LABEL_MAX {
+            return Err(ApiError::invalid_input(format!(
+                "认证说明不能超过 {} 字",
+                crate::verifications::LABEL_MAX
+            )));
+        }
+        // 取消认证时说明一并清掉，避免留下「没有标但有说明」的脏数据
+        verify = Some(if kind.is_empty() {
+            (String::new(), String::new())
+        } else {
+            (kind, label)
+        });
+    }
+
     // 规则 1：角色与封禁不能自操作（头衔可以）
     if actor.user_id() == Some(id.as_str()) && (role.is_some() || banned.is_some()) {
         return Err(ApiError::with_message(
@@ -163,6 +196,20 @@ pub async fn patch_user(
             .execute(&mut *tx)
             .await
             .map_err(ApiError::internal)?;
+    }
+    if let Some((kind, label)) = &verify {
+        sqlx::query(
+            "UPDATE users
+                SET verify_kind = $2, verify_label = $3,
+                    verified_at = CASE WHEN $2 = '' THEN NULL ELSE COALESCE(verified_at, now()) END
+              WHERE id = $1",
+        )
+        .bind(&id)
+        .bind(kind)
+        .bind(label)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::internal)?;
     }
 
     tx.commit().await.map_err(ApiError::internal)?;
