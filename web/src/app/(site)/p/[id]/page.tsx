@@ -127,7 +127,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <span className="floor-avatar">
               {op.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={op.avatar} alt="" />
+                <img src={op.avatar} alt="" loading="lazy" decoding="async" />
               ) : (
                 post.author.slice(0, 1)
               )}
@@ -189,7 +189,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 <span className="floor-avatar">
                   {u.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={u.avatar} alt="" />
+                    <img src={u.avatar} alt="" loading="lazy" decoding="async" />
                   ) : (
                     c.author.slice(0, 1)
                   )}
@@ -247,7 +247,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>
               {op.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={op.avatar} alt="" />
+                <img src={op.avatar} alt="" loading="lazy" decoding="async" />
               ) : (
                 post.author.slice(0, 1)
               )}

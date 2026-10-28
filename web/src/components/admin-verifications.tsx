@@ -300,7 +300,7 @@ export function AdminVerifications() {
                   <span className="verify-review-avatar">
                     {item.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.avatar} alt="" />
+                      <img src={item.avatar} alt="" loading="lazy" decoding="async" />
                     ) : (
                       (item.nickname ?? '?').slice(0, 1)
                     )}

@@ -28,6 +28,13 @@ p256 = { version = "0.13", default-features = false, features = ["ecdsa", "ecdh"
 aes-gcm = "0.10"
 hkdf = "0.12"
 percent-encoding = "2"
+# 图片缩略图：只开用得到的编解码器，避免把 tiff/avif 等一串依赖拖进来
+image = { version = "0.25", default-features = false, features = [
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+] }
 # 可选：缓存与限流。没有 REDIS_URL 时全部降级到进程内，不影响启动
 redis = { version = "0.27", default-features = false, features = ["tokio-comp", "connection-manager"] }
 rand = "0.9"

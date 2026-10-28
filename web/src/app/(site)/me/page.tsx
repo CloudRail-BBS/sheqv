@@ -21,6 +21,7 @@ import { listMyDevTeams } from '@/lib/dev-team-store';
 import { getSettings } from '@/lib/settings';
 import { getAchievementState } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
+import { MEDIA_W, mediaUrl } from '@/lib/media';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,7 +91,7 @@ export default async function MePage() {
           style={
             user.profileBg
               ? {
-                  backgroundImage: `linear-gradient(90deg, var(--panel) 8%, color-mix(in srgb, var(--panel) 82%, transparent) 48%, transparent), url(${JSON.stringify(user.profileBg)})`,
+                  backgroundImage: `linear-gradient(90deg, var(--panel) 8%, color-mix(in srgb, var(--panel) 82%, transparent) 48%, transparent), url(${JSON.stringify(mediaUrl(user.profileBg, MEDIA_W.full) ?? user.profileBg)})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }

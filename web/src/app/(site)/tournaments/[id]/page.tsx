@@ -11,6 +11,7 @@ import { Markdown, markdownToText } from '@/lib/markdown';
 import { buildMetadata } from '@/lib/seo';
 import { gameLabel } from '@/lib/resource-types';
 import { TOURNAMENT_STATUS_LABEL, fmtDay } from '@/lib/task-types';
+import { MEDIA_W, mediaUrl } from '@/lib/media';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,11 @@ export default async function TournamentDetail({ params }: { params: Promise<{ i
           <div
             className="tn-hero"
             data-tone={item.game}
-            style={item.cover ? { backgroundImage: `url(${item.cover})` } : undefined}
+            style={
+              item.cover
+                ? { backgroundImage: `url(${mediaUrl(item.cover, MEDIA_W.cover)})` }
+                : undefined
+            }
           >
             <TournamentStatusBadge status={item.status} size="lg" />
           </div>

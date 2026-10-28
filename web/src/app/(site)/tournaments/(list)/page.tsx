@@ -5,6 +5,7 @@ import { buildMetadata } from '@/lib/seo';
 import { fmtDay, type Tournament } from '@/lib/task-types';
 import { gameLabel } from '@/lib/resource-types';
 import { TournamentStatusBadge } from '@/components/tournament-status';
+import { MEDIA_W, mediaUrl } from '@/lib/media';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,11 @@ function TournamentCard({ item }: { item: Tournament }) {
       <div
         className="tn-cover"
         data-tone={item.game}
-        style={item.cover ? { backgroundImage: `url(${item.cover})` } : undefined}
+        style={
+          item.cover
+            ? { backgroundImage: `url(${mediaUrl(item.cover, MEDIA_W.card)})` }
+            : undefined
+        }
       >
         <TournamentStatusBadge status={item.status} />
       </div>

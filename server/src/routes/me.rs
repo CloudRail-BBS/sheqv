@@ -102,8 +102,15 @@ pub async fn upload_media(
     Ok(Json(json!({ "ok": true, "url": url })).into_response())
 }
 
-/// GET /api/v1/media/{id} —— 公开读图，长缓存
-pub async fn media_file(State(st): State<AppState>, Path(id): Path<String>) -> ApiResult<Response> {
+/// GET /api/v1/media/{id}[?w=256] —— 公开读图，长缓存
+///
+/// `w` 是目标宽度：给了就出缩略图，没给时**头像自动按 256px 出**，其它类型出原图。
+/// 这样老页面不用改参数也能一起变快（原先 33px 的头像在传 400KB 的原图）。
+pub async fn media_file(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+    Query(q): Query<HashMap<String, String>>,
+) -> ApiResult<Response> {
     if id.len() > 40 || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
         return Err(ApiError::not_found());
     }
@@ -114,7 +121,26 @@ pub async fn media_file(State(st): State<AppState>, Path(id): Path<String>) -> A
         return Err(ApiError::not_found());
     };
 
-    let bytes = if row.storage == "s3" {
+    let requested = q.get("w").and_then(|v| v.trim().parse::<u32>().ok());
+    let target = match requested {
+        Some(w) => w.clamp(media::MIN_WIDTH, media::MAX_WIDTH),
+        None if row.kind == "avatar" => media::AVATAR_WIDTH,
+        None => 0,
+    };
+    // 动图缩完只剩第一帧，宁可原样返回
+    let resizable = row.mime != "image/gif";
+
+    // 命中缓存就直接回去，不去碰原图（S3 上原图要跨网络拉一次）
+    if resizable && target > 0 {
+        if let Some(v) = media::load_variant(&st.pool, &id, target)
+            .await
+            .map_err(ApiError::internal)?
+        {
+            return Ok(image_response(v.bytes, &v.mime, &id, target));
+        }
+    }
+
+    let bytes: Vec<u8> = if row.storage == "s3" {
         let resolved = st
             .object_store
             .resolve(&st.pool, st.cfg.as_ref())
@@ -134,12 +160,30 @@ pub async fn media_file(State(st): State<AppState>, Path(id): Path<String>) -> A
             .map_err(|e| {
                 ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e)
             })?
+            .into()
     } else {
-        row.bytes.unwrap_or_default().into()
+        row.bytes.clone().unwrap_or_default()
     };
 
-    let mime = row.mime;
+    if resizable && target > 0 {
+        // 原图本来就比目标小就不要再缩：放大只会更糊
+        let bigger = media::dimensions(&bytes).map(|(w, _)| w > target).unwrap_or(true);
+        if bigger {
+            if let Some((mime, small)) = media::make_variant(&bytes, target, row.kind == "avatar") {
+                // 存失败不影响这次返回，下次再算一遍而已
+                let _ = media::save_variant(&st.pool, &id, target, &mime, &small).await;
+                return Ok(image_response(small, &mime, &id, target));
+            }
+        }
+    }
+
+    Ok(image_response(bytes, &row.mime, &id, target))
+}
+
+/// 统一的图片响应：一年强缓存 + ETag，CDN / 反向代理可以放心存
+fn image_response(bytes: Vec<u8>, mime: &str, id: &str, width: u32) -> Response {
     let len = bytes.len();
+    let etag = format!("\"{id}-{width}\"");
     let mut res = Response::new(Body::from(bytes));
     let headers = res.headers_mut();
     headers.insert(header::CONTENT_TYPE, mime.parse().expect("固定 MIME"));
@@ -148,7 +192,8 @@ pub async fn media_file(State(st): State<AppState>, Path(id): Path<String>) -> A
         header::CACHE_CONTROL,
         "public, max-age=31536000, immutable".parse().expect("固定值"),
     );
-    Ok(res)
+    headers.insert(header::ETAG, etag.parse().expect("ASCII"));
+    res
 }
 
 /// GET /api/v1/me/chrome —— 顶栏一次取齐：站内信 + 积分胶囊。

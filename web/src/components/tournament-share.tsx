@@ -8,6 +8,7 @@ import {
 } from '@/lib/task-types';
 import { gameLabel } from '@/lib/resource-types';
 import { downloadCanvas, renderTournamentPoster, safeName, today } from '@/lib/share-image';
+import { MEDIA_W, mediaUrl } from '@/lib/media';
 
 /**
  * 赛事宣传图。
@@ -38,7 +39,8 @@ export function TournamentShare({
       summary: tournament.summary,
       prize: tournament.prize,
       host: tournament.hostName || brand,
-      cover: tournament.cover || undefined,
+      // 分享图按 1080 宽画，取 1280 版本就够，别去拉几 MB 的原图
+      cover: mediaUrl(tournament.cover, MEDIA_W.hero) || undefined,
       signupLabel:
         tournament.signupEnd ? `至 ${fmtDay(tournament.signupEnd)}` : '待定',
       startLabel: tournament.startAt ? fmtDay(tournament.startAt) : '待定',

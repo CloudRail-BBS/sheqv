@@ -124,7 +124,7 @@ export function Composer({ nickname, signed, avatar }: Props) {
 
   const avatarNode = avatar ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img className="post-avatar-img" src={avatar} alt="" />
+    <img className="post-avatar-img" src={avatar} alt="" loading="lazy" decoding="async" />
   ) : (
     nickname?.slice(0, 1) ?? '?'
   );

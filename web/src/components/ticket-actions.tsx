@@ -23,7 +23,15 @@ export function TicketActions({ id, status }: { id: string; status: TicketStatus
     const data = (await res?.json().catch(() => null)) as { message?: string } | null;
     setBusy(false);
     if (!res?.ok) {
-      setErr(data?.message ?? '发送失败，稍后再试');
+      setErr(
+        !res
+          ? '网络异常，请检查连接后重试'
+          : res.status === 401
+            ? '登录状态已过期，请重新登录'
+            : res.status === 409
+              ? '工单已经关闭，请先重新打开'
+              : (data?.message ?? `发送失败（HTTP ${res.status}）`),
+      );
       return;
     }
     setBody('');
@@ -41,7 +49,13 @@ export function TicketActions({ id, status }: { id: string; status: TicketStatus
     }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
-      setErr('操作失败，稍后再试');
+      setErr(
+        !res
+          ? '网络异常，请检查连接后重试'
+          : res.status === 401
+            ? '登录状态已过期，请重新登录'
+            : `操作失败（HTTP ${res.status}）`,
+      );
       return;
     }
     router.refresh();

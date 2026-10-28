@@ -233,7 +233,7 @@ export function ResourceUpload({
 
   const avatarNode = avatar ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={avatar} alt="" />
+    <img src={avatar} alt="" loading="lazy" decoding="async" />
   ) : (
     nickname.slice(0, 1)
   );

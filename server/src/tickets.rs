@@ -11,9 +11,9 @@ use crate::notifications;
 pub const CATEGORIES: [&str; 5] = ["account", "report", "bug", "suggestion", "other"];
 pub const STATUSES: [&str; 3] = ["open", "replied", "closed"];
 
-pub const SUBJECT_MIN: usize = 4;
+pub const SUBJECT_MIN: usize = 2;
 pub const SUBJECT_MAX: usize = 80;
-pub const BODY_MIN: usize = 5;
+pub const BODY_MIN: usize = 2;
 pub const BODY_MAX: usize = 2000;
 /// 一人一天最多开 10 张，防止刷屏
 pub const DAILY_LIMIT: i64 = 10;

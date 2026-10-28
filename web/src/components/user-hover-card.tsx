@@ -143,7 +143,7 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
               <span className="uhc-avatar">
                 {shownAvatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={shownAvatar} alt="" />
+                  <img src={shownAvatar} alt="" loading="lazy" decoding="async" />
                 ) : (
                   initialOf(shownName)
                 )}

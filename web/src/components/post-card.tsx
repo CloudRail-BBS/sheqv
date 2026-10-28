@@ -52,7 +52,7 @@ export function PostCard({
         <div className="post-avatar">
           {avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatar} alt="" />
+            <img src={avatar} alt="" loading="lazy" decoding="async" />
           ) : (
             item.author.slice(0, 1)
           )}

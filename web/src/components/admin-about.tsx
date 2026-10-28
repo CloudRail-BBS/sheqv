@@ -276,7 +276,7 @@ function EntrySection({ kind, title, hint }: { kind: 'person' | 'partner'; title
               <span className="about-admin-mark">
                 {item.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.avatar} alt="" />
+                  <img src={item.avatar} alt="" loading="lazy" decoding="async" />
                 ) : (
                   initialOf(item.name)
                 )}

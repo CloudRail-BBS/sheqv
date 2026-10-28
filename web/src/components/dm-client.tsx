@@ -196,7 +196,7 @@ export function DmClient({
                     <span className="dm-avatar">
                       {c.peer.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.peer.avatar} alt="" />
+                        <img src={c.peer.avatar} alt="" loading="lazy" decoding="async" />
                       ) : (
                         dmInitial(c.peer.nickname)
                       )}
@@ -246,7 +246,7 @@ export function DmClient({
                 <span className="dm-avatar sm">
                   {peer?.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={peer.avatar} alt="" />
+                    <img src={peer.avatar} alt="" loading="lazy" decoding="async" />
                   ) : (
                     dmInitial(peer?.nickname ?? '?')
                   )}

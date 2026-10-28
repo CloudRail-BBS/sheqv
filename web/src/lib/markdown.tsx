@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { MEDIA_W, mediaUrl } from './media';
 
 /**
  * 极简 Markdown 渲染。
@@ -48,7 +49,12 @@ function inline(text: string): ReactNode[] {
         out.push(
           <span className="md-image" key={nextKey()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={m[1] || '图片'} loading="lazy" decoding="async" />
+            <img
+              src={mediaUrl(src, MEDIA_W.hero)}
+              alt={m[1] || '图片'}
+              loading="lazy"
+              decoding="async"
+            />
           </span>,
         );
       } else {

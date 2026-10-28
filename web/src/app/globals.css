@@ -830,11 +830,18 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .modal-mask {
   position: fixed; inset: 0; z-index: 90; display: grid; place-items: center;
   background: rgba(4, 6, 9, 0.76); backdrop-filter: blur(4px); padding: 20px;
+  /* 弹窗比视口高时要能滚：否则小屏上底部按钮直接被裁掉，点了也没反应 */
+  overflow-y: auto;
 }
 .modal {
   width: 100%; max-width: 420px; background: var(--panel); border: 1px solid var(--line);
   border-radius: 14px; padding: 20px;
+  max-height: calc(100dvh - 40px); overflow-y: auto;
   box-shadow: 0 40px 100px -40px rgba(0, 0, 0, 1), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+@media (max-width: 700px) {
+  .modal-mask { place-items: start center; padding: 12px; }
+  .modal { max-height: calc(100dvh - 24px); padding: 16px; }
 }
 .steps { margin: 12px 0 0; padding-left: 18px; color: var(--text-2); font-size: 12.5px; line-height: 1.95; }
 .hint-box {

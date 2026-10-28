@@ -53,7 +53,7 @@ export default async function AboutPage() {
                   <span className="about-avatar">
                     {p.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.avatar} alt="" />
+                      <img src={p.avatar} alt="" loading="lazy" decoding="async" />
                     ) : (
                       initialOf(p.name)
                     )}
@@ -82,7 +82,7 @@ export default async function AboutPage() {
                     <span className="about-logo">
                       {p.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.avatar} alt="" />
+                        <img src={p.avatar} alt="" loading="lazy" decoding="async" />
                       ) : (
                         initialOf(p.name)
                       )}
