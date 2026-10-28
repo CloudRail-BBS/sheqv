@@ -23,7 +23,7 @@ export function UploadPanel({ maxUploadBytes, chunkConcurrency }: Props) {
     if (f.size > maxUploadBytes) {
       setResult({
         ok: false,
-        text: `${f.name} · ${fmt(f.size)} 超过当前形态上限 ${fmt(maxUploadBytes)}，请改用桌面端或 App`,
+        text: `${f.name} · ${fmt(f.size)} 超过上传上限 ${fmt(maxUploadBytes)}，请改用桌面端或 App`,
       });
     } else {
       setResult({

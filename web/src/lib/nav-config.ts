@@ -57,6 +57,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     items: [
       { key: 'me', href: '/me', label: '我的', group: 'workspace' },
       { key: 'messages', href: '/messages', label: '私信', group: 'workspace' },
+      { key: 'tickets', href: '/tickets', label: '工单', group: 'workspace' },
       { key: 'points', href: '/points', label: '积分与签到', group: 'workspace' },
       { key: 'tasks', href: '/tasks', label: '任务中心', group: 'workspace' },
       { key: 'groups', href: '/groups', label: '身份组', group: 'workspace' },

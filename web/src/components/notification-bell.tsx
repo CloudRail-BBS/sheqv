@@ -108,12 +108,12 @@ export function NotificationBell({ initial, unread: initialUnread, loggedIn }: P
 
           <div className="notif-list">
             {items.length === 0 ? (
-              <p className="notif-empty">暂时没有新消息。评论、礼品卡与审核结果都会出现在这里。</p>
+              <p className="notif-empty">暂时没有新消息。评论、工单、系统消息与审核结果都会出现在这里。</p>
             ) : (
               items.map((n) => (
                 <Link
                   key={n.id}
-                  href={n.href}
+                  href={n.href || '/notifications'}
                   className="notif-item"
                   data-unread={n.unread}
                   onClick={() => setOpen(false)}

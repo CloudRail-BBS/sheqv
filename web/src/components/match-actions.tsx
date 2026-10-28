@@ -53,13 +53,6 @@ export function MatchActions({ canVideo, evidenceVideoBytes, evidenceImageBytes,
         />
       </label>
 
-      {!canVideo && (
-        <div className="hint-box">
-          当前形态 <code className="mono">cap.match.evidenceVideoUpload = false</code>
-          ，<code className="mono">evidenceVideoBytes = 0</code>：录像只能贴外链，截图可直传（≤
-          {fmt(evidenceImageBytes)}）。要传文件请用桌面端或 App。
-        </div>
-      )}
 
       <div className="row" style={{ gap: 8 }}>
         <button className="btn btn-primary grow" onClick={() => setConfirmOpen(true)} disabled={state !== 'idle'}>

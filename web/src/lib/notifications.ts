@@ -26,6 +26,7 @@ export const NOTE_KIND_LABEL: Record<string, string> = {
   verify: '认证',
   tournament: '赛事',
   server: '联机',
+  ticket: '工单',
   task: '任务',
   match: '约战',
   system: '系统',

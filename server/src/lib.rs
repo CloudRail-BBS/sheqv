@@ -57,6 +57,7 @@ pub mod settings;
 pub mod slides;
 pub mod sponsors;
 pub mod tasks;
+pub mod tickets;
 pub mod titles;
 pub mod verifications;
 pub mod tournaments;

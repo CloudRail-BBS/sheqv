@@ -28,7 +28,6 @@ export default async function AdminPushPage() {
             iOS 需要先把本站添加到主屏幕。
           </p>
         </div>
-        <span className="badge badge-live">VAPID + aes128gcm</span>
       </div>
 
       <PushToggle variant="wide" />

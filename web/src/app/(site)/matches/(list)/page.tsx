@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { getRequestCaps } from '@/lib/request-caps';
 import { getCurrentUser } from '@/lib/current-user';
 import { isTrustSigned } from '@/lib/agreement-state';
 import { listOrgs } from '@/lib/orgs';
@@ -40,8 +39,7 @@ export default async function MatchesPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status = '' } = await searchParams;
-  const [caps, user, trustSigned, guilds, teams, matches, settings] = await Promise.all([
-    getRequestCaps(),
+  const [user, trustSigned, guilds, teams, matches, settings] = await Promise.all([
     getCurrentUser(),
     isTrustSigned(),
     listOrgs('guild'),
@@ -125,15 +123,6 @@ export default async function MatchesPage({
             </Link>
           ))}
         </div>
-
-        {!caps.capabilities.realtime.backgroundPush && (
-          <div className="notice">
-            <span>
-              当前形态没有系统推送：待接受的约战只出现在站内提醒里
-              {caps.isWeChat ? '，微信内不会主动提醒' : '，建议开启桌面通知或安装 App'}。
-            </span>
-          </div>
-        )}
       </div>
 
       <aside className="rail">

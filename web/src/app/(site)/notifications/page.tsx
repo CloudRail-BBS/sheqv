@@ -61,13 +61,13 @@ export default async function NotificationsPage() {
           </div>
           {feed.comments.length === 0 ? (
             <p className="small muted" style={{ padding: '18px 16px' }}>
-              还没有通知。有人评论你的帖子、给你发礼品卡或审核通过时会出现。
+              还没有通知。有人评论你的帖子、工单有新回复或收到系统消息时会出现。
             </p>
           ) : (
             feed.comments.map((n) => (
               <Link
                 key={n.id}
-                href={n.href}
+                href={n.href || '/notifications'}
                 className="rail-item"
                 data-unread={n.unread}
                 style={{ padding: '12px 16px' }}
@@ -76,7 +76,7 @@ export default async function NotificationsPage() {
                   {n.unread ? '新' : noteKindLabel(n.kind)}
                 </span>
                 <span className="n-title" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {n.text}
+                  {n.kind === 'comment' ? n.text : n.title}
                 </span>
                 <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)', flex: 'none' }}>
                   {timeAgo(n.at)}
@@ -91,7 +91,7 @@ export default async function NotificationsPage() {
         <div className="card rail-card">
           <div className="rail-title">未读怎么算</div>
           <p className="small muted" style={{ lineHeight: 1.75 }}>
-            评论按时间水位算未读，礼品卡与审核结果逐条记录；点「全部标为已读」会一起清掉。
+            点「全部标为已读」会清掉所有未读通知。
             待确认比赛属于「待处理」，不随已读消失。
             {!user && ' 登录后未读状态会跟着账号走，换设备也一致。'}
           </p>

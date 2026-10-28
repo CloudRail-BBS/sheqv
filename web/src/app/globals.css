@@ -1046,8 +1046,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .notif-wrap { position: relative; }
 .notif-pop {
   position: absolute; top: calc(100% + 10px); right: 0; width: 348px; z-index: 60;
-  background: var(--glass-strong); border: 1px solid var(--glass-brd); border-radius: 14px;
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  /* 站内信是读文字的地方，必须实底；半透明会让背后的帖子/签到卡透上来 */
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
   box-shadow: var(--shadow-lift); overflow: hidden;
 }
 .notif-head {
@@ -5097,4 +5097,103 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   color: #fff;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+}
+
+/* ── 工单（前台列表 / 详情） ───────────────── */
+.ticket-list { display: flex; flex-direction: column; gap: 8px; }
+.ticket-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  transition: border-color 0.14s var(--ease), background 0.14s var(--ease);
+}
+.ticket-row:hover { border-color: var(--hover-bd); background: var(--panel-2); }
+.ticket-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.ticket-row-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ticket-row-subject {
+  font-size: 13px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ticket-row-last {
+  margin: 0; font-size: 12px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ticket-row-side {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  flex: none; font-size: 11.5px; color: var(--muted);
+}
+.ticket-head { display: flex; flex-direction: column; }
+.ticket-thread { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.ticket-msg { padding: 12px 14px; }
+.ticket-msg[data-role="admin"] { border-left: 3px solid var(--blue); }
+.ticket-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.ticket-msg-head .small:last-child { margin-left: auto; }
+.ticket-msg-body {
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  font-size: 13px; line-height: 1.8; color: var(--text-2);
+}
+.ticket-reply { display: flex; flex-direction: column; gap: 8px; }
+.ticket-closed {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 12.5px; color: var(--muted);
+}
+.ticket-closed button { margin-left: auto; }
+.ticket-compose { width: min(560px, 94vw); max-width: 560px; }
+.ticket-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+
+/* ── 工单（后台队列） ───────────────────── */
+.adm-ticket-grid {
+  display: grid; grid-template-columns: 320px minmax(0, 1fr);
+  gap: 12px; align-items: start;
+}
+.adm-ticket-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 68vh; overflow-y: auto; padding-right: 2px;
+}
+.adm-ticket-item {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 10px 12px; text-align: left; cursor: pointer;
+}
+.adm-ticket-item[data-on="true"] {
+  border-color: var(--blue-line); background: var(--blue-soft);
+}
+.adm-ticket-item-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.adm-ticket-subject {
+  font-size: 12.5px; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.adm-ticket-detail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.adm-ticket-thread {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 42vh; overflow-y: auto;
+}
+.adm-ticket-msg { padding: 10px 12px; }
+.adm-ticket-msg[data-role="admin"] { border-left: 3px solid var(--blue); }
+
+/* ── 后台系统消息 ───────────────────────── */
+.adm-msg-list { display: flex; flex-direction: column; }
+.adm-msg-row {
+  display: flex; gap: 12px; padding: 10px 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.adm-msg-row:first-child { border-top: 0; }
+.adm-msg-main { flex: 1; min-width: 0; }
+.adm-msg-main b { font-size: 12.5px; }
+.adm-msg-main p {
+  margin: 3px 0 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.adm-msg-side {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  flex: none; color: var(--text-2);
+}
+
+@media (max-width: 860px) {
+  .adm-ticket-grid { grid-template-columns: 1fr; }
+  .adm-ticket-list { max-height: none; }
+  .adm-ticket-thread { max-height: none; }
+}
+@media (max-width: 700px) {
+  .ticket-row { align-items: flex-start; }
+  .ticket-row-side { flex-direction: row; align-items: center; gap: 8px; }
 }

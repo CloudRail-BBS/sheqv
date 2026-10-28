@@ -34,7 +34,6 @@ export default async function AdminAgreementsPage() {
             内置的两份不可改，只能新增与停用。
           </p>
         </div>
-        <span className="badge">cap.admin.console</span>
       </div>
 
       <div className="hint-box">

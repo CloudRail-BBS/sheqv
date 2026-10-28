@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { getRequestCaps } from '@/lib/request-caps';
 import { MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
 import { listOrgs } from '@/lib/orgs';
 import { getPoints } from '@/lib/points';
@@ -34,8 +33,6 @@ export async function generateMetadata() {
 const TAGS = ['地图', '整合包', '材质', '约战', '招募', '红石', 'PvP', '公告'];
 
 export default async function HomePage() {
-  const caps = await getRequestCaps();
-  const { backgroundPush } = caps.capabilities.realtime;
   const posts = await listPosts();
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
@@ -86,16 +83,6 @@ export default async function HomePage() {
           <button className="feed-tab">我参与的</button>
           <span className="sort">按热度排序</span>
         </div>
-
-        {!backgroundPush && (
-          <div className="notice">
-            <span>
-              {caps.isWeChat
-                ? '微信内没有系统推送：待确认的比赛与新争议只会出现在站内红点里，建议在浏览器打开或安装 App。'
-                : '当前形态无系统推送，约战与争议提醒以站内红点呈现。'}
-            </span>
-          </div>
-        )}
 
         {posts.length === 0 && (
           <div className="card empty-state">

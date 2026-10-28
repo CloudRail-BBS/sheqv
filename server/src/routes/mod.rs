@@ -26,6 +26,8 @@ pub mod rewards;
 pub mod servers;
 pub mod sponsors;
 pub mod tasks;
+pub mod messages;
+pub mod tickets;
 pub mod titles;
 pub mod verifications;
 pub mod tournaments;
@@ -54,6 +56,18 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/me/title-requests/{id}",
             axum::routing::delete(titles::cancel),
+        )
+        .route(
+            "/api/v1/me/tickets",
+            get(tickets::mine).post(tickets::create),
+        )
+        .route(
+            "/api/v1/me/tickets/{id}",
+            get(tickets::detail).patch(tickets::set_status),
+        )
+        .route(
+            "/api/v1/me/tickets/{id}/messages",
+            axum::routing::post(tickets::reply),
         )
         .route(
             "/api/v1/me/verification-requests",
@@ -140,6 +154,22 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/comments/{id}",
             axum::routing::delete(admin::delete_comment),
+        )
+        .route(
+            "/api/v1/admin/tickets",
+            get(tickets::admin_list),
+        )
+        .route(
+            "/api/v1/admin/tickets/{id}",
+            get(tickets::admin_detail).patch(tickets::admin_status),
+        )
+        .route(
+            "/api/v1/admin/tickets/{id}/messages",
+            axum::routing::post(tickets::admin_reply),
+        )
+        .route(
+            "/api/v1/admin/messages",
+            get(messages::list).post(messages::send),
         )
         .route(
             "/api/v1/admin/points",

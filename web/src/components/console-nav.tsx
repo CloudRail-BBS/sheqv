@@ -42,6 +42,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/users', label: '用户', icon: 'user' },
       { href: '/admin/titles', label: '头衔申请', icon: 'badge' },
       { href: '/admin/verifications', label: '认证申请', icon: 'verify' },
+      { href: '/admin/tickets', label: '工单', icon: 'ticket' },
       { href: '/admin/groups', label: '身份组', icon: 'tag' },
       { href: '/admin/orgs', label: '公会与战队', icon: 'users' },
       { href: '/admin/servers', label: '联机大厅', icon: 'server' },
@@ -66,6 +67,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/about', label: '关于社区', icon: 'users' },
       { href: '/admin/apps', label: '端管理', icon: 'code' },
       { href: '/admin/push', label: '网页推送', icon: 'send' },
+      { href: '/admin/messages', label: '系统消息', icon: 'mail' },
     ],
   },
   {
@@ -105,6 +107,8 @@ const ICONS = {
   key: 'M15 8a4 4 0 1 0-3.6 3.97L9 14.4l-1.6-1.6L6 14.2l1.6 1.6L6 17.4 7.6 19l1.6-1.6L10.8 19l1.4-1.4-1.6-1.6 2-2A4 4 0 0 0 15 8',
   badge: 'M12 3l2.4 1.8 3 .2.9 2.9 2.1 2.1-1.5 2.6.3 3-2.8 1.2L14.6 19 12 18l-2.6 1-1.8-2.2-2.8-1.2.3-3L3.6 10l2.1-2.1.9-2.9 3-.2z',
   verify: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M8 12.4l2.7 2.6L16 9.6',
+  ticket: 'M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4zM9 7v10',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
   palette: 'M12 21a9 9 0 1 1 9-9c0 2.2-1.8 3-3.4 3H16a2 2 0 0 0-1.4 3.4c.5.6.2 1.6-.6 1.9-.6.5-1.3.7-2 .7M7.5 10.5h.01M10 7.5h.01M14 7.5h.01M16.5 10.5h.01',
   coin: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5v9M9.5 10.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4',
 } as const;
