@@ -26,6 +26,7 @@ pub mod rewards;
 pub mod servers;
 pub mod sponsors;
 pub mod tasks;
+pub mod titles;
 pub mod tournaments;
 
 use axum::Router;
@@ -45,6 +46,14 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/me/chrome", get(me::chrome))
+        .route(
+            "/api/v1/me/title-requests",
+            get(titles::mine).post(titles::create),
+        )
+        .route(
+            "/api/v1/me/title-requests/{id}",
+            axum::routing::delete(titles::cancel),
+        )
         .route(
             "/api/v1/me/resource-file",
             post(resource_files::upload)
@@ -114,6 +123,24 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/posts",
             get(admin::list_posts).delete(admin::delete_post),
+        )
+        .route(
+            "/api/v1/admin/posts/{id}/floors",
+            get(admin::post_floors),
+        )
+        .route(
+            "/api/v1/admin/comments/{id}",
+            axum::routing::delete(admin::delete_comment),
+        )
+        .route("/api/v1/admin/title-requests", get(titles::admin_list))
+        .route(
+            "/api/v1/admin/title-requests/{id}",
+            patch(titles::admin_review),
+        )
+        .route("/api/v1/admin/badge-styles", get(titles::badge_styles))
+        .route(
+            "/api/v1/admin/badge-styles/{id}",
+            patch(titles::badge_style_set),
         )
         .route(
             "/api/v1/admin/settings",

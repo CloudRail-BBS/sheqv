@@ -40,6 +40,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
     label: '社区',
     items: [
       { href: '/admin/users', label: '用户', icon: 'user' },
+      { href: '/admin/titles', label: '头衔申请', icon: 'badge' },
       { href: '/admin/groups', label: '身份组', icon: 'tag' },
       { href: '/admin/orgs', label: '公会与战队', icon: 'users' },
       { href: '/admin/servers', label: '联机大厅', icon: 'server' },
@@ -53,6 +54,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
   {
     label: '站点',
     items: [
+      { href: '/admin/appearance', label: '外观样式', icon: 'palette' },
       { href: '/admin/settings/site', label: '站点与开关', icon: 'globe' },
       { href: '/admin/settings/nav', label: '导航', icon: 'compass' },
       { href: '/admin/settings/seo', label: 'SEO 与分享', icon: 'search' },
@@ -99,6 +101,8 @@ const ICONS = {
   compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M15.5 8.5l-2 5-5 2 2-5z',
   search: 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13M15.5 15.5 21 21',
   key: 'M15 8a4 4 0 1 0-3.6 3.97L9 14.4l-1.6-1.6L6 14.2l1.6 1.6L6 17.4 7.6 19l1.6-1.6L10.8 19l1.4-1.4-1.6-1.6 2-2A4 4 0 0 0 15 8',
+  badge: 'M12 3l2.4 1.8 3 .2.9 2.9 2.1 2.1-1.5 2.6.3 3-2.8 1.2L14.6 19 12 18l-2.6 1-1.8-2.2-2.8-1.2.3-3L3.6 10l2.1-2.1.9-2.9 3-.2z',
+  palette: 'M12 21a9 9 0 1 1 9-9c0 2.2-1.8 3-3.4 3H16a2 2 0 0 0-1.4 3.4c.5.6.2 1.6-.6 1.9-.6.5-1.3.7-2 .7M7.5 10.5h.01M10 7.5h.01M14 7.5h.01M16.5 10.5h.01',
 } as const;
 
 function Icon({ d }: { d: string }) {

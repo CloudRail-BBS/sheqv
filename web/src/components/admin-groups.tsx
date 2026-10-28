@@ -7,6 +7,8 @@ interface Group {
   name: string;
   slug: string;
   color: string;
+  style?: string;
+  effect?: string;
   description: string;
   weight: number;
   isDefault: boolean;
@@ -30,6 +32,8 @@ const EMPTY = {
   name: '',
   slug: '',
   color: '#3e7cff',
+  style: 'soft',
+  effect: '',
   description: '',
   weight: 10,
   isDefault: false,
@@ -38,6 +42,19 @@ const EMPTY = {
 };
 
 type Draft = typeof EMPTY;
+
+const GROUP_STYLES = [
+  { key: 'soft', label: '淡底（默认）' },
+  { key: 'solid', label: '实心' },
+  { key: 'outline', label: '描边' },
+  { key: 'glow', label: '淡底 + 光晕' },
+];
+
+const GROUP_EFFECTS = [
+  { key: '', label: '无' },
+  { key: 'shine', label: '扫光' },
+  { key: 'pulse', label: '呼吸' },
+];
 
 function toggle(list: string[], key: string): string[] {
   return list.includes(key) ? list.filter((k) => k !== key) : [...list, key];
@@ -77,6 +94,8 @@ export function AdminGroups() {
       name: draft.name,
       slug: draft.slug,
       color: draft.color,
+      style: draft.style,
+      effect: draft.effect,
       description: draft.description,
       weight: draft.weight,
       isDefault: draft.isDefault,
@@ -122,6 +141,8 @@ export function AdminGroups() {
       name: g.name,
       slug: g.slug,
       color: g.color || '#3e7cff',
+      style: g.style || 'soft',
+      effect: g.effect || '',
       description: g.description ?? '',
       weight: g.weight,
       isDefault: g.isDefault,
@@ -267,6 +288,30 @@ export function AdminGroups() {
                 onChange={(e) => setDraft({ ...draft, color: e.target.value })}
                 placeholder="#3e7cff"
               />
+            </label>
+            <label className="field">
+              <span>外观</span>
+              <select
+                className="input"
+                value={draft.style}
+                onChange={(e) => setDraft({ ...draft, style: e.target.value })}
+              >
+                {GROUP_STYLES.map((s) => (
+                  <option key={s.key} value={s.key}>{s.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>特效</span>
+              <select
+                className="input"
+                value={draft.effect}
+                onChange={(e) => setDraft({ ...draft, effect: e.target.value })}
+              >
+                {GROUP_EFFECTS.map((e) => (
+                  <option key={e.key || 'none'} value={e.key}>{e.label}</option>
+                ))}
+              </select>
             </label>
             <label className="field" style={{ gridColumn: '1 / -1' }}>
               <span>说明（显示在公开的身份组页与个人中心）</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export interface AdminPostRow {
@@ -17,11 +17,23 @@ export interface AdminPostRow {
 
 const day = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 16).replace('T', ' ') : '—');
 
+interface Floor {
+  id: string;
+  floor: number;
+  author: string;
+  body: string;
+  at: number;
+  isHost: boolean;
+}
+
 export function AdminPosts({ items }: { items: AdminPostRow[] }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [floors, setFloors] = useState<Floor[]>([]);
+  const [loadingFloors, setLoadingFloors] = useState(false);
 
   const kw = q.trim().toLowerCase();
   const shown = kw
@@ -32,6 +44,40 @@ export function AdminPosts({ items }: { items: AdminPostRow[] }) {
           p.author.toLowerCase().includes(kw),
       )
     : items;
+
+  /** 展开某个帖子的楼层：前台是「楼主 1、回复从 2 起」，后台沿用同一套编号 */
+  async function toggleFloors(id: string) {
+    if (openId === id) {
+      setOpenId(null);
+      return;
+    }
+    setOpenId(id);
+    setFloors([]);
+    setLoadingFloors(true);
+    const res = await fetch(`/api/v1/admin/posts/${encodeURIComponent(id)}/floors`, {
+      cache: 'no-store',
+    }).catch(() => null);
+    setLoadingFloors(false);
+    if (!res?.ok) {
+      setErr('楼层读取失败');
+      return;
+    }
+    const data = (await res.json()) as { floors: Floor[] };
+    setFloors(data.floors ?? []);
+  }
+
+  async function removeComment(id: string) {
+    if (!window.confirm('删除这一楼？删除后楼层号会往前补。')) return;
+    const res = await fetch(`/api/v1/admin/comments/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }).catch(() => null);
+    if (!res?.ok) {
+      setErr('删除失败');
+      return;
+    }
+    if (openId) await toggleFloors(openId);
+    router.refresh();
+  }
 
   async function remove(id: string) {
     setBusyId(id);
@@ -75,7 +121,7 @@ export function AdminPosts({ items }: { items: AdminPostRow[] }) {
               <th className="num">赞</th>
               <th className="num">评</th>
               <th>时间</th>
-              <th style={{ width: 120 }}>操作</th>
+              <th style={{ width: 170 }}>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -87,7 +133,8 @@ export function AdminPosts({ items }: { items: AdminPostRow[] }) {
               </tr>
             ) : (
               shown.map((p) => (
-                <tr key={p.id}>
+                <Fragment key={p.id}>
+                <tr>
                   <td style={{ maxWidth: 380 }}>
                     <a href={p.href} className="adm-link" target="_blank" rel="noreferrer">
                       {p.title || p.body?.slice(0, 30) || '(无标题)'}
@@ -103,11 +150,54 @@ export function AdminPosts({ items }: { items: AdminPostRow[] }) {
                   <td className="num mono">{p.comments}</td>
                   <td className="mono small muted">{day(p.createdAt)}</td>
                   <td>
-                    <button className="btn btn-sm btn-ghost" disabled={busyId === p.id} onClick={() => remove(p.id)}>
-                      {busyId === p.id ? '删除中…' : '删除'}
-                    </button>
+                    <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost adm-mini"
+                        aria-expanded={openId === p.id}
+                        onClick={() => void toggleFloors(p.id)}
+                      >
+                        {openId === p.id ? '收起' : `楼层 ${p.comments + 1}`}
+                      </button>
+                      <button className="btn btn-sm btn-ghost adm-mini" disabled={busyId === p.id} onClick={() => remove(p.id)}>
+                        {busyId === p.id ? '删除中…' : '删除'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
+                {openId === p.id && (
+                  <tr>
+                    <td colSpan={6} style={{ background: 'var(--panel-2)', padding: 0 }}>
+                      {loadingFloors ? (
+                        <p className="small muted" style={{ padding: '12px 16px' }}>读取楼层中…</p>
+                      ) : (
+                        <div className="adm-floors">
+                          {floors.map((f) => (
+                            <div key={f.id} className="adm-floor" data-host={f.isHost}>
+                              <span className="adm-floor-no mono">#{f.floor}</span>
+                              <span className="adm-floor-author">
+                                {f.author}
+                                {f.isHost && <span className="badge badge-gold" style={{ marginLeft: 6 }}>楼主</span>}
+                              </span>
+                              <span className="adm-floor-body">{f.body}</span>
+                              <span className="small muted mono">{day(f.at)}</span>
+                              {!f.isHost && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-ghost adm-mini"
+                                  onClick={() => void removeComment(f.id)}
+                                >
+                                  删楼
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))
             )}
           </tbody>

@@ -8,11 +8,55 @@
  * 这个文件是纯函数 + 类型，客户端组件也能安全引用（不要在这里 import 服务端存储）。
  */
 
+/** 外观样式键；与 CSS 的 `[data-bs="…"]` 一一对应 */
+export type BadgeStyle =
+  | 'plain'
+  | 'blue'
+  | 'gold'
+  | 'violet'
+  | 'mint'
+  | 'solid'
+  | 'outline'
+  | 'holo';
+
+/** 特效键；空串表示无动效 */
+export type BadgeEffect = '' | 'shine' | 'glow' | 'pulse';
+
+export const BADGE_STYLES: { key: BadgeStyle; label: string }[] = [
+  { key: 'plain', label: '中性' },
+  { key: 'blue', label: '品牌蓝' },
+  { key: 'gold', label: '暖金' },
+  { key: 'violet', label: '紫罗兰' },
+  { key: 'mint', label: '薄荷绿' },
+  { key: 'solid', label: '实心反色' },
+  { key: 'outline', label: '描边' },
+  { key: 'holo', label: '流光渐变' },
+];
+
+export const BADGE_EFFECTS: { key: BadgeEffect; label: string }[] = [
+  { key: '', label: '无' },
+  { key: 'shine', label: '扫光' },
+  { key: 'glow', label: '光晕' },
+  { key: 'pulse', label: '呼吸' },
+];
+
+export function isBadgeStyle(v: unknown): v is BadgeStyle {
+  return typeof v === 'string' && BADGE_STYLES.some((s) => s.key === v);
+}
+
+export function isBadgeEffect(v: unknown): v is BadgeEffect {
+  return typeof v === 'string' && BADGE_EFFECTS.some((s) => s.key === v);
+}
+
 export interface BadgeInfo {
   /** 展示文案，2–8 字 */
   label: string;
-  /** 管理员标识：决定样式（暖金）与保留字豁免 */
+  /** 管理员标识：决定默认样式（实心）与保留字豁免 */
   admin?: boolean;
+  /** 后台审核时定的样式；空则由 admin / 默认推导 */
+  style?: string;
+  /** 特效 */
+  effect?: string;
 }
 
 /** key 形如 `id:u123` 或 `name:风蚀`，方便老数据（只有昵称）也能命中 */
@@ -67,11 +111,21 @@ export function normalizeTitle(raw: unknown, isAdmin: boolean): TitleCheck {
 }
 
 /** 计算某个用户的徽标；普通用户没设头衔时返回 null（不占位） */
-export function badgeOf(user: { role: string; title?: string }): BadgeInfo | null {
+export function badgeOf(user: {
+  role: string;
+  title?: string;
+  titleStyle?: string;
+  titleEffect?: string;
+}): BadgeInfo | null {
   const admin = user.role === 'admin';
   const label = (user.title ?? '').trim() || (admin ? ADMIN_LABEL : '');
   if (!label) return null;
-  return admin ? { label, admin: true } : { label };
+  return {
+    label,
+    admin,
+    style: user.titleStyle || undefined,
+    effect: user.titleEffect || undefined,
+  };
 }
 
 /** 从徽标表里取：优先按 id，其次按昵称（兼容早期没有 authorId 的帖子） */

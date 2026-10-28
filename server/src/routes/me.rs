@@ -206,15 +206,13 @@ pub async fn patch_me(
 
     let mut updated = None;
 
-    if let Some(title) = obj.get("title") {
-        // 非字符串一律当空处理：与 Node 版 `typeof raw === 'string' ? raw : ''` 一致
-        let raw = title.as_str().unwrap_or("");
-        let clean = users::normalize_title(raw, user.is_admin).map_err(|msg| {
-            ApiError::with_message(StatusCode::UNPROCESSABLE_ENTITY, "invalid_title", msg)
-        })?;
-        updated = users::set_title(&st.pool, &user.id, Some(clean.as_str()))
-            .await
-            .map_err(ApiError::internal)?;
+    if obj.contains_key("title") {
+        // 头衔改成申请制：这里只负责拒绝，真正的入口是 /api/v1/me/title-requests
+        return Err(ApiError::with_message(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "title_requires_review",
+            "头衔需要申请并由管理员审核，请在「我的 → 头衔」里提交申请",
+        ));
     }
 
     let media_url_ok = |raw: &str| {

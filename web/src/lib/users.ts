@@ -18,6 +18,10 @@ export interface UserGroup {
   name: string;
   slug: string;
   color: string;
+  /** 外观：soft / solid / outline / glow（后台可改） */
+  style?: string;
+  /** 特效：'' / shine / glow / pulse */
+  effect?: string;
 }
 
 export interface PublicUser {
@@ -32,6 +36,9 @@ export interface PublicUser {
   notifReadAt?: number;
   banned?: boolean;
   title?: string;
+  /** 头衔外观（后台审核时定），空则用默认样式 */
+  titleStyle?: string;
+  titleEffect?: string;
   /** 身份组 id（未分组时不返回） */
   groupId?: string;
   /** 身份组的名字与颜色（未分组时不返回） */

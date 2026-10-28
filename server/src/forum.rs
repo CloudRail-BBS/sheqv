@@ -326,6 +326,16 @@ pub async fn like(pool: &PgPool, post_id: &str) -> Result<Option<i64>, sqlx::Err
     Ok(likes.map(|v| v as i64))
 }
 
+/// 后台删一条评论（楼层）。评论删除后楼层号会重排，这是预期行为：
+/// 楼层是「当前第几楼」，不是永久编号。
+pub async fn delete_comment(pool: &PgPool, comment_id: &str) -> Result<bool, sqlx::Error> {
+    let done = sqlx::query("DELETE FROM comments WHERE id = $1")
+        .bind(comment_id)
+        .execute(pool)
+        .await?;
+    Ok(done.rows_affected() > 0)
+}
+
 pub async fn delete(pool: &PgPool, post_id: &str) -> Result<bool, sqlx::Error> {
     let affected = sqlx::query("DELETE FROM posts WHERE id = $1")
         .bind(post_id)

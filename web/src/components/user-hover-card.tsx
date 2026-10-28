@@ -6,8 +6,7 @@ import { initialOf } from '@/lib/initials';
 import { createPortal } from 'react-dom';
 import type { BadgeInfo } from '@/lib/badges';
 import type { PublicUser, UserGroup } from '@/lib/users';
-import { UserBadge } from './user-badge';
-import { GroupTag } from './group-tag';
+import { NameBadges } from './name-badges';
 
 /**
  * 作者悬停卡片：鼠标停留 180ms 后展示公开资料。
@@ -152,7 +151,7 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
               <div style={{ minWidth: 0 }}>
                 <div className="uhc-name">
                   {shownName}
-                  <UserBadge badge={badge} size="sm" />
+                  <NameBadges badge={badge} group={shownGroup} size="sm" />
                 </div>
                 <div className="uhc-handle">@{shown?.username || 'user'}</div>
               </div>
@@ -179,7 +178,6 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
 
             {(shownGroup || shown?.developer || shown?.title) && (
               <div className="uhc-tags">
-                {shownGroup && <GroupTag group={shownGroup} size="sm" />}
                 {shown?.developer && <span className="dev-chip">开发者</span>}
                 {shown?.title && <span className="badge badge-ghost">{shown.title}</span>}
               </div>

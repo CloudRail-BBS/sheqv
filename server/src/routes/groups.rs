@@ -12,6 +12,23 @@ use serde_json::{Map, Value, json};
 use crate::admin_auth::AdminActor;
 use crate::errors::{ApiError, ApiResult};
 use crate::groups::{self, GroupError, GroupPatch, NewGroup};
+
+/// 身份组外观：与前端 `.gtag[data-gs=…]` 对应
+pub const GROUP_STYLES: [&str; 4] = ["soft", "solid", "outline", "glow"];
+
+fn style_or(obj: &serde_json::Map<String, serde_json::Value>, fallback: &str) -> String {
+    let raw = obj
+        .get("style")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if GROUP_STYLES.contains(&raw.as_str()) {
+        raw
+    } else {
+        fallback.to_string()
+    }
+}
 use crate::state::AppState;
 use crate::{agreements, users};
 
@@ -87,6 +104,8 @@ pub async fn create(State(st): State<AppState>, _: AdminActor, body: Bytes) -> A
             name: &text(&obj, "name"),
             slug: &text(&obj, "slug"),
             color: &text(&obj, "color"),
+            style: &style_or(&obj, "soft"),
+            effect: &text(&obj, "effect"),
             description: &text(&obj, "description"),
             weight: obj.get("weight").and_then(|v| v.as_i64()).unwrap_or(10) as i32,
             is_default: obj
@@ -125,6 +144,11 @@ pub async fn patch(
             name: obj.get("name").and_then(|v| v.as_str()).map(str::to_string),
             color: obj
                 .get("color")
+                .and_then(|v| v.as_str())
+                .map(str::to_string),
+            style: obj.get("style").and_then(|v| v.as_str()).map(str::to_string),
+            effect: obj
+                .get("effect")
                 .and_then(|v| v.as_str())
                 .map(str::to_string),
             description: obj
@@ -230,6 +254,8 @@ pub async fn public_list(State(st): State<AppState>) -> ApiResult<Response> {
                 "name": g.name,
                 "slug": g.slug,
                 "color": g.color,
+                "style": g.style,
+                "effect": g.effect,
                 "description": g.description,
                 "weight": g.weight,
                 "isDefault": g.is_default,

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
-import { getNotifications, timeAgo } from '@/lib/notifications';
+import { getNotifications, noteKindLabel, noteKindTone, timeAgo } from '@/lib/notifications';
 import { MarkAllRead } from '@/components/notification-bell';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export default async function NotificationsPage() {
           <div>
             <h1 className="page-title">通知</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              评论、待确认与争议都会在这里；Web 无系统推送。顶栏铃铛可以直接快速查看。
+              评论、礼品卡到账、审核结果都会在这里；顶栏铃铛可以直接快速查看。
             </p>
           </div>
           <div className="row" style={{ gap: 8 }}>
@@ -56,12 +56,12 @@ export default async function NotificationsPage() {
 
         <div className="card" style={{ overflow: 'hidden' }}>
           <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
-            <h3 style={{ fontSize: 13 }}>评论</h3>
+            <h3 style={{ fontSize: 13 }}>通知</h3>
             <span className="badge">{feed.comments.length} 条</span>
           </div>
           {feed.comments.length === 0 ? (
             <p className="small muted" style={{ padding: '18px 16px' }}>
-              还没有新评论。去社区发个帖子试试。
+              还没有通知。有人评论你的帖子、给你发礼品卡或审核通过时会出现。
             </p>
           ) : (
             feed.comments.map((n) => (
@@ -72,8 +72,8 @@ export default async function NotificationsPage() {
                 data-unread={n.unread}
                 style={{ padding: '12px 16px' }}
               >
-                <span className={'badge ' + (n.unread ? 'badge-live' : 'badge-ghost')}>
-                  {n.unread ? '新' : '评论'}
+                <span className={'badge ' + (n.unread ? 'badge-live' : noteKindTone(n.kind))}>
+                  {n.unread ? '新' : noteKindLabel(n.kind)}
                 </span>
                 <span className="n-title" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {n.text}
@@ -91,7 +91,7 @@ export default async function NotificationsPage() {
         <div className="card rail-card">
           <div className="rail-title">未读怎么算</div>
           <p className="small muted" style={{ lineHeight: 1.75 }}>
-            只统计别人在你帖子下的评论；点「全部标为已读」后，此前的评论不再算未读。
+            评论按时间水位算未读，礼品卡与审核结果逐条记录；点「全部标为已读」会一起清掉。
             待确认比赛属于「待处理」，不随已读消失。
             {!user && ' 登录后未读状态会跟着账号走，换设备也一致。'}
           </p>

@@ -398,6 +398,21 @@ pub async fn create(pool: &PgPool, admin_id: Option<&str>, input: &NewCard<'_>) 
 
         out.push(row.into_view());
     }
+
+    // 礼品卡是「别人给你的」，必须落在站内信里，否则只有自己翻卡包才知道
+    if input.kind == "gift" {
+        if let Some(uid) = input.assigned_user_id {
+            let _ = crate::notifications::push(
+                pool,
+                uid,
+                "gift",
+                "收到一张礼品卡",
+                &format!("「{}」已放进你的卡包，去福利中心拆开看看。", input.title.trim()),
+                "/rewards",
+            )
+            .await;
+        }
+    }
     Ok(out)
 }
 
@@ -705,6 +720,19 @@ pub async fn draw(pool: &PgPool, user_id: &str) -> Result<DrawResult, RewardErro
     let balance = balance as i64;
 
     tx.commit().await?;
+
+    let won = prize_points > 0 || card_id.is_some() || !picked.kind.is_empty();
+    if won {
+        let body = if card_id.is_some() {
+            format!("抽中「{}」，奖品已放进卡包，去福利中心拆开。", picked.name)
+        } else if prize_points > 0 {
+            format!("抽中「{}」，+{} 积分已到账。", picked.name, prize_points)
+        } else {
+            format!("抽中「{}」。", picked.name)
+        };
+        let _ = crate::notifications::push(pool, user_id, "gift", "抽奖中奖", &body, "/rewards")
+            .await;
+    }
 
     Ok(DrawResult {
         prize_name: picked.name.clone(),

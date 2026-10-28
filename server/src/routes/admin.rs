@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 use axum::Json;
 use axum::body::Bytes;
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde_json::{Map, Value, json};
@@ -888,4 +888,72 @@ pub async fn set_developer(
         .ok_or_else(ApiError::not_found)?;
 
     Ok(Json(json!({ "ok": true, "user": updated })).into_response())
+}
+
+/* ── 帖子楼层 ─────────────────────────────
+   前台按「楼主 1、回复从 2 起」展示；后台审帖也要能看到同一套编号，
+   否则删掉某条回复说不清是哪一楼。 */
+
+/// GET /api/v1/admin/posts/{id}/floors
+pub async fn post_floors(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    let Some(post) = forum::get(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+
+    let mut floors = vec![json!({
+        "id": post.id,
+        "floor": 1,
+        "author": post.author,
+        "authorId": post.author_id,
+        "body": post.body,
+        "at": post.created_at,
+        "isHost": true,
+    })];
+    for c in &post.comments_list {
+        floors.push(json!({
+            "id": c.id,
+            "floor": c.floor,
+            "author": c.author,
+            "authorId": c.author_id,
+            "body": c.body,
+            "at": c.at,
+            "isHost": false,
+        }));
+    }
+
+    Ok(Json(json!({
+        "ok": true,
+        "post": {
+            "id": post.id,
+            "title": post.title,
+            "author": post.author,
+            "createdAt": post.created_at,
+            "likes": post.likes,
+            "comments": post.comments,
+        },
+        "floors": floors,
+    }))
+    .into_response())
+}
+
+/// DELETE /api/v1/admin/comments/{id}
+pub async fn delete_comment(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    if !forum::delete_comment(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        return Err(ApiError::not_found());
+    }
+    Ok(Json(json!({ "ok": true })).into_response())
 }

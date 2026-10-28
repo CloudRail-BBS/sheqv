@@ -523,11 +523,23 @@ pub async fn admin_entries(pool: &PgPool, id: &str) -> Result<Vec<EntryView>, sq
     Ok(rows.into_iter().map(EntryRow::into_view).collect())
 }
 
-pub async fn review_entry(pool: &PgPool, entry_id: &str, status: &str) -> Result<bool, sqlx::Error> {
-    let done = sqlx::query("UPDATE tournament_entries SET status = $2 WHERE id = $1")
-        .bind(entry_id)
-        .bind(status)
-        .execute(pool)
-        .await?;
-    Ok(done.rows_affected() > 0)
+/// 审核报名；返回 (报名者, 赛事标题) 供路由层发站内信
+pub async fn review_entry(
+    pool: &PgPool,
+    entry_id: &str,
+    status: &str,
+) -> Result<Option<(String, String)>, sqlx::Error> {
+    let row: Option<(String, String)> = sqlx::query_as(
+        "WITH upd AS (
+             UPDATE tournament_entries SET status = $2 WHERE id = $1
+             RETURNING user_id, tournament_id
+         )
+         SELECT upd.user_id, t.title
+           FROM upd JOIN tournaments t ON t.id = upd.tournament_id",
+    )
+    .bind(entry_id)
+    .bind(status)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
 }

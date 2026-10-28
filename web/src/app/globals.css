@@ -591,9 +591,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .badge[data-dot="pulse"]::before { animation: badgePulse 1.9s var(--ease) infinite; }
 
 /* 扫光：只给荣誉类徽章（置顶、主办、头衔），几秒扫一次，
-   不放在列表里成片闪。 */
-:is(.badge, .ut)[data-shine] { position: relative; overflow: hidden; }
-:is(.badge, .ut)[data-shine]::after {
+   不放在列表里成片闪。`data-shine` 是给 .badge 的旧写法，新代码用 data-be。 */
+:is(.badge, .ut, .gtag, .bz)[data-shine],
+:is(.ut, .gtag, .bz)[data-be="shine"] { position: relative; overflow: hidden; }
+:is(.badge, .ut, .gtag, .bz)[data-shine]::after,
+:is(.ut, .gtag, .bz)[data-be="shine"]::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.42) 46%, transparent 72%);
   transform: translateX(-130%);
@@ -616,7 +618,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 @media (prefers-reduced-motion: reduce) {
   .badge[data-dot="pulse"]::before,
-  :is(.badge, .ut)[data-shine]::after { animation: none; }
+  :is(.badge, .ut, .gtag, .bz)[data-shine]::after,
+  :is(.ut, .gtag, .bz)[data-be="shine"]::after,
+  :is(.ut, .gtag, .bz)[data-be="pulse"] { animation: none; }
   .badge[data-glow],
   .badge[data-glow]:hover { transition: none; transform: none; }
 }
@@ -1257,6 +1261,48 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 .title-edit .input { height: 34px; }
 
+/* ── 头衔申请 ───────────────────────────── */
+
+.title-request { display: flex; flex-direction: column; gap: 10px; }
+.title-current { display: flex; align-items: center; gap: 8px; }
+.title-current .ut { margin-left: 0; height: 20px; padding: 0 8px; font-size: 10.5px; }
+.title-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.title-pending { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.title-pending .ut { margin-left: 0; height: 20px; padding: 0 8px; font-size: 10.5px; }
+.title-note {
+  margin: 0; padding: 7px 10px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  font-size: 11.5px; color: var(--text-2); line-height: 1.7;
+}
+.title-form {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel-2);
+}
+.title-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.title-swatch {
+  display: inline-flex; padding: 4px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+}
+.title-swatch:hover { background: var(--panel); }
+.title-swatch[data-on="true"] { border-color: var(--blue-line); background: var(--blue-soft); }
+.title-swatch .ut { margin-left: 0; }
+.title-effects { display: flex; flex-wrap: wrap; gap: 6px; }
+.title-preview-line { display: flex; align-items: center; gap: 8px; }
+.title-preview-line .ut { margin-left: 0; }
+.title-history {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.title-history li {
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 4px; font-size: 12px;
+}
+.title-history li + li { border-top: 1px solid var(--line-soft); }
+.title-history-name { font-weight: 600; color: var(--text-2); }
+.title-history li .small { margin-left: auto; }
+
+
 
 /* ── 登录 / 注册 ─────────────────────────── */
 
@@ -1819,6 +1865,41 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .gtag[data-size="sm"] { height: 15px; font-size: 9.5px; padding: 0 5px; margin-left: 5px; }
 .gtag i { width: 5px; height: 5px; border-radius: 50%; flex: none; }
+
+/* ── 外观样式（头衔 / 身份组 / 徽章共用） ─────────────
+   颜色只在 `data-bs` 上映射一次，`.ut` 与 `.bz` 直接吃变量；
+   身份组的颜色是后台自填的，所以在组件里算 inline style，不走这套调色板。
+   特效与样式正交：`data-be` 决定扫光 / 光晕 / 呼吸，换色不影响动效。 */
+
+[data-bs] { --bs-fg: var(--text-2); --bs-bg: var(--panel-2); --bs-bd: var(--line); }
+[data-bs="blue"] { --bs-fg: var(--blue); --bs-bg: var(--blue-soft); --bs-bd: var(--blue-line); }
+[data-bs="gold"] { --bs-fg: var(--gold); --bs-bg: var(--gold-soft); --bs-bd: var(--gold-line); }
+[data-bs="violet"] { --bs-fg: var(--violet); --bs-bg: var(--violet-soft); --bs-bd: var(--violet-line); }
+[data-bs="mint"] { --bs-fg: var(--ok); --bs-bg: var(--ok-soft); --bs-bd: var(--ok-line); }
+[data-bs="solid"] { --bs-fg: var(--panel); --bs-bg: var(--text); --bs-bd: var(--text); }
+[data-bs="outline"] { --bs-fg: var(--text-2); --bs-bg: transparent; --bs-bd: var(--line-strong); }
+[data-bs="holo"] {
+  --bs-fg: #ffffff;
+  --bs-bg: linear-gradient(100deg, var(--blue), var(--violet));
+  --bs-bd: transparent;
+}
+
+.ut[data-bs],
+.bz[data-bs] {
+  color: var(--bs-fg);
+  background: var(--bs-bg);
+  border: 1px solid var(--bs-bd);
+}
+
+:is(.ut, .gtag, .bz)[data-be="glow"] {
+  box-shadow: 0 0 0 1px var(--bs-bd, transparent), 0 6px 16px -9px currentColor;
+}
+:is(.ut, .gtag, .bz)[data-be="pulse"] { animation: badgeBreathe 3.2s var(--ease) infinite; }
+
+@keyframes badgeBreathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
 
 /* 顶栏空间紧：窄屏只留积分与头像，组名回个人页看 */
 @media (max-width: 1180px) {
@@ -4724,6 +4805,65 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 .tn-cert-tab:hover { color: var(--text); }
 .tn-cert-tab[data-on="true"] { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+
+/* 后台：帖子楼层 */
+.adm-floors { display: flex; flex-direction: column; }
+.adm-floor {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; border-top: 1px solid var(--line-soft); font-size: 12px;
+}
+.adm-floor:first-child { border-top: 0; }
+.adm-floor[data-host="true"] { background: var(--panel); }
+.adm-floor-no { width: 34px; flex: none; font-size: 11px; color: var(--text-3); }
+.adm-floor-author {
+  flex: none; width: 120px; font-weight: 600; color: var(--text-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center;
+}
+.adm-floor-body {
+  flex: 1; min-width: 0; color: var(--text-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.adm-floor .btn { flex: none; }
+@media (max-width: 700px) {
+  .adm-floor { flex-wrap: wrap; }
+  .adm-floor-body { flex: 1 1 100%; order: 3; white-space: normal; }
+}
+
+/* 后台：头衔审核 */
+.title-review { display: flex; flex-direction: column; gap: 10px; }
+.title-review-row { padding: 12px 14px; }
+.title-review-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.title-review-head .ut { margin-left: 0; }
+.title-review-reason {
+  margin: 8px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-2);
+}
+.title-review-controls {
+  display: grid; grid-template-columns: 160px 160px minmax(0, 1fr);
+  gap: 8px; margin-top: 10px;
+}
+@media (max-width: 860px) {
+  .title-review-controls { grid-template-columns: 1fr 1fr; }
+}
+
+/* 后台：徽章外观 */
+.badge-style-list { display: flex; flex-direction: column; }
+.badge-style-row {
+  display: grid; grid-template-columns: 110px minmax(0, 1fr) 132px 104px;
+  gap: 10px; align-items: center;
+  padding: 8px 0; border-top: 1px solid var(--line-soft);
+}
+.badge-style-row:first-child { border-top: 0; }
+.badge-style-row .bz { margin-left: 0; justify-self: start; }
+.badge-style-desc {
+  font-size: 11.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.badge-style-row .input { height: 30px; }
+@media (max-width: 860px) {
+  .badge-style-row { grid-template-columns: 1fr 1fr; }
+  .badge-style-desc { display: none; }
+}
 
 /* 后台报名审核 */
 .tn-admin-entries { display: flex; flex-direction: column; }

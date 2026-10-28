@@ -67,6 +67,9 @@ pub struct UserRow {
     pub created_at: DateTime<Utc>,
     pub banned: bool,
     pub title: Option<String>,
+    /// 头衔外观（枚举值，具体色值在 CSS）
+    pub title_style: String,
+    pub title_effect: String,
     pub badges: Value,
     pub notif_read_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
@@ -76,6 +79,8 @@ pub struct UserRow {
     pub group_name: Option<String>,
     pub group_color: Option<String>,
     pub group_slug: Option<String>,
+    pub group_style: Option<String>,
+    pub group_effect: Option<String>,
     /// 开发者身份：首次发布资源时写入
     pub developer_at: Option<DateTime<Utc>>,
     /// 个人主页背景图（空表示用默认渐变）
@@ -84,20 +89,24 @@ pub struct UserRow {
     pub avatar: String,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
+const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
 
 /// 读用户时统一带出组的展示信息。
 /// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
 const SELECT_USER: &str = "SELECT u.id, u.username, u.nickname, u.password_hash, u.email, u.role,
-        u.created_at, u.banned, u.title, u.badges, u.notif_read_at, u.last_login_at, u.group_id,
+        u.created_at, u.banned, u.title, u.title_style, u.title_effect, u.badges,
+        u.notif_read_at, u.last_login_at, u.group_id,
         u.developer_at, u.profile_bg, u.avatar,
-        g.name AS group_name, g.color AS group_color, g.slug AS group_slug
+        g.name AS group_name, g.color AS group_color, g.slug AS group_slug,
+        g.style AS group_style, g.effect AS group_effect
    FROM users u LEFT JOIN groups g ON g.id = u.group_id";
 
 /// UPDATE ... RETURNING 不能 JOIN，用标量子查询补同样的字段
 const RETURNING_GROUP: &str = "(SELECT name FROM groups WHERE id = users.group_id) AS group_name,
         (SELECT color FROM groups WHERE id = users.group_id) AS group_color,
-        (SELECT slug FROM groups WHERE id = users.group_id) AS group_slug";
+        (SELECT slug FROM groups WHERE id = users.group_id) AS group_slug,
+        (SELECT style FROM groups WHERE id = users.group_id) AS group_style,
+        (SELECT effect FROM groups WHERE id = users.group_id) AS group_effect";
 
 /// 对外暴露的用户信息（不含哈希）
 #[derive(Debug, Clone, Serialize)]
@@ -115,6 +124,11 @@ pub struct PublicUser {
     pub banned: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// 头衔外观：样式键与特效键（空 = 默认蓝）
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub title_style: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub title_effect: String,
     /// 身份组 id（公开接口只透传 id，具体权限永远在后端判）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_id: Option<String>,
@@ -152,6 +166,11 @@ pub struct GroupTag {
     pub name: String,
     pub slug: String,
     pub color: String,
+    /// 外观（soft / solid / outline / glow）与特效，后台可改
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub style: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub effect: String,
 }
 
 impl UserRow {
@@ -163,6 +182,8 @@ impl UserRow {
                 name: name.clone(),
                 slug: self.group_slug.clone().unwrap_or_default(),
                 color: self.group_color.clone().unwrap_or_default(),
+                style: self.group_style.clone().unwrap_or_default(),
+                effect: self.group_effect.clone().unwrap_or_default(),
             }),
             _ => None,
         }
@@ -186,6 +207,8 @@ impl UserRow {
             notif_read_at: self.notif_read_at.map(|t| t.timestamp_millis()),
             banned: self.banned,
             title: self.title.clone(),
+            title_style: self.title_style.clone(),
+            title_effect: self.title_effect.clone(),
             group_id: self.group_id.clone(),
             group: self.group_tag(),
             email: self.email.clone(),
@@ -518,7 +541,29 @@ pub async fn touch_login(pool: &PgPool, id: &str) {
         .await;
 }
 
-/// 改头衔。`None` 表示清除（回落角色默认文案）。
+/// 审核通过后写入头衔与外观。空头衔等同于清除。
+pub async fn set_title_styled(
+    pool: &PgPool,
+    id: &str,
+    title: &str,
+    style: &str,
+    effect: &str,
+) -> Result<Option<PublicUser>, sqlx::Error> {
+    let clean = title.trim();
+    let updated = sqlx::query_as::<_, UserRow>(&format!(
+        "UPDATE users SET title = $2, title_style = $3, title_effect = $4
+          WHERE id = $1 RETURNING {COLUMNS}, {RETURNING_GROUP}"
+    ))
+    .bind(id)
+    .bind((!clean.is_empty()).then_some(clean))
+    .bind(style)
+    .bind(effect)
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated.map(|r| r.to_public()))
+}
+
+/// 改头衔。`None` 表示清除（回落角色默认文案）；外观保持不动。
 pub async fn set_title(
     pool: &PgPool,
     id: &str,

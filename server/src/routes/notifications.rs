@@ -52,6 +52,10 @@ pub async fn read(
             .await
             .map_err(ApiError::internal)?,
     };
+    // 业务通知按行标已读；评论仍走上面的时间水位
+    notifications::mark_all_read(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
 
     Ok(Json(json!({ "ok": true, "readAt": read_at })).into_response())
 }

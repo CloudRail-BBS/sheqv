@@ -1,7 +1,9 @@
-//! 站内信聚合：目前只有「别人在我的帖子下的评论」。
+//! 站内信：**两类合并**。
 //!
-//! 比赛相关的待处理提醒依赖 `MATCHES`（仍是前端 mock 数据），
-//! 等约战模块落到数据库时再补 `pending`，接口形状保持不变。
+//! 1. 业务事件（本文件 `push()` 写入 `notifications` 表）：礼品卡到账、头衔/报名/服务器审核结果等；
+//! 2. 互动聚合（评论）：仍然按 `users.notif_read_at` 水位算未读，不落行。
+//!
+//! 合成一条时间线返回，前端只认 `kind / title / text / href`，不区分来源。
 
 use chrono::{DateTime, Utc};
 use serde::Serialize;
@@ -13,12 +15,47 @@ use crate::users::PublicUser;
 #[serde(rename_all = "camelCase")]
 pub struct Note {
     pub id: String,
-    pub kind: &'static str,
+    pub kind: String,
     pub title: String,
     pub text: String,
     pub at: i64,
     pub href: String,
     pub unread: bool,
+}
+
+/// 写一条业务通知。调用方自己保证 user_id 存在（外键会兜底）。
+pub async fn push(
+    pool: &PgPool,
+    user_id: &str,
+    kind: &str,
+    title: &str,
+    body: &str,
+    href: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO notifications (id, user_id, kind, title, body, href)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+    )
+    .bind(crate::ids::next('n'))
+    .bind(user_id)
+    .bind(kind)
+    .bind(title.trim())
+    .bind(body.trim())
+    .bind(href.trim())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// 把某个人的业务通知全部标为已读；返回影响行数
+pub async fn mark_all_read(pool: &PgPool, user_id: &str) -> Result<u64, sqlx::Error> {
+    let done = sqlx::query(
+        "UPDATE notifications SET read_at = now() WHERE user_id = $1 AND read_at IS NULL",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+    Ok(done.rows_affected())
 }
 
 #[derive(sqlx::FromRow)]
@@ -53,7 +90,7 @@ pub async fn feed(
     .await?;
 
     let mut unread = 0usize;
-    let items = rows
+    let mut items: Vec<Note> = rows
         .into_iter()
         .map(|r| {
             let at = r.created_at.timestamp_millis();
@@ -70,7 +107,7 @@ pub async fn feed(
             }
             Note {
                 id: r.id,
-                kind: "comment",
+                kind: "comment".to_string(),
                 text: format!("{} 评论了《{}》：{}", r.author, title, preview),
                 title: r.author,
                 at,
@@ -80,6 +117,38 @@ pub async fn feed(
         })
         .collect();
 
+    // 业务通知：与评论合并成一条时间线
+    let mut items = items;
+    if !viewer.is_empty() {
+        let rows: Vec<(String, String, String, String, String, Option<DateTime<Utc>>, DateTime<Utc>)> =
+            sqlx::query_as(
+                "SELECT id, kind, title, body, href, read_at, created_at
+                   FROM notifications WHERE user_id = $1
+                  ORDER BY created_at DESC LIMIT 30",
+            )
+            .bind(&viewer)
+            .fetch_all(pool)
+            .await?;
+
+        for (id, kind, title, body, href, read_at, created_at) in rows {
+            let is_unread = read_at.is_none();
+            if is_unread {
+                unread += 1;
+            }
+            items.push(Note {
+                id,
+                kind,
+                title,
+                text: body,
+                at: created_at.timestamp_millis(),
+                href,
+                unread: is_unread,
+            });
+        }
+    }
+
+    items.sort_by(|a, b| b.at.cmp(&a.at));
+    items.truncate(30);
     Ok((items, unread))
 }
 

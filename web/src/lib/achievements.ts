@@ -12,6 +12,9 @@ export interface Achievement {
   name: string;
   desc: string;
   tone: BadgeTone;
+  /** 后台设置的外观（空 = 用 tone 推导） */
+  style?: string;
+  effect?: string;
 }
 
 export interface EarnedBadge extends Achievement {

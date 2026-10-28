@@ -443,6 +443,25 @@ pub async fn admin_patch(
         .map_err(server_err)?
         .ok_or_else(ApiError::not_found)?;
 
+    // 审核结果要能让提交者知道，否则只能自己去「我的提交」里翻
+    let reviewed = patch.status.as_deref().filter(|s| *s != "pending");
+    if let Some(next) = reviewed {
+        let title = if next == "approved" {
+            "服务器已通过审核"
+        } else {
+            "服务器未通过审核"
+        };
+        let body = if next == "approved" {
+            format!("「{}」已出现在联机大厅，探测会自动开始。", item.name)
+        } else {
+            format!("「{}」这次没有通过，可以改完再提交。", item.name)
+        };
+        if let Some(owner) = item.owner_id.as_deref() {
+            let _ = crate::notifications::push(&st.pool, owner, "server", title, &body, "/servers")
+                .await;
+        }
+    }
+
     Ok(Json(json!({ "ok": true, "item": item })).into_response())
 }
 

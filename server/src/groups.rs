@@ -48,6 +48,10 @@ pub struct Group {
     pub name: String,
     pub slug: String,
     pub color: String,
+    /// 外观：soft / solid / outline / glow
+    pub style: String,
+    /// 特效：空 / shine / glow
+    pub effect: String,
     /// 一句话说明「这个组是干什么的」，公开页与后台都用
     pub description: String,
     pub weight: i32,
@@ -65,6 +69,8 @@ struct Row {
     name: String,
     slug: String,
     color: String,
+    style: String,
+    effect: String,
     description: String,
     weight: i32,
     is_default: bool,
@@ -94,6 +100,8 @@ impl Row {
             name: self.name,
             slug: self.slug,
             color: self.color,
+            style: self.style,
+            effect: self.effect,
             description: self.description,
             weight: self.weight,
             is_default: self.is_default,
@@ -103,7 +111,8 @@ impl Row {
     }
 }
 
-const SELECT: &str = "SELECT g.id, g.name, g.slug, g.color, g.description, g.weight, g.is_default, g.is_builtin,
+const SELECT: &str = "SELECT g.id, g.name, g.slug, g.color, g.style, g.effect, g.description,
+            g.weight, g.is_default, g.is_builtin,
             g.permissions, g.required_agreements,
             (SELECT count(*) FROM users u WHERE u.group_id = g.id) AS member_count
        FROM groups g";
@@ -136,6 +145,8 @@ pub struct NewGroup<'a> {
     pub name: &'a str,
     pub slug: &'a str,
     pub color: &'a str,
+    pub style: &'a str,
+    pub effect: &'a str,
     pub description: &'a str,
     pub weight: i32,
     pub is_default: bool,
@@ -199,13 +210,16 @@ pub async fn create(pool: &PgPool, input: NewGroup<'_>) -> Result<Group, GroupEr
             .await?;
     }
     sqlx::query(
-        "INSERT INTO groups (id, name, slug, color, description, weight, is_default, is_builtin, permissions, required_agreements)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,false,$8,$9)",
+        "INSERT INTO groups (id, name, slug, color, style, effect, description, weight,
+                             is_default, is_builtin, permissions, required_agreements)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,false,$10,$11)",
     )
     .bind(&id)
     .bind(input.name.trim())
     .bind(input.slug.trim())
     .bind(input.color.trim())
+    .bind(input.style)
+    .bind(input.effect)
     .bind(input.description.trim())
     .bind(input.weight)
     .bind(input.is_default)
@@ -221,6 +235,8 @@ pub async fn create(pool: &PgPool, input: NewGroup<'_>) -> Result<Group, GroupEr
 pub struct GroupPatch {
     pub name: Option<String>,
     pub color: Option<String>,
+    pub style: Option<String>,
+    pub effect: Option<String>,
     pub description: Option<String>,
     pub weight: Option<i32>,
     pub is_default: Option<bool>,
@@ -250,13 +266,16 @@ pub async fn update(pool: &PgPool, id: &str, patch: GroupPatch) -> Result<Group,
             .await?;
     }
     sqlx::query(
-        "UPDATE groups SET name=$2, color=$3, description=$4, weight=$5, is_default=$6,
-                permissions=$7, required_agreements=$8, updated_at=now()
+        "UPDATE groups SET name=$2, color=$3, style=$4, effect=$5, description=$6,
+                weight=$7, is_default=$8, permissions=$9, required_agreements=$10,
+                updated_at=now()
           WHERE id=$1",
     )
     .bind(id)
     .bind(name.trim())
     .bind(patch.color.unwrap_or(current.color))
+    .bind(patch.style.unwrap_or(current.style))
+    .bind(patch.effect.unwrap_or(current.effect))
     .bind(patch.description.unwrap_or(current.description))
     .bind(patch.weight.unwrap_or(current.weight))
     .bind(patch.is_default.unwrap_or(current.is_default))

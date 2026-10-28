@@ -8,13 +8,35 @@ import type { PublicUser } from './users';
 
 export interface Note {
   id: string;
-  kind: 'comment' | 'match';
+  /** comment / gift / title / tournament / server / task / system … */
+  kind: string;
   title: string;
   text: string;
   at: number;
   href: string;
   unread: boolean;
   badge?: string;
+}
+
+/** 通知分类的短标签：列表左侧那枚小徽章 */
+export const NOTE_KIND_LABEL: Record<string, string> = {
+  comment: '评论',
+  gift: '礼品卡',
+  title: '头衔',
+  tournament: '赛事',
+  server: '联机',
+  task: '任务',
+  match: '约战',
+  system: '系统',
+};
+
+export function noteKindLabel(kind: string): string {
+  return NOTE_KIND_LABEL[kind] ?? '通知';
+}
+
+/** 业务通知用蓝色、评论用中性，一眼能分出「要我做事」和「有人回我」 */
+export function noteKindTone(kind: string): string {
+  return kind === 'comment' ? 'badge-ghost' : 'badge-live';
 }
 
 export interface NotificationFeed {

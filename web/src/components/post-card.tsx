@@ -7,8 +7,7 @@ import type { FeedItem } from '@/lib/data';
 import type { BadgeInfo } from '@/lib/badges';
 import type { EarnedBadge } from '@/lib/achievements';
 import type { UserGroup } from '@/lib/users';
-import { UserBadge } from './user-badge';
-import { GroupTag } from './group-tag';
+import { NameBadges } from './name-badges';
 import { AchievementChips } from './achievement-chips';
 import { UserHoverCard } from './user-hover-card';
 
@@ -67,8 +66,7 @@ export function PostCard({
             >
               <b>{item.author}</b>
             </UserHoverCard>
-            <UserBadge badge={badge} />
-            <GroupTag group={group} size="sm" />
+            <NameBadges badge={badge} group={group} size="sm" />
             <span className="sep">·</span>
             {item.guild}
             {item.pinned && <span className="post-pin">置顶</span>}

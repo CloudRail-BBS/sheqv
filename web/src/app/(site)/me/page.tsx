@@ -6,7 +6,8 @@ import { listPosts } from '@/lib/forum-store';
 import { listActive } from '@/lib/agreement-store';
 import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
-import { TitleEditor } from '@/components/title-editor';
+import { TitleRequestForm } from '@/components/title-request';
+import { listMyTitleRequests } from '@/lib/titles';
 import { UserBadge } from '@/components/user-badge';
 import { GroupTag } from '@/components/group-tag';
 import { ImageClearButton, ImageUploadButton } from '@/components/image-upload';
@@ -55,15 +56,17 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams] = await Promise.all([
-    listPosts(),
-    listActive(),
-    getAchievementState(user),
-    listPublicGroups(),
-    listOrgs('guild'),
-    listOrgs('team'),
-    listMyDevTeams(),
-  ]);
+  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests] =
+    await Promise.all([
+      listPosts(),
+      listActive(),
+      getAchievementState(user),
+      listPublicGroups(),
+      listOrgs('guild'),
+      listOrgs('team'),
+      listMyDevTeams(),
+      listMyTitleRequests(),
+    ]);
   const myGroup = groups.find((g) => g.id === user.group?.id);
   const myGuilds = allGuilds.filter((g) => g.ownerId === user.id);
   const myTeams = allTeams.filter((t) => t.ownerId === user.id);
@@ -231,7 +234,13 @@ export default async function MePage() {
             <h3 style={{ fontSize: 13 }}>头衔</h3>
             <span className="small muted">显示在帖子与评论的作者名后面</span>
           </div>
-          <TitleEditor current={user.title ?? ''} isAdmin={user.isAdmin} />
+          <TitleRequestForm
+            current={user.title ?? ''}
+            currentStyle={user.titleStyle}
+            currentEffect={user.titleEffect}
+            isAdmin={user.isAdmin}
+            requests={titleRequests}
+          />
         </div>
 
         <div className="card card-pad" style={{ marginTop: 12 }}>

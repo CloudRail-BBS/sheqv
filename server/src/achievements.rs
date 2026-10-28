@@ -72,16 +72,80 @@ pub const CATALOG: [Badge; 8] = [
     },
 ];
 
+/// 带外观的徽章。样式来自 `badge_styles`，没配就留空、前端回落到 `tone`。
+#[derive(Debug, Clone, Serialize)]
+pub struct StyledBadge {
+    #[serde(flatten)]
+    pub badge: Badge,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub style: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub effect: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct BadgeItem {
     #[serde(flatten)]
     pub badge: Badge,
     pub earned: bool,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub style: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub effect: String,
+}
+
+/// 后台配置的徽章外观：badge_id → (style, effect)
+pub async fn style_map(pool: &PgPool) -> Result<HashMap<String, (String, String)>, sqlx::Error> {
+    let rows: Vec<(String, String, String)> =
+        sqlx::query_as("SELECT badge_id, style, effect FROM badge_styles")
+            .fetch_all(pool)
+            .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(id, style, effect)| (id, (style, effect)))
+        .collect())
+}
+
+/// 写一个徽章的外观；样式与特效都为空表示删掉覆盖、恢复默认
+pub async fn set_style(
+    pool: &PgPool,
+    badge_id: &str,
+    style: &str,
+    effect: &str,
+) -> Result<(), sqlx::Error> {
+    if style.is_empty() && effect.is_empty() {
+        sqlx::query("DELETE FROM badge_styles WHERE badge_id = $1")
+            .bind(badge_id)
+            .execute(pool)
+            .await?;
+        return Ok(());
+    }
+    sqlx::query(
+        "INSERT INTO badge_styles (badge_id, style, effect, updated_at)
+         VALUES ($1, $2, $3, now())
+         ON CONFLICT (badge_id)
+         DO UPDATE SET style = $2, effect = $3, updated_at = now()",
+    )
+    .bind(badge_id)
+    .bind(style)
+    .bind(effect)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+fn style_one(b: Badge, map: &HashMap<String, (String, String)>) -> StyledBadge {
+    let (style, effect) = map.get(b.id).cloned().unwrap_or_default();
+    StyledBadge {
+        badge: b,
+        style,
+        effect,
+    }
 }
 
 #[derive(Debug, Serialize)]
 pub struct BadgeState {
-    pub earned: Vec<Badge>,
+    pub earned: Vec<StyledBadge>,
     pub all: Vec<BadgeItem>,
 }
 
@@ -102,8 +166,9 @@ struct Stats {
 }
 
 /// 全站一次读库，算出 `id:<uid>` 与 `name:<昵称>` 两种键（兼容早期只有昵称的数据）
-pub async fn map(pool: &PgPool) -> Result<HashMap<String, Vec<Badge>>, sqlx::Error> {
+pub async fn map(pool: &PgPool) -> Result<HashMap<String, Vec<StyledBadge>>, sqlx::Error> {
     let users = crate::users::list(pool).await?;
+    let styles = style_map(pool).await?;
 
     let post_rows: Vec<(String, i64, i64)> = sqlx::query_as(
         "SELECT author_id, count(*)::bigint, COALESCE(sum(like_count), 0)::bigint
@@ -150,15 +215,13 @@ pub async fn map(pool: &PgPool) -> Result<HashMap<String, Vec<Badge>>, sqlx::Err
         .map(|u| u.id.clone());
     let now = Utc::now().timestamp_millis();
 
-    let mut out: HashMap<String, Vec<Badge>> = HashMap::new();
+    let mut out: HashMap<String, Vec<StyledBadge>> = HashMap::new();
     for u in &users {
-        let earned = badges_of(
-            u,
-            stats.get(&u.id),
-            founder_id.as_deref(),
-            &sponsor_names,
-            now,
-        );
+        let earned: Vec<StyledBadge> =
+            badges_of(u, stats.get(&u.id), founder_id.as_deref(), &sponsor_names, now)
+                .into_iter()
+                .map(|b| style_one(b, &styles))
+                .collect();
         if earned.is_empty() {
             continue;
         }
@@ -221,14 +284,20 @@ pub async fn state(pool: &PgPool, user: &PublicUser) -> Result<BadgeState, sqlx:
         .cloned()
         .unwrap_or_default();
 
-    let ids: Vec<&str> = earned.iter().map(|b| b.id).collect();
+    let ids: Vec<&str> = earned.iter().map(|b| b.badge.id).collect();
+    let styles = style_map(pool).await?;
     Ok(BadgeState {
         all: CATALOG
             .iter()
             .cloned()
-            .map(|b| BadgeItem {
-                earned: ids.contains(&b.id),
-                badge: b,
+            .map(|b| {
+                let (style, effect) = styles.get(b.id).cloned().unwrap_or_default();
+                BadgeItem {
+                    earned: ids.contains(&b.id),
+                    badge: b,
+                    style,
+                    effect,
+                }
             })
             .collect(),
         earned,

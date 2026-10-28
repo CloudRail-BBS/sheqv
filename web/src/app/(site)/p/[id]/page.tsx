@@ -8,8 +8,7 @@ import { FloorReply } from '@/components/floor-reply';
 import { getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { getGroupMap, resolveGroup } from '@/lib/group-map';
-import { UserBadge } from '@/components/user-badge';
-import { GroupTag } from '@/components/group-tag';
+import { NameBadges } from '@/components/name-badges';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
 import { UserHoverCard } from '@/components/user-hover-card';
@@ -110,8 +109,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 <b>{post.author}</b>
               </UserHoverCard>
               <div className="floor-tags">
-                <UserBadge badge={op.badge} size="sm" />
-                <GroupTag group={op.group} size="sm" />
+                <NameBadges badge={op.badge} group={op.group} size="sm" />
               </div>
               <AchievementChips
                 badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
@@ -181,8 +179,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     <b>{c.author}</b>
                   </UserHoverCard>
                   <div className="floor-tags">
-                    <UserBadge badge={u.badge} size="sm" />
-                    <GroupTag group={u.group} size="sm" />
+                    <NameBadges badge={u.badge} group={u.group} size="sm" />
                   </div>
                 </div>
               </aside>
@@ -240,8 +237,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 >
                   <span>{post.author}</span>
                 </UserHoverCard>
-                <UserBadge badge={op.badge} size="sm" />
-                <GroupTag group={op.group} size="sm" />
+                <NameBadges badge={op.badge} group={op.group} size="sm" />
               </div>
               <div className="small muted">{post.guild}公会</div>
               <AchievementChips
