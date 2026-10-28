@@ -154,7 +154,7 @@ pub async fn admin_list(State(st): State<AppState>, _: AdminActor) -> ApiResult<
 /// POST /api/v1/admin/tournaments
 pub async fn admin_create(
     State(st): State<AppState>,
-    _: AdminActor,
+    actor: AdminActor,
     body: Bytes,
 ) -> ApiResult<Response> {
     let Some(obj) = parse_body(&body) else {
@@ -167,6 +167,7 @@ pub async fn admin_create(
     let body_text = text(&obj, "body");
     let cover = text(&obj, "cover");
     let prize = text(&obj, "prize");
+    let host_name = text(&obj, "hostName");
     let raw_status = text(&obj, "status");
     let status = if raw_status.is_empty() {
         "draft".to_string()
@@ -187,6 +188,7 @@ pub async fn admin_create(
         body: &body_text,
         cover: &cover,
         prize: &prize,
+        host_name: &host_name,
         status: &status,
         signup_start,
         signup_end,
@@ -197,7 +199,7 @@ pub async fn admin_create(
     if let Some(msg) = tournaments::validate(&input) {
         return Err(ApiError::invalid_input(msg));
     }
-    let id = tournaments::create(&st.pool, &input)
+    let id = tournaments::create(&st.pool, &input, actor.user_id())
         .await
         .map_err(ApiError::internal)?;
     let detail = tournaments::detail(&st.pool, &id, "")
@@ -238,6 +240,7 @@ pub async fn admin_patch(
     let body_text = pick("body", cur.tournament.body.as_deref().unwrap_or(""));
     let cover = pick("cover", &cur.tournament.cover);
     let prize = pick("prize", &cur.tournament.prize);
+    let host_name = pick("hostName", &cur.tournament.host_name);
     let status = pick("status", &cur.tournament.status);
     let max_entries = obj
         .get("maxEntries")
@@ -249,6 +252,15 @@ pub async fn admin_patch(
     let start_at = dt_field(&obj, "startAt")?;
     let end_at = dt_field(&obj, "endAt")?;
 
+    // 主办账号：缺省 = 不动；null/空串 = 清空；字符串 = 换人（不存在的 id 会被子查询落成 NULL）
+    let host_user_id = match obj.get("hostUserId") {
+        None => None,
+        Some(Value::Null) => Some(None),
+        Some(Value::String(s)) if s.trim().is_empty() => Some(None),
+        Some(Value::String(s)) => Some(Some(s.trim().to_string())),
+        _ => return Err(ApiError::invalid_input("hostUserId 不合法")),
+    };
+
     let check = TournamentInput {
         title: &title,
         game: &game,
@@ -257,6 +269,7 @@ pub async fn admin_patch(
         body: &body_text,
         cover: &cover,
         prize: &prize,
+        host_name: &host_name,
         status: &status,
         signup_start: signup_start.flatten(),
         signup_end: signup_end.flatten(),
@@ -273,6 +286,7 @@ pub async fn admin_patch(
         &id,
         &TournamentPatch {
             title: Some(&title),
+            host_name: Some(&host_name),
             game: Some(&game),
             mode: Some(&mode),
             summary: Some(&summary),
@@ -285,6 +299,7 @@ pub async fn admin_patch(
             start_at,
             end_at,
             max_entries: Some(max_entries),
+            host_user_id: host_user_id.as_ref().map(|v| v.as_deref()),
         },
     )
     .await

@@ -40,7 +40,7 @@ export default async function AnnouncementDetail({ params }: { params: Promise<{
         <article className="card card-pad an-detail">
           <div className="row" style={{ gap: 6 }}>
             <span className="badge">{item.kind}</span>
-            {item.pinned && <span className="badge badge-warn">置顶</span>}
+            {item.pinned && <span className="badge badge-gold" data-shine="">置顶</span>}
           </div>
           <h1 className="an-detail-title">{item.title}</h1>
           <div className="an-detail-meta mono">

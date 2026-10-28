@@ -20,6 +20,7 @@ export function MarkdownEditor({
   variant = 'default',
   leading,
   actions,
+  beforeFooter,
   maxLength,
 }: {
   value: string;
@@ -33,6 +34,8 @@ export function MarkdownEditor({
   leading?: ReactNode;
   /** 底部工具栏右侧（发帖时放取消/发布） */
   actions?: ReactNode;
+  /** 正文与底部工具栏之间（发布资源时放文件区） */
+  beforeFooter?: ReactNode;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -232,6 +235,7 @@ export function MarkdownEditor({
     return (
       <div className="md-editor md-composer-editor">
         {editor}
+        {beforeFooter}
         <div className="md-toolbar md-toolbar-bottom">
           {leading && <div className="md-leading">{leading}</div>}
           <div className="md-tools">{tools}</div>

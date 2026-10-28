@@ -25,6 +25,12 @@
   --blue-line: rgba(127, 176, 255, 0.34);
   --amber: #a1a1aa;
   --danger: #f87171;
+  --gold: #e8bf74;
+  --gold-soft: rgba(232, 191, 116, 0.13);
+  --gold-line: rgba(232, 191, 116, 0.32);
+  --violet: #b9a2ff;
+  --violet-soft: rgba(185, 162, 255, 0.13);
+  --violet-line: rgba(185, 162, 255, 0.30);
   --btn-bg: linear-gradient(180deg, #fafafa, #e4e4e7);
   --btn-bg-hover: linear-gradient(180deg, #ffffff, #ededf0);
   --btn-bd: #ffffff;
@@ -567,6 +573,54 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .badge-danger { color: var(--danger); border-color: var(--danger-line); background: var(--danger-soft); }
 .badge-ghost { background: transparent; }
 
+/* 语义扩展：金（荣誉/主办）、紫（开发者）、绿（通过/在线）、描边（弱化）、
+   实心（当前最重要的一条），大号（详情页页头用）。 */
+.badge-gold { color: var(--gold); border-color: var(--gold-line); background: var(--gold-soft); }
+.badge-violet { color: var(--violet); border-color: var(--violet-line); background: var(--violet-soft); }
+.badge-ok { color: var(--ok); border-color: var(--ok-line); background: var(--ok-soft); }
+.badge-outline { background: transparent; color: var(--text-2); border-style: dashed; }
+.badge-solid { background: var(--text); color: var(--panel); border-color: var(--text); font-weight: 600; }
+.badge-lg { height: 24px; padding: 0 9px; font-size: 11.5px; border-radius: 6px; }
+
+/* 状态点：`data-dot` 在文字前加一个同色圆点，`="pulse"` 让它缓慢呼吸。
+   用于「报名中 / 在线 / 直播中」这类会变的状态，比整块染色克制。 */
+.badge[data-dot]::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor; flex: none;
+}
+.badge[data-dot="pulse"]::before { animation: badgePulse 1.9s var(--ease) infinite; }
+
+/* 扫光：只给荣誉类徽章（置顶、主办、头衔），几秒扫一次，
+   不放在列表里成片闪。 */
+:is(.badge, .ut)[data-shine] { position: relative; overflow: hidden; }
+:is(.badge, .ut)[data-shine]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.42) 46%, transparent 72%);
+  transform: translateX(-130%);
+  animation: badgeShine 5.6s var(--ease) infinite;
+}
+/* 外发光：hover 时透出一层同色光晕，点击前先有反馈 */
+.badge[data-glow] {
+  box-shadow: 0 0 14px -7px currentColor;
+  transition: box-shadow 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.badge[data-glow]:hover { box-shadow: 0 0 16px -3px currentColor; transform: translateY(-1px); }
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.72); }
+}
+@keyframes badgeShine {
+  0%, 70% { transform: translateX(-130%); }
+  86%, 100% { transform: translateX(130%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge[data-dot="pulse"]::before,
+  :is(.badge, .ut)[data-shine]::after { animation: none; }
+  .badge[data-glow],
+  .badge[data-glow]:hover { transition: none; transform: none; }
+}
+
 .chip {
   display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 999px;
   font-size: 12px; color: var(--text-2); border: 1px solid var(--line); background: var(--panel);
@@ -1032,19 +1086,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 
 
-/* ── 管理后台 ───────────────────────────── */
-
-.admin-nav {
-  display: flex; gap: 4px; margin: 14px 0; padding: 3px;
-  border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
-  width: fit-content; max-width: 100%; overflow-x: auto;
-}
-.admin-tab {
-  padding: 6px 14px; border-radius: 7px; font-size: 12.5px; color: var(--muted);
-  white-space: nowrap; transition: background 0.14s, color 0.14s;
-}
-.admin-tab:hover { color: var(--text); }
-.admin-tab[data-active="true"] { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+/* ── 管理后台 ─────────────────────────────
+   导航只有控制台侧栏一套（见「后台控制台外壳」），这里只留内容块样式。 */
 
 .adm-stat { padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
 .adm-stat b { font-size: 20px; font-family: ui-monospace, monospace; letter-spacing: -0.02em; }
@@ -2623,6 +2666,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --blue-line: rgba(62, 124, 255, 0.26);
   --amber: #6b7688;
   --danger: #dc2626;
+  --gold: #8a6100;
+  --gold-soft: rgba(201, 150, 40, 0.12);
+  --gold-line: rgba(201, 150, 40, 0.30);
+  --violet: #6d4fd0;
+  --violet-soft: rgba(109, 79, 208, 0.10);
+  --violet-line: rgba(109, 79, 208, 0.24);
   /* 主按钮改为蓝色渐变，与参考站的「登录控制台」按钮同款 */
   --btn-bg: linear-gradient(180deg, #5b8dff, #3e7cff);
   --btn-bg-hover: linear-gradient(180deg, #6d9aff, #4b86ff);
@@ -2938,10 +2987,30 @@ body:has(.auth-page) .app {
 
 .composer-panel {
   width: min(880px, 94vw);
+  height: min(88vh, 920px);
   max-height: min(88vh, 920px);
   padding: 0;
   overflow: auto;
+  /* 纵向弹性：头部/元信息/标题/折叠带固定，正文区吃掉剩余高度，
+     这样在 768px 高的窗口里底部工具栏也不会被挤出可视区。 */
+  display: flex;
+  flex-direction: column;
 }
+.composer-panel-head,
+.composer-meta,
+.composer-title-input,
+.composer-sub-input,
+.composer-strip,
+.composer-strip-body,
+.composer-panel .md-toolbar-bottom { flex: none; }
+.composer-panel .md-composer-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.composer-panel .md-composer-editor .md-input { flex: 1 1 auto; min-height: 140px; }
+.composer-panel .md-composer-editor .md-preview { flex: 1 1 auto; min-height: 140px; overflow: auto; }
 .composer-panel.is-expanded {
   width: min(1080px, 96vw);
   height: min(92vh, 1000px);
@@ -2959,6 +3028,7 @@ body:has(.auth-page) .app {
   background: var(--panel-2); border: 1px solid var(--line);
   color: var(--text-2); font-size: 15px;
 }
+.composer-head-icon svg { width: 15px; height: 15px; }
 .composer-head-title { font-size: 14px; font-weight: 650; color: var(--text); }
 .composer-head-sub { margin-top: 2px; font-size: 10.5px; color: var(--muted); }
 .composer-head-actions { display: flex; align-items: center; gap: 2px; }
@@ -3001,17 +3071,24 @@ body:has(.auth-page) .app {
   font-family: inherit; font-size: 19px; font-weight: 600;
   letter-spacing: -0.015em; outline: none;
 }
-.composer-title-input::placeholder { color: var(--muted); font-weight: 500; }
+/* 占位符只是提示，不该和真正写下的标题一样重：
+   降一档字号、回到常规字重、用第三级文字色，敲下第一个字就能看出「变实了」。 */
+.composer-title-input::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0;
+}
 
 .composer-panel .md-composer-editor {
   border: 0; border-radius: 0; background: transparent;
 }
 .composer-panel .md-composer-editor .md-input {
-  min-height: 300px; padding: 16px 18px;
+  min-height: 140px; padding: 16px 18px;
   font-size: 14px; line-height: 1.85;
 }
 .composer-panel .md-composer-editor .md-preview {
-  min-height: 300px; max-height: none; padding: 16px 18px;
+  min-height: 140px; max-height: none; padding: 16px 18px;
 }
 .composer-panel .md-toolbar-bottom {
   border-top: 1px solid var(--line); border-bottom: 0;
@@ -3115,65 +3192,114 @@ body:has(.auth-page) .app {
 .composer-panel .md-preview .md-body h1 { font-size: 23px; }
 .composer-panel .md-preview .md-body h2 { font-size: 19px; }
 
-/* 资源发布弹窗：与发帖共用外壳，补资源字段区 */
-.res-upload-line {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 7px;
+/* 资源发布弹窗：与发帖共用外壳，只多一行元信息和一条折叠带 */
+
+.res-meta {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 18px;
 }
+.res-meta .composer-cat {
+  border-right: 0;
+  padding-right: 0;
+  gap: 6px;
+}
+.res-meta .composer-meta-label { flex: none; }
+.composer-select.composer-text { padding-right: 8px; cursor: text; }
+
+/* 标题下面的一行简介：只比标题轻一档，不加边框 */
+.composer-sub-input {
+  width: 100%; height: 44px; padding: 0 18px;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--text-2);
+  font-family: inherit; font-size: 13px; outline: none;
+}
+.composer-sub-input::placeholder { color: var(--text-3); }
+
+/* 折叠带：一行摘要 + 展开后的字段网格 */
+.composer-strip {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 38px; padding: 0 18px;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--text-2);
+  font-family: inherit; font-size: 12px; text-align: left;
+  cursor: pointer;
+}
+.composer-strip:hover { background: var(--panel-2); color: var(--text); }
+.composer-strip:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ring); }
+.composer-strip svg {
+  width: 13px; height: 13px; flex: none; color: var(--text-3);
+  transition: transform 0.16s var(--ease);
+}
+.composer-strip svg[data-open="true"] { transform: rotate(90deg); }
+.composer-strip-hint {
+  margin-left: auto; min-width: 0;
+  font-size: 11px; color: var(--text-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.composer-strip-body {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px 12px; padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.composer-strip-body.res-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.composer-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.composer-field > span {
+  font-size: 10.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.composer-input {
+  width: 100%; height: 32px; padding: 0 9px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: var(--text);
+  font-family: inherit; font-size: 12.5px;
+}
+.composer-input:focus { outline: none; border-color: var(--blue-line); box-shadow: 0 0 0 3px var(--blue-soft); }
+.composer-input:is(select) { cursor: pointer; padding-right: 4px; }
+
+/* 文件区：贴在正文和底部工具栏之间，一眼能看到有没有文件 */
+.res-drop {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 9px 14px 10px;
+  border-top: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.res-drop-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.res-add {
+  height: 26px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 7px;
+  background: var(--panel); color: var(--text-2);
+  font-family: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer;
+}
+.res-add:hover:not(:disabled) { border-color: var(--blue-line); color: var(--blue); }
+.res-add:disabled { opacity: 0.55; cursor: default; }
+.res-drop-hint { font-size: 11px; color: var(--text-3); }
+.res-drop-size { margin-left: auto; font-size: 11px; color: var(--text-3); }
+.res-link-row { display: flex; align-items: center; gap: 8px; }
+.res-link-row .composer-input { flex: 1; min-width: 0; height: 30px; }
 .res-upload-bar {
-  display: block; height: 3px; margin-top: 6px; border-radius: 3px;
-  background: var(--panel-3); overflow: hidden;
+  display: block; height: 3px; border-radius: 3px; overflow: hidden;
+  background: var(--panel-3);
 }
 .res-upload-bar i {
   display: block; height: 100%; background: var(--blue); transition: width 0.2s;
 }
-.res-composer-meta { align-items: start; }
-.res-meta-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px; padding-left: 14px;
-}
-.res-composer-extra {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px 12px; padding: 12px 18px;
-  border-bottom: 1px solid var(--line);
-}
 @media (max-width: 700px) {
-  .res-meta-grid { grid-template-columns: 1fr 1fr; padding-left: 0; }
-  .res-composer-extra { grid-template-columns: 1fr; padding: 10px 14px; }
+  .res-meta { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 14px; }
+  .composer-strip { padding: 0 14px; }
+  .composer-strip-body,
+  .composer-strip-body.res-grid { grid-template-columns: 1fr; padding: 10px 14px; }
+  .composer-sub-input { padding: 0 14px; }
+  .res-drop { padding: 8px 12px 9px; }
+  .res-drop-hint { display: none; }
 }
 
-/* ── 后台设置：分区页 + 侧栏（补回丢失的样式） ── */
+/* ── 后台设置：分区页 ──
+   每个分区都是后台侧栏的一级项，页内不再有第二条导航。 */
 
-/* 设置分区：控制台已经有左侧导航，再来一条竖排就会变成「双轨」。
-   这里改成标题下的胶囊行，分组用小标签标注。 */
-.settings-layout { display: block; margin-top: 4px; }
-.settings-nav {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 10px 12px; margin-bottom: 12px;
-  position: static;
-}
-.settings-nav .rail-title { display: none; }
-.settings-nav-group {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  margin: 0;
-}
-.settings-nav-label {
-  width: 76px; flex: none; padding: 0; margin: 0;
-  font-size: 9.5px; color: var(--text-3); letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.settings-nav-item {
-  display: inline-flex; align-items: center;
-  padding: 5px 11px; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--panel);
-  font-size: 12px; color: var(--text-2);
-  transition: background 0.14s, border-color 0.14s, color 0.14s;
-}
-.settings-nav-item:hover { background: var(--panel-2); color: var(--text); border-color: var(--hover-bd); }
-.settings-nav-item[data-active="true"] {
-  background: var(--blue-soft); border-color: var(--blue-line);
-  color: var(--blue); font-weight: 600;
-}
-.settings-main { min-width: 0; }
+.settings-main { min-width: 0; margin-top: 2px; }
 .settings-main-title { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
 .settings-main-desc {
   margin-top: 3px; font-size: 11.5px; color: var(--muted); line-height: 1.7;
@@ -3193,19 +3319,6 @@ body:has(.auth-page) .app {
   display: block;
 }
 .settings-save { margin-top: 14px; }
-
-@media (max-width: 860px) {
-  .settings-layout { grid-template-columns: 1fr; }
-  .settings-nav {
-    position: static; display: flex; gap: 8px;
-    overflow-x: auto; scrollbar-width: none;
-  }
-  .settings-nav::-webkit-scrollbar { display: none; }
-  .settings-nav .rail-title { display: none; }
-  .settings-nav-group { display: flex; gap: 4px; margin-top: 0; flex: none; }
-  .settings-nav-label { display: none; }
-  .settings-nav-item { white-space: nowrap; }
-}
 
 /* 客户端下载页 */
 .download-group { margin-top: 18px; }
@@ -3479,18 +3592,9 @@ body:has(.auth-page) .app {
   .composer-submit { height: 32px; padding: 0 14px; }
 }
 
-/* 资源弹窗移动端：字段两列，正文与工具栏不被挤 */
+/* 资源弹窗移动端：文件区与折叠带不被工具栏挤掉 */
 @media (max-width: 700px) {
-  .res-composer-meta { gap: 8px; }
-  .res-meta-grid { grid-template-columns: 1fr 1fr; gap: 8px; padding-left: 0; }
-  .res-composer-extra { grid-template-columns: 1fr; gap: 8px; padding: 10px 14px; }
-  .res-upload-line { gap: 6px; }
-}
-
-@media (max-width: 700px) {
-  .res-composer-extra { grid-template-columns: 1fr 1fr; }
-  .res-composer-extra .field:nth-child(1),
-  .res-composer-extra .field:nth-child(2) { grid-column: 1 / -1; }
+  .res-drop .res-file-row { gap: 7px; }
 }
 
 /* 移动端工具栏：宁可换行，也不要让图片/表情入口藏在横向滚动里 */
@@ -3507,7 +3611,9 @@ body:has(.auth-page) .app {
   .composer-panel-head,
   .composer-meta,
   .composer-title-input,
-  .res-composer-extra { flex: none; }
+  .composer-sub-input,
+  .composer-strip,
+  .composer-strip-body { flex: none; }
   .composer-panel .md-composer-editor {
     flex: 1 1 auto;
     min-height: 0;
@@ -3651,16 +3757,16 @@ body:has(.auth-page) .app {
   font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3);
 }
 
-.console-nav { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.console-nav { display: flex; flex-direction: column; gap: 11px; flex: 1; }
 .console-nav-group { display: flex; flex-direction: column; gap: 1px; }
 .console-nav-label {
-  padding: 0 8px 4px; font-size: 9.5px; font-weight: 600;
+  padding: 0 8px 3px; font-size: 9.5px; font-weight: 600;
   letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3);
 }
 .console-nav-item {
   display: flex; align-items: center; gap: 9px;
-  padding: 7px 8px; border-radius: 8px;
-  font-size: 13px; color: var(--text-2);
+  padding: 6px 8px; border-radius: 8px;
+  font-size: 12.5px; color: var(--text-2);
   transition: background 0.14s var(--ease), color 0.14s var(--ease);
 }
 .console-nav-item svg { width: 16px; height: 16px; flex: none; opacity: 0.8; }
@@ -4285,9 +4391,6 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 
 /* ── 资源文件列表（发布弹窗 / 详情共用） ── */
 
-.res-file-box { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
-.res-file-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
 .res-file-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .res-file-row {
   display: flex;
@@ -4564,7 +4667,33 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .tn-signup { display: flex; flex-direction: column; gap: 4px; }
 .tn-signup b { font-size: 12.5px; }
 .tn-signup-team { margin: 4px 0 0; font-size: 13px; font-weight: 600; }
+.tn-signup-cert {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--blue);
+}
+.tn-signup-cert:hover { color: var(--blue-2); }
+.tn-signup-cert::after { content: '→'; font-size: 11px; }
 .tn-form { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+
+/* 赛事宣传图 */
+.tn-share { display: flex; flex-direction: column; gap: 8px; }
+.tn-share-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.tn-share-hint { margin: 0; font-size: 11px; line-height: 1.7; color: var(--text-3); }
+
+/* 证书页签：与福利中心同一套胶囊语义（选中蓝底蓝字） */
+.tn-cert-tabs {
+  display: inline-flex; gap: 2px; margin-bottom: 14px;
+  padding: 3px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel);
+}
+.tn-cert-tab {
+  height: 30px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--text-2);
+  font-family: inherit; font-size: 12.5px; cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.tn-cert-tab:hover { color: var(--text); }
+.tn-cert-tab[data-on="true"] { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
 
 /* 后台报名审核 */
 .tn-admin-entries { display: flex; flex-direction: column; }

@@ -34,6 +34,9 @@ pub struct TournamentView {
     pub max_entries: i64,
     pub entry_count: i64,
     pub created_at: i64,
+    pub host_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host_user_id: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -54,6 +57,8 @@ struct TournamentRow {
     max_entries: i32,
     entry_count: i64,
     created_at: DateTime<Utc>,
+    host_name: String,
+    host_user_id: Option<String>,
 }
 
 impl TournamentRow {
@@ -75,6 +80,8 @@ impl TournamentRow {
             max_entries: self.max_entries as i64,
             entry_count: self.entry_count,
             created_at: self.created_at.timestamp_millis(),
+            host_name: self.host_name,
+            host_user_id: self.host_user_id,
         }
     }
 }
@@ -121,7 +128,7 @@ impl EntryRow {
 
 const COLS: &str = "t.id, t.title, t.game, t.mode, t.summary, t.body, t.cover, t.prize,
         t.status, t.signup_start, t.signup_end, t.start_at, t.end_at,
-        t.max_entries, t.created_at,
+        t.max_entries, t.created_at, t.host_name, t.host_user_id,
         (SELECT count(*) FROM tournament_entries e
           WHERE e.tournament_id = t.id AND e.status = 'approved')::bigint AS entry_count";
 
@@ -347,6 +354,7 @@ pub struct TournamentInput<'a> {
     pub body: &'a str,
     pub cover: &'a str,
     pub prize: &'a str,
+    pub host_name: &'a str,
     pub status: &'a str,
     pub signup_start: Option<DateTime<Utc>>,
     pub signup_end: Option<DateTime<Utc>>,
@@ -378,6 +386,9 @@ pub fn validate(input: &TournamentInput<'_>) -> Option<String> {
     if len(input.prize) > 300 {
         return Some("奖品说明不能超过 300 字".into());
     }
+    if len(input.host_name) > 40 {
+        return Some("主办方名称不能超过 40 字".into());
+    }
     if input.max_entries < 0 || input.max_entries > 4096 {
         return Some("名额需在 0–4096 之间".into());
     }
@@ -389,13 +400,18 @@ pub fn validate(input: &TournamentInput<'_>) -> Option<String> {
     None
 }
 
-pub async fn create(pool: &PgPool, input: &TournamentInput<'_>) -> Result<String, sqlx::Error> {
+pub async fn create(
+    pool: &PgPool,
+    input: &TournamentInput<'_>,
+    host_user_id: Option<&str>,
+) -> Result<String, sqlx::Error> {
     let id = crate::ids::next('t');
     sqlx::query(
         "INSERT INTO tournaments
              (id, title, game, mode, summary, body, cover, prize, status,
-              signup_start, signup_end, start_at, end_at, max_entries)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+              signup_start, signup_end, start_at, end_at, max_entries,
+              host_name, host_user_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
     )
     .bind(&id)
     .bind(input.title.trim())
@@ -411,6 +427,8 @@ pub async fn create(pool: &PgPool, input: &TournamentInput<'_>) -> Result<String
     .bind(input.start_at)
     .bind(input.end_at)
     .bind(input.max_entries as i32)
+    .bind(input.host_name.trim())
+    .bind(host_user_id)
     .execute(pool)
     .await?;
     Ok(id)
@@ -418,6 +436,7 @@ pub async fn create(pool: &PgPool, input: &TournamentInput<'_>) -> Result<String
 
 pub struct TournamentPatch<'a> {
     pub title: Option<&'a str>,
+    pub host_name: Option<&'a str>,
     pub game: Option<&'a str>,
     pub mode: Option<&'a str>,
     pub summary: Option<&'a str>,
@@ -430,6 +449,8 @@ pub struct TournamentPatch<'a> {
     pub start_at: Option<Option<DateTime<Utc>>>,
     pub end_at: Option<Option<DateTime<Utc>>>,
     pub max_entries: Option<i64>,
+    /// 认领/更换主办账号；`Some(None)` 表示清空
+    pub host_user_id: Option<Option<&'a str>>,
 }
 
 pub async fn patch(pool: &PgPool, id: &str, p: &TournamentPatch<'_>) -> Result<bool, sqlx::Error> {
@@ -442,12 +463,16 @@ pub async fn patch(pool: &PgPool, id: &str, p: &TournamentPatch<'_>) -> Result<b
             body = COALESCE($6, body),
             cover = COALESCE($7, cover),
             prize = COALESCE($8, prize),
+            host_name = COALESCE($19, host_name),
             status = COALESCE($9, status),
             signup_start = CASE WHEN $10 THEN $11 ELSE signup_start END,
             signup_end = CASE WHEN $12 THEN $13 ELSE signup_end END,
             start_at = CASE WHEN $14 THEN $15 ELSE start_at END,
             end_at = CASE WHEN $16 THEN $17 ELSE end_at END,
             max_entries = COALESCE($18, max_entries),
+            host_user_id = CASE WHEN $20
+                THEN (SELECT id FROM users WHERE id = $21)
+                ELSE host_user_id END,
             updated_at = now()
           WHERE id = $1",
     )
@@ -469,6 +494,9 @@ pub async fn patch(pool: &PgPool, id: &str, p: &TournamentPatch<'_>) -> Result<b
     .bind(p.end_at.is_some())
     .bind(p.end_at.flatten())
     .bind(p.max_entries.map(|v| v as i32))
+    .bind(p.host_name.map(str::trim))
+    .bind(p.host_user_id.is_some())
+    .bind(p.host_user_id.flatten())
     .execute(pool)
     .await?;
     Ok(done.rows_affected() > 0)

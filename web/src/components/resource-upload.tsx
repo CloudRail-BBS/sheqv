@@ -31,10 +31,11 @@ const EMPTY = {
 };
 
 /**
- * 发布资源：与发帖共用一个悬浮弹窗外壳。
+ * 发布资源：与发帖共用同一个悬浮弹窗外壳。
  *
- * 资源专属字段（游戏/分类/下载地址/版本/授权/团队）放在头部与元信息区，
- * 详细介绍沿用 Markdown 编辑器与底部工具栏；发布成功直接进详情页。
+ * 版式对齐发帖编辑器：头部 → 一行元信息（游戏/分类/版本/授权）→ 标题 → 简介 →
+ * 正文（Markdown）→ 文件区 → 底部工具栏。
+ * 资源专属的次要字段收进「更多信息」折叠条，默认不占版面。
  */
 export function ResourceUpload({
   teams,
@@ -53,6 +54,7 @@ export function ResourceUpload({
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
   const [expanded, setExpanded] = useState(false);
+  const [more, setMore] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -236,6 +238,16 @@ export function ResourceUpload({
     nickname.slice(0, 1)
   );
 
+  const totalBytes = attachments.reduce((n, a) => n + a.size, 0);
+  const moreCount = [
+    form.tags.trim(),
+    form.gameVersions.trim(),
+    form.loaders.trim(),
+    form.deps.trim(),
+    form.sourceUrl.trim(),
+    form.teamId,
+  ].filter(Boolean).length;
+
   return (
     <>
       {!defaultOpen && (
@@ -255,7 +267,16 @@ export function ResourceUpload({
           <div className={'composer-panel' + (expanded ? ' is-expanded' : '')}>
             <div className="composer-panel-head">
               <span className="composer-head-icon" aria-hidden="true">
-                ⬆
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5zM4 7.5 12 12l8-4.5M12 12v9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </span>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <b className="composer-head-title">发布资源</b>
@@ -277,6 +298,7 @@ export function ResourceUpload({
                   type="button"
                   className="composer-icon-btn"
                   aria-label="关闭"
+                  title="关闭"
                   onClick={() => !busy && close()}
                 >
                   ×
@@ -284,86 +306,53 @@ export function ResourceUpload({
               </div>
             </div>
 
-            <div className="composer-meta res-composer-meta">
+            <div className="composer-meta res-meta">
               <label className="composer-cat">
                 <span className="composer-meta-label">游戏</span>
-                <select className="composer-select" value={form.game} onChange={(e) => set('game', e.target.value)}>
+                <select
+                  className="composer-select"
+                  value={form.game}
+                  onChange={(e) => set('game', e.target.value)}
+                >
                   {RESOURCE_GAMES.map((g) => (
                     <option key={g.key} value={g.key}>{g.label}</option>
                   ))}
                 </select>
               </label>
-              <div className="res-meta-grid">
-                <label className="field">
-                  <span>分类</span>
-                  <select className="input" value={form.category} onChange={(e) => set('category', e.target.value)}>
-                    {RESOURCE_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>版本</span>
-                  <input className="input" value={form.version} onChange={(e) => set('version', e.target.value)} placeholder="1.0.0" maxLength={24} />
-                </label>
-                <label className="field">
-                  <span>授权</span>
-                  <select className="input" value={form.license} onChange={(e) => set('license', e.target.value)}>
-                    {RESOURCE_LICENSES.map((l) => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>大小（MB）</span>
-                  <input
-                    className="input"
-                    value={form.sizeMb}
-                    onChange={(e) => set('sizeMb', e.target.value.replace(/[^\d.]/g, ''))}
-                    placeholder="12.5"
-                  />
-                </label>
-                <label className="field">
-                  <span>支持版本</span>
-                  <input
-                    className="input"
-                    value={form.gameVersions}
-                    onChange={(e) => set('gameVersions', e.target.value)}
-                    placeholder="1.20.1, 1.20.4（逗号分隔）"
-                    maxLength={120}
-                  />
-                </label>
-                <label className="field">
-                  <span>加载器 / 环境</span>
-                  <input
-                    className="input"
-                    value={form.loaders}
-                    onChange={(e) => set('loaders', e.target.value)}
-                    placeholder="Forge, Fabric"
-                    maxLength={60}
-                  />
-                </label>
-                <label className="field" style={{ gridColumn: '1 / -1' }}>
-                  <span>前置依赖（可空）</span>
-                  <input
-                    className="input"
-                    value={form.deps}
-                    onChange={(e) => set('deps', e.target.value)}
-                    placeholder="需要 Fabric API 0.15+；与服务端插件冲突"
-                    maxLength={300}
-                  />
-                </label>
-                <label className="field" style={{ gridColumn: '1 / -1' }}>
-                  <span>来源 / 原帖（可空）</span>
-                  <input
-                    className="input"
-                    value={form.sourceUrl}
-                    onChange={(e) => set('sourceUrl', e.target.value)}
-                    placeholder="https://…"
-                    maxLength={300}
-                  />
-                </label>
-              </div>
+              <label className="composer-cat">
+                <span className="composer-meta-label">分类</span>
+                <select
+                  className="composer-select"
+                  value={form.category}
+                  onChange={(e) => set('category', e.target.value)}
+                >
+                  {RESOURCE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="composer-cat">
+                <span className="composer-meta-label">版本</span>
+                <input
+                  className="composer-select composer-text"
+                  value={form.version}
+                  onChange={(e) => set('version', e.target.value)}
+                  placeholder="1.0.0"
+                  maxLength={24}
+                />
+              </label>
+              <label className="composer-cat">
+                <span className="composer-meta-label">授权</span>
+                <select
+                  className="composer-select"
+                  value={form.license}
+                  onChange={(e) => set('license', e.target.value)}
+                >
+                  {RESOURCE_LICENSES.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <input
@@ -374,21 +363,119 @@ export function ResourceUpload({
               maxLength={60}
               autoFocus
             />
+            <input
+              className="composer-sub-input"
+              placeholder="一句话简介：这个资源解决什么问题，适合谁（可空）"
+              value={form.summary}
+              onChange={(e) => set('summary', e.target.value)}
+              maxLength={200}
+            />
 
-            <div className="res-composer-extra">
-              <label className="field">
-                <span>一句话简介</span>
-                <input
-                  className="input"
-                  value={form.summary}
-                  onChange={(e) => set('summary', e.target.value)}
-                  placeholder="这个资源解决什么问题，适合谁"
-                  maxLength={200}
+            <button
+              type="button"
+              className="composer-strip"
+              aria-expanded={more}
+              onClick={() => setMore((v) => !v)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" data-open={more}>
+                <path
+                  d="m9 6 6 6-6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-              </label>
-              <div className="field" style={{ gridColumn: '1 / -1' }}>
-                <span>文件（最多 8 个）</span>
-                <div className="res-file-box">
+              </svg>
+              <span>更多信息</span>
+              <span className="composer-strip-hint">
+                {moreCount > 0 ? `已填 ${moreCount} 项` : '标签、支持版本、加载器、依赖、来源、署名'}
+              </span>
+            </button>
+
+            {more && (
+              <div className="composer-strip-body res-grid">
+                <label className="composer-field">
+                  <span>标签（逗号分隔，最多 6 个）</span>
+                  <input
+                    className="composer-input"
+                    value={form.tags}
+                    onChange={(e) => set('tags', e.target.value)}
+                    placeholder="红石, 模板, 1.20"
+                  />
+                </label>
+                <label className="composer-field">
+                  <span>支持版本</span>
+                  <input
+                    className="composer-input"
+                    value={form.gameVersions}
+                    onChange={(e) => set('gameVersions', e.target.value)}
+                    placeholder="1.20.1, 1.20.4"
+                    maxLength={120}
+                  />
+                </label>
+                <label className="composer-field">
+                  <span>加载器 / 环境</span>
+                  <input
+                    className="composer-input"
+                    value={form.loaders}
+                    onChange={(e) => set('loaders', e.target.value)}
+                    placeholder="Forge, Fabric"
+                    maxLength={60}
+                  />
+                </label>
+                <label className="composer-field">
+                  <span>以团队名义发布</span>
+                  <select
+                    className="composer-input"
+                    value={form.teamId}
+                    onChange={(e) => set('teamId', e.target.value)}
+                  >
+                    <option value="">个人名义</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}（{t.tag}）</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="composer-field">
+                  <span>前置依赖（可空）</span>
+                  <input
+                    className="composer-input"
+                    value={form.deps}
+                    onChange={(e) => set('deps', e.target.value)}
+                    placeholder="需要 Fabric API 0.15+"
+                    maxLength={300}
+                  />
+                </label>
+                <label className="composer-field">
+                  <span>来源 / 原帖（可空）</span>
+                  <input
+                    className="composer-input"
+                    value={form.sourceUrl}
+                    onChange={(e) => set('sourceUrl', e.target.value)}
+                    placeholder="https://…"
+                    maxLength={300}
+                  />
+                </label>
+              </div>
+            )}
+
+            <MarkdownEditor
+              variant="composer"
+              value={form.body}
+              onChange={(v) => set('body', v)}
+              rows={10}
+              maxLength={5000}
+              placeholder="安装方式、依赖、已知问题…… 支持 Markdown 与图片。"
+              onSubmit={submit}
+              leading={
+                <span className="composer-me">
+                  <span className="composer-me-avatar">{avatarNode}</span>
+                  <b>ME</b>
+                </span>
+              }
+              beforeFooter={
+                <div className="res-drop">
                   <input
                     ref={fileRef}
                     type="file"
@@ -400,24 +487,23 @@ export function ResourceUpload({
                       if (list && list.length > 0) void uploadFiles(list);
                     }}
                   />
-                  <div className="res-file-tools">
+                  <div className="res-drop-head">
+                    <span className="composer-meta-label">文件</span>
                     <button
                       type="button"
-                      className="btn btn-sm btn-ghost"
+                      className="res-add"
                       onClick={() => fileRef.current?.click()}
                       disabled={uploading || busy || attachments.length >= 8}
                     >
                       {uploading ? `上传中 ${uploadPct}%` : '添加本地文件'}
                     </button>
-                    <span className="small muted">
+                    <span className="res-drop-hint">
                       {uploading && uploadLabel
                         ? `正在上传 ${uploadLabel}`
-                        : '单个 ≤100MB，可一次选多个'}
+                        : `${attachments.length} / 8 · 单个 ≤100MB`}
                     </span>
-                    {attachments.length > 0 && (
-                      <span className="small" style={{ marginLeft: 'auto', color: 'var(--blue)' }}>
-                        共 {attachments.length} 个
-                      </span>
+                    {totalBytes > 0 && (
+                      <span className="res-drop-size mono">{fmtSize(totalBytes)}</span>
                     )}
                   </div>
 
@@ -445,50 +531,22 @@ export function ResourceUpload({
                     </ul>
                   )}
 
-                  <label className="field" style={{ marginTop: 2 }}>
-                    <span>外部下载地址（可空）</span>
+                  <div className="res-link-row">
+                    <span className="composer-meta-label">外链</span>
                     <input
-                      className="input mono"
+                      className="composer-input mono"
                       value={form.url}
                       onChange={(e) => set('url', e.target.value)}
                       placeholder="https://…/resource.zip；只上传文件时留空"
                     />
-                  </label>
-                </div>
-                {uploading && (
-                  <span className="res-upload-bar" aria-hidden="true">
-                    <i style={{ width: `${uploadPct}%` }} />
-                  </span>
-                )}
-              </div>
-              <label className="field">
-                <span>标签（逗号分隔，最多 6 个）</span>
-                <input className="input" value={form.tags} onChange={(e) => set('tags', e.target.value)} placeholder="红石, 模板, 1.20" />
-              </label>
-              <label className="field">
-                <span>以团队名义发布</span>
-                <select className="input" value={form.teamId} onChange={(e) => set('teamId', e.target.value)}>
-                  <option value="">个人名义</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}（{t.tag}）</option>
-                  ))}
-                </select>
-              </label>
-            </div>
+                  </div>
 
-            <MarkdownEditor
-              variant="composer"
-              value={form.body}
-              onChange={(v) => set('body', v)}
-              rows={10}
-              maxLength={5000}
-              placeholder="安装方式、依赖、已知问题…… 支持 Markdown 与图片。"
-              onSubmit={submit}
-              leading={
-                <span className="composer-me">
-                  <span className="composer-me-avatar">{avatarNode}</span>
-                  <b>ME</b>
-                </span>
+                  {uploading && (
+                    <span className="res-upload-bar" aria-hidden="true">
+                      <i style={{ width: `${uploadPct}%` }} />
+                    </span>
+                  )}
+                </div>
               }
               actions={
                 <>

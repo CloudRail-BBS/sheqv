@@ -9,7 +9,12 @@ import type { BadgeInfo } from '@/lib/badges';
 export function UserBadge({ badge, size }: { badge?: BadgeInfo | null; size?: 'sm' }) {
   if (!badge) return null;
   return (
-    <span className="ut" data-kind={badge.admin ? 'admin' : 'custom'} data-size={size}>
+    <span
+      className="ut"
+      data-kind={badge.admin ? 'admin' : 'custom'}
+      data-size={size}
+      data-shine={badge.admin ? '' : undefined}
+    >
       {badge.label}
     </span>
   );

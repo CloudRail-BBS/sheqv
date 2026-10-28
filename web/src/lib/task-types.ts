@@ -51,6 +51,10 @@ export interface Tournament {
   maxEntries: number;
   entryCount: number;
   createdAt: number;
+  /** 对外显示的主办方名称；空则由前端回落到站点名 */
+  hostName?: string;
+  /** 主办账号：拥有它的人可以领主办证书 */
+  hostUserId?: string;
 }
 
 export interface TournamentEntry {

@@ -913,6 +913,334 @@ export function renderAgreementCertificate(
   return el;
 }
 
+/* ── 赛事宣传图 1080×1350 ─────────────────── */
+
+const GAME_TONE: Record<string, [string, string]> = {
+  minecraft: ['#14372a', '#0e7490'],
+  rusted_warfare: ['#3b1d0f', '#b45309'],
+};
+
+/** 赛事封面只认站内路径，跨域图会污染画布导致导不出 PNG */
+export async function renderTournamentPoster(opts: {
+  id: string;
+  title: string;
+  game: string;
+  gameLabel: string;
+  mode: string;
+  statusLabel: string;
+  summary: string;
+  prize: string;
+  host: string;
+  cover?: string;
+  signupLabel: string;
+  startLabel: string;
+  entryCount: number;
+  maxEntries: number;
+  brand: string;
+  site: string;
+  date: string;
+}): Promise<HTMLCanvasElement> {
+  const W = 1080;
+  const H = 1350;
+  const [el, ctx] = canvas(W, H);
+  paintBase(ctx, W, H);
+
+  const bandX = 72;
+  const bandY = 72;
+  const bandW = W - 144;
+  const bandH = 420;
+
+  // 顶部主视觉：游戏色渐变 + 可选封面，上面压一层深色保证白字可读
+  ctx.save();
+  roundRect(ctx, bandX, bandY, bandW, bandH, 28);
+  ctx.clip();
+  const [from, to] = GAME_TONE[opts.game] ?? ['#12224a', C.blue];
+  const grad = ctx.createLinearGradient(bandX, bandY, bandX + bandW, bandY + bandH);
+  grad.addColorStop(0, from);
+  grad.addColorStop(1, to);
+  ctx.fillStyle = grad;
+  ctx.fillRect(bandX, bandY, bandW, bandH);
+
+  const cover = await loadSameOriginLogo(opts.cover);
+  if (cover) {
+    const scale = Math.max(bandW / cover.width, bandH / cover.height);
+    const cw = cover.width * scale;
+    const ch = cover.height * scale;
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(cover, bandX + (bandW - cw) / 2, bandY + (bandH - ch) / 2, cw, ch);
+    ctx.globalAlpha = 1;
+  }
+
+  const shade = ctx.createLinearGradient(0, bandY + bandH * 0.25, 0, bandY + bandH);
+  shade.addColorStop(0, 'rgba(8, 12, 20, 0.10)');
+  shade.addColorStop(1, 'rgba(8, 12, 20, 0.78)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(bandX, bandY, bandW, bandH);
+
+  // 角标
+  roundRect(ctx, bandX + 28, bandY + 28, 118, 40, 20);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.fill();
+  write(ctx, opts.statusLabel, bandX + 87, bandY + 55, {
+    size: 19,
+    weight: 600,
+    color: '#ffffff',
+    align: 'center',
+  });
+  write(ctx, `${opts.gameLabel}${opts.mode ? ` · ${opts.mode}` : ''}`, bandX + bandW - 28, bandY + 55, {
+    size: 19,
+    weight: 600,
+    color: 'rgba(255, 255, 255, 0.82)',
+    align: 'right',
+    maxWidth: bandW - 220,
+  });
+
+  wrap(ctx, opts.title, bandX + 30, bandY + bandH - 108, bandW - 60, 2, {
+    size: 56,
+    weight: 700,
+    color: '#ffffff',
+    lineHeight: 68,
+  });
+  write(ctx, opts.host ? `主办 ${opts.host}` : `主办 ${opts.brand}`, bandX + 30, bandY + bandH - 34, {
+    size: 22,
+    color: 'rgba(255, 255, 255, 0.78)',
+    maxWidth: bandW - 60,
+  });
+  ctx.restore();
+
+  // 信息卡：高度固定，内容按三条水平线落位——
+  // 简介贴顶、数据块居中、奖品贴底，避免内容少的赛事在卡片中间留一大块空白
+  const cardY = bandY + bandH + 24;
+  const cardH = 596;
+  roundRect(ctx, bandX, cardY, bandW, cardH, 28);
+  ctx.fillStyle = C.panel;
+  ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const innerX = bandX + 34;
+  const innerW = bandW - 68;
+
+  if (opts.summary.trim()) {
+    wrap(ctx, opts.summary, innerX, cardY + 46, innerW, 2, {
+      size: 25,
+      color: C.ink2,
+      lineHeight: 38,
+    });
+  }
+
+  const stats: [string, string][] = [
+    ['报名', opts.signupLabel],
+    ['比赛', opts.startLabel],
+    ['名额', opts.maxEntries > 0 ? `${opts.entryCount} / ${opts.maxEntries} 队` : '不限'],
+    ['队伍', `${opts.entryCount} 支`],
+  ];
+  const gap = 14;
+  const cellW = (innerW - gap) / 2;
+  const cellH = 92;
+  const statsY = cardY + 150;
+  stats.forEach(([label, value], i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = innerX + col * (cellW + gap);
+    const y = statsY + row * (cellH + gap);
+    roundRect(ctx, x, y, cellW, cellH, 16);
+    ctx.fillStyle = C.bg;
+    ctx.fill();
+    write(ctx, label, x + 18, y + 32, { size: 17, color: C.muted });
+    write(ctx, value, x + 18, y + 68, {
+      size: 25,
+      weight: 600,
+      color: C.ink,
+      font: MONO,
+      maxWidth: cellW - 32,
+    });
+  });
+
+  const footY = cardY + cardH - 40;
+  ctx.fillStyle = C.line;
+  ctx.fillRect(innerX, footY - 116, innerW, 1);
+  if (opts.prize.trim()) {
+    write(ctx, '奖品', innerX, footY - 76, { size: 17, weight: 600, color: C.muted });
+    wrap(ctx, opts.prize, innerX, footY - 40, innerW, 2, {
+      size: 24,
+      weight: 600,
+      color: C.blue,
+      lineHeight: 34,
+    });
+  } else {
+    write(ctx, `报名与赛程：${opts.site.replace(/^https?:\/\//, '')}/tournaments/${opts.id}`, innerX, footY - 40, {
+      size: 20,
+      color: C.muted,
+      maxWidth: innerW,
+    });
+  }
+
+  footer(ctx, W, H, opts.brand, opts.date);
+  write(ctx, `${opts.site.replace(/^https?:\/\//, '')}/tournaments/${opts.id}`, 72, H - 32, {
+    size: 17,
+    color: C.muted,
+    font: MONO,
+    maxWidth: W - 144,
+  });
+  return el;
+}
+
+/* ── 赛事证书 1600×1131（A4 横向） ────────── */
+
+/** role=host 主办证书，role=entry 参赛证书 */
+export function renderTournamentCertificate(
+  data: {
+    role: 'host' | 'entry';
+    holder: string;
+    teamName?: string;
+    title: string;
+    gameLabel: string;
+    mode: string;
+    host: string;
+    entryCount?: number;
+    serial: string;
+    /** 赛事已结束 / 进行中 / 报名中，写进证书正文 */
+    stage: string;
+    date: string;
+  },
+  brand: string,
+  disclaimer: string = DEFAULT_CERT_DISCLAIMER,
+  stamp?: HTMLImageElement | null,
+): HTMLCanvasElement {
+  const W = 1600;
+  const H = 1131;
+  const [el, ctx] = canvas(W, H);
+
+  ctx.fillStyle = '#fbfcfe';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(62, 124, 255, 0.35)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(44, 44, W - 88, H - 88);
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(62, 62, W - 124, H - 124);
+
+  const corner = (x: number, y: number, sx: number, sy: number) => {
+    ctx.strokeStyle = C.blue;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x, y + sy * 46);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + sx * 46, y);
+    ctx.stroke();
+  };
+  corner(62, 62, 1, 1);
+  corner(W - 62, 62, -1, 1);
+  corner(62, H - 62, 1, -1);
+  corner(W - 62, H - 62, -1, -1);
+
+  const isHost = data.role === 'host';
+
+  write(ctx, brand, W / 2, 176, { size: 22, weight: 600, color: C.muted, align: 'center' });
+  write(ctx, isHost ? '赛事主办证书' : '赛事参赛证书', W / 2, 300, {
+    size: 76,
+    weight: 700,
+    color: C.ink,
+    align: 'center',
+  });
+  write(ctx, isHost ? 'CERTIFICATE OF ORGANIZING' : 'CERTIFICATE OF PARTICIPATION', W / 2, 348, {
+    size: 20,
+    color: C.muted,
+    align: 'center',
+    font: MONO,
+  });
+
+  ctx.fillStyle = C.blue;
+  ctx.fillRect(W / 2 - 40, 386, 80, 4);
+
+  write(ctx, '兹证明', 200, 500, { size: 26, color: C.ink2 });
+  write(ctx, data.holder || '—', 320, 506, { size: 40, weight: 700, color: C.blue, maxWidth: 620 });
+
+  if (isHost) {
+    write(ctx, `作为「${data.title}」的主办方，组织了本场`, 200, 590, {
+      size: 26,
+      color: C.ink2,
+      maxWidth: W - 400,
+    });
+    write(
+      ctx,
+      `${data.gameLabel} 赛事（${data.mode || '赛制待定'}），并完成报名、赛程与结果公示。`,
+      200,
+      642,
+      { size: 26, color: C.ink2, maxWidth: W - 400 },
+    );
+  } else {
+    write(ctx, `以「${data.teamName || data.holder}」的名义报名参加「${data.title}」`, 200, 590, {
+      size: 26,
+      color: C.ink2,
+      maxWidth: W - 400,
+    });
+    write(
+      ctx,
+      `${data.gameLabel} 赛事（${data.mode || '赛制待定'}），报名经主办方审核通过，${data.stage}。`,
+      200,
+      642,
+      { size: 26, color: C.ink2, maxWidth: W - 400 },
+    );
+  }
+
+  write(ctx, '证书编号', 200, 742, { size: 20, color: C.muted });
+  write(ctx, data.serial, 200, 782, {
+    size: 30,
+    weight: 600,
+    color: C.ink,
+    font: MONO,
+    maxWidth: 560,
+  });
+  write(ctx, '参赛队伍', 860, 742, { size: 20, color: C.muted });
+  write(ctx, isHost ? `${data.entryCount ?? 0} 支` : data.teamName || '—', 860, 782, {
+    size: 26,
+    weight: 600,
+    color: C.ink,
+    maxWidth: 460,
+  });
+
+  write(ctx, '可在站内「赛事」页核验报名与赛程记录', 200, 860, {
+    size: 18,
+    color: C.muted,
+  });
+
+  write(ctx, data.host || brand, 200, 920, { size: 26, weight: 600, color: C.ink, maxWidth: 620 });
+  write(ctx, isHost ? '主办方' : '签发', 200, 958, { size: 20, color: C.muted });
+  write(ctx, data.date, W - 200, 920, { size: 26, weight: 600, color: C.ink, align: 'right' });
+  write(ctx, '签发日期', W - 200, 958, { size: 20, color: C.muted, align: 'right' });
+
+  ctx.strokeStyle = 'rgba(21, 26, 35, 0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(200, 986);
+  ctx.lineTo(W - 200, 986);
+  ctx.stroke();
+  write(ctx, '免责声明', 200, 1010, { size: 16, weight: 600, color: C.ink2 });
+  wrap(ctx, disclaimer, 200, 1036, W - 400, 2, {
+    size: 14,
+    color: C.muted,
+    lineHeight: 18,
+  });
+
+  ctx.globalAlpha = 0.06;
+  crest(ctx, isHost ? '主办' : '赛', W - 380, 470, 300, { radius: 76, fontSize: 96 });
+  ctx.globalAlpha = 1;
+
+  // 印章压在落款与签发日期之间的空白处：盖得住纸、盖不住字
+  if (stamp && stamp.complete && stamp.naturalWidth > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(stamp, W - 660, 862, 150, 150);
+    ctx.restore();
+  }
+
+  return el;
+}
+
 /* ── 下载 ───────────────────────────────── */
 
 export function downloadCanvas(el: HTMLCanvasElement, filename: string) {

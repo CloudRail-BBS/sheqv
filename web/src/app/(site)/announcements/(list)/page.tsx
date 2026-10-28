@@ -60,7 +60,7 @@ export default async function AnnouncementsPage() {
               <Link key={a.id} href={`/announcements/${a.id}`} className="an-item">
                 <div className="an-row">
                   <span className={KIND_CLASS[a.kind]}>{a.kind}</span>
-                  {a.pinned && <span className="badge badge-warn">置顶</span>}
+                  {a.pinned && <span className="badge badge-gold" data-shine="">置顶</span>}
                   <span className="an-title">{a.title}</span>
                   <span className="mono small muted" style={{ marginLeft: 'auto', flex: 'none' }}>
                     {fmt(a.createdAt)}

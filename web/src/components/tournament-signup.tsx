@@ -95,6 +95,11 @@ export function TournamentSignup({
         </div>
         <p className="tn-signup-team">{myEntry.teamName}</p>
         {myEntry.note && <p className="small muted">{myEntry.note}</p>}
+        {myEntry.status === 'approved' && (
+          <Link href={`/tournaments/${tournament.id}/certificate`} className="tn-signup-cert">
+            领取参赛证书
+          </Link>
+        )}
         {openSignup && (
           <button type="button" className="btn btn-sm btn-ghost" style={{ width: '100%', marginTop: 8 }} onClick={cancel} disabled={busy}>
             {busy ? '处理中…' : '取消报名'}

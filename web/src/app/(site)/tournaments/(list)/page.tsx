@@ -2,12 +2,9 @@ import Link from 'next/link';
 import { listTournaments } from '@/lib/tournament-store';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
-import {
-  TOURNAMENT_STATUS_LABEL,
-  fmtDay,
-  type Tournament,
-} from '@/lib/task-types';
+import { fmtDay, type Tournament } from '@/lib/task-types';
 import { gameLabel } from '@/lib/resource-types';
+import { TournamentStatusBadge } from '@/components/tournament-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,13 +16,6 @@ export async function generateMetadata() {
   });
 }
 
-const STATUS_TONE: Record<Tournament['status'], string> = {
-  draft: 'badge-ghost',
-  signup: 'badge-live',
-  running: 'badge-warn',
-  ended: 'badge-ghost',
-};
-
 function TournamentCard({ item }: { item: Tournament }) {
   return (
     <Link href={`/tournaments/${item.id}`} className="card tn-card">
@@ -34,9 +24,7 @@ function TournamentCard({ item }: { item: Tournament }) {
         data-tone={item.game}
         style={item.cover ? { backgroundImage: `url(${item.cover})` } : undefined}
       >
-        <span className={'badge ' + STATUS_TONE[item.status]}>
-          {TOURNAMENT_STATUS_LABEL[item.status]}
-        </span>
+        <TournamentStatusBadge status={item.status} />
       </div>
       <div className="tn-body">
         <div className="tn-kicker">

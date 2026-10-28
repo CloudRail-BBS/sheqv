@@ -25,7 +25,7 @@ export default async function AdminTournamentsPage() {
         </div>
       </div>
 
-      <AdminTournaments />
+      <AdminTournaments adminUserId={gate.user?.id ?? ''} />
     </div>
   );
 }

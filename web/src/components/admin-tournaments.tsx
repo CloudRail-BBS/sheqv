@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { TournamentStatusBadge } from './tournament-status';
 import {
   TOURNAMENT_STATUS_LABEL,
   fmtDay,
@@ -18,6 +19,7 @@ const EMPTY = {
   body: '',
   cover: '',
   prize: '',
+  hostName: '',
   status: 'draft' as TournamentStatus,
   signupStart: '',
   signupEnd: '',
@@ -59,6 +61,7 @@ function fromItem(t: Tournament): Form {
     body: t.body ?? '',
     cover: t.cover,
     prize: t.prize,
+    hostName: t.hostName ?? '',
     status: t.status,
     signupStart: toLocal(t.signupStart),
     signupEnd: toLocal(t.signupEnd),
@@ -68,7 +71,7 @@ function fromItem(t: Tournament): Form {
   };
 }
 
-export function AdminTournaments() {
+export function AdminTournaments({ adminUserId }: { adminUserId: string }) {
   const [items, setItems] = useState<Tournament[]>([]);
   const [form, setForm] = useState<Form>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -129,6 +132,7 @@ export function AdminTournaments() {
           body: form.body,
           cover: form.cover,
           prize: form.prize,
+          hostName: form.hostName,
           status: form.status,
           maxEntries: form.maxEntries,
           signupStart: toIso(form.signupStart),
@@ -160,6 +164,27 @@ export function AdminTournaments() {
     }
     if (form.id === t.id) setForm(EMPTY);
     if (entriesFor?.id === t.id) setEntriesFor(null);
+    void load();
+  }
+
+  /** 老赛事可能没有主办账号，认领后即可领主办证书 */
+  async function claimHost(t: Tournament) {
+    if (!adminUserId) {
+      setMsg({ kind: 'err', text: '口令通道没有账号，无法认领' });
+      return;
+    }
+    setBusy(true);
+    const res = await fetch(`/api/v1/admin/tournaments/${t.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ hostUserId: adminUserId }),
+    }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) {
+      setMsg({ kind: 'err', text: '认领失败' });
+      return;
+    }
+    setMsg({ kind: 'ok', text: '已把你设为这场赛事的主办' });
     void load();
   }
 
@@ -231,6 +256,16 @@ export function AdminTournaments() {
             <input className="input" type="datetime-local" value={form.endAt} onChange={(e) => set('endAt', e.target.value)} />
           </label>
           <label className="field">
+            <span>主办方名称（可空，默认站点名）</span>
+            <input
+              className="input"
+              value={form.hostName}
+              maxLength={40}
+              placeholder="例如：云轨社区运营组"
+              onChange={(e) => set('hostName', e.target.value)}
+            />
+          </label>
+          <label className="field">
             <span>名额（0 = 不限）</span>
             <input className="input" value={String(form.maxEntries)} inputMode="numeric" onChange={(e) => set('maxEntries', Number(e.target.value.replace(/\D/g, '')) || 0)} />
           </label>
@@ -283,7 +318,7 @@ export function AdminTournaments() {
                 <th>报名</th>
                 <th>开赛</th>
                 <th>队伍</th>
-                <th style={{ width: 210 }}>操作</th>
+                <th style={{ width: 270 }}>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -291,12 +326,13 @@ export function AdminTournaments() {
                 <tr key={t.id}>
                   <td>
                     <div style={{ fontWeight: 600 }}>{t.title}</div>
-                    <div className="small muted">{t.game === 'minecraft' ? '我的世界' : 'Rusted Warfare'} · {t.mode}</div>
+                    <div className="small muted">
+                      {t.game === 'minecraft' ? '我的世界' : 'Rusted Warfare'} · {t.mode}
+                      {t.hostName ? ` · ${t.hostName}` : ''}
+                    </div>
                   </td>
                   <td>
-                    <span className={'badge ' + (t.status === 'signup' ? 'badge-live' : t.status === 'running' ? 'badge-warn' : 'badge-ghost')}>
-                      {TOURNAMENT_STATUS_LABEL[t.status]}
-                    </span>
+                    <TournamentStatusBadge status={t.status} />
                   </td>
                   <td className="small mono">{fmtDay(t.signupEnd)}</td>
                   <td className="small mono">{fmtDay(t.startAt)}</td>
@@ -309,6 +345,17 @@ export function AdminTournaments() {
                       <button type="button" className="btn btn-sm btn-ghost adm-mini" onClick={() => void loadEntries(t)}>
                         报名
                       </button>
+                      {adminUserId && t.hostUserId !== adminUserId && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-ghost adm-mini"
+                          onClick={() => void claimHost(t)}
+                          disabled={busy}
+                          title="把这场的证书发给你的账号"
+                        >
+                          认领主办
+                        </button>
+                      )}
                       <button type="button" className="btn btn-sm btn-ghost adm-mini" onClick={() => remove(t)} disabled={busy}>
                         删除
                       </button>
