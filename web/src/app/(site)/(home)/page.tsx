@@ -111,6 +111,7 @@ export default async function HomePage() {
           </div>
         )}
 
+        <div className={settings.feedLayout === 'card' ? 'post-grid' : undefined}>
         {posts.slice(0, 3).map((f) => (
           <PostCard
             key={f.id}
@@ -121,6 +122,7 @@ export default async function HomePage() {
             avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
           />
         ))}
+        </div>
 
         {live && (
           <div className="card mcard">
@@ -159,6 +161,7 @@ export default async function HomePage() {
           </div>
         )}
 
+        <div className={settings.feedLayout === 'card' ? 'post-grid' : undefined}>
         {posts.slice(3, 9).map((f) => (
           <PostCard
             key={f.id}
@@ -169,6 +172,7 @@ export default async function HomePage() {
             avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
           />
         ))}
+        </div>
 
         <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
           加载更多

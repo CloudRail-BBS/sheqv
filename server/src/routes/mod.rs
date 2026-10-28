@@ -26,6 +26,7 @@ pub mod rewards;
 pub mod servers;
 pub mod sponsors;
 pub mod tasks;
+pub mod changelog;
 pub mod messages;
 pub mod tickets;
 pub mod titles;
@@ -98,6 +99,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/posts/{id}/comments", post(posts::comment))
         .route("/api/v1/posts/{id}/like", post(posts::like))
         .route("/api/v1/settings", get(public::settings))
+        .route("/api/v1/changelog", get(changelog::public_list))
         .route("/api/v1/announcements", get(public::announcements))
         .route("/api/v1/announcements/{id}", get(public::announcement))
         .route("/api/v1/users", get(public::users))
@@ -154,6 +156,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/comments/{id}",
             axum::routing::delete(admin::delete_comment),
+        )
+        .route(
+            "/api/v1/admin/changelog",
+            get(changelog::admin_list).post(changelog::create),
+        )
+        .route(
+            "/api/v1/admin/changelog/{id}",
+            patch(changelog::patch).delete(changelog::remove),
         )
         .route(
             "/api/v1/admin/tickets",

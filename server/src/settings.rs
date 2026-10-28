@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 72] = [
+pub const KEYS: [&str; 73] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -70,6 +70,8 @@ pub const KEYS: [&str; 72] = [
     "policiesHint",
     "allowRegister",
     "homeShowAnnouncements",
+    // 帖子流样式：list（单列）/ card（双列卡片）
+    "feedLayout",
     // 邮箱验证码登录（SMTP 配置只落库，不下发给浏览器）
     "emailLoginEnabled",
     "smtpHost",
@@ -151,6 +153,7 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("policiesHint", json!(""));
     put("allowRegister", json!(true));
     put("homeShowAnnouncements", json!(true));
+    put("feedLayout", json!("list"));
     // 默认关闭：开启前必须先把 SMTP 配通，否则用户点「发送验证码」只会看到失败
     put("emailLoginEnabled", json!(false));
     put("smtpHost", json!(""));

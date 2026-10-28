@@ -25,6 +25,7 @@ pub mod app_releases;
 pub mod auth;
 pub mod cache;
 pub mod captcha;
+pub mod changelog;
 pub mod config;
 pub mod current_user;
 pub mod db;

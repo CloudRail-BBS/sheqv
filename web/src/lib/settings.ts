@@ -77,6 +77,8 @@ export interface SiteSettings {
   policiesHint: string;
   allowRegister: boolean;
   homeShowAnnouncements: boolean;
+  /** 帖子流样式：list 单列 / card 双列卡片 */
+  feedLayout: string;
   /** 邮箱验证码登录开关（SMTP 配置只在后台可见，公开投影里没有） */
   emailLoginEnabled: boolean;
   smtpHost: string;
@@ -159,6 +161,7 @@ const DEFAULTS: SiteSettings = {
   policiesHint: '',
   allowRegister: true,
   homeShowAnnouncements: true,
+  feedLayout: 'list',
   emailLoginEnabled: false,
   smtpHost: '',
   smtpPort: '465',

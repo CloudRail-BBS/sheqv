@@ -65,6 +65,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/agreements', label: '公约', icon: 'shield' },
       { href: '/admin/policies', label: '政策', icon: 'doc' },
       { href: '/admin/about', label: '关于社区', icon: 'users' },
+      { href: '/admin/changelog', label: '更新日志', icon: 'log' },
       { href: '/admin/apps', label: '端管理', icon: 'code' },
       { href: '/admin/push', label: '网页推送', icon: 'send' },
       { href: '/admin/messages', label: '系统消息', icon: 'mail' },
@@ -109,6 +110,7 @@ const ICONS = {
   verify: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M8 12.4l2.7 2.6L16 9.6',
   ticket: 'M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4zM9 7v10',
   mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  log: 'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5',
   palette: 'M12 21a9 9 0 1 1 9-9c0 2.2-1.8 3-3.4 3H16a2 2 0 0 0-1.4 3.4c.5.6.2 1.6-.6 1.9-.6.5-1.3.7-2 .7M7.5 10.5h.01M10 7.5h.01M14 7.5h.01M16.5 10.5h.01',
   coin: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5v9M9.5 10.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4',
 } as const;

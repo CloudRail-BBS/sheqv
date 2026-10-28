@@ -87,6 +87,34 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
 
+        {/* 主题头：标题、作者、统计与快捷回复，楼层里不再重复 */}
+        <header className="card card-pad thread-head" id="top">
+          <div className="thread-kicker">
+            <span>{post.guild}公会</span>
+            <span>·</span>
+            <span>{post.time}</span>
+            <span>·</span>
+            <span>{post.comments} 条回复</span>
+            <span>·</span>
+            <span>{post.likes} 赞</span>
+          </div>
+          <h1 className="thread-title">{post.title ?? '无标题'}</h1>
+          <div className="thread-head-foot">
+            <div className="post-tags" style={{ margin: 0 }}>
+              {post.tags.map((t) => (
+                <span key={t} className="badge badge-ghost">
+                  #{t}
+                </span>
+              ))}
+            </div>
+            {!unpublished && (
+              <a href="#comment-form" className="btn btn-sm btn-ghost">
+                回复主题
+              </a>
+            )}
+          </div>
+        </header>
+
         {/* 1 楼：楼主 */}
         <article className="card floor floor-op" id="floor-1">
           <aside className="floor-side">
@@ -126,16 +154,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <time className="floor-time">{post.time}</time>
             </div>
 
-            <h1 className="page-title" style={{ marginBottom: 12 }}>
-              {post.title ?? '无标题'}
-            </h1>
             <Markdown text={post.body} className="md-body post-md" />
-
-            <div className="post-tags">
-              {post.tags.map((t) => (
-                <span key={t} className="badge badge-ghost">#{t}</span>
-              ))}
-            </div>
 
             <div className="floor-foot">
               {unpublished ? (
