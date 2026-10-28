@@ -146,9 +146,38 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
             <dd className="mono">{item.version || '—'}</dd>
             <dt>授权</dt>
             <dd>{item.license || '作者保留'}</dd>
+            {item.gameVersions && (
+              <>
+                <dt>支持版本</dt>
+                <dd>{item.gameVersions}</dd>
+              </>
+            )}
+            {item.loaders && (
+              <>
+                <dt>加载器</dt>
+                <dd>{item.loaders}</dd>
+              </>
+            )}
+            {item.sourceUrl && (
+              <>
+                <dt>来源</dt>
+                <dd>
+                  <a href={item.sourceUrl} target="_blank" rel="noreferrer noopener">
+                    原帖 / 百科
+                  </a>
+                </dd>
+              </>
+            )}
             <dt>发布</dt>
             <dd className="mono">{fmtDate(item.createdAt)}</dd>
           </dl>
+
+          {item.deps && (
+            <div className="res-deps">
+              <b>前置依赖</b>
+              <p>{item.deps}</p>
+            </div>
+          )}
         </div>
 
         <div className="card rail-card">

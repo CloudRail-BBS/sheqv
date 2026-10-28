@@ -24,6 +24,10 @@ const EMPTY = {
   version: '',
   license: '作者保留',
   sizeMb: '',
+  gameVersions: '',
+  loaders: '',
+  deps: '',
+  sourceUrl: '',
 };
 
 /**
@@ -173,6 +177,10 @@ export function ResourceUpload({
         version: form.version.trim(),
         license: form.license,
         sizeBytes: Number.isFinite(sizeMb) && sizeMb > 0 ? Math.round(sizeMb * 1024 * 1024) : 0,
+        gameVersions: form.gameVersions.trim(),
+        loaders: form.loaders.trim(),
+        deps: form.deps.trim(),
+        sourceUrl: form.sourceUrl.trim(),
       }),
     }).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
@@ -279,6 +287,46 @@ export function ResourceUpload({
                     value={form.sizeMb}
                     onChange={(e) => set('sizeMb', e.target.value.replace(/[^\d.]/g, ''))}
                     placeholder="12.5"
+                  />
+                </label>
+                <label className="field">
+                  <span>支持版本</span>
+                  <input
+                    className="input"
+                    value={form.gameVersions}
+                    onChange={(e) => set('gameVersions', e.target.value)}
+                    placeholder="1.20.1, 1.20.4（逗号分隔）"
+                    maxLength={120}
+                  />
+                </label>
+                <label className="field">
+                  <span>加载器 / 环境</span>
+                  <input
+                    className="input"
+                    value={form.loaders}
+                    onChange={(e) => set('loaders', e.target.value)}
+                    placeholder="Forge, Fabric"
+                    maxLength={60}
+                  />
+                </label>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>前置依赖（可空）</span>
+                  <input
+                    className="input"
+                    value={form.deps}
+                    onChange={(e) => set('deps', e.target.value)}
+                    placeholder="需要 Fabric API 0.15+；与服务端插件冲突"
+                    maxLength={300}
+                  />
+                </label>
+                <label className="field" style={{ gridColumn: '1 / -1' }}>
+                  <span>来源 / 原帖（可空）</span>
+                  <input
+                    className="input"
+                    value={form.sourceUrl}
+                    onChange={(e) => set('sourceUrl', e.target.value)}
+                    placeholder="https://…"
+                    maxLength={300}
                   />
                 </label>
               </div>

@@ -142,6 +142,10 @@ pub async fn create(
         version: &text(&obj, "version"),
         license: &text(&obj, "license"),
         size_bytes: num(&obj, "sizeBytes").max(0),
+        game_versions: &text(&obj, "gameVersions"),
+        loaders: &text(&obj, "loaders"),
+        deps: &text(&obj, "deps"),
+        source_url: &text(&obj, "sourceUrl"),
     };
 
     if let Some(msg) = resources::validate(&input) {
@@ -217,6 +221,10 @@ pub async fn patch(
     let version = opt_text(&obj, "version").unwrap_or(cur.version.clone());
     let license = opt_text(&obj, "license").unwrap_or(cur.license.clone());
     let size_bytes = obj.get("sizeBytes").and_then(|v| v.as_i64()).unwrap_or(cur.size_bytes);
+    let game_versions = opt_text(&obj, "gameVersions").unwrap_or(cur.game_versions.clone());
+    let loaders = opt_text(&obj, "loaders").unwrap_or(cur.loaders.clone());
+    let deps = opt_text(&obj, "deps").unwrap_or(cur.deps.clone());
+    let source_url = opt_text(&obj, "sourceUrl").unwrap_or(cur.source_url.clone());
 
     let check = NewResource {
         title: &title,
@@ -230,6 +238,10 @@ pub async fn patch(
         version: &version,
         license: &license,
         size_bytes,
+        game_versions: &game_versions,
+        loaders: &loaders,
+        deps: &deps,
+        source_url: &source_url,
     };
     if let Some(msg) = resources::validate(&check) {
         return Err(ApiError::invalid_input(msg));
@@ -261,6 +273,10 @@ pub async fn patch(
             version: Some(&version),
             license: Some(&license),
             size_bytes: Some(size_bytes),
+            game_versions: Some(&game_versions),
+            loaders: Some(&loaders),
+            deps: Some(&deps),
+            source_url: Some(&source_url),
         },
     )
     .await

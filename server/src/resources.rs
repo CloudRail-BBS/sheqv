@@ -49,6 +49,10 @@ pub struct ResourceView {
     pub version: String,
     pub license: String,
     pub size_bytes: i64,
+    pub game_versions: String,
+    pub loaders: String,
+    pub deps: String,
+    pub source_url: String,
     pub like_count: i64,
     pub download_count: i64,
     pub liked: bool,
@@ -76,6 +80,14 @@ struct Row {
     version: String,
     license: String,
     size_bytes: i64,
+    /// 支持的版本（逗号分隔，如 "1.20.1, 1.20.4"）
+    game_versions: String,
+    /// 加载器 / 运行环境（如 "Forge, Fabric"）
+    loaders: String,
+    /// 前置依赖说明
+    deps: String,
+    /// 原帖或百科链接
+    source_url: String,
     like_count: i32,
     download_count: i32,
     liked: bool,
@@ -114,6 +126,10 @@ impl Row {
             version: self.version,
             license: self.license,
             size_bytes: self.size_bytes,
+            game_versions: self.game_versions,
+            loaders: self.loaders,
+            deps: self.deps,
+            source_url: self.source_url,
             like_count: self.like_count as i64,
             download_count: self.download_count as i64,
             liked: self.liked,
@@ -128,7 +144,9 @@ impl Row {
 const COLUMNS: &str = "r.id, r.title, r.summary, r.body, r.game, r.category, r.tags,
         r.author_id, u.nickname AS author, (u.developer_at IS NOT NULL) AS author_developer,
         r.team_id, t.name AS team_name, t.tag AS team_tag,
-        r.url, r.version, r.license, r.size_bytes, r.like_count, r.download_count,
+        r.url, r.version, r.license, r.size_bytes,
+        r.game_versions, r.loaders, r.deps, r.source_url,
+        r.like_count, r.download_count,
         r.status, r.created_at, r.updated_at,
         (rl.user_id IS NOT NULL) AS liked";
 
@@ -239,6 +257,10 @@ pub struct NewResource<'a> {
     pub version: &'a str,
     pub license: &'a str,
     pub size_bytes: i64,
+    pub game_versions: &'a str,
+    pub loaders: &'a str,
+    pub deps: &'a str,
+    pub source_url: &'a str,
 }
 
 /// 返回中文错误；合法返回 `None`
@@ -282,6 +304,21 @@ pub fn validate(input: &NewResource<'_>) -> Option<String> {
     if input.size_bytes < 0 {
         return Some("文件大小不正确".into());
     }
+    if len(input.game_versions) > 120 {
+        return Some("支持版本太长了（最多 120 字）".into());
+    }
+    if len(input.loaders) > 60 {
+        return Some("加载器说明最多 60 字".into());
+    }
+    if len(input.deps) > 300 {
+        return Some("依赖说明最多 300 字".into());
+    }
+    let src = input.source_url.trim();
+    if !src.is_empty()
+        && (src.len() > 300 || !(src.starts_with("http://") || src.starts_with("https://")))
+    {
+        return Some("来源链接必须是 http(s) 地址".into());
+    }
     None
 }
 
@@ -307,8 +344,8 @@ pub async fn create(
     sqlx::query(
         "INSERT INTO resources
              (id, title, summary, body, game, category, tags, author_id, team_id,
-              url, version, license, size_bytes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+              url, version, license, size_bytes, game_versions, loaders, deps, source_url)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",
     )
     .bind(&id)
     .bind(input.title.trim())
@@ -323,6 +360,10 @@ pub async fn create(
     .bind(input.version.trim())
     .bind(input.license.trim())
     .bind(input.size_bytes)
+    .bind(input.game_versions.trim())
+    .bind(input.loaders.trim())
+    .bind(input.deps.trim())
+    .bind(input.source_url.trim())
     .execute(&mut *tx)
     .await?;
 
@@ -348,6 +389,10 @@ pub struct ResourcePatch<'a> {
     pub version: Option<&'a str>,
     pub license: Option<&'a str>,
     pub size_bytes: Option<i64>,
+    pub game_versions: Option<&'a str>,
+    pub loaders: Option<&'a str>,
+    pub deps: Option<&'a str>,
+    pub source_url: Option<&'a str>,
 }
 
 pub async fn patch(
@@ -374,6 +419,10 @@ pub async fn patch(
     let version = patch.version.unwrap_or(&cur.version);
     let license = patch.license.unwrap_or(&cur.license);
     let size_bytes = patch.size_bytes.unwrap_or(cur.size_bytes);
+    let game_versions = patch.game_versions.unwrap_or(&cur.game_versions);
+    let loaders = patch.loaders.unwrap_or(&cur.loaders);
+    let deps = patch.deps.unwrap_or(&cur.deps);
+    let source_url = patch.source_url.unwrap_or(&cur.source_url);
 
     let check = NewResource {
         title,
@@ -387,6 +436,10 @@ pub async fn patch(
         version,
         license,
         size_bytes,
+        game_versions,
+        loaders,
+        deps,
+        source_url,
     };
     if validate(&check).is_some() {
         return Ok(None);
@@ -394,7 +447,8 @@ pub async fn patch(
 
     sqlx::query(
         "UPDATE resources SET title=$2, summary=$3, body=$4, game=$5, category=$6, tags=$7,
-                team_id=$8, url=$9, version=$10, license=$11, size_bytes=$12, updated_at=now()
+                team_id=$8, url=$9, version=$10, license=$11, size_bytes=$12,
+                game_versions=$13, loaders=$14, deps=$15, source_url=$16, updated_at=now()
           WHERE id=$1",
     )
     .bind(id)
@@ -409,6 +463,10 @@ pub async fn patch(
     .bind(version.trim())
     .bind(license.trim())
     .bind(size_bytes)
+    .bind(game_versions.trim())
+    .bind(loaders.trim())
+    .bind(deps.trim())
+    .bind(source_url.trim())
     .execute(pool)
     .await?;
 

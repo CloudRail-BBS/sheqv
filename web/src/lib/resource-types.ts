@@ -23,6 +23,14 @@ export interface ResourceView {
   version: string;
   license: string;
   sizeBytes: number;
+  /** 支持的版本，逗号分隔 */
+  gameVersions: string;
+  /** 加载器 / 运行环境 */
+  loaders: string;
+  /** 前置依赖说明 */
+  deps: string;
+  /** 原帖或百科链接 */
+  sourceUrl: string;
   likeCount: number;
   downloadCount: number;
   liked: boolean;

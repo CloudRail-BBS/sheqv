@@ -4005,3 +4005,11 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   .about-admin-add { grid-template-columns: 1fr; }
   .about-admin-row { flex-wrap: wrap; }
 }
+
+/* 资源详情：前置依赖单独一块，别塞进键值表把行高撑乱 */
+.res-deps {
+  margin-top: 12px; padding: 10px 12px;
+  border: 1px solid var(--warn-line); border-radius: 9px; background: var(--warn-soft);
+}
+.res-deps b { display: block; font-size: 11px; color: var(--warn); letter-spacing: 0.04em; }
+.res-deps p { margin-top: 3px; font-size: 12px; color: var(--text-2); line-height: 1.7; }
