@@ -153,7 +153,15 @@ pub async fn create(
         .await
         .map_err(server_err)?;
 
-    Ok((StatusCode::CREATED, Json(json!({ "ok": true, "item": item }))).into_response())
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({
+            "ok": true,
+            "item": item,
+            "message": "已提交，管理员审核通过后会出现在大厅",
+        })),
+    )
+        .into_response())
 }
 
 /// PATCH /api/v1/servers/{id} —— 本人或管理员
@@ -216,8 +224,9 @@ pub async fn patch(
         edition: obj.get("edition").map(|_| merged.edition.clone()),
         description: obj.get("description").map(|_| merged.description.clone()),
         tags: obj.get("tags").map(|_| merged.tags.clone()),
-        // 只有管理员能改可见性
+        // 只有管理员能改可见性与审核结果
         visibility: None,
+        status: None,
     };
 
     let item = servers::update(&st.pool, &id, &patch)
@@ -245,6 +254,17 @@ pub async fn remove(
         .await
         .map_err(ApiError::internal)?;
     Ok(Json(json!({ "ok": true })).into_response())
+}
+
+/// GET /api/v1/me/servers —— 我提交的条目（含待审核 / 被拒）
+pub async fn mine(
+    State(st): State<AppState>,
+    crate::current_user::CurrentUser(user): crate::current_user::CurrentUser,
+) -> ApiResult<Response> {
+    let items = servers::list_mine(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
 }
 
 /// POST /api/v1/servers/{id}/probe —— 手动刷新一次（10 秒冷却）
@@ -360,13 +380,21 @@ pub async fn admin_list(
     State(st): State<AppState>,
     _: crate::admin_auth::AdminActor,
 ) -> ApiResult<Response> {
-    let items = servers::list(&st.pool, None, true)
+    let mut items = servers::list(&st.pool, None, true)
         .await
         .map_err(ApiError::internal)?;
+    // 待审核排前面：后台打开就想先处理队列，而不是翻过一堆已通过的
+    items.sort_by(|a, b| {
+        let rank = |s: &ServerView| if s.status == "pending" { 0 } else { 1 };
+        rank(a).cmp(&rank(b)).then(b.created_at.cmp(&a.created_at))
+    });
     Ok(Json(json!({ "ok": true, "items": items })).into_response())
 }
 
-/// PATCH /api/v1/admin/servers/{id}  body: { visibility: public|hidden }
+/// PATCH /api/v1/admin/servers/{id}
+///
+/// body 二选一或同时给：`{ visibility: public|hidden }` 控制展示，
+/// `{ status: pending|approved|rejected }` 是审核结果。
 pub async fn admin_patch(
     State(st): State<AppState>,
     _: crate::admin_auth::AdminActor,
@@ -376,13 +404,38 @@ pub async fn admin_patch(
     let Some(obj) = parse_body(&body) else {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
     };
-    let visibility = text(&obj, "visibility");
-    if visibility != "public" && visibility != "hidden" {
-        return Err(ApiError::invalid_input("visibility 只能是 public 或 hidden"));
+
+    let visibility = obj
+        .get("visibility")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .map(str::to_string);
+    if let Some(v) = visibility.as_deref() {
+        if v != "public" && v != "hidden" {
+            return Err(ApiError::invalid_input("visibility 只能是 public 或 hidden"));
+        }
+    }
+
+    let status = obj
+        .get("status")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .map(str::to_string);
+    if let Some(v) = status.as_deref() {
+        if !["pending", "approved", "rejected"].contains(&v) {
+            return Err(ApiError::invalid_input(
+                "status 只能是 pending / approved / rejected",
+            ));
+        }
+    }
+
+    if visibility.is_none() && status.is_none() {
+        return Err(ApiError::invalid_input("请提供 visibility 或 status"));
     }
 
     let patch = PatchServer {
-        visibility: Some(visibility),
+        visibility,
+        status,
         ..Default::default()
     };
     let item = servers::update(&st.pool, &id, &patch)

@@ -1,13 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { STATE_LABEL, addressOf, type GameServer } from '@/lib/server-types';
+import { STATE_LABEL, STATUS_LABEL, addressOf, type GameServer, type ServerStatus } from '@/lib/server-types';
 
 /**
  * 后台的联机大厅列表。
  *
- * 用户是自由上传的，所以后台只需要两个动作：**隐藏**（内容还在，前台不可见）
- * 和**删除**。探测结果是只读的，想立刻重探就去前台用上传者身份点刷新。
+ * 上传先进审核队列：**通过**才进大厅，**拒绝**留在后台；另外还有
+ * **隐藏**（已通过但暂时下架）和**删除**。探测结果是只读的。
  */
 export function AdminServers() {
   const [items, setItems] = useState<GameServer[]>([]);
@@ -30,6 +30,25 @@ export function AdminServers() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function setStatus(id: string, status: ServerStatus) {
+    setBusy(id);
+    const res = await fetch(`/api/v1/admin/servers/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => null);
+    setBusy(null);
+    if (!res?.ok) {
+      setMsg({ kind: 'err', text: '操作失败' });
+      return;
+    }
+    setMsg({
+      kind: 'ok',
+      text: status === 'approved' ? '已通过，下一轮会开始探测' : '已拒绝，前台不可见',
+    });
+    void load();
+  }
 
   async function setVisibility(id: string, visibility: 'public' | 'hidden') {
     setBusy(id);
@@ -92,8 +111,9 @@ export function AdminServers() {
                 <th>地址</th>
                 <th>状态</th>
                 <th>上传者</th>
+                <th>审核</th>
                 <th>可见性</th>
-                <th style={{ width: 150 }}>操作</th>
+                <th style={{ width: 232 }}>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -124,21 +144,53 @@ export function AdminServers() {
                   </td>
                   <td className="small muted">{s.owner || '—'}</td>
                   <td>
+                    <span
+                      className={
+                        'badge ' +
+                        (s.status === 'approved'
+                          ? 'badge-live'
+                          : s.status === 'rejected'
+                            ? 'badge-danger'
+                            : 'badge-warn')
+                      }
+                    >
+                      {STATUS_LABEL[s.status] ?? '未标记'}
+                    </span>
+                  </td>
+                  <td>
                     <span className={'badge ' + (s.visibility === 'public' ? 'badge-live' : 'badge-ghost')}>
                       {s.visibility === 'public' ? '展示中' : '已隐藏'}
                     </span>
                   </td>
                   <td>
-                    <div className="row" style={{ gap: 6 }}>
+                    <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
+                      {s.status !== 'approved' && (
+                        <button
+                          className="btn btn-sm btn-ghost adm-mini"
+                          disabled={busy === s.id}
+                          onClick={() => setStatus(s.id, 'approved')}
+                        >
+                          通过
+                        </button>
+                      )}
+                      {s.status !== 'rejected' && (
+                        <button
+                          className="btn btn-sm btn-ghost adm-mini"
+                          disabled={busy === s.id}
+                          onClick={() => setStatus(s.id, 'rejected')}
+                        >
+                          拒绝
+                        </button>
+                      )}
                       <button
-                        className="btn btn-sm btn-ghost"
+                        className="btn btn-sm btn-ghost adm-mini"
                         disabled={busy === s.id}
                         onClick={() => setVisibility(s.id, s.visibility === 'public' ? 'hidden' : 'public')}
                       >
                         {s.visibility === 'public' ? '隐藏' : '恢复'}
                       </button>
                       <button
-                        className="btn btn-sm btn-ghost"
+                        className="btn btn-sm btn-ghost adm-mini"
                         disabled={busy === s.id}
                         onClick={() => remove(s.id, s.name)}
                       >

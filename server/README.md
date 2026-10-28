@@ -115,8 +115,9 @@
 | PATCH/DELETE | `/api/v1/servers/{id}` | 本人或管理员；改地址会清空探测快照 |
 | POST | `/api/v1/servers/{id}/probe` | 手动刷新一次（10 秒冷却） |
 | GET | `/api/v1/relay/rooms` | Rusted Warfare 中转站的实时房间（10 秒缓存，失败回落旧数据） |
-| GET | `/api/v1/admin/servers` | 后台列表（含隐藏条目） |
-| PATCH/DELETE | `/api/v1/admin/servers/{id}` | 隐藏 / 恢复 / 删除 |
+| GET | `/api/v1/me/servers` | 我提交的服务器（含待审核 / 被拒） |
+| GET | `/api/v1/admin/servers` | 后台列表（含隐藏与待审核条目） |
+| PATCH/DELETE | `/api/v1/admin/servers/{id}` | 审核（status）/ 隐藏恢复（visibility）/ 删除 |
 
 ## 本地运行
 

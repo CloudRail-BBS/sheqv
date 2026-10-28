@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/current-user';
-import { listServers, relaySnapshot } from '@/lib/server-store';
+import { listMyServers, listServers, relaySnapshot } from '@/lib/server-store';
 import { ServerCard } from '@/components/server-card';
 import { RelayBoard } from '@/components/relay-board';
 import { ServerUpload } from '@/components/server-upload';
+import { MySubmissions } from '@/components/my-submissions';
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
@@ -40,6 +41,8 @@ export default async function ServersPage({
     active === 'rusted_warfare' ? listServers('rusted_warfare') : Promise.resolve([]),
     getSettings(),
   ]);
+  // 待审核的那几条不在公开列表里，单独取一次给「我的提交」
+  const mine = user ? await listMyServers() : [];
   // 房间只在需要时拉：MC 那栏不该为此多等一次中转站请求
   const relay = active === 'rusted_warfare' ? await relaySnapshot() : null;
 
@@ -58,7 +61,8 @@ export default async function ServersPage({
               {settings.serversHint || 'Minecraft 服务器与 Rusted Warfare 联机房 · 人数与在线状态自动刷新'}
             </p>
           </div>
-          <div className="row wrap" style={{ gap: 6 }}>
+          <div className="row wrap" style={{ gap: 6, alignItems: 'center' }}>
+            <ServerUpload loggedIn={Boolean(user)} defaultKind={active} />
             {active === 'minecraft' ? (
               <>
                 <span className="badge badge-live">{onlineCount} 台在线</span>
@@ -84,11 +88,15 @@ export default async function ServersPage({
           </Link>
         </div>
 
+        {mine.length > 0 && (
+          <MySubmissions items={mine.filter((s) => s.kind === active)} />
+        )}
+
         {active === 'minecraft' ? (
           mc.length === 0 ? (
             <EmptyState
-              title="还没有人挂服务器"
-              desc="把自己常玩的 Minecraft 服务器填到右边，我们会自动探测在线人数、版本和延迟，填错地址也不怕，删掉重来就行。"
+              title="还没有已通过审核的服务器"
+              desc="点右上角「上传服务器」提交自己的服务器，管理员通过后会出现在这里，并自动探测在线人数、版本和延迟。"
               icon="box"
             />
           ) : (
@@ -104,13 +112,13 @@ export default async function ServersPage({
       </div>
 
       <aside className="rail">
-        <ServerUpload loggedIn={Boolean(user)} />
-
         <div className="card rail-card">
           <div className="rail-title">大厅说明</div>
           <dl className="kv">
+            <dt>审核</dt>
+            <dd>上传后人工过一遍，通过才展示</dd>
             <dt>探测周期</dt>
-            <dd>约 1 分钟一次</dd>
+            <dd>通过后约 1 分钟一次</dd>
             <dt>我的世界</dt>
             <dd>Java 与基岩版都可探</dd>
             <dt>Rusted Warfare</dt>
@@ -119,7 +127,8 @@ export default async function ServersPage({
             <dd>每人 20 个条目</dd>
           </dl>
           <p className="small muted" style={{ marginTop: 10, lineHeight: 1.75 }}>
-            自由上传、不需要审核，站点只挡内网地址。填错端口会显示「离线」，点上传者头像旁边的删除即可移除。
+            提交后可以在「我的提交」里看状态；填错地址就删掉重传，不用等审核。
+            站点只接受公网地址，内网 IP 会在提交时被挡下。
           </p>
         </div>
 

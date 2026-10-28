@@ -21,7 +21,7 @@ export default async function AdminServersPage() {
         <div>
           <h1 className="page-title">联机大厅</h1>
           <p className="small muted" style={{ marginTop: 4 }}>
-            用户自由上传的服务器与中转站；隐藏不影响数据，删除需要用户重新上传。
+            上传后先待审核，通过才会进大厅；隐藏只是下架，删除需要用户重新上传。
           </p>
         </div>
         <Link href="/servers" className="btn btn-sm btn-ghost">

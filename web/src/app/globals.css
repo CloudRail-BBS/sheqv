@@ -4236,3 +4236,64 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   .res-file-name { flex: 1 1 100%; order: -1; }
   .res-file-dl { display: none; }
 }
+
+/* ── 上传服务器弹窗 ────────────────────────
+   比发帖面板窄一档：字段少，横着摊开反而要来回扫。 */
+
+.srv-modal { width: min(540px, 94vw); max-height: min(90vh, 780px); }
+.srv-kind { margin-bottom: 12px; }
+.srv-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.srv-form .span2 { grid-column: 1 / -1; }
+.srv-modal-foot {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.srv-modal-foot .small { margin-right: auto; line-height: 1.6; }
+
+.srv-done {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 18px 8px 24px; text-align: center;
+}
+.srv-done-mark {
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--ok-soft); border: 1px solid var(--ok-line); color: var(--ok);
+  font-size: 22px; font-weight: 700;
+}
+.srv-done b { font-size: 15px; }
+.srv-done p {
+  max-width: 36ch; font-size: 12px; color: var(--muted); line-height: 1.8;
+}
+.srv-done .btn { margin-top: 6px; }
+
+/* 我的提交：待审核 / 被拒的那几条 */
+.my-srv { padding: 0; margin-bottom: 12px; overflow: hidden; }
+.my-srv-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 11px 14px; border-bottom: 1px solid var(--line-soft);
+}
+.my-srv-head b { font-size: 12.5px; }
+.my-srv-list { list-style: none; margin: 0; padding: 0; }
+.my-srv-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 14px; border-top: 1px solid var(--line-soft); font-size: 12.5px;
+}
+.my-srv-row:first-child { border-top: 0; }
+.my-srv-name {
+  flex: none; max-width: 30%; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.my-srv-addr {
+  flex: 1; min-width: 0; color: var(--text-3); font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.my-srv-row .btn { margin-left: auto; flex: none; }
+
+@media (max-width: 560px) {
+  .srv-modal { width: 100%; max-height: none; }
+  .srv-form { grid-template-columns: 1fr; }
+  .srv-modal-foot { flex-wrap: wrap; }
+  .srv-modal-foot .small { flex: 1 1 100%; margin-right: 0; }
+  .srv-modal-foot .btn { flex: 1; }
+  .my-srv-name { max-width: 40%; }
+}

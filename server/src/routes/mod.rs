@@ -225,6 +225,7 @@ pub fn router(state: AppState) -> Router {
             patch(servers::patch).delete(servers::remove),
         )
         .route("/api/v1/servers/{id}/probe", post(servers::refresh))
+        .route("/api/v1/me/servers", get(servers::mine))
         .route("/api/v1/relay/rooms", get(servers::rooms))
         .route("/api/v1/admin/users/{id}/developer", patch(admin::set_developer))
         .route("/api/v1/admin/resources", get(resources::admin_list))

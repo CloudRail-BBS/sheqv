@@ -15,6 +15,12 @@ export async function listServers(kind: ServerKind): Promise<GameServer[]> {
   return d.items;
 }
 
+/** 我提交的服务器（含待审核 / 被拒），只有登录后才有内容 */
+export async function listMyServers(): Promise<GameServer[]> {
+  const d = await apiGetOr<{ items: GameServer[] }>('/api/v1/me/servers', { items: [] });
+  return d.items ?? [];
+}
+
 export async function relaySnapshot(): Promise<RelaySnapshot> {
   return apiGetOr<RelaySnapshot>('/api/v1/relay/rooms', {
     nodes: [],

@@ -7,6 +7,8 @@
 
 export type ServerKind = 'minecraft' | 'rusted_warfare';
 export type ProbeState = 'unknown' | 'online' | 'offline';
+/** 上传后要过一遍后台：待审核 / 已通过 / 已拒绝 */
+export type ServerStatus = 'pending' | 'approved' | 'rejected';
 
 export interface GameServer {
   id: string;
@@ -21,6 +23,7 @@ export interface GameServer {
   owner: string;
   ownerId?: string;
   visibility: 'public' | 'hidden';
+  status: ServerStatus;
   probeState: ProbeState;
   probeError: string;
   playersOnline: number;
@@ -69,6 +72,12 @@ export interface RelaySnapshot {
 export function addressOf(s: GameServer): string {
   return s.kind === 'minecraft' ? `${s.host}:${s.port}` : s.host;
 }
+
+export const STATUS_LABEL: Record<ServerStatus, string> = {
+  pending: '待审核',
+  approved: '已通过',
+  rejected: '已拒绝',
+};
 
 export const STATE_LABEL: Record<ProbeState, string> = {
   online: '在线',

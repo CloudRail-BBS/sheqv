@@ -46,6 +46,8 @@ pub struct ServerView {
     pub owner: String,
     pub owner_id: Option<String>,
     pub visibility: String,
+    /// pending / approved / rejected：上传后要过一遍后台
+    pub status: String,
     pub probe_state: String,
     pub probe_error: String,
     pub players_online: i64,
@@ -70,6 +72,7 @@ struct Row {
     owner: Option<String>,
     owner_id: Option<String>,
     visibility: String,
+    status: String,
     probe_state: String,
     probe_error: String,
     players_online: i32,
@@ -82,7 +85,7 @@ struct Row {
 }
 
 const SELECT: &str = "SELECT s.id, s.kind, s.name, s.host, s.port, s.edition, s.description,
-        s.tags, u.nickname AS owner, s.owner_id, s.visibility,
+        s.tags, u.nickname AS owner, s.owner_id, s.visibility, s.status,
         s.probe_state, s.probe_error, s.players_online, s.players_max,
         s.version_name, s.motd, s.latency_ms, s.probed_at, s.created_at
    FROM game_servers s LEFT JOIN users u ON u.id = s.owner_id";
@@ -109,6 +112,7 @@ impl Row {
             owner: self.owner.unwrap_or_default(),
             owner_id: self.owner_id,
             visibility: self.visibility,
+            status: self.status,
             probe_state: self.probe_state,
             probe_error: self.probe_error,
             players_online: self.players_online as i64,
@@ -144,6 +148,8 @@ pub struct PatchServer {
     pub description: Option<String>,
     pub tags: Option<Vec<String>>,
     pub visibility: Option<String>,
+    /// 后台审核结果：pending / approved / rejected
+    pub status: Option<String>,
 }
 
 pub enum ServerError {
@@ -239,12 +245,45 @@ pub async fn create(
     owner_id: &str,
     input: &NewServer,
 ) -> Result<ServerView, ServerError> {
+    // 同一地址唯一。若那条是被拒的、而且就是本人提交的，直接改回待审核，
+    // 否则用户只能先删除再重填——地址本来就一样，没必要让他绕一圈。
+    let existing: Option<(String, Option<String>, String)> = sqlx::query_as(
+        "SELECT id, owner_id, status FROM game_servers
+          WHERE kind = $1 AND lower(host) = lower($2) AND port = $3",
+    )
+    .bind(&input.kind)
+    .bind(&input.host)
+    .bind(input.port)
+    .fetch_optional(pool)
+    .await
+    .map_err(ServerError::Db)?;
+
+    if let Some((id, owner, status)) = existing {
+        if owner.as_deref() == Some(owner_id) && status == "rejected" {
+            let patch = PatchServer {
+                name: Some(input.name.clone()),
+                host: Some(input.host.clone()),
+                port: Some(input.port),
+                edition: Some(input.edition.clone()),
+                description: Some(input.description.clone()),
+                tags: Some(input.tags.clone()),
+                visibility: None,
+                status: Some("pending".into()),
+            };
+            return update(pool, &id, &patch)
+                .await?
+                .ok_or(ServerError::NotFound);
+        }
+        return Err(ServerError::Duplicate);
+    }
+
     let id = crate::ids::next('s');
     let tags = serde_json::json!(input.tags);
     let row: Row = sqlx::query_as(&format!(
         "WITH ins AS (
-             INSERT INTO game_servers (id, kind, name, host, port, edition, description, tags, owner_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             INSERT INTO game_servers
+                 (id, kind, name, host, port, edition, description, tags, owner_id, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
              RETURNING *
          )
          {SELECT_WITH}"
@@ -268,7 +307,7 @@ pub async fn create(
 /// `create` / `update` 复用同一段查询：把刚写的行按 `SELECT` 的形状取回来
 const SELECT_WITH: &str = "SELECT ins.id, ins.kind, ins.name, ins.host, ins.port, ins.edition,
         ins.description, ins.tags, u.nickname AS owner, ins.owner_id, ins.visibility,
-        ins.probe_state, ins.probe_error, ins.players_online, ins.players_max,
+        ins.status, ins.probe_state, ins.probe_error, ins.players_online, ins.players_max,
         ins.version_name, ins.motd, ins.latency_ms, ins.probed_at, ins.created_at
    FROM ins LEFT JOIN users u ON u.id = ins.owner_id";
 
@@ -280,11 +319,23 @@ pub async fn list(
     let rows: Vec<Row> = sqlx::query_as(&format!(
         "{SELECT}
           WHERE ($1::text IS NULL OR s.kind = $1)
-            AND ($2 OR s.visibility = 'public')
+            AND ($2 OR (s.visibility = 'public' AND s.status = 'approved'))
           ORDER BY (s.probe_state = 'online') DESC, s.players_online DESC, s.created_at DESC"
     ))
     .bind(kind)
     .bind(include_hidden)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(Row::view).collect())
+}
+
+/// 我提交的条目（含待审核 / 被拒）：大厅里只显示已通过的，
+/// 用户得能看到自己那份现在是什么状态，否则会以为传丢了。
+pub async fn list_mine(pool: &PgPool, owner_id: &str) -> Result<Vec<ServerView>, sqlx::Error> {
+    let rows: Vec<Row> = sqlx::query_as(&format!(
+        "{SELECT} WHERE s.owner_id = $1 ORDER BY s.created_at DESC LIMIT 50"
+    ))
+    .bind(owner_id)
     .fetch_all(pool)
     .await?;
     Ok(rows.into_iter().map(Row::view).collect())
@@ -304,7 +355,10 @@ pub async fn update(
     patch: &PatchServer,
 ) -> Result<Option<ServerView>, ServerError> {
     // 改了地址就把探测快照清空，否则会拿旧服务器的人数骗人
-    let reset = patch.host.is_some() || patch.port.is_some() || patch.edition.is_some();
+    let reset = patch.host.is_some()
+        || patch.port.is_some()
+        || patch.edition.is_some()
+        || patch.status.as_deref() == Some("approved");
 
     // CTE 统一叫 ins：与 create 共用 SELECT_WITH（它按这个名字取行）
     let row: Option<Row> = sqlx::query_as(&format!(
@@ -317,6 +371,7 @@ pub async fn update(
                 description = COALESCE($6, description),
                 tags        = COALESCE($7, tags),
                 visibility  = COALESCE($8, visibility),
+                status      = COALESCE($10, status),
                 probe_state = CASE WHEN $9 THEN 'unknown' ELSE probe_state END,
                 probe_error = CASE WHEN $9 THEN '' ELSE probe_error END,
                 players_online = CASE WHEN $9 THEN 0 ELSE players_online END,
@@ -336,6 +391,7 @@ pub async fn update(
     .bind(patch.tags.as_ref().map(|t| serde_json::json!(t)))
     .bind(&patch.visibility)
     .bind(reset)
+    .bind(&patch.status)
     .fetch_optional(pool)
     .await
     .map_err(map_db_err)?;
@@ -378,6 +434,7 @@ pub async fn due_targets(pool: &PgPool, interval_secs: u64) -> Result<Vec<Target
         "SELECT id, kind, host, port, edition
            FROM game_servers
           WHERE visibility = 'public'
+            AND status = 'approved'
             AND (probed_at IS NULL OR probed_at < now() - ($1 || ' seconds')::interval)
           ORDER BY probed_at NULLS FIRST
           LIMIT $2",
