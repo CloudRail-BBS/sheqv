@@ -39,7 +39,10 @@ export function ResourceCard({ item }: { item: ResourceView }) {
           <span className="small muted mono">
             ♥ {fmtNum(item.likeCount)} · ↓ {fmtNum(item.downloadCount)}
           </span>
-          <span className="how">{fmtSize(item.sizeBytes)}</span>
+          <span className="how">
+            {item.fileCount > 1 ? `${item.fileCount} 个文件 · ` : ''}
+            {fmtSize(item.sizeBytes)}
+          </span>
         </div>
       </div>
     </Link>

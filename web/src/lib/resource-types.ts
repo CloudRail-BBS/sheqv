@@ -4,6 +4,17 @@
  * 这个文件不 import 任何服务端模块，客户端组件可以直接引用。
  */
 
+/** 资源下的一个文件（详情接口下发） */
+export interface ResourceFile {
+  /** 附件 id，下载接口用它定位 */
+  id: string;
+  fileId: string;
+  name: string;
+  size: number;
+  downloads: number;
+  url: string;
+}
+
 export interface ResourceView {
   id: string;
   title: string;
@@ -31,6 +42,10 @@ export interface ResourceView {
   deps: string;
   /** 原帖或百科链接 */
   sourceUrl: string;
+  /** 附件数量；列表与详情都带 */
+  fileCount: number;
+  /** 附件明细；只有详情有 */
+  files?: ResourceFile[];
   likeCount: number;
   downloadCount: number;
   liked: boolean;

@@ -88,6 +88,7 @@
 | GET/PATCH/DELETE | `/api/v1/resources/{id}` | 详情 / 修改 / 删除（作者或管理员） |
 | POST | `/api/v1/resources/{id}/like` | 切换点赞（每用户一次） |
 | POST | `/api/v1/resources/{id}/download` | 取下载地址并计数（同用户同天一次） |
+| POST | `/api/v1/resources/{id}/files/{fileId}/download` | 下载单个附件（单文件次数 +1，资源总次数按天去重） |
 | GET | `/api/v1/leaderboard/developers` | 开发者个人榜 + 开发团队榜 |
 | GET/POST | `/api/v1/dev-teams` | 开发团队列表 / 创建（需开发者，一人一队） |
 | GET/PATCH/DELETE | `/api/v1/dev-teams/{id}` | 详情 / 修改 / 解散（负责人或管理员） |

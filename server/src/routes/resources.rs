@@ -51,6 +51,27 @@ fn tags(obj: &Map<String, Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// 附件 id 列表（最多 8 个，去空去重）
+fn id_list(obj: &Map<String, Value>, key: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    if let Some(arr) = obj.get(key).and_then(|v| v.as_array()) {
+        for item in arr {
+            let Some(raw) = item.as_str() else { continue };
+            let id = raw.trim();
+            if id.is_empty() || id.len() > 40 || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
+                continue;
+            }
+            if !out.iter().any(|v| v == id) {
+                out.push(id.to_string());
+            }
+            if out.len() >= resources::MAX_FILES {
+                break;
+            }
+        }
+    }
+    out
+}
+
 fn num(obj: &Map<String, Value>, key: &str) -> i64 {
     obj.get(key).and_then(|v| v.as_i64()).unwrap_or(0)
 }
@@ -130,6 +151,10 @@ pub async fn create(
     };
 
     let team_id = opt_text(&obj, "teamId").filter(|v| !v.is_empty());
+    let file_ids = id_list(&obj, "fileIds");
+    let raw_url = text(&obj, "url");
+    // 只上传了文件、没填外链时，主地址指向第一个附件
+    let url = resources::effective_url(&raw_url, &file_ids);
     let input = NewResource {
         title: &text(&obj, "title"),
         summary: &text(&obj, "summary"),
@@ -138,7 +163,7 @@ pub async fn create(
         category: &text(&obj, "category"),
         tags: tags(&obj),
         team_id: team_id.as_deref(),
-        url: &text(&obj, "url"),
+        url: &url,
         version: &text(&obj, "version"),
         license: &text(&obj, "license"),
         size_bytes: num(&obj, "sizeBytes").max(0),
@@ -161,7 +186,7 @@ pub async fn create(
         }
     }
 
-    let id = resources::create(&st.pool, &user.id, &input)
+    let id = resources::create(&st.pool, &user.id, &input, &file_ids)
         .await
         .map_err(ApiError::internal)?;
 
@@ -217,7 +242,15 @@ pub async fn patch(
     } else {
         cur.team_id.clone()
     };
-    let url = opt_text(&obj, "url").unwrap_or(cur.url.clone());
+    let url_input = opt_text(&obj, "url");
+    let file_ids = obj.contains_key("fileIds").then(|| id_list(&obj, "fileIds"));
+    let url = match &file_ids {
+        Some(ids) => resources::effective_url(
+            url_input.as_deref().unwrap_or(cur.url.as_str()),
+            ids,
+        ),
+        None => url_input.unwrap_or(cur.url.clone()),
+    };
     let version = opt_text(&obj, "version").unwrap_or(cur.version.clone());
     let license = opt_text(&obj, "license").unwrap_or(cur.license.clone());
     let size_bytes = obj.get("sizeBytes").and_then(|v| v.as_i64()).unwrap_or(cur.size_bytes);
@@ -261,6 +294,7 @@ pub async fn patch(
     let item = resources::patch(
         &st.pool,
         &id,
+        &user.id,
         ResourcePatch {
             title: Some(&title),
             summary: Some(&summary),
@@ -277,6 +311,7 @@ pub async fn patch(
             loaders: Some(&loaders),
             deps: Some(&deps),
             source_url: Some(&source_url),
+            file_ids,
         },
     )
     .await
@@ -336,6 +371,29 @@ pub async fn download(
         return Err(ApiError::not_found());
     };
     Ok(Json(json!({ "ok": true, "url": url, "downloadCount": count })).into_response())
+}
+
+/// POST /api/v1/resources/{id}/files/{fileId}/download
+pub async fn download_attachment(
+    State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
+    Path((id, attachment_id)): Path<(String, String)>,
+) -> ApiResult<Response> {
+    let uid = maybe.as_ref().map(|u| u.id.as_str());
+    let Some((url, file_downloads, total)) =
+        resources::download_file(&st.pool, &id, &attachment_id, uid)
+            .await
+            .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+    Ok(Json(json!({
+        "ok": true,
+        "url": url,
+        "fileDownloads": file_downloads,
+        "downloadCount": total,
+    }))
+    .into_response())
 }
 
 /// GET /api/v1/leaderboard/developers

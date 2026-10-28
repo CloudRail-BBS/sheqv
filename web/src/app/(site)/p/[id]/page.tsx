@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { getPost } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
-import { PostActions } from '@/components/post-actions';
+import { CommentComposer, PostLike } from '@/components/post-actions';
+import { FloorReply } from '@/components/floor-reply';
 import { getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { getGroupMap, resolveGroup } from '@/lib/group-map';
@@ -31,6 +32,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   });
 }
 
+/** 固定按东八区展示：服务端与客户端算出来必须一致，否则 hydration 会报警 */
+const fmtAt = (ts: number) => {
+  const d = new Date(ts + 8 * 3600 * 1000);
+  return `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}`;
+};
+
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const post = await getPost(id);
@@ -44,10 +51,17 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     getGroupMap(),
     getAvatarMap(),
   ]);
-  const postAvatar = resolveAvatar(avatars, { id: post.authorId, name: post.author });
-  const postBadge = resolveBadge(badges, { id: post.authorId, name: post.author });
-  const postGroup = resolveGroup(groups, { id: post.authorId, name: post.author });
-  // 未过审的帖子只有作者和审核人打得开（后端已按 status 拦过一次，这里只负责说明状态）
+
+  const who = (name: string, userId?: string) => {
+    const key = { id: userId, name };
+    return {
+      avatar: resolveAvatar(avatars, key),
+      badge: resolveBadge(badges, key),
+      group: resolveGroup(groups, key),
+    };
+  };
+
+  const op = who(post.author, post.authorId);
   const pending = post.status === 'pending';
   const rejected = post.status === 'rejected';
   const unpublished = pending || rejected;
@@ -61,105 +75,146 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           <span>帖子</span>
         </div>
 
-        <article className="card post">
-          {unpublished && (
-            <div className="audit-bar" data-kind={post.status}>
-              <b>{pending ? '审核中' : '未通过审核'}</b>
-              <span>
-                {pending
-                  ? '在审核通过之前，只有你自己和审核人员能看到它，社区列表里不会出现。'
-                  : post.rejectReason
-                    ? `原因：${post.rejectReason}`
-                    : '审核没有给出具体原因，可以按社区公约检查后重新发布。'}
-              </span>
-            </div>
-          )}
-          <div className="post-head">
-            <div className="post-avatar">
-              {postAvatar ? (
+        {unpublished && (
+          <div className="audit-bar" data-kind={post.status}>
+            <b>{pending ? '审核中' : '未通过审核'}</b>
+            <span>
+              {pending
+                ? '在审核通过之前，只有你自己和审核人员能看到它，社区列表里不会出现。'
+                : post.rejectReason
+                  ? `原因：${post.rejectReason}`
+                  : '审核没有给出具体原因，可以按社区公约检查后重新发布。'}
+            </span>
+          </div>
+        )}
+
+        {/* 1 楼：楼主 */}
+        <article className="card floor floor-op" id="floor-1">
+          <aside className="floor-side">
+            <span className="floor-avatar">
+              {op.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={postAvatar} alt="" />
+                <img src={op.avatar} alt="" />
               ) : (
                 post.author.slice(0, 1)
               )}
-            </div>
-            <div>
-              <div className="post-meta">
-                <UserHoverCard
-                  userId={post.authorId}
-                  name={post.author}
-                  avatar={postAvatar}
-                  badge={postBadge}
-                  group={postGroup}
-                >
-                  <b>{post.author}</b>
-                </UserHoverCard>
-                <UserBadge badge={postBadge} />
-                <GroupTag group={postGroup} size="sm" />
-                <span className="sep">·</span>
-                {post.guild}
-                {post.pinned && <span className="post-pin">置顶</span>}
+            </span>
+            <div className="floor-who">
+              <UserHoverCard
+                userId={post.authorId}
+                name={post.author}
+                avatar={op.avatar}
+                badge={op.badge}
+                group={op.group}
+              >
+                <b>{post.author}</b>
+              </UserHoverCard>
+              <div className="floor-tags">
+                <UserBadge badge={op.badge} size="sm" />
+                <GroupTag group={op.group} size="sm" />
               </div>
-              <div className="post-meta">{post.time}</div>
+              <AchievementChips
+                badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
+                size="sm"
+              />
             </div>
-          </div>
+          </aside>
 
-          <h1 className="page-title" style={{ marginBottom: 12 }}>
-            {post.title ?? '无标题'}
-          </h1>
-          <Markdown text={post.body} className="md-body post-md" />
+          <div className="floor-main">
+            <div className="floor-head">
+              <span className="floor-num">#1</span>
+              <span className="floor-badge">楼主</span>
+              {post.pinned && <span className="post-pin">置顶</span>}
+              <time className="floor-time">{post.time}</time>
+            </div>
 
-          <div className="post-tags">
-            {post.tags.map((t) => (
-              <span key={t} className="badge badge-ghost">#{t}</span>
-            ))}
+            <h1 className="page-title" style={{ marginBottom: 12 }}>
+              {post.title ?? '无标题'}
+            </h1>
+            <Markdown text={post.body} className="md-body post-md" />
+
+            <div className="post-tags">
+              {post.tags.map((t) => (
+                <span key={t} className="badge badge-ghost">#{t}</span>
+              ))}
+            </div>
+
+            <div className="floor-foot">
+              {unpublished ? (
+                <span className="small muted">
+                  {pending ? '审核通过后才能点赞和回复。' : '这篇文章未通过审核，点赞与回复已关闭。'}
+                </span>
+              ) : (
+                <PostLike
+                  postId={post.id}
+                  likes={post.likes}
+                  comments={post.comments}
+                  loggedIn={Boolean(user)}
+                />
+              )}
+            </div>
           </div>
         </article>
 
-        {unpublished ? (
-          <div className="card card-pad small muted">
-            {pending ? '审核通过后才能点赞和评论。' : '这篇文章未通过审核，点赞与评论已关闭。'}
-          </div>
-        ) : (
-          <PostActions
-            postId={post.id}
-            likes={post.likes}
-            comments={post.comments}
-            signed={signed}
-            loggedIn={Boolean(user)}
-          />
-        )}
-
-        <section id="comments" className="card" style={{ overflow: 'hidden' }}>
-          <div className="between" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)' }}>
-            <h3 style={{ fontSize: 13 }}>评论 {post.commentsList.length}</h3>
-            <span className="small muted">按时间正序</span>
-          </div>
-          {post.commentsList.length === 0 ? (
-            <p className="small muted" style={{ padding: '18px 16px' }}>还没有评论，说说你的看法。</p>
-          ) : (
-            post.commentsList.map((c) => (
-              <div key={c.id} className="rail-item" style={{ padding: '12px 16px', alignItems: 'flex-start' }}>
-                <span className="post-avatar" style={{ width: 26, height: 26, fontSize: 11, borderRadius: 8 }}>
-                  {resolveAvatar(avatars, { name: c.author }) ? (
+        {/* 2 楼起：回复楼层 */}
+        {post.commentsList.map((c) => {
+          const u = who(c.author, c.authorId);
+          return (
+            <article className="card floor" id={`floor-${c.floor}`} key={c.id}>
+              <aside className="floor-side">
+                <span className="floor-avatar">
+                  {u.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={resolveAvatar(avatars, { name: c.author })} alt="" />
+                    <img src={u.avatar} alt="" />
                   ) : (
                     c.author.slice(0, 1)
                   )}
                 </span>
-                <div style={{ minWidth: 0 }}>
-                  <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
-                    {c.author}
-                    <UserBadge badge={resolveBadge(badges, { id: c.authorId, name: c.author })} size="sm" />
-                    <GroupTag group={resolveGroup(groups, { id: c.authorId, name: c.author })} size="sm" />
+                <div className="floor-who">
+                  <UserHoverCard
+                    userId={c.authorId}
+                    name={c.author}
+                    avatar={u.avatar}
+                    badge={u.badge}
+                    group={u.group}
+                  >
+                    <b>{c.author}</b>
+                  </UserHoverCard>
+                  <div className="floor-tags">
+                    <UserBadge badge={u.badge} size="sm" />
+                    <GroupTag group={u.group} size="sm" />
                   </div>
-                  <div className="small dim" style={{ lineHeight: 1.7 }}>{c.body}</div>
                 </div>
+              </aside>
+
+              <div className="floor-main">
+                <div className="floor-head">
+                  <span className="floor-num">#{c.floor}</span>
+                  <time className="floor-time">{fmtAt(c.at)}</time>
+                  <FloorReply floor={c.floor} author={c.author} />
+                </div>
+                <div className="floor-body">{c.body}</div>
               </div>
-            ))
-          )}
-        </section>
+            </article>
+          );
+        })}
+
+        {post.commentsList.length === 0 && (
+          <p className="card card-pad small muted" style={{ margin: 0 }}>
+            还没有人回复，抢占 2 楼。
+          </p>
+        )}
+
+        {unpublished ? (
+          <div className="card card-pad small muted">审核通过后才能点赞和回复。</div>
+        ) : (
+          <CommentComposer
+            postId={post.id}
+            signed={signed}
+            loggedIn={Boolean(user)}
+            total={post.commentsList.length}
+          />
+        )}
       </div>
 
       <aside className="rail">
@@ -167,9 +222,9 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           <div className="rail-title">作者</div>
           <div className="row" style={{ gap: 10 }}>
             <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>
-              {postAvatar ? (
+              {op.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={postAvatar} alt="" />
+                <img src={op.avatar} alt="" />
               ) : (
                 post.author.slice(0, 1)
               )}
@@ -179,14 +234,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 <UserHoverCard
                   userId={post.authorId}
                   name={post.author}
-                  avatar={postAvatar}
-                  badge={postBadge}
-                  group={postGroup}
+                  avatar={op.avatar}
+                  badge={op.badge}
+                  group={op.group}
                 >
                   <span>{post.author}</span>
                 </UserHoverCard>
-                <UserBadge badge={postBadge} size="sm" />
-                <GroupTag group={postGroup} size="sm" />
+                <UserBadge badge={op.badge} size="sm" />
+                <GroupTag group={op.group} size="sm" />
               </div>
               <div className="small muted">{post.guild}公会</div>
               <AchievementChips

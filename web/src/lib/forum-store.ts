@@ -12,6 +12,8 @@ export interface CommentItem {
   author: string;
   authorId?: string;
   body: string;
+  /** 楼层号：楼主是 1，第一条回复是 2 */
+  floor: number;
   at: number;
 }
 

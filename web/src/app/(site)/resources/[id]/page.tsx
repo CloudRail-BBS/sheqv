@@ -77,6 +77,7 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
               initialDownloads={item.downloadCount}
               sizeBytes={item.sizeBytes}
               url={item.url}
+              files={item.files ?? []}
               loggedIn={Boolean(user)}
               canDelete={canDelete}
               directDownload={directDownload}
@@ -142,6 +143,12 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
             <dd className="mono">{fmtNum(item.likeCount)}</dd>
             <dt>文件大小</dt>
             <dd className="mono">{fmtSize(item.sizeBytes)}</dd>
+            {item.fileCount > 0 && (
+              <>
+                <dt>文件数</dt>
+                <dd className="mono">{item.fileCount}</dd>
+              </>
+            )}
             <dt>版本</dt>
             <dd className="mono">{item.version || '—'}</dd>
             <dt>授权</dt>

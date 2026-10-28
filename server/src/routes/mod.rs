@@ -179,6 +179,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/resources/{id}/like", post(resources::like))
         .route("/api/v1/resources/{id}/download", post(resources::download))
         .route(
+            "/api/v1/resources/{id}/files/{fileId}/download",
+            post(resources::download_attachment),
+        )
+        .route(
             "/api/v1/dev-teams",
             get(dev_teams::list).post(dev_teams::create),
         )

@@ -18,6 +18,8 @@ pub struct CommentView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author_id: Option<String>,
     pub body: String,
+    /// 楼层号：楼主是 1，第一条评论是 2
+    pub floor: i64,
     /// 毫秒时间戳
     pub at: i64,
 }
@@ -154,11 +156,14 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
     let mut grouped: std::collections::HashMap<String, Vec<CommentView>> =
         std::collections::HashMap::new();
     for c in comments {
-        grouped.entry(c.post_id).or_default().push(CommentView {
+        let list = grouped.entry(c.post_id).or_default();
+        let floor = list.len() as i64 + 2;
+        list.push(CommentView {
             id: c.id,
             author: c.author,
             author_id: Some(c.author_id),
             body: c.body,
+            floor,
             at: c.created_at.timestamp_millis(),
         });
     }
@@ -204,13 +209,16 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
     .fetch_all(pool)
     .await?;
 
+    // 楼层号按时间正序排：楼主占 1 楼，第一条评论从 2 楼开始
     let views = comments
         .into_iter()
-        .map(|c| CommentView {
+        .enumerate()
+        .map(|(i, c)| CommentView {
             id: c.id,
             author: c.author,
             author_id: Some(c.author_id),
             body: c.body,
+            floor: i as i64 + 2,
             at: c.created_at.timestamp_millis(),
         })
         .collect();
@@ -276,6 +284,12 @@ pub async fn add_comment(
         return Ok(None);
     }
 
+    // 先数已有评论：第一条评论是 2 楼
+    let existing: i64 = sqlx::query_scalar("SELECT count(*) FROM comments WHERE post_id = $1")
+        .bind(post_id)
+        .fetch_one(pool)
+        .await?;
+
     let id = crate::ids::next('c');
     let (created_at, author): (DateTime<Utc>, String) = sqlx::query_as(
         "WITH ins AS (
@@ -296,6 +310,7 @@ pub async fn add_comment(
         author,
         author_id: Some(user_id.to_string()),
         body: body.to_string(),
+        floor: existing + 2,
         at: created_at.timestamp_millis(),
     }))
 }
