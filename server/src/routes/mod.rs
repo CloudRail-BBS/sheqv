@@ -125,6 +125,16 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agreements/signatures", get(agreements::signatures))
         .route("/api/v1/agreements/sign", post(agreements::sign))
         .route("/api/v1/app/latest", get(apps::latest))
+        // 后台版本发布：列表 / 新建
+        .route(
+            "/api/v1/admin/apps",
+            get(apps::admin_list).post(apps::admin_create),
+        )
+        // 后台版本发布：修改 / 删除
+        .route(
+            "/api/v1/admin/apps/{id}",
+            patch(apps::admin_patch).delete(apps::admin_delete),
+        )
         .route("/api/v1/matches", get(matches::list).post(matches::create))
         .route("/api/v1/matches/{id}", get(matches::get))
         .route("/api/v1/matches/{id}/accept", post(matches::accept))

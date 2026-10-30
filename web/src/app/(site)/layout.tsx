@@ -63,7 +63,6 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
               <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             <input name="q" placeholder="搜索帖子、资源、公会、比赛" aria-label="搜索" />
-            <kbd>⌘K</kbd>
           </form>
 
           <div className="topbar-right">

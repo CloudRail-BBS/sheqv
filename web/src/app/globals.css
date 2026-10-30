@@ -169,12 +169,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   box-shadow: 0 0 0 3px rgba(62, 124, 255, 0.12);
 }
 .search svg { position: absolute; left: 11px; top: 9.5px; width: 15px; height: 15px; color: var(--muted); }
-.search kbd {
-  position: absolute; right: 8px; top: 7px; height: 20px; padding: 0 5px;
-  display: grid; place-items: center; border-radius: 5px;
-  border: 1px solid var(--line); background: var(--panel-2);
-  font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--muted);
-}
+
 
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: none; }
 .icon-btn {
@@ -951,7 +946,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .sidebar { display: none; }
   .topbar-in { padding: 0 16px; gap: 10px; }
   .search { max-width: none; }
-  .search kbd { display: none; }
   .rail { grid-template-columns: 1fr; }
   .rail .card:first-child { grid-column: span 1; }
 }

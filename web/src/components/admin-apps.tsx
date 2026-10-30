@@ -48,8 +48,16 @@ export function AdminApps({
 
   const open = creating || editing !== null;
 
+  /** 同平台/通道下 build 必须唯一，新建时默认填「当前最大值 + 1」 */
+  function nextBuild(platform: string, channel: string) {
+    const max = rows
+      .filter((r) => r.platform === platform && r.channel === channel)
+      .reduce((m, r) => Math.max(m, r.build), 0);
+    return max + 1;
+  }
+
   function startCreate() {
-    setForm({ ...BLANK });
+    setForm({ ...BLANK, build: nextBuild(BLANK.platform, BLANK.channel) });
     setCreating(true);
     setEditing(null);
     setMsg(null);
@@ -90,6 +98,13 @@ export function AdminApps({
       | { item?: AppRelease; message?: string }
       | null;
     setBusy(false);
+    if (res?.status === 409) {
+      setMsg({
+        kind: 'err',
+        text: `build ${form.build} 已被占用，改用 ${nextBuild(form.platform, form.channel)} 再试`,
+      });
+      return;
+    }
     if (!res?.ok || !data?.item) {
       setMsg({ kind: 'err', text: data?.message ?? '保存失败' });
       return;
@@ -162,7 +177,14 @@ export function AdminApps({
                   className="input"
                   value={form.platform}
                   disabled={!creating}
-                  onChange={(e) => setForm({ ...form, platform: e.target.value as AppPlatform })}
+                  onChange={(e) => {
+                    const platform = e.target.value as AppPlatform;
+                    setForm((f) => ({
+                      ...f,
+                      platform,
+                      build: creating ? nextBuild(platform, f.channel) : f.build,
+                    }));
+                  }}
                 >
                   {APP_PLATFORMS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
                 </select>
@@ -172,7 +194,14 @@ export function AdminApps({
                 <select
                   className="input"
                   value={form.channel}
-                  onChange={(e) => setForm({ ...form, channel: e.target.value as AppChannel })}
+                  onChange={(e) => {
+                    const channel = e.target.value as AppChannel;
+                    setForm((f) => ({
+                      ...f,
+                      channel,
+                      build: creating ? nextBuild(f.platform, channel) : f.build,
+                    }));
+                  }}
                 >
                   {APP_CHANNELS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
                 </select>
@@ -190,6 +219,9 @@ export function AdminApps({
                   value={form.build}
                   onChange={(e) => setForm({ ...form, build: Number(e.target.value) })}
                 />
+                <small className="small muted" style={{ marginTop: 4 }}>
+                  同一平台 / 通道内不可重复
+                </small>
               </label>
               <label className="field" style={{ gridColumn: '1 / -1' }}>
                 <span>下载地址</span>
