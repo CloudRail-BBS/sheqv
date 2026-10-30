@@ -51,8 +51,8 @@
   --glass-strong: rgba(12, 13, 16, 0.72);
   --glass-brd: rgba(255, 255, 255, 0.09);
   --glass-blur: blur(20px) saturate(170%);
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 22px 48px -34px rgba(0, 0, 0, 0.95);
-  --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 28px 56px -34px rgba(0, 0, 0, 1);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 36px -32px rgba(0, 0, 0, 0.9);
+  --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 22px 44px -32px rgba(0, 0, 0, 1);
 
   /* ── 设计令牌 v2 ──
      组件只引用这些变量，不要写裸色值。裸色值一进浅色主题就会变成
@@ -218,15 +218,27 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 /* ── sidebar ─────────────────────────────── */
 
-.sidebar { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 20px; }
-.side-group { display: flex; flex-direction: column; gap: 1px; }
-.side-label {
-  font-size: 10px; letter-spacing: 0.12em; color: var(--text-3);
-  padding: 0 10px 6px; text-transform: uppercase; font-weight: 600;
+.sidebar {
+  position: sticky; top: 76px;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
 }
+.side-group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* 分组之间用一条细线断开，比单纯拉大间距更有层次 */
+.side-group + .side-group { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.side-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: 0.12em; color: var(--text-3);
+  padding: 0 8px 7px; text-transform: uppercase; font-weight: 600;
+}
+.side-label::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
 .side-item {
-  position: relative; display: flex; align-items: center; gap: 10px;
-  padding: 7px 10px; border-radius: 8px;
+  position: relative; display: flex; align-items: center; gap: 9px;
+  padding: 6px 8px; border-radius: 9px;
   font-size: 13.5px; color: var(--text-2);
   transition: background 0.14s, color 0.14s;
 }
@@ -240,8 +252,17 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   border-radius: 0 2px 2px 0; background: var(--blue);
 }
 .side-item .cnt { margin-left: auto; font-size: 10.5px; color: var(--text-3); font-family: ui-monospace, monospace; }
-.side-ico { width: 17px; height: 17px; flex: none; opacity: 0.8; }
-.side-item[data-active="true"] .side-ico { opacity: 1; color: var(--blue); }
+/* 图标装进小方块：一列方片把导航的节奏立起来 */
+.side-ico {
+  width: 26px; height: 26px; padding: 5px; border-radius: 8px; flex: none;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+  color: var(--text-2); opacity: 1;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+.side-item:hover .side-ico { border-color: var(--line); color: var(--text); }
+.side-item[data-active="true"] .side-ico {
+  background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue);
+}
 .side-cta {
   border: 1px solid var(--line); background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
   border-radius: 10px; padding: 11px 12px; font-size: 11.5px; color: var(--muted); line-height: 1.7;
@@ -274,11 +295,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   margin-bottom: 12px; font-weight: 500;
 }
 .rail-title::before {
-  content: ""; width: 3px; height: 3px; border-radius: 50%; background: var(--accent); opacity: 0.9;
+  content: ""; width: 3px; height: 12px; border-radius: 2px; flex: none;
+  background: linear-gradient(180deg, var(--blue), var(--blue-2));
 }
-.mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+.mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mini-stat {
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+}
 .mini-stat b {
-  display: block; font-size: 20px; letter-spacing: -0.02em; line-height: 1.25;
+  display: block; font-size: 19px; letter-spacing: -0.02em; line-height: 1.25;
   font-variant-numeric: tabular-nums;
 }
 .mini-stat span { font-size: 11px; color: var(--muted); }
@@ -2929,8 +2955,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --btn-bd: #3e7cff;
   --btn-glow: 0 10px 24px -14px rgba(62, 124, 255, 0.55);
   --tabbar-bg: rgba(255, 255, 255, 0.92);
-  --shadow: 0 1px 2px rgba(21, 26, 35, 0.04), 0 14px 30px -26px rgba(21, 26, 35, 0.35);
-  --shadow-lift: 0 2px 4px rgba(21, 26, 35, 0.05), 0 20px 40px -30px rgba(21, 26, 35, 0.4);
+  --shadow: 0 1px 2px rgba(21, 26, 35, 0.05), 0 8px 20px -18px rgba(21, 26, 35, 0.22);
+  --shadow-lift: 0 2px 6px rgba(21, 26, 35, 0.06), 0 16px 32px -24px rgba(21, 26, 35, 0.28);
   --hover-bd: #c3d2e4;
   --text-3: #7b8698;
   --ring: rgba(62, 124, 255, 0.40);
@@ -3354,16 +3380,15 @@ body:has(.auth-page) .app {
 }
 .md-leading { display: flex; align-items: center; flex: none; }
 .composer-me {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 7px 3px 3px; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--panel);
-  font-size: 10px; font-weight: 650; color: var(--text-2);
+  display: inline-flex; align-items: center;
+  padding: 0; border: 0; background: none;
 }
 .composer-me-avatar {
-  width: 24px; height: 24px; border-radius: 50%; overflow: hidden;
+  width: 26px; height: 26px; border-radius: 50%; overflow: hidden;
   display: grid; place-items: center; flex: none;
   background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 10px;
+  color: #fff; font-size: 11px;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--line);
 }
 .composer-me-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .md-toolbar-right {
@@ -5366,7 +5391,7 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 .feed-card:hover {
   border-color: var(--hover-bd);
-  box-shadow: 0 18px 40px -30px rgba(0, 0, 0, 0.9);
+  box-shadow: var(--shadow-lift);
 }
 .fc-cover {
   display: block; position: relative; flex: none;

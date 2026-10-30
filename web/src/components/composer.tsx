@@ -386,9 +386,8 @@ export function Composer({ nickname, signed, avatar }: Props) {
               placeholder="在此输入。使用工具栏或 Markdown 进行格式化，拖动或粘贴图片。"
               onSubmit={submit}
               leading={
-                <span className="composer-me">
+                <span className="composer-me" title="以你的身份发布">
                   <span className="composer-me-avatar">{avatarNode}</span>
-                  <b>ME</b>
                 </span>
               }
               actions={
