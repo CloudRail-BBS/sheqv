@@ -118,7 +118,8 @@ pub async fn post(
     MaybeUser(maybe): MaybeUser,
     Path(id): Path<String>,
 ) -> ApiResult<Response> {
-    let Some(post) = crate::forum::get(&st.pool, &id)
+    let viewer_id = maybe.as_ref().map(|u| u.id.clone());
+    let Some(mut post) = crate::forum::get(&st.pool, &id)
         .await
         .map_err(ApiError::internal)?
     else {
@@ -126,9 +127,8 @@ pub async fn post(
     };
 
     if post.status != "published" {
-        let viewer = match maybe {
-            Some(user) => user.id,
-            None => return Err(ApiError::not_found()),
+        let Some(viewer) = viewer_id.clone() else {
+            return Err(ApiError::not_found());
         };
         let visible = if post.author_id.as_deref() == Some(viewer.as_str()) {
             true
@@ -141,6 +141,10 @@ pub async fn post(
             return Err(ApiError::not_found());
         }
     }
+
+    crate::forum::mark_liked(&st.pool, viewer_id.as_deref(), std::slice::from_mut(&mut post))
+        .await
+        .map_err(ApiError::internal)?;
 
     Ok(Json(json!({ "ok": true, "post": post })).into_response())
 }

@@ -102,10 +102,14 @@ async fn require_community(
 /// `q` 走标题 / 正文 / 标签的子串匹配（`ILIKE` + `pg_trgm` 索引）。
 pub async fn list(
     State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
     Query(params): Query<HashMap<String, String>>,
 ) -> ApiResult<Response> {
     let q = params.get("q").map(String::as_str);
-    let items = forum::list(&st.pool, q).await.map_err(ApiError::internal)?;
+    let mut items = forum::list(&st.pool, q).await.map_err(ApiError::internal)?;
+    forum::mark_liked(&st.pool, maybe.as_ref().map(|u| u.id.as_str()), &mut items)
+        .await
+        .map_err(ApiError::internal)?;
     Ok(Json(json!({ "items": items, "total": items.len() })).into_response())
 }
 
@@ -253,13 +257,23 @@ pub async fn comment(
         .into_response())
 }
 
-/// POST /api/v1/posts/:id/like —— 匿名可点、可重复点（计数器语义），不需要签公约
-pub async fn like(State(st): State<AppState>, Path(post_id): Path<String>) -> ApiResult<Response> {
-    let likes = forum::like(&st.pool, &post_id)
+/// POST /api/v1/posts/:id/like —— 需登录；一人一票，再点一次取消。
+///
+/// 以前是匿名可点 + `like_count + 1`，刷新后前端又不知道点没点过，
+/// 于是同一个人能无限刷。现在写进 `post_likes` 明细，计数由明细重算。
+pub async fn like(
+    State(st): State<AppState>,
+    Path(post_id): Path<String>,
+    MaybeUser(maybe): MaybeUser,
+) -> ApiResult<Response> {
+    let user = maybe.ok_or_else(need_login)?;
+    match forum::toggle_like(&st.pool, &post_id, &user.id)
         .await
-        .map_err(ApiError::internal)?;
-    match likes {
-        Some(n) => Ok(Json(json!({ "ok": true, "likes": n })).into_response()),
+        .map_err(ApiError::internal)?
+    {
+        Some((likes, liked)) => Ok(
+            Json(json!({ "ok": true, "likes": likes, "liked": liked })).into_response(),
+        ),
         None => Err(ApiError::not_found()),
     }
 }

@@ -14,16 +14,19 @@ import { useRouter } from 'next/navigation';
 export function PostLike({
   postId,
   likes,
+  liked: initialLiked,
   comments,
   loggedIn,
 }: {
   postId: string;
   likes: number;
+  /** 服务端记录的「我有没有点过」 */
+  liked: boolean;
   comments: number;
   loggedIn: boolean;
 }) {
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(likes);
   const [busy, setBusy] = useState(false);
 
@@ -32,15 +35,22 @@ export function PostLike({
       router.push('/login');
       return;
     }
-    if (liked || busy) return;
+    if (busy) return;
+    const next = !liked;
     setBusy(true);
-    setLiked(true);
-    setCount((c) => c + 1);
+    setLiked(next);
+    setCount((c) => Math.max(0, c + (next ? 1 : -1)));
     const res = await fetch(`/api/v1/posts/${postId}/like`, { method: 'POST' }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
-      setLiked(false);
-      setCount((c) => c - 1);
+      setLiked(!next);
+      setCount((c) => Math.max(0, c + (next ? -1 : 1)));
+      return;
+    }
+    const data = (await res.json().catch(() => null)) as { likes?: number; liked?: boolean } | null;
+    if (data && typeof data.likes === 'number') {
+      setCount(data.likes);
+      setLiked(Boolean(data.liked));
     }
   }
 

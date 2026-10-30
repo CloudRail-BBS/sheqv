@@ -39,8 +39,9 @@ export function PostCard({
   /** 正文图片的宽高表，用来算封面比例 */
   imageSizes?: PostImageSizes;
 }) {
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(Boolean(item.liked));
   const [likes, setLikes] = useState(item.likes);
+  const [busy, setBusy] = useState(false);
   const href = item.href ?? '/';
   // 「个人」是早期发帖时写死的占位值，不是公会；空值与它都不展示
   const guildName = item.guild && item.guild !== '个人' ? item.guild : '';
@@ -62,14 +63,24 @@ export function PostCard({
   // 分类：优先第一个标签，其次公会名
   const category = item.tags[0] || guildName || '讨论';
 
+  /** 一人一票：点一下赞，再点一下取消；以服务端返回的计数为准 */
   async function like() {
-    if (liked) return;
-    setLiked(true);
-    setLikes((n) => n + 1);
-    const res = await fetch(`/api/v1/posts/${item.id}/like`, { method: 'POST' });
-    if (!res.ok) {
-      setLiked(false);
-      setLikes((n) => n - 1);
+    if (busy) return;
+    const next = !liked;
+    setBusy(true);
+    setLiked(next);
+    setLikes((n) => Math.max(0, n + (next ? 1 : -1)));
+    const res = await fetch(`/api/v1/posts/${item.id}/like`, { method: 'POST' }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) {
+      setLiked(!next);
+      setLikes((n) => Math.max(0, n + (next ? -1 : 1)));
+      return;
+    }
+    const data = (await res.json().catch(() => null)) as { likes?: number; liked?: boolean } | null;
+    if (data && typeof data.likes === 'number') {
+      setLikes(data.likes);
+      setLiked(Boolean(data.liked));
     }
   }
 

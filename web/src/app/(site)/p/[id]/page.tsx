@@ -107,7 +107,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
 
-        {/* 主题头：标题、作者、统计与快捷回复，楼层里不再重复 */}
+        {/* 标题：帖子信息只在这里出现一次，下面每一楼都是同一套结构 */}
         <header className="card card-pad thread-head" id="top">
           <div className="thread-kicker">
             {guildName && (
@@ -135,69 +135,69 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             </div>
             {!unpublished && (
               <a href="#comment-form" className="btn btn-sm btn-ghost">
-                回复主题
+                回复帖子
               </a>
             )}
           </div>
         </header>
 
-        {/* 主题正文：不再分楼层，作者信息在顶部一条，正文整宽 */}
+        {/* 每一楼都是帖子：楼主是 1 楼，回复从 2 楼起，结构和样式完全一致 */}
         <article className="card post-block" id="post-1">
-          <header className="pb-head">
-            <span className="pb-avatar">
-              {op.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={op.avatar} alt="" loading="lazy" decoding="async" />
-              ) : (
-                post.author.slice(0, 1)
-              )}
-            </span>
-            <div className="pb-who">
-              <div className="pb-name">
-                <UserHoverCard
-                  userId={post.authorId}
-                  name={post.author}
-                  avatar={op.avatar}
-                  badge={op.badge}
-                  group={op.group}
-                >
-                  <b>{post.author}</b>
-                </UserHoverCard>
-                <NameBadges badge={op.badge} group={op.group} size="sm" />
-                <AchievementChips
-                  badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
-                  size="sm"
-                />
-                <span className="pb-op">楼主</span>
-                {post.pinned && <span className="post-pin">置顶</span>}
-              </div>
-              <div className="pb-sub">
-                <time>{post.time}</time>
-              </div>
-            </div>
-          </header>
-
-          <div className="pb-body">
-            <Markdown text={post.body} className="md-body post-md" imageSizes={imageSizes} />
-          </div>
-
-          <footer className="pb-foot">
-            {unpublished ? (
-              <span className="small muted">
-                {pending ? '审核通过后才能点赞和回复。' : '这篇文章未通过审核，点赞与回复已关闭。'}
+            <header className="pb-head">
+              <span className="pb-avatar">
+                {op.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={op.avatar} alt="" loading="lazy" decoding="async" />
+                ) : (
+                  post.author.slice(0, 1)
+                )}
               </span>
-            ) : (
-              <PostLike
-                postId={post.id}
-                likes={post.likes}
-                comments={post.comments}
-                loggedIn={Boolean(user)}
-              />
-            )}
-          </footer>
+              <div className="pb-who">
+                <div className="pb-name">
+                  <UserHoverCard
+                    userId={post.authorId}
+                    name={post.author}
+                    avatar={op.avatar}
+                    badge={op.badge}
+                    group={op.group}
+                  >
+                    <b>{post.author}</b>
+                  </UserHoverCard>
+                  <NameBadges badge={op.badge} group={op.group} size="sm" />
+                  <AchievementChips
+                    badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
+                    size="sm"
+                  />
+                  <span className="pb-op">楼主</span>
+                  {post.pinned && <span className="post-pin">置顶</span>}
+                </div>
+                <div className="pb-sub">
+                  <time>{post.time}</time>
+                </div>
+              </div>
+            </header>
+
+            <div className="pb-body">
+              <Markdown text={post.body} className="md-body post-md" imageSizes={imageSizes} />
+            </div>
+
+            <footer className="pb-foot">
+              {unpublished ? (
+                <span className="small muted">
+                  {pending ? '审核通过后才能点赞和回复。' : '这篇文章未通过审核，点赞与回复已关闭。'}
+                </span>
+              ) : (
+                <PostLike
+                  postId={post.id}
+                  likes={post.likes}
+                  liked={post.liked}
+                  comments={post.comments}
+                  loggedIn={Boolean(user)}
+                />
+              )}
+            </footer>
         </article>
 
-        {/* 回复：和主题同一套块结构，只是没有楼号 */}
         <div id="replies" className="pb-list">
           {post.commentsList.map((c) => {
             const u = who(c.author, c.authorId);
@@ -224,6 +224,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                         <b>{c.author}</b>
                       </UserHoverCard>
                       <NameBadges badge={u.badge} group={u.group} size="sm" />
+                      <span className="pb-floor">#{c.floor}</span>
                     </div>
                     <div className="pb-sub">
                       <time>{fmtAt(c.at)}</time>

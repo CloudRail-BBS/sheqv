@@ -5516,7 +5516,18 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   padding: 12px 18px 14px;
 }
 .pb-foot { padding: 0 18px 14px; }
+/* 楼号：和「楼主」同一位置的灰色胶囊，回复从 #2 起 */
+.pb-floor {
+  flex: none; padding: 0 7px; height: 18px;
+  display: inline-grid; place-items: center;
+  border-radius: 999px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--text-3);
+  font-family: ui-monospace, monospace; font-size: 10px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 .pb-list { display: flex; flex-direction: column; gap: 10px; }
+/* 锚点跳转时给顶栏留位置 */
+#replies, #comment-form { scroll-margin-top: 76px; }
 
 @media (max-width: 700px) {
   .pb-head { padding: 10px 13px; gap: 9px; }

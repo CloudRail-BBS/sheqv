@@ -112,6 +112,8 @@ export interface FeedItem {
   body: string;
   tags: string[];
   likes: number;
+  /** 当前登录用户是否已点赞 */
+  liked?: boolean;
   comments: number;
   /** 浏览数 */
   views?: number;

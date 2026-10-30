@@ -37,6 +37,8 @@ pub struct PostView {
     pub body: String,
     pub tags: Vec<String>,
     pub likes: i64,
+    /// 当前登录用户是否已点赞；未登录恒为 false
+    pub liked: bool,
     pub comments: i64,
     /// 浏览数（详情页每次打开 +1）
     pub views: i64,
@@ -106,6 +108,7 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         body: row.body,
         tags,
         likes: row.like_count as i64,
+        liked: false,
         comments: comments.len() as i64,
         views: row.views,
         comments_list: comments,
@@ -336,14 +339,84 @@ pub async fn add_comment(
 }
 
 /// 点赞：计数器 +1（允许匿名、允许重复），返回累计数
-pub async fn like(pool: &PgPool, post_id: &str) -> Result<Option<i64>, sqlx::Error> {
-    let likes: Option<i32> = sqlx::query_scalar(
-        "UPDATE posts SET like_count = like_count + 1 WHERE id = $1 RETURNING like_count",
+/// 点赞 / 取消点赞：一人一票，重复点只会在「已赞 / 未赞」之间切换。
+///
+/// 返回 `(总数, 当前是否已赞)`；帖子不存在返回 `None`。
+/// `posts.like_count` 是冗余计数，和 `post_likes` 在同一个事务里更新，不会漂。
+pub async fn toggle_like(
+    pool: &PgPool,
+    post_id: &str,
+    user_id: &str,
+) -> Result<Option<(i64, bool)>, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    let exists: Option<i32> = sqlx::query_scalar("SELECT 1 FROM posts WHERE id = $1")
+        .bind(post_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+    if exists.is_none() {
+        return Ok(None);
+    }
+
+    let removed = sqlx::query("DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2")
+        .bind(post_id)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    let liked = removed.rows_affected() == 0;
+    if liked {
+        // 并发双击时第二条会命中主键冲突，忽略即可，结果仍是「已赞」
+        sqlx::query(
+            "INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)
+             ON CONFLICT (post_id, user_id) DO NOTHING",
+        )
+        .bind(post_id)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM post_likes WHERE post_id = $1")
+        .bind(post_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+    sqlx::query("UPDATE posts SET like_count = $2 WHERE id = $1")
+        .bind(post_id)
+        .bind(count as i32)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+    Ok(Some((count, liked)))
+}
+
+/// 给一批帖子标上「当前用户点没点过赞」：一次查询，避免每行一次往返。
+pub async fn mark_liked(
+    pool: &PgPool,
+    user_id: Option<&str>,
+    items: &mut [PostView],
+) -> Result<(), sqlx::Error> {
+    let Some(uid) = user_id else {
+        return Ok(());
+    };
+    if items.is_empty() {
+        return Ok(());
+    }
+    let ids: Vec<String> = items.iter().map(|i| i.id.clone()).collect();
+    let liked: Vec<String> = sqlx::query_scalar(
+        "SELECT post_id FROM post_likes WHERE user_id = $1 AND post_id = ANY($2)",
     )
-    .bind(post_id)
-    .fetch_optional(pool)
+    .bind(uid)
+    .bind(&ids)
+    .fetch_all(pool)
     .await?;
-    Ok(likes.map(|v| v as i64))
+
+    for item in items.iter_mut() {
+        item.liked = liked.iter().any(|id| id == &item.id);
+    }
+    Ok(())
 }
 
 /// 后台删一条评论（楼层）。评论删除后楼层号会重排，这是预期行为：
