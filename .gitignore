@@ -61,6 +61,7 @@ apps/android/android/capacitor-cordova-android-plugins/build
 apps/android/releases/*.apk
 
 apps/desktop/releases/*.exe
+apps/desktop/releases/*.msi
 
 apps/android/keystore/
 

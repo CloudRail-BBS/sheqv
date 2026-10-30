@@ -21,6 +21,8 @@ const config: CapacitorConfig = {
     url: appUrl,
     cleartext: false,
     allowNavigation: [appHost],
+    // 打不开线上站点时（没网 / DNS 失败），加载包内的离线预览页
+    errorPath: 'offline.html',
   },
   android: {
     allowMixedContent: false,

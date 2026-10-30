@@ -1,23 +1,528 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>云轨社区</title>
-  <style>
-    html,body{margin:0;height:100%;background:#f3f5f9;color:#151a23;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
-    main{height:100%;display:grid;place-items:center;text-align:center;padding:32px}
-    .dot{width:44px;height:44px;border-radius:14px;margin:0 auto 16px;background:linear-gradient(145deg,#3e7cff,#2b63e0);box-shadow:0 12px 30px -14px #3e7cff}
-    p{color:#6b7688;font-size:13px;line-height:1.8}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>云轨社区 · 离线预览</title>
+<style>
+  /* 与站内同一套色板：浅色默认，深色跟随系统。
+     这页是打包进客户端本地的，没有网络时也能完整渲染。 */
+  :root {
+    --bg: #f3f5f9;
+    --panel: #ffffff;
+    --panel-2: #f7f9fc;
+    --panel-3: #eef2f8;
+    --line: #e3e8f0;
+    --line-soft: #edf1f7;
+    --text: #151a23;
+    --text-2: #4a5464;
+    --muted: #7a8699;
+    --text-3: #9aa6b8;
+    --blue: #3e7cff;
+    --blue-soft: #eaf1ff;
+    --blue-line: #cddffd;
+    --warn: #b46a12;
+    --warn-soft: #fff5e6;
+    --warn-line: #f3d9ab;
+    --sk: linear-gradient(90deg, var(--panel-3) 0%, var(--panel-2) 45%, var(--panel-3) 90%);
+    --shadow: 0 18px 40px -32px rgba(16, 26, 48, 0.55);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0a0b;
+      --panel: #121214;
+      --panel-2: #17171a;
+      --panel-3: #1d1d21;
+      --line: #26262b;
+      --line-soft: #1e1e22;
+      --text: #f4f4f5;
+      --text-2: #c4c4c8;
+      --muted: #8a8a90;
+      --text-3: #6b6b72;
+      --blue: #7fb0ff;
+      --blue-soft: rgba(127, 176, 255, 0.14);
+      --blue-line: rgba(127, 176, 255, 0.34);
+      --warn: #e8bf74;
+      /* 深色下别用大块琥珀底，会发浑；只留一条边和很淡的底色 */
+      --warn-soft: rgba(232, 191, 116, 0.06);
+      --warn-line: rgba(232, 191, 116, 0.24);
+      --sk: linear-gradient(90deg, #1d1d21 0%, #24242a 45%, #1d1d21 90%);
+      --shadow: 0 18px 40px -32px rgba(0, 0, 0, 0.9);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(820px 420px at 10% -10%, rgba(62, 124, 255, 0.1), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── 顶栏 ───────────────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 5;
+    height: calc(56px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    display: flex; align-items: center; gap: 18px;
+    padding-left: 18px; padding-right: 18px;
+    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; letter-spacing: -0.02em; }
+  .mark {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(150deg, var(--blue), #2b63e0);
+    display: grid; place-items: center;
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 10px 22px -12px var(--blue);
+  }
+  .search {
+    flex: 1; max-width: 420px; height: 34px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    color: var(--text-3); font-size: 12.5px;
+  }
+  .search svg { width: 15px; height: 15px; flex: none; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .ghost-btn {
+    height: 30px; padding: 0 10px; border-radius: 9px;
+    border: 1px solid var(--line); background: transparent; color: var(--text-2);
+    font: inherit; font-size: 12px; cursor: default;
+  }
+
+  /* ── 三列外壳 ───────────────────────────── */
+  .app {
+    display: grid;
+    grid-template-columns: 208px minmax(0, 1fr) 292px;
+    gap: 22px;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 18px 18px calc(40px + env(safe-area-inset-bottom));
+    align-items: start;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  /* 侧栏 */
+  .side { display: flex; flex-direction: column; gap: 10px; }
+  .side-title {
+    font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--text-3); padding: 4px 10px;
+  }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav a, .nav span {
+    display: flex; align-items: center; gap: 9px;
+    height: 34px; padding: 0 10px; border-radius: 9px;
+    color: var(--text-2); text-decoration: none; font-size: 13px;
+  }
+  .nav a.on, .nav span.on { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-line); }
+  .nav i {
+    width: 15px; height: 15px; border-radius: 5px; flex: none;
+    background: var(--panel-3); border: 1px solid var(--line);
+  }
+  .nav a.on i, .nav span.on i { background: var(--blue); border-color: var(--blue); opacity: 0.85; }
+
+  /* 主列 */
+  .main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+  .offline {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--warn-line);
+    border-left: 3px solid var(--warn);
+    background: var(--warn-soft);
+  }
+  .offline-icon {
+    width: 34px; height: 34px; border-radius: 10px; flex: none;
+    display: grid; place-items: center;
+    background: rgba(180, 106, 18, 0.14);
+    background: color-mix(in srgb, var(--warn) 16%, transparent);
+    color: var(--warn);
+  }
+  .offline-icon svg { width: 18px; height: 18px; }
+  .offline-body { flex: 1; min-width: 0; }
+  .offline-body b { display: block; font-size: 13.5px; color: var(--text); }
+  .offline-body p { margin: 3px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-2); }
+  .offline-meta {
+    margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .retry {
+    height: 32px; padding: 0 14px; border-radius: 9px;
+    border: 1px solid var(--blue-line); background: var(--blue);
+    color: #fff; font: inherit; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; flex: none;
+  }
+  .retry:disabled { opacity: 0.6; cursor: progress; }
+  @media (prefers-color-scheme: dark) { .retry { color: #0a0a0b; } }
+
+  .tabs {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px; border-radius: 11px;
+    background: var(--panel); border: 1px solid var(--line);
+    width: fit-content;
+  }
+  .tabs span {
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; color: var(--muted);
+  }
+  .tabs span.on { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+
+  /* 骨架预览：两列瀑布，高度错开，和线上卡片一个节奏 */
+  .grid {
+    column-count: 2; column-gap: 12px;
+  }
+  .ghost {
+    break-inside: avoid; margin: 0 0 12px; padding: 0;
+    overflow: hidden; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--panel);
+  }
+  .ghost-cover { height: 190px; background: var(--sk); background-size: 320px 100%; animation: shimmer 1.6s linear infinite; }
+  .ghost.tall .ghost-cover { height: 260px; }
+  .ghost-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .ghost-head { display: flex; align-items: center; gap: 8px; }
+  .ghost-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--sk); background-size: 320px 100%; animation: shimmer 1.6s linear infinite; }
+  .bar {
+    height: 10px; border-radius: 5px;
+    background: var(--sk); background-size: 320px 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  .bar.w40 { width: 40%; } .bar.w62 { width: 62%; } .bar.w86 { width: 86%; } .bar.w100 { width: 100%; }
+  .bar.title { height: 13px; }
+  .ghost-foot { display: flex; gap: 14px; }
+  .bar.chip { width: 54px; height: 9px; }
+
+  @keyframes shimmer {
+    0% { background-position: -320px 0; }
+    100% { background-position: 320px 0; }
+  }
+
+  /* 右栏 */
+  .rail { display: flex; flex-direction: column; gap: 12px; }
+  .rail-card { padding: 14px 16px; }
+  .rail-title { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { text-align: center; padding: 8px 4px; border-radius: 10px; background: var(--panel-2); }
+  .stat b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--text-2); }
+  .stat span { font-size: 10.5px; color: var(--text-3); }
+  .rail-list { display: flex; flex-direction: column; gap: 10px; }
+  .rail-row { display: flex; align-items: center; gap: 9px; }
+  .rail-row .dot { width: 22px; height: 22px; border-radius: 7px; background: var(--sk); background-size: 320px 100%; animation: shimmer 1.6s linear infinite; }
+  .rail-row .bar { flex: 1; }
+
+  .foot { text-align: center; font-size: 11px; color: var(--text-3); padding: 4px 0 0; }
+
+  /* ── 窄屏：收起侧栏与右栏，和线上断点一致 ── */
+  @media (max-width: 1180px) {
+    .app { grid-template-columns: 190px minmax(0, 1fr); }
+    .rail { display: none; }
+  }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; padding: 14px 14px 32px; }
+    .side { display: none; }
+    .grid { column-count: 1; }
+    .search { display: none; }
+    .foot { padding-bottom: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bar, .ghost-cover, .ghost-avatar, .rail-row .dot { animation: none; }
+  }
+</style>
 </head>
 <body>
-  <main>
-    <div>
-      <div class="dot"></div>
-      <h1 style="font-size:18px;margin:0 0 6px">正在打开云轨社区…</h1>
-      <p>如果长时间没有反应，请检查网络，或重新打开客户端。</p>
+<header class="topbar">
+  <div class="brand"><span class="mark">云</span>云轨社区</div>
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4" stroke-linecap="round"></path>
+    </svg>
+    <span>搜索帖子、资源、玩家</span>
+  </div>
+  <div class="top-right">
+    <span class="ghost-btn" id="mode">离线预览</span>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="side">
+    <div class="side-title">社区</div>
+    <nav class="nav">
+      <span class="on"><i></i>首页</span>
+      <span><i></i>资源库</span>
+      <span><i></i>联机大厅</span>
+      <span><i></i>赛事</span>
+    </nav>
+    <div class="side-title" style="margin-top: 10px">我的</div>
+    <nav class="nav">
+      <span><i></i>任务中心</span>
+      <span><i></i>福利中心</span>
+      <span><i></i>关于社区</span>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <section class="offline" id="bar">
+      <span class="offline-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M3 8.5a15 15 0 0 1 18 0M6.5 12.2a10 10 0 0 1 11 0M10 15.8a5 5 0 0 1 4 0"></path>
+          <path d="M12 19.2h.01" stroke-width="2.4"></path>
+          <path d="M3 3l18 18"></path>
+        </svg>
+      </span>
+      <div class="offline-body">
+        <b id="bar-title">现在没有网络</b>
+        <p id="bar-text">下面是界面预览，联网后会自动进入社区。</p>
+        <div class="offline-meta">
+          <span id="status">正在检查网络…</span>
+          <span id="last"></span>
+        </div>
+      </div>
+      <button class="retry" id="retry" type="button">重新连接</button>
+    </section>
+
+    <div class="tabs">
+      <span class="on">推荐</span><span>最新</span><span>关注</span><span>我参与的</span>
     </div>
+
+    <div class="grid" aria-hidden="true">
+      <article class="ghost tall">
+        <div class="ghost-cover"></div>
+        <div class="ghost-body">
+          <div class="ghost-head"><span class="ghost-avatar"></span><span class="bar w40"></span></div>
+          <div class="bar title w100"></div>
+          <div class="bar title w62"></div>
+          <div class="ghost-foot"><span class="bar chip"></span><span class="bar chip"></span></div>
+        </div>
+      </article>
+
+      <article class="ghost">
+        <div class="ghost-body">
+          <div class="ghost-head"><span class="ghost-avatar"></span><span class="bar w40"></span></div>
+          <div class="bar title w86"></div>
+          <div class="bar w100"></div>
+          <div class="bar w100"></div>
+          <div class="bar w62"></div>
+          <div class="ghost-foot"><span class="bar chip"></span><span class="bar chip"></span></div>
+        </div>
+      </article>
+
+      <article class="ghost">
+        <div class="ghost-cover" style="height: 150px"></div>
+        <div class="ghost-body">
+          <div class="ghost-head"><span class="ghost-avatar"></span><span class="bar w40"></span></div>
+          <div class="bar title w100"></div>
+        </div>
+      </article>
+
+      <article class="ghost">
+        <div class="ghost-body">
+          <div class="ghost-head"><span class="ghost-avatar"></span><span class="bar w40"></span></div>
+          <div class="bar title w86"></div>
+          <div class="bar w100"></div>
+          <div class="bar w100"></div>
+          <div class="bar w62"></div>
+        </div>
+      </article>
+    </div>
+
+    <p class="foot">界面为离线预览，内容会在联网后加载</p>
   </main>
+
+  <aside class="rail" aria-hidden="true">
+    <div class="card rail-card">
+      <div class="rail-title">社区今日</div>
+      <div class="stats">
+        <div class="stat"><b>—</b><span>发帖</span></div>
+        <div class="stat"><b>—</b><span>回复</span></div>
+        <div class="stat"><b>—</b><span>签到</span></div>
+      </div>
+    </div>
+    <div class="card rail-card">
+      <div class="rail-title">活跃社区</div>
+      <div class="rail-list">
+        <div class="rail-row"><span class="dot"></span><span class="bar w62"></span></div>
+        <div class="rail-row"><span class="dot"></span><span class="bar w86"></span></div>
+        <div class="rail-row"><span class="dot"></span><span class="bar w40"></span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function () {
+  // 线上站点固定；需要临时切换时改这里（客户端打包后不会变）
+  var SITE = 'https://crbbsx.com';
+  var PROBE = SITE + '/?offline_probe=' + Date.now();
+  var TIMEOUT = 3500;
+  var lastOk = 0;
+  var timer = null;
+  var attempts = 0;
+
+  var title = document.getElementById('bar-title');
+  var text = document.getElementById('bar-text');
+  var status = document.getElementById('status');
+  var last = document.getElementById('last');
+  var retry = document.getElementById('retry');
+  var mode = document.getElementById('mode');
+
+  // 调试用：?preview=1 只看界面，不发起任何请求；?offline=1 模拟断网
+  var previewOnly = /[?&]preview=1\b/.test(location.search);
+  var forceOffline = /[?&]offline=1\b/.test(location.search);
+
+  // 这个页面是本地包，读不到站点域的 localStorage，只记自己的
+  try {
+    lastOk = Number(localStorage.getItem('crbbs.offline.lastOk') || 0);
+  } catch (e) {}
+
+  function humanGap(ms) {
+    if (!ms) return '';
+    var m = Math.floor((Date.now() - ms) / 60000);
+    if (m < 1) return '刚刚';
+    if (m < 60) return m + ' 分钟前';
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + ' 小时前';
+    return Math.floor(h / 24) + ' 天前';
+  }
+
+  function paintLast() {
+    last.textContent = lastOk ? '上次连接：' + humanGap(lastOk) : '';
+  }
+
+  function setBusy(busy) {
+    retry.disabled = busy;
+    retry.textContent = busy ? '连接中…' : '重新连接';
+  }
+
+  function goOnline() {
+    try { localStorage.setItem('crbbs.offline.lastOk', String(Date.now())); } catch (e) {}
+    status.textContent = '网络已恢复，正在进入社区…';
+    title.textContent = '连接成功';
+    text.textContent = '正在打开云轨社区，请稍候。';
+    location.replace(SITE);
+  }
+
+  function scheduleRetry() {
+    if (timer) clearTimeout(timer);
+    if (previewOnly) return;
+    // 5s 起，逐次退避到 30s，避免一直空转耗电
+    var wait = Math.min(5000 * Math.pow(1.6, Math.max(0, attempts - 1)), 30000);
+    var left = Math.round(wait / 1000);
+    status.textContent = '离线中 · ' + left + ' 秒后自动重试';
+    var tick = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { clearInterval(tick); return; }
+      status.textContent = '离线中 · ' + left + ' 秒后自动重试';
+    }, 1000);
+    timer = setTimeout(function () {
+      clearInterval(tick);
+      check(true);
+    }, wait);
+  }
+
+  function check(auto) {
+    if (previewOnly) {
+      setBusy(false);
+      status.textContent = '界面预览模式';
+      return;
+    }
+    if (forceOffline) {
+      setBusy(false);
+      title.textContent = '现在没有网络';
+      text.textContent = '下面是界面预览，联网后会自动进入社区。';
+      paintLast();
+      scheduleRetry();
+      return;
+    }
+    if (attempts > 0 || auto) setBusy(true);
+    attempts += 1;
+
+    var done = false;
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var t = setTimeout(function () {
+      if (ctrl) ctrl.abort();
+    }, TIMEOUT);
+
+    function fail(msg) {
+      if (done) return;
+      done = true;
+      clearTimeout(t);
+      setBusy(false);
+      title.textContent = '现在没有网络';
+      text.textContent = msg || '下面是界面预览，联网后会自动进入社区。';
+      paintLast();
+      scheduleRetry();
+    }
+
+    if (navigator.onLine === false) {
+      fail('设备没有连接到网络，检查 Wi-Fi 或移动数据后再试。');
+      return;
+    }
+
+    // no-cors + 超时：只要发得出请求并拿到响应（哪怕是 404）就算在线
+    fetch(PROBE, { mode: 'no-cors', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+      .then(function () { done = true; clearTimeout(t); goOnline(); })
+      .catch(function () {
+        // 某些 WebView 对跨域 fetch 更严格，退化用一张图的加载来判定
+        var img = new Image();
+        var settled = false;
+        var it = setTimeout(function () { if (!settled) { settled = true; fail(); } }, 2500);
+        img.onload = function () {
+          if (settled) return;
+          settled = true; clearTimeout(it); done = true; goOnline();
+        };
+        img.onerror = function () {
+          if (settled) return;
+          settled = true; clearTimeout(it); fail();
+        };
+        img.src = SITE + '/favicon.ico?offline_probe=' + Date.now();
+      });
+  }
+
+  retry.addEventListener('click', function () {
+    attempts = 0;
+    if (timer) { clearTimeout(timer); timer = null; }
+    check(false);
+  });
+
+  window.addEventListener('online', function () { check(true); });
+  window.addEventListener('offline', function () {
+    title.textContent = '现在没有网络';
+    status.textContent = '设备已断开网络';
+    scheduleRetry();
+  });
+
+  paintLast();
+
+  // 直接打开本地文件时不自动跳转，方便调试；打包进客户端后照常探测
+  if (!previewOnly) {
+    if (location.protocol === 'file:') {
+      status.textContent = '本地预览 · 未连接';
+      setBusy(false);
+    } else {
+      setBusy(true);
+      check(false);
+    }
+  } else {
+    status.textContent = '界面预览模式';
+    setBusy(false);
+  }
+
+  mode.textContent = previewOnly ? '预览模式' : '离线预览';
+})();
+</script>
 </body>
 </html>
