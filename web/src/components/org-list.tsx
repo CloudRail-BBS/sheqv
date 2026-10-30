@@ -58,9 +58,12 @@ export async function OrgList({ kind, game }: { kind: OrgKind; game?: string }) 
               {lead}
             </p>
           </div>
-          <Link href={`/leaderboard${activeGame ? `?game=${activeGame.key}` : ''}`} className="btn btn-sm btn-ghost">
-            看{copy.board}
-          </Link>
+          <div className="row" style={{ gap: 6, flex: 'none' }}>
+            <Link href={`/leaderboard${activeGame ? `?game=${activeGame.key}` : ''}`} className="btn btn-sm btn-ghost">
+              看{copy.board}
+            </Link>
+            <OrgCreate kind={kind} loggedIn={Boolean(user)} />
+          </div>
         </div>
 
         <div className="row wrap" style={{ gap: 6 }}>
@@ -146,8 +149,6 @@ export async function OrgList({ kind, game }: { kind: OrgKind; game?: string }) 
       </div>
 
       <aside className="rail">
-        <OrgCreate kind={kind} loggedIn={Boolean(user)} />
-
         <div className="card rail-card">
           <div className="rail-title">规则</div>
           <div className="rule-list">
