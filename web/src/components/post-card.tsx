@@ -12,12 +12,14 @@ import { SmartImage } from './smart-image';
 
 type Item = FeedItem & { href?: string };
 
+/** 站内图片的宽高表（media id → 尺寸），用来按原图比例占位 */
+export type PostImageSizes = Record<string, { w: number; h: number }>;
+
 /**
- * 帖子卡片：**顶部整幅封面 + 下面信息面板**。
+ * 帖子卡片：**高度由内容决定**（瀑布流里每张卡不一样高）。
  *
- * - 封面取正文第一张站内图（`?w=640`），没有图就用同色系渐变兜底；
- * - 面板第一行是作者头像 / 昵称 / 头衔与身份组 / 分类 / 时间；
- * - 标题最多两行，底部三个计数：点赞（可点）、回复、浏览。
+ * - 正文里有图 → 顶部整幅封面，比例取原图（竖图最多 5:4，横图最多 1.9:1）；
+ * - 正文里没有图 → 不占封面位，改成标题 + 四行摘要的纯文字卡。
  */
 export function PostCard({
   item,
@@ -25,6 +27,7 @@ export function PostCard({
   group,
   achievements,
   avatar,
+  imageSizes,
 }: {
   item: Item;
   badge?: BadgeInfo;
@@ -33,6 +36,8 @@ export function PostCard({
   achievements?: EarnedBadge[];
   /** 作者头像；空则用昵称首字 */
   avatar?: string;
+  /** 正文图片的宽高表，用来算封面比例 */
+  imageSizes?: PostImageSizes;
 }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(item.likes);
@@ -40,9 +45,20 @@ export function PostCard({
   // 「个人」是早期发帖时写死的占位值，不是公会；空值与它都不展示
   const guildName = item.guild && item.guild !== '个人' ? item.guild : '';
 
-  // 正文里的第一张站内图当封面
-  const cover = /!\[[^\]]*\]\((\/api\/v1\/media\/[A-Za-z0-9]+)[^)]*\)/.exec(item.body)?.[1];
-  const title = item.title?.trim() || markdownToText(item.body).slice(0, 40) || '无标题';
+  const text = markdownToText(item.body);
+  // 正文里的第一张图当封面：站内图能拿尺寸与多档缩略图，外链图只按 3:2 占位
+  const coverMatch = /!\[[^\]]*\]\((https?:\/\/[^\s)]+|\/api\/v1\/media\/[A-Za-z0-9]+)[^)]*\)/.exec(
+    item.body,
+  );
+  const cover = coverMatch?.[1];
+  const mediaId = cover?.startsWith('/api/v1/media/')
+    ? cover.slice('/api/v1/media/'.length).split('?')[0]
+    : undefined;
+  const dim = mediaId ? imageSizes?.[mediaId] : undefined;
+  const coverRatio = ratioOf(dim?.w, dim?.h);
+  const coverSrc = mediaId ? `${cover}?w=640` : cover;
+
+  const title = item.title?.trim() || text.slice(0, 40) || '无标题';
   // 分类：优先第一个标签，其次公会名
   const category = item.tags[0] || guildName || '讨论';
 
@@ -58,22 +74,18 @@ export function PostCard({
   }
 
   return (
-    <article className="card feed-card">
-      <Link href={href} className="fc-cover" tabIndex={-1} aria-hidden="true">
-        {cover ? (
+    <article className={`card feed-card${cover ? '' : ' feed-card-text'}`}>
+      {cover && (
+        <Link href={href} className="fc-cover" tabIndex={-1} aria-hidden="true">
           <SmartImage
-            src={`${cover}?w=640`}
+            src={coverSrc ?? cover}
             alt=""
-            ratio="16 / 9"
-            sizes="(max-width: 860px) 100vw, (max-width: 1180px) 28vw, 360px"
+            ratio={coverRatio}
+            sizes="(max-width: 860px) 100vw, (max-width: 1180px) 40vw, 410px"
           />
-        ) : (
-          <span className="fc-cover-fallback">
-            <span>{title.slice(0, 1)}</span>
-          </span>
-        )}
-        {item.pinned && <span className="fc-pin">置顶</span>}
-      </Link>
+          {item.pinned && <span className="fc-pin">置顶</span>}
+        </Link>
+      )}
 
       <div className="fc-body">
         <div className="fc-head">
@@ -110,6 +122,8 @@ export function PostCard({
         <Link href={href} className="fc-title" title={title}>
           {title}
         </Link>
+
+        {!cover && text && <p className="fc-excerpt">{text}</p>}
 
         <div className="fc-foot">
           <button
@@ -161,4 +175,16 @@ export function PostCard({
       </div>
     </article>
   );
+}
+
+/**
+ * 封面比例：拿不到尺寸时用 3:2；竖图最多裁成 5:4（再高会把一列拉得很长），
+ * 横图最多 1.9:1，保证同一列里的封面不会差得太夸张。
+ */
+function ratioOf(w?: number, h?: number): string {
+  if (!w || !h) return '3 / 2';
+  const r = w / h;
+  if (r > 1.9) return '1.9 / 1';
+  if (r < 1.25) return '1.25 / 1';
+  return `${w} / ${h}`;
 }

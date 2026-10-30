@@ -19,6 +19,7 @@ import { forumStats } from '@/lib/forum-store';
 import { afdianPageUrl } from '@/lib/afdian';
 import { Composer } from '@/components/composer';
 import { PostCard } from '@/components/post-card';
+import { getImageSizes } from '@/lib/media-sizes';
 import { Carousel } from '@/components/carousel';
 import { buildMetadata, websiteJsonLd } from '@/lib/seo';
 import { initialOf } from '@/lib/initials';
@@ -34,6 +35,8 @@ const TAGS = ['地图', '整合包', '材质', '约战', '招募', '红石', 'Pv
 
 export default async function HomePage() {
   const posts = await listPosts();
+  // 封面按原图比例占位：先批量问一次尺寸（最多 24 张），瀑布流才不会跳
+  const imageSizes = await getImageSizes(posts.map((p) => p.body).join('\n')).catch(() => ({}));
   const user = await getCurrentUser();
   const sponsors = await getSponsorSnapshot();
   // 侧栏的活跃公会 / 战队：两张独立的榜，各取前三
@@ -111,19 +114,6 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="post-grid">
-          {posts.slice(0, 4).map((f) => (
-          <PostCard
-            key={f.id}
-            item={f}
-            badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
-            group={resolveGroup(groups, { id: f.authorId, name: f.author })}
-            achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
-            avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
-          />
-        ))}
-        </div>
-
         {live && (
           <div className="card mcard">
             <div className="mcard-top">
@@ -162,16 +152,17 @@ export default async function HomePage() {
         )}
 
         <div className="post-grid">
-          {posts.slice(4, 10).map((f) => (
-          <PostCard
-            key={f.id}
-            item={f}
-            badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
-            group={resolveGroup(groups, { id: f.authorId, name: f.author })}
-            achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
-            avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
-          />
-        ))}
+          {posts.slice(0, 10).map((f) => (
+            <PostCard
+              key={f.id}
+              item={f}
+              badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
+              group={resolveGroup(groups, { id: f.authorId, name: f.author })}
+              achievements={findBadges(achievements, { id: f.authorId, name: f.author }, 2)}
+              avatar={resolveAvatar(avatars, { id: f.authorId, name: f.author })}
+              imageSizes={imageSizes}
+            />
+          ))}
         </div>
 
         <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
