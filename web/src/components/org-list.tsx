@@ -80,9 +80,6 @@ export async function OrgList({ kind, game }: { kind: OrgKind; game?: string }) 
               {g.label}
             </Link>
           ))}
-          <span className="sort" style={{ marginLeft: 'auto' }}>
-            {orgs.length} 个
-          </span>
         </div>
 
         {orgs.length === 0 ? (
