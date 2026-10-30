@@ -608,24 +608,6 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
-        <h3 style={{ fontSize: 13 }}>帖子流</h3>
-        <label className="field" style={{ marginTop: 10, maxWidth: 320 }}>
-          <span>列表样式</span>
-          <select
-            className="input"
-            value={form.feedLayout}
-            onChange={(e) => setForm({ ...form, feedLayout: e.target.value })}
-          >
-            <option value="list">列表（单列）</option>
-            <option value="card">卡片流（双列）</option>
-          </select>
-        </label>
-        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
-          卡片流按两列铺开，正文最多显示三行；窄屏自动回落成单列。
-        </p>
-      </div>
-
-      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
         <h3 style={{ fontSize: 13 }}>页面文案</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           留空则使用内置默认文案。支持换行，超过两行的内容建议写短一些。

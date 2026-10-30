@@ -121,6 +121,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <span>{post.comments} 条回复</span>
             <span>·</span>
             <span>{post.likes} 赞</span>
+            <span>·</span>
+            <span>{post.views} 次浏览</span>
           </div>
           <h1 className="thread-title">{post.title ?? '无标题'}</h1>
           <div className="thread-head-foot">

@@ -38,6 +38,8 @@ pub struct PostView {
     pub tags: Vec<String>,
     pub likes: i64,
     pub comments: i64,
+    /// 浏览数（详情页每次打开 +1）
+    pub views: i64,
     pub comments_list: Vec<CommentView>,
     pub created_at: i64,
     pub is_new: bool,
@@ -62,6 +64,7 @@ struct PostRow {
     author: String,
     created_at: DateTime<Utc>,
     like_count: i32,
+    views: i64,
     status: String,
     reject_reason: Option<String>,
     reviewed_at: Option<DateTime<Utc>>,
@@ -78,7 +81,7 @@ struct CommentRow {
 }
 
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
-        u.nickname AS author, p.created_at, p.like_count, p.status, p.reject_reason,
+        u.nickname AS author, p.created_at, p.like_count, p.views, p.status, p.reject_reason,
         p.reviewed_at
    FROM posts p JOIN users u ON u.id = p.author_id";
 
@@ -104,6 +107,7 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         tags,
         likes: row.like_count as i64,
         comments: comments.len() as i64,
+        views: row.views,
         comments_list: comments,
         created_at: row.created_at.timestamp_millis(),
         is_new: true,
@@ -204,7 +208,16 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
         .fetch_optional(pool)
         .await?;
 
-    let Some(row) = row else { return Ok(None) };
+    let Some(mut row) = row else { return Ok(None) };
+
+    // 浏览数：只有已发布的帖子才累计，作者的编辑页 / 后台预览不算
+    if row.status == "published" {
+        let _ = sqlx::query("UPDATE posts SET views = views + 1 WHERE id = $1")
+            .bind(id)
+            .execute(pool)
+            .await;
+        row.views += 1;
+    }
 
     let comments: Vec<CommentRow> = sqlx::query_as(
         "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, c.body, c.created_at
@@ -216,7 +229,7 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
     .await?;
 
     // 楼层号按时间正序排：楼主占 1 楼，第一条评论从 2 楼开始
-    let views = comments
+    let comment_views = comments
         .into_iter()
         .enumerate()
         .map(|(i, c)| CommentView {
@@ -229,7 +242,7 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
         })
         .collect();
 
-    Ok(Some(to_view(row, views)))
+    Ok(Some(to_view(row, comment_views)))
 }
 
 pub fn validate_post(title: &str, body: &str) -> Option<&'static str> {

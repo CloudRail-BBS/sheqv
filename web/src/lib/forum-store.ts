@@ -28,6 +28,8 @@ export interface PostView {
   tags: string[];
   likes: number;
   comments: number;
+  /** 浏览数（详情页每次打开 +1） */
+  views: number;
   commentsList: CommentItem[];
   createdAt: number;
   isNew?: boolean;

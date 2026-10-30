@@ -113,6 +113,8 @@ export interface FeedItem {
   tags: string[];
   likes: number;
   comments: number;
+  /** 浏览数 */
+  views?: number;
   pinned?: boolean;
   kind?: 'post' | 'match' | 'resource';
 }

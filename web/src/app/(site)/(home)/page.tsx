@@ -111,8 +111,8 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className={settings.feedLayout === 'card' ? 'post-grid' : undefined}>
-        {posts.slice(0, 3).map((f) => (
+        <div className="post-grid">
+          {posts.slice(0, 4).map((f) => (
           <PostCard
             key={f.id}
             item={f}
@@ -161,8 +161,8 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className={settings.feedLayout === 'card' ? 'post-grid' : undefined}>
-        {posts.slice(3, 9).map((f) => (
+        <div className="post-grid">
+          {posts.slice(4, 10).map((f) => (
           <PostCard
             key={f.id}
             item={f}

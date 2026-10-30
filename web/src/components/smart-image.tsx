@@ -12,6 +12,10 @@ import { useEffect, useRef, useState } from 'react';
  *
  * 站内图片走 `/api/v1/media/{id}`，能拿到 32px 版本；外部图床没有小图，
  * 只锁比例、不做模糊过渡（直接淡入）。
+ *
+ * 尺寸自适应：站内图会生成 `srcSet`（240–1600 六档），配合 `sizes` 让浏览器
+ * 按「容器宽度 × 像素密度」自己挑一档 —— 手机取 360，大屏 2x 取 720/960，
+ * 窗口拉宽或投到高分屏时自动换更大的一档，不用改代码。
  */
 export function SmartImage({
   src,
@@ -65,6 +69,7 @@ export function SmartImage({
   }, [visible]);
 
   const lqip = thumbUrl(src, 32);
+  const srcSet = srcSetOf(src);
   const boxStyle = ratio
     ? { aspectRatio: ratio }
     : width && height
@@ -87,6 +92,7 @@ export function SmartImage({
         <img
           className="simg-full"
           src={src}
+          srcSet={srcSet}
           alt={alt ?? ''}
           width={width}
           height={height}
@@ -106,4 +112,17 @@ function thumbUrl(src: string, width: number): string | null {
   if (!src.startsWith('/api/v1/media/')) return null;
   const base = src.split('?')[0];
   return `${base}?w=${width}`;
+}
+
+/**
+ * 可选宽度档位。后端会把请求宽度夹到 32–1600 之间，并按 (图, 宽度) 缓存，
+ * 所以档位不用太密；240 起步够 1x 小卡片，1600 留给宽屏 2x 主图。
+ */
+const SRCSET_WIDTHS = [240, 360, 480, 720, 960, 1280, 1600];
+
+/** 站内图生成 `srcSet`；外部图床没这个能力，返回 undefined 走普通 `src` */
+function srcSetOf(src: string): string | undefined {
+  if (!src.startsWith('/api/v1/media/')) return undefined;
+  const base = src.split('?')[0];
+  return SRCSET_WIDTHS.map((w) => `${base}?w=${w} ${w}w`).join(', ');
 }
