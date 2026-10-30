@@ -51,6 +51,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/me/chrome", get(me::chrome))
+        .route("/api/v1/me/identities", get(me::identities))
+        .route(
+            "/api/v1/me/identities/{provider}",
+            delete(me::unbind_identity),
+        )
         .route("/api/v1/me/submissions", get(me::submissions))
         .route("/api/v1/media/sizes", get(me::media_sizes))
         .route(

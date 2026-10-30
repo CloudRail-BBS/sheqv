@@ -708,6 +708,130 @@ fn username_from(login: &str) -> String {
     }
 }
 
+/// 账号已绑定的第三方身份（用于「我的 → 登录方式」）
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IdentityBrief {
+    pub provider: String,
+    pub login: String,
+    pub avatar: Option<String>,
+}
+
+pub async fn identities_of(
+    pool: &PgPool,
+    user_id: &str,
+) -> Result<Vec<IdentityBrief>, sqlx::Error> {
+    let rows: Vec<(String, String, Option<String>)> = sqlx::query_as(
+        "SELECT provider, login, avatar FROM identities WHERE user_id = $1 ORDER BY provider",
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(provider, login, avatar)| IdentityBrief {
+            provider,
+            login,
+            avatar,
+        })
+        .collect())
+}
+
+/// 这个账号有没有设过密码（决定能不能解绑第三方）
+pub async fn has_password(pool: &PgPool, user_id: &str) -> Result<bool, sqlx::Error> {
+    let hash: Option<String> =
+        sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
+    Ok(hash.is_some_and(|h| !h.is_empty()))
+}
+
+/// 绑定结果：成功 / 这个第三方账号已经属于别人
+pub enum BindOutcome {
+    Ok,
+    Taken,
+}
+
+/// 把第三方身份绑到**已有账号**上（登录页的第三方登录走 `upsert_social`，会建新号）。
+///
+/// 同一平台重复绑定时覆盖成新身份；该身份已属于别人时拒绝，避免两个账号抢一个 GitHub。
+pub async fn bind_identity(
+    pool: &PgPool,
+    user_id: &str,
+    provider: &str,
+    profile: &crate::oauth::Profile,
+) -> Result<BindOutcome, sqlx::Error> {
+    let owner: Option<String> =
+        sqlx::query_scalar("SELECT user_id FROM identities WHERE provider = $1 AND sub = $2")
+            .bind(provider)
+            .bind(&profile.sub)
+            .fetch_optional(pool)
+            .await?;
+
+    if let Some(owner) = owner {
+        if owner != user_id {
+            return Ok(BindOutcome::Taken);
+        }
+        return Ok(BindOutcome::Ok);
+    }
+
+    sqlx::query(
+        "INSERT INTO identities (provider, sub, user_id, login, avatar)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (user_id, provider)
+         DO UPDATE SET sub = EXCLUDED.sub, login = EXCLUDED.login, avatar = EXCLUDED.avatar",
+    )
+    .bind(provider)
+    .bind(&profile.sub)
+    .bind(user_id)
+    .bind(&profile.login)
+    .bind(&profile.avatar)
+    .execute(pool)
+    .await?;
+
+    Ok(BindOutcome::Ok)
+}
+
+/// 解绑。返回 `None` 表示这是最后一个登录方式，不能解。
+pub async fn unbind_identity(
+    pool: &PgPool,
+    user_id: &str,
+    provider: &str,
+) -> Result<Option<bool>, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let removed = sqlx::query("DELETE FROM identities WHERE user_id = $1 AND provider = $2")
+        .bind(user_id)
+        .bind(provider)
+        .execute(&mut *tx)
+        .await?;
+    if removed.rows_affected() == 0 {
+        tx.commit().await?;
+        return Ok(Some(false));
+    }
+
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM identities WHERE user_id = $1")
+        .bind(user_id)
+        .fetch_one(&mut *tx)
+        .await?;
+    let hash: Option<String> =
+        sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let has_pwd = hash.is_some_and(|h| !h.is_empty());
+
+    // 没密码又没别的第三方了 → 回滚，否则这人再也登不进来
+    if !has_pwd && left == 0 {
+        tx.rollback().await?;
+        return Ok(None);
+    }
+
+    tx.commit().await?;
+    Ok(Some(true))
+}
+
 /// 第三方建号：没有密码（`password_hash=''`），只能走第三方登录。
 /// 已绑定时直接返回；并发下另一个回调刚建好也能兜住（唯一键冲突后重查）。
 pub async fn upsert_social(

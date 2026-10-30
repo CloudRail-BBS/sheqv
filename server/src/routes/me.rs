@@ -11,7 +11,7 @@ use crate::current_user::CurrentUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::users;
-use crate::{media, notifications, object_storage, points};
+use crate::{media, notifications, object_storage, points, settings};
 
 /// POST /api/v1/me/media?kind=avatar|background|post
 ///
@@ -407,4 +407,56 @@ pub async fn patch_me(
 
     let updated = updated.ok_or_else(ApiError::not_found)?;
     Ok(Json(json!({ "ok": true, "user": updated })).into_response())
+}
+
+/// GET /api/v1/me/identities —— 「我的 → 登录方式」
+///
+/// 返回已绑定的第三方、是否设过密码，以及后台有没有开启对应平台（没开启就不显示按钮）。
+pub async fn identities(
+    State(st): State<AppState>,
+    CurrentUser(user): CurrentUser,
+) -> ApiResult<Response> {
+    let items = users::identities_of(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
+    let has_password = users::has_password(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
+    let s = settings::load(&st.pool, &st.cfg).await;
+
+    Ok(Json(json!({
+        "ok": true,
+        "items": items,
+        "hasPassword": has_password,
+        "providers": {
+            "github": !settings::text(&s, "githubClientId").is_empty()
+                && !settings::text(&s, "githubClientSecret").is_empty(),
+            "cnkd": !settings::text(&s, "cnkdClientId").is_empty()
+                && !settings::text(&s, "cnkdClientSecret").is_empty(),
+        },
+    }))
+    .into_response())
+}
+
+/// DELETE /api/v1/me/identities/{provider} —— 解绑一个第三方登录
+pub async fn unbind_identity(
+    State(st): State<AppState>,
+    Path(provider): Path<String>,
+    CurrentUser(user): CurrentUser,
+) -> ApiResult<Response> {
+    if provider != "github" && provider != "cnkd" {
+        return Err(ApiError::invalid_input("不支持的平台"));
+    }
+    match users::unbind_identity(&st.pool, &user.id, &provider)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        None => Err(ApiError::with_message(
+            StatusCode::CONFLICT,
+            "last_login",
+            "这是最后一个登录方式，先设置密码再解绑",
+        )),
+        Some(false) => Err(ApiError::not_found()),
+        Some(true) => Ok(Json(json!({ "ok": true })).into_response()),
+    }
 }

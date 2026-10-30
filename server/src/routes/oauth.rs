@@ -68,6 +68,17 @@ fn clear_cookie(name: &str, secure: bool) -> String {
     out
 }
 
+/// 已经是登录状态时取出用户 id（绑定第三方时用）
+fn current_uid(st: &AppState, headers: &HeaderMap) -> Option<String> {
+    session::cookie_value(headers, session::SESSION_COOKIE).and_then(|token| {
+        session::verify_token(
+            st.session_secret.as_slice(),
+            &token,
+            chrono::Utc::now().timestamp(),
+        )
+    })
+}
+
 fn provider_enabled(p: Provider, s: &Map<String, Value>) -> bool {
     match p {
         Provider::Github => {
@@ -85,6 +96,7 @@ fn provider_enabled(p: Provider, s: &Map<String, Value>) -> bool {
 pub async fn start(
     State(st): State<AppState>,
     Path(raw): Path<String>,
+    Query(q): Query<HashMap<String, String>>,
     headers: HeaderMap,
 ) -> Response {
     let s = settings::load(&st.pool, &st.cfg).await;
@@ -98,6 +110,12 @@ pub async fn start(
             "{base}/login?error=provider_disabled&provider={}",
             p.as_str()
         ));
+    }
+
+    // ?bind=1：已登录用户把第三方绑到当前账号，而不是走登录/建号
+    let bind = q.get("bind").is_some_and(|v| v == "1");
+    if bind && current_uid(&st, &headers).is_none() {
+        return redirect(&format!("{base}/login?next=/me"));
     }
 
     let client_id = match p {
@@ -121,7 +139,8 @@ pub async fn start(
         &mut res,
         transient_cookie(
             oauth::STATE_COOKIE,
-            &format!("{}.{}", p.as_str(), state),
+            // provider.state.bind —— bind 决定回调是登录还是绑定
+            &format!("{}.{}.{}", p.as_str(), state, if bind { "1" } else { "0" }),
             secure,
         ),
     );
@@ -145,7 +164,24 @@ pub async fn callback(
 ) -> Response {
     let s = settings::load(&st.pool, &st.cfg).await;
     let base = base_url(&st, &s, &headers);
-    let fail = |code: &str| redirect(&format!("{base}/login?error={code}"));
+
+    // 先读一次性 Cookie：里面带 provider / state / 是否绑定模式，
+    // 后面的错误页要按这个分流（绑定失败回「我的」，登录失败回登录页）
+    let cookie_state = session::cookie_value(&headers, oauth::STATE_COOKIE).unwrap_or_default();
+    let cookie_verifier =
+        session::cookie_value(&headers, oauth::VERIFIER_COOKIE).unwrap_or_default();
+    let mut state_parts = cookie_state.splitn(3, '.');
+    let state_provider = state_parts.next().unwrap_or_default().to_string();
+    let state_value = state_parts.next().unwrap_or_default().to_string();
+    let state_bind = state_parts.next().unwrap_or("0") == "1";
+
+    let fail = |code: &str| {
+        if state_bind {
+            redirect(&format!("{base}/me?bind=error&code={code}"))
+        } else {
+            redirect(&format!("{base}/login?error={code}"))
+        }
+    };
 
     let Some(p) = Provider::parse(&raw) else {
         return fail("unknown_provider");
@@ -159,12 +195,8 @@ pub async fn callback(
 
     let code = q.get("code").cloned().unwrap_or_default();
     let state = q.get("state").cloned().unwrap_or_default();
-    let cookie_state = session::cookie_value(&headers, oauth::STATE_COOKIE).unwrap_or_default();
-    let cookie_verifier =
-        session::cookie_value(&headers, oauth::VERIFIER_COOKIE).unwrap_or_default();
 
     // state 必须与 Cookie 一致，且 provider 对得上
-    let (state_provider, state_value) = cookie_state.split_once('.').unwrap_or_default();
     if code.is_empty()
         || state.is_empty()
         || state_provider != p.as_str()
@@ -213,6 +245,31 @@ pub async fn callback(
         Ok(p) => p,
         Err(e) => return fail(e.code()),
     };
+
+    // 绑定模式：把身份挂到当前账号上，不发新会话、不建号
+    if state_bind {
+        let Some(uid) = current_uid(&st, &headers) else {
+            return fail("need_login");
+        };
+        let outcome = match users::bind_identity(&st.pool, &uid, p.as_str(), &profile).await {
+            Ok(v) => v,
+            Err(err) => {
+                tracing::error!(error = %err, "绑定第三方身份失败");
+                return fail("bind_failed");
+            }
+        };
+        let secure = session::is_secure(&headers);
+        let target = match outcome {
+            users::BindOutcome::Ok => format!("{base}/me?bind=ok&provider={}", p.as_str()),
+            users::BindOutcome::Taken => {
+                format!("{base}/me?bind=taken&provider={}", p.as_str())
+            }
+        };
+        let mut res = redirect(&target);
+        push_cookie(&mut res, clear_cookie(oauth::STATE_COOKIE, secure));
+        push_cookie(&mut res, clear_cookie(oauth::VERIFIER_COOKIE, secure));
+        return res;
+    }
 
     // 注册开关只拦「新建账号」，已绑定的老用户照常登录
     match users::find_by_identity(&st.pool, p.as_str(), &profile.sub).await {

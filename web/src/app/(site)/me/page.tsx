@@ -7,6 +7,8 @@ import { listActive } from '@/lib/agreement-store';
 import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
 import { TitleRequestForm } from '@/components/title-request';
+import { LoginMethods } from '@/components/login-methods';
+import { getIdentities } from '@/lib/me-identities';
 import { listMyTitleRequests } from '@/lib/titles';
 import { VerificationRequestForm } from '@/components/verification-request';
 import { AuditProgress } from '@/components/audit-progress';
@@ -34,7 +36,11 @@ export async function generateMetadata() {
 const DEFAULT_GUEST_TEXT =
   '「我的」需要账号登录后才能查看。本站没有默认账号，第一个注册的用户会成为管理员。';
 
-export default async function MePage() {
+export default async function MePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bind?: string; provider?: string; code?: string }>;
+}) {
   const [user, settings] = await Promise.all([getCurrentUser(), getSettings()]);
 
   if (!user) {
@@ -62,7 +68,7 @@ export default async function MePage() {
     );
   }
 
-  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests, verifyRequests, submissions] =
+  const [posts, agreements, achieved, groups, allGuilds, allTeams, myDevTeams, titleRequests, verifyRequests, submissions, identities] =
     await Promise.all([
       listPosts(),
       listActive(),
@@ -74,6 +80,7 @@ export default async function MePage() {
       listMyTitleRequests(),
       listMyVerifyRequests(),
       listMySubmissions(),
+      getIdentities(),
     ]);
   const myGroup = groups.find((g) => g.id === user.group?.id);
   const myGuilds = allGuilds.filter((g) => g.ownerId === user.id);
@@ -84,6 +91,17 @@ export default async function MePage() {
   const likes = mine.reduce((n, p) => n + p.likes, 0);
   const signedCount = agreements.filter((a) => sigs[a.id]?.signed).length;
   const joined = new Date(user.createdAt).toISOString().slice(0, 10);
+
+  // 绑定第三方回来时带的结果，卡片顶部给一句反馈
+  const sp = await searchParams;
+  const bindNotice =
+    sp.bind === 'ok'
+      ? { kind: 'ok' as const, text: '已绑定，下次可以直接用它登录' }
+      : sp.bind === 'taken'
+        ? { kind: 'err' as const, text: '这个第三方账号已经绑定到其他账号了' }
+        : sp.bind === 'error'
+          ? { kind: 'err' as const, text: `绑定没有完成（${sp.code ?? 'unknown'}），请重试` }
+          : null;
 
   return (
     <div className="cols">
@@ -158,6 +176,8 @@ export default async function MePage() {
             </div>
           ))}
         </div>
+
+        <LoginMethods state={identities} notice={bindNotice} />
 
         <div className="card card-pad" style={{ marginTop: 12 }}>
           <div className="between" style={{ marginBottom: 8 }}>

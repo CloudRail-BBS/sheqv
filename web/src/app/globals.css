@@ -5484,6 +5484,37 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 /* ── 帖子正文块（不再分楼层） ─────────────── */
 .post-block { padding: 0; overflow: hidden; }
+/* 标题直接长在楼主这一楼里，不再单独一张「主题」卡 */
+.pb-title-block { padding: 16px 18px 10px; }
+.pb-title {
+  margin: 0 0 8px;
+  font-size: 21px; line-height: 1.45; font-weight: 750;
+  letter-spacing: -0.02em; color: var(--text); word-break: break-word;
+}
+.pb-title-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--muted);
+}
+.pb-title-tags { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+/* ── 登录方式（我的页） ─────────────────── */
+.lm-list { display: flex; flex-direction: column; }
+.lm-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.lm-row:first-child { border-top: 0; padding-top: 2px; }
+.lm-ico {
+  width: 32px; height: 32px; border-radius: 9px; flex: none;
+  display: grid; place-items: center;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text-2);
+}
+.lm-ico svg { width: 16px; height: 16px; }
+.lm-main { flex: 1; min-width: 0; }
+.lm-main b { font-size: 12.5px; font-weight: 600; }
+.lm-main p {
+  margin: 2px 0 0; font-size: 11px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lm-state { font-size: 11px; color: var(--text-3); flex: none; }
+.lm-state[data-on="true"] { color: var(--ok); }
 .pb-head {
   display: flex; align-items: center; gap: 10px;
   padding: 11px 18px;
