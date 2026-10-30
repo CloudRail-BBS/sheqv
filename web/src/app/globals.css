@@ -5197,7 +5197,7 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   .ticket-row-side { flex-direction: row; align-items: center; gap: 8px; }
 }
 
-/* ── 帖子卡片流（后台 feedLayout=card） ───── */
+/* ── 帖子流：固定双列，≤860px 单列 ───────── */
 .post-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px; align-items: stretch;
