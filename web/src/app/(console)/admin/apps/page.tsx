@@ -16,7 +16,7 @@ export default async function AdminAppsPage() {
     );
   }
 
-  const [releases, settings] = await Promise.all([listAllReleases(), getSettings()]);
+  const [list, settings] = await Promise.all([listAllReleases(), getSettings()]);
 
   return (
     <div className="col-main">
@@ -25,7 +25,8 @@ export default async function AdminAppsPage() {
         管理 Windows / macOS / Android 安装包版本、下载地址、强制更新与个推凭据。
       </p>
       <AdminApps
-        releases={releases}
+        releases={list.items}
+        listError={list.error}
         getui={{
           appId: settings.getuiAppId,
           appKey: settings.getuiAppKey,

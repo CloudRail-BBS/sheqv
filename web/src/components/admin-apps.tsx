@@ -31,9 +31,12 @@ const BLANK: AppRelease = {
 export function AdminApps({
   releases,
   getui,
+  listError,
 }: {
   releases: AppRelease[];
   getui: { appId: string; appKey: string; appSecret: string; masterSecret: string };
+  /** 读列表失败时的原因；成功为 null */
+  listError?: string | null;
 }) {
   const [rows, setRows] = useState(releases);
   const [form, setForm] = useState<AppRelease>(BLANK);
@@ -98,7 +101,23 @@ export function AdminApps({
       | { item?: AppRelease; message?: string }
       | null;
     setBusy(false);
-    if (res?.status === 409) {
+    if (!res) {
+      setMsg({ kind: 'err', text: '请求没有发出去，请检查网络或重新登录' });
+      return;
+    }
+    if (res.status === 404) {
+      setMsg({ kind: 'err', text: '后端缺少 /api/v1/admin/apps 接口（404），需要重新编译部署 API' });
+      return;
+    }
+    if (res.status === 401 || res.status === 403) {
+      setMsg({ kind: 'err', text: '没有管理员权限，请重新登录后再试' });
+      return;
+    }
+    if (res.status >= 500) {
+      setMsg({ kind: 'err', text: `服务端出错（HTTP ${res.status}），请查看 API 日志` });
+      return;
+    }
+    if (res.status === 409) {
       setMsg({
         kind: 'err',
         text: `build ${form.build} 已被占用，改用 ${nextBuild(form.platform, form.channel)} 再试`,
@@ -151,6 +170,22 @@ export function AdminApps({
 
   return (
     <div className="admin-apps">
+      {listError && (
+        <div
+          className="card card-pad"
+          style={{
+            marginTop: 12,
+            borderColor: 'var(--danger-line)',
+            background: 'var(--danger-soft)',
+          }}
+        >
+          <b style={{ color: 'var(--danger)', fontSize: 13 }}>读不到版本列表</b>
+          <p className="small" style={{ marginTop: 5, color: 'var(--text-2)', lineHeight: 1.7 }}>
+            {listError}
+          </p>
+        </div>
+      )}
+
       <div className="card card-pad" style={{ marginTop: 12 }}>
         <div className="between" style={{ marginBottom: 10 }}>
           <div>
