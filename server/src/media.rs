@@ -6,6 +6,8 @@
 
 use std::io::Cursor;
 
+use chrono::{DateTime, Utc};
+
 use image::ImageEncoder;
 
 use sqlx::PgPool;
@@ -302,6 +304,63 @@ pub async fn delete_owned(st: &AppState, id: &str, user_id: &str) -> Result<bool
     let done = sqlx::query("DELETE FROM user_media WHERE id = $1 AND user_id = $2")
         .bind(id)
         .bind(user_id)
+        .execute(&st.pool)
+        .await?;
+    Ok(done.rows_affected() > 0)
+}
+
+/// 后台文件管理：按用途与关键字列出图片
+pub async fn admin_list(
+    pool: &PgPool,
+    q: &str,
+    kind: &str,
+    limit: i64,
+) -> Result<Vec<(String, String, String, String, i64, String, DateTime<Utc>)>, sqlx::Error> {
+    let like = format!("%{}%", q.trim());
+    sqlx::query_as(
+        "SELECT m.id, m.kind, u.nickname, m.mime, m.size::bigint, m.storage, m.created_at
+           FROM user_media m
+           LEFT JOIN users u ON u.id = m.user_id
+          WHERE ($1 = '' OR m.kind = $1)
+            AND ($2 = '%%' OR u.nickname ILIKE $2 OR m.id ILIKE $2)
+          ORDER BY m.created_at DESC
+          LIMIT $3",
+    )
+    .bind(kind)
+    .bind(&like)
+    .bind(limit.clamp(1, 200))
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn total_bytes(pool: &PgPool) -> Result<(i64, i64), sqlx::Error> {
+    let row: (i64, i64) = sqlx::query_as(
+        "SELECT count(*)::bigint, COALESCE(sum(size), 0)::bigint FROM user_media",
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row)
+}
+
+/// 管理员删图：连对象存储里的原件一起删
+pub async fn admin_delete(st: &AppState, id: &str) -> Result<bool, sqlx::Error> {
+    let row: Option<(String, String)> =
+        sqlx::query_as("SELECT storage, object_key FROM user_media WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&st.pool)
+            .await?;
+    let Some((storage, object_key)) = row else {
+        return Ok(false);
+    };
+
+    if storage == "s3" && !object_key.is_empty() {
+        if let Ok(Some((store, _, _))) = st.object_store.resolve(&st.pool, st.cfg.as_ref()).await {
+            let _ = object_storage::delete(&store, &object_key).await;
+        }
+    }
+
+    let done = sqlx::query("DELETE FROM user_media WHERE id = $1")
+        .bind(id)
         .execute(&st.pool)
         .await?;
     Ok(done.rows_affected() > 0)

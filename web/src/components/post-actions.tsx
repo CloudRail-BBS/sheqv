@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
  * 帖子详情里的两个交互块：
  *
  * - `PostLike`：楼层的点赞条（原来和评论框挤在一张卡里，改成楼层后各归各位）；
- * - `CommentComposer`：底部回复框，监听 `post:reply` 事件把「回复 #N 某人：」填进去。
+ * - `CommentComposer`：底部回复框，监听 `post:reply` 事件把「回复 某人：」填进去。
  */
 
 export function PostLike({
@@ -84,7 +84,7 @@ export function CommentComposer({
     const onReply = (e: Event) => {
       const detail = (e as CustomEvent<{ floor: number; author: string }>).detail;
       if (!detail) return;
-      setText(`回复 #${detail.floor} ${detail.author}：`);
+      setText(`回复 ${detail.author}：`);
       setErr(null);
       inputRef.current?.focus();
       requestAnimationFrame(() => {

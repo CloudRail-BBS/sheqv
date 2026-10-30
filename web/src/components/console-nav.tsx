@@ -30,6 +30,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/posts', label: '帖子', icon: 'doc' },
       { href: '/admin/audit', label: '审核', icon: 'check' },
       { href: '/admin/resources', label: '资源', icon: 'box' },
+      { href: '/admin/files', label: '文件管理', icon: 'folder' },
       { href: '/admin/announcements', label: '公告', icon: 'bell' },
       { href: '/admin/slides', label: '轮播', icon: 'image' },
       { href: '/admin/settings/content', label: '文案与页脚', icon: 'quote' },
@@ -111,6 +112,7 @@ const ICONS = {
   ticket: 'M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4zM9 7v10',
   mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
   log: 'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5',
+  folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   palette: 'M12 21a9 9 0 1 1 9-9c0 2.2-1.8 3-3.4 3H16a2 2 0 0 0-1.4 3.4c.5.6.2 1.6-.6 1.9-.6.5-1.3.7-2 .7M7.5 10.5h.01M10 7.5h.01M14 7.5h.01M16.5 10.5h.01',
   coin: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5v9M9.5 10.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4',
 } as const;

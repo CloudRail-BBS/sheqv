@@ -5,7 +5,7 @@ import { getRequestCaps } from '@/lib/request-caps';
 import { getCurrentUser } from '@/lib/current-user';
 import { getResource } from '@/lib/resource-store';
 import { ResourceActions } from '@/components/resource-actions';
-import { buildMetadata } from '@/lib/seo';
+import { buildMetadata, resourceJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import { fmtNum, fmtSize, gameLabel, gameTone } from '@/lib/resource-types';
 
@@ -38,10 +38,26 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
 
   const tone = gameTone(item.game);
   const canDelete = Boolean(user && (user.id === item.authorId || user.isAdmin));
+  const jsonLd =
+    item.status === 'published'
+      ? await resourceJsonLd({
+          id: item.id,
+          title: item.title,
+          summary: item.summary,
+          author: item.author,
+          category: item.category,
+          gameLabel: gameLabel(item.game),
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        }).catch(() => '')
+      : '';
   const { directDownload, externalBrowserHint } = caps.capabilities.resource;
 
   return (
     <div className="cols">
+      {jsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      )}
       <div className="col-main">
         <div className="crumb">
           <Link href="/resources">资源库</Link>

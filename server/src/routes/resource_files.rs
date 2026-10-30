@@ -1,4 +1,7 @@
-//! 资源文件上传 / 下载：本地上传，流式落盘，下载同源返回。
+//! 资源文件上传 / 下载。
+//!
+//! 配了对象存储就流式写进桶（不整块进内存），否则落本地磁盘；
+//! 下载按 `storage` 分流，两种存储对调用方是同一套 URL。
 
 use std::collections::HashMap;
 
@@ -16,6 +19,7 @@ use crate::current_user::CurrentUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::resource_files::{self, MAX_BYTES};
 use crate::state::AppState;
+use crate::object_storage;
 
 /// POST /api/v1/me/resource-file?name=xxx
 pub async fn upload(
@@ -46,48 +50,96 @@ pub async fn upload(
         .filter(|v| !v.is_empty() && v.len() <= 100)
         .unwrap_or_else(|| "application/octet-stream".to_string());
 
-    let dir = st.cfg.data_dir.join("uploads").join("resources");
-    tokio::fs::create_dir_all(&dir)
-        .await
-        .map_err(|e| ApiError::internal(format!("创建上传目录失败：{e}")))?;
-
     let id = crate::ids::next('f');
-    let path = dir.join(&id);
-    let mut file = tokio::fs::File::create(&path)
+
+    // 有对象存储就直接写桶：100MB 的文件不能整块读进内存，用 buf writer 流式上传
+    let object = st
+        .object_store
+        .resolve(&st.pool, st.cfg.as_ref())
         .await
-        .map_err(|e| ApiError::internal(format!("创建文件失败：{e}")))?;
+        .map_err(|e| ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e))?;
 
     let mut stream = body.into_data_stream();
     let mut size = 0usize;
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|_| ApiError::invalid_input("上传数据中断"))?;
-        size += chunk.len();
-        if size > MAX_BYTES {
-            drop(file);
-            let _ = tokio::fs::remove_file(&path).await;
-            return Err(ApiError::with_message(
-                StatusCode::PAYLOAD_TOO_LARGE,
-                "too_large",
-                "资源文件不能超过 100MB",
-            ));
+    let mut storage = "fs".to_string();
+    let mut object_key = String::new();
+    let mut local_path = id.clone();
+
+    if let Some((store, conf, true)) = object {
+        let key = conf.object_key("resource", &user.id, &id, &mime);
+        let path = object_storage::path_of(&key)
+            .map_err(|e| ApiError::internal(format!("对象路径不合法：{e}")))?;
+        let mut writer = object_store::buffered::BufWriter::new(store, path);
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.map_err(|_| ApiError::invalid_input("上传数据中断"))?;
+            size += chunk.len();
+            if size > MAX_BYTES {
+                writer.abort().await;
+                return Err(ApiError::with_message(
+                    StatusCode::PAYLOAD_TOO_LARGE,
+                    "too_large",
+                    "资源文件不能超过 100MB",
+                ));
+            }
+            writer
+                .write_all(&chunk)
+                .await
+                .map_err(|e| ApiError::internal(format!("写入对象存储失败：{e}")))?;
         }
-        file.write_all(&chunk)
+        writer
+            .shutdown()
+            .await
+            .map_err(|e| ApiError::internal(format!("写入对象存储失败：{e}")))?;
+        storage = "s3".to_string();
+        object_key = key;
+        local_path = String::new();
+    } else {
+        let dir = st.cfg.data_dir.join("uploads").join("resources");
+        tokio::fs::create_dir_all(&dir)
+            .await
+            .map_err(|e| ApiError::internal(format!("创建上传目录失败：{e}")))?;
+        let path = dir.join(&id);
+        let mut file = tokio::fs::File::create(&path)
+            .await
+            .map_err(|e| ApiError::internal(format!("创建文件失败：{e}")))?;
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.map_err(|_| ApiError::invalid_input("上传数据中断"))?;
+            size += chunk.len();
+            if size > MAX_BYTES {
+                drop(file);
+                let _ = tokio::fs::remove_file(&path).await;
+                return Err(ApiError::with_message(
+                    StatusCode::PAYLOAD_TOO_LARGE,
+                    "too_large",
+                    "资源文件不能超过 100MB",
+                ));
+            }
+            file.write_all(&chunk)
+                .await
+                .map_err(|e| ApiError::internal(format!("写入文件失败：{e}")))?;
+        }
+        file.flush()
             .await
             .map_err(|e| ApiError::internal(format!("写入文件失败：{e}")))?;
+        drop(file);
+
+        if size == 0 {
+            let _ = tokio::fs::remove_file(&path).await;
+            return Err(ApiError::invalid_input("文件为空"));
+        }
     }
-    file.flush()
-        .await
-        .map_err(|e| ApiError::internal(format!("写入文件失败：{e}")))?;
-    drop(file);
 
     if size == 0 {
-        let _ = tokio::fs::remove_file(&path).await;
         return Err(ApiError::invalid_input("文件为空"));
     }
 
-    resource_files::insert(&st.pool, &id, &user.id, &name, &mime, size as i64, &id)
-        .await
-        .map_err(ApiError::internal)?;
+    resource_files::insert(
+        &st.pool, &id, &user.id, &name, &mime, size as i64, &local_path, &storage, &object_key,
+    )
+    .await
+    .map_err(ApiError::internal)?;
 
     Ok(Json(serde_json::json!({
         "ok": true,
@@ -112,17 +164,33 @@ pub async fn download(State(st): State<AppState>, Path(id): Path<String>) -> Api
         return Err(ApiError::not_found());
     };
 
-    let path = st
-        .cfg
-        .data_dir
-        .join("uploads")
-        .join("resources")
-        .join(&row.path);
-    let file = tokio::fs::File::open(&path).await.map_err(|_| ApiError::not_found())?;
-    let meta = file.metadata().await.map_err(ApiError::internal)?;
-    let len = meta.len();
-    let stream = ReaderStream::new(file);
-    let body = Body::from_stream(stream);
+    let body = if row.storage == "s3" && !row.object_key.is_empty() {
+        let resolved = st
+            .object_store
+            .resolve(&st.pool, st.cfg.as_ref())
+            .await
+            .map_err(|e| ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e))?;
+        let Some((store, _, _)) = resolved else {
+            return Err(ApiError::with_message(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "storage_unavailable",
+                "对象存储未配置",
+            ));
+        };
+        let stream = object_storage::stream(&store, &row.object_key)
+            .await
+            .map_err(|e| ApiError::with_message(StatusCode::BAD_GATEWAY, "storage_error", &e))?;
+        Body::from_stream(stream)
+    } else {
+        let path = st
+            .cfg
+            .data_dir
+            .join("uploads")
+            .join("resources")
+            .join(&row.path);
+        let file = tokio::fs::File::open(&path).await.map_err(|_| ApiError::not_found())?;
+        Body::from_stream(ReaderStream::new(file))
+    };
 
     let encoded = utf8_percent_encode(&row.name, NON_ALPHANUMERIC).to_string();
     let mut res = Response::new(body);
@@ -133,7 +201,10 @@ pub async fn download(State(st): State<AppState>, Path(id): Path<String>) -> Api
             .parse()
             .unwrap_or_else(|_| "application/octet-stream".parse().expect("固定值")),
     );
-    h.insert(header::CONTENT_LENGTH, len.to_string().parse().expect("数字"));
+    h.insert(
+        header::CONTENT_LENGTH,
+        row.size.to_string().parse().expect("数字"),
+    );
     h.insert(
         header::CONTENT_DISPOSITION,
         format!("attachment; filename=\"resource\"; filename*=UTF-8''{encoded}")

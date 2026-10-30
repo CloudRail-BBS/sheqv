@@ -8,6 +8,7 @@ pub mod auth;
 pub mod email_auth;
 pub mod dev_teams;
 pub mod dm;
+pub mod files;
 pub mod groups;
 pub mod health;
 pub mod matches;
@@ -403,6 +404,15 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/audit/resources/{id}",
             post(audit::review_resource),
+        )
+        .route("/api/v1/admin/files", get(files::list))
+        .route(
+            "/api/v1/admin/files/media/{id}",
+            axum::routing::delete(files::remove_media),
+        )
+        .route(
+            "/api/v1/admin/files/resource/{id}",
+            axum::routing::delete(files::remove_resource),
         )
         .route("/api/v1/admin/audit/posts", get(audit::pending))
         .route("/api/v1/admin/audit/posts/{id}", post(audit::review))

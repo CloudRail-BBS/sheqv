@@ -6,6 +6,7 @@ import { listAnnouncements } from '@/lib/announcement-store';
 import { listResources } from '@/lib/resource-store';
 import { listDevTeams } from '@/lib/dev-team-store';
 import { listPolicies } from '@/lib/policy-store';
+import { listTournaments } from '@/lib/tournament-store';
 
 /**
  * 动态 sitemap：静态入口 + 帖子 + 公会 / 战队 + 公告 + 资源 / 团队。
@@ -39,9 +40,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/agreements'), lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
     { url: url('/policies'), lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
     { url: url('/download'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: url('/tournaments'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    { url: url('/dev-teams'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: url('/tasks'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: url('/about'), lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: url('/changelog'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
   ];
 
-  const [posts, guilds, teams, news, resources, devTeams, policies] = await Promise.all([
+  const [posts, guilds, teams, news, resources, devTeams, policies, tournaments] = await Promise.all([
     listPosts(),
     listOrgs('guild'),
     listOrgs('team'),
@@ -49,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listResources(),
     listDevTeams(),
     listPolicies(),
+    listTournaments(),
   ]);
 
   for (const p of posts) {
@@ -90,6 +97,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.3,
+    });
+  }
+  for (const t of tournaments.slice(0, LIMIT)) {
+    if (t.status === 'draft') continue;
+    entries.push({
+      url: url(`/tournaments/${t.id}`),
+      lastModified: new Date(t.createdAt),
+      changeFrequency: 'weekly',
+      priority: 0.6,
     });
   }
   for (const t of devTeams.slice(0, LIMIT)) {

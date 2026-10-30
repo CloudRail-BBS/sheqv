@@ -161,6 +161,89 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
 }
 
 /** 首页专用：站点级 JSON-LD（WebSite + 站内搜索） */
+/** 序列化成可安全内联的 JSON-LD（转义 `<`，避免正文里的 </script> 截断） */
+export function jsonLdString(data: Record<string, unknown>): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+/** 帖子：DiscussionForumPosting，带作者、时间、点赞与回复数 */
+export async function postJsonLd(post: {
+  id: string;
+  title?: string | null;
+  body: string;
+  author: string;
+  authorId?: string | null;
+  likes: number;
+  comments: number;
+  createdAt: number;
+}): Promise<string> {
+  const site = await getSiteMeta();
+  const base = (site.baseUrl || '').replace(/\/+$/, '');
+  const url = base ? `${base}/p/${post.id}` : `/p/${post.id}`;
+  const title = post.title?.trim() || post.body.replace(/\s+/g, ' ').slice(0, 40);
+
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    headline: title,
+    url,
+    mainEntityOfPage: url,
+    datePublished: new Date(post.createdAt).toISOString(),
+    inLanguage: 'zh-CN',
+    author: {
+      '@type': 'Person',
+      name: post.author,
+      ...(base && post.authorId ? { url: `${base}/u/${post.authorId}` } : {}),
+    },
+    publisher: { '@type': 'Organization', name: site.name },
+    commentCount: post.comments,
+    interactionStatistic: [
+      {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/LikeAction',
+        userInteractionCount: post.likes,
+      },
+      {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/CommentAction',
+        userInteractionCount: post.comments,
+      },
+    ],
+    articleBody: post.body.replace(/\s+/g, ' ').slice(0, 400),
+  });
+}
+
+/** 资源：SoftwareApplication，价格 0、按游戏分类 */
+export async function resourceJsonLd(item: {
+  id: string;
+  title: string;
+  summary: string;
+  author: string;
+  category: string;
+  gameLabel: string;
+  createdAt: number;
+  updatedAt: number;
+}): Promise<string> {
+  const site = await getSiteMeta();
+  const base = (site.baseUrl || '').replace(/\/+$/, '');
+  const url = base ? `${base}/resources/${item.id}` : `/resources/${item.id}`;
+
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: item.title,
+    description: item.summary,
+    url,
+    applicationCategory: item.category,
+    operatingSystem: item.gameLabel,
+    datePublished: new Date(item.createdAt).toISOString(),
+    dateModified: new Date(item.updatedAt).toISOString(),
+    author: { '@type': 'Person', name: item.author },
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'CNY' },
+    inLanguage: 'zh-CN',
+  });
+}
+
 export async function websiteJsonLd(): Promise<string> {
   const site = await getSiteMeta();
   const url = site.baseUrl || '/';

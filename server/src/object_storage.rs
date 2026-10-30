@@ -171,6 +171,28 @@ fn path(key: &str) -> Result<ObjectPath, String> {
     ObjectPath::parse(key).map_err(|e| format!("对象路径不合法：{e}"))
 }
 
+/// 流式写入：资源文件可能上百 MB，不能整块读进内存
+pub fn path_of(key: &str) -> Result<ObjectPath, String> {
+    path(key)
+}
+
+/// 流式下载：返回字节流，交给 `Body::from_stream`
+pub async fn stream(
+    store: &Arc<dyn ObjectStore>,
+    key: &str,
+) -> Result<futures_util::stream::BoxStream<'static, Result<bytes::Bytes, std::io::Error>>, String> {
+    use futures_util::StreamExt;
+
+    let result = store
+        .get(&path(key)?)
+        .await
+        .map_err(|e| format!("读取对象失败：{e}"))?;
+    Ok(result
+        .into_stream()
+        .map(|item| item.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))
+        .boxed())
+}
+
 pub async fn put(
     store: &Arc<dyn ObjectStore>,
     key: &str,

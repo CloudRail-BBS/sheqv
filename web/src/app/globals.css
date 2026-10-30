@@ -5350,3 +5350,133 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 .md-image .simg img { border: 0; border-radius: 0; max-width: none; }
 .simg-noscript { opacity: 1; transform: none; }
+
+/* ── 帖子列表行（Discourse 式紧凑排布） ───── */
+.post-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px;
+}
+.pr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pr-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pr-cat {
+  flex: none; padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  font-size: 10.5px; color: var(--text-2); line-height: 1.6;
+}
+.pr-title {
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--text); text-decoration: none; line-height: 1.5;
+}
+.pr-title:hover { color: var(--blue); }
+.pr-excerpt {
+  margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pr-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--muted); margin-top: 2px;
+}
+.pr-avatar {
+  width: 20px; height: 20px; border-radius: 6px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: #fff; font-size: 10px; font-weight: 700;
+}
+.pr-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pr-dot { color: var(--line-strong); }
+.pr-stats { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; }
+.pr-tag { font-size: 11px; color: var(--text-3); }
+.pr-stat {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 0; border: 0; background: none;
+  color: var(--muted); font: inherit; font-size: 11.5px; cursor: pointer;
+  text-decoration: none;
+}
+.pr-stat svg { width: 14px; height: 14px; }
+.pr-stat:hover { color: var(--text); }
+.pr-stat[data-on="true"] { color: var(--blue); }
+.pr-thumb { width: 108px; flex: none; border-radius: 8px; overflow: hidden; }
+
+@media (max-width: 700px) {
+  .post-row { padding: 12px 13px; gap: 10px; }
+  .pr-thumb { width: 76px; }
+  .pr-title { font-size: 14px; }
+  .pr-stats { margin-left: 0; }
+}
+
+/* ── 帖子正文块（不再分楼层） ─────────────── */
+.post-block { padding: 0; overflow: hidden; }
+.pb-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 18px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.pb-avatar {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: #fff; font-size: 14px; font-weight: 700;
+}
+.pb-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pb-who { flex: 1; min-width: 0; }
+.pb-name {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 13px; line-height: 1.4;
+}
+.pb-sub { margin-top: 2px; font-size: 11px; color: var(--muted); }
+.pb-op {
+  display: inline-grid; place-items: center; height: 16px; padding: 0 5px;
+  border-radius: 4px; border: 1px solid var(--blue-line);
+  background: var(--blue-soft); color: var(--blue);
+  font-size: 10px; font-weight: 600;
+}
+.pb-body { padding: 16px 18px 14px; min-width: 0; }
+.pb-reply-body {
+  font-size: 13.5px; line-height: 1.85; color: var(--text-2);
+  white-space: pre-wrap; word-break: break-word;
+  padding: 12px 18px 14px;
+}
+.pb-foot { padding: 0 18px 14px; }
+.pb-list { display: flex; flex-direction: column; gap: 10px; }
+
+@media (max-width: 700px) {
+  .pb-head { padding: 10px 13px; gap: 9px; }
+  .pb-avatar { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+  .pb-body { padding: 13px 14px 12px; }
+  .pb-reply-body { padding: 11px 14px 12px; }
+  .pb-foot { padding: 0 14px 12px; }
+}
+
+/* ── 后台文件管理 ───────────────────────── */
+.file-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.file-card { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.file-thumb {
+  display: block; aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden;
+  background: var(--panel-3);
+}
+.file-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.file-meta { display: flex; gap: 4px; flex-wrap: wrap; }
+.file-sub {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 11.5px; color: var(--muted);
+}
+.file-actions { display: flex; gap: 6px; }
+.file-actions .btn { flex: 1; }
+
+.adm-table { overflow-x: auto; }
+.adm-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.adm-table th {
+  text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600;
+  color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase;
+  border-bottom: 1px solid var(--line-soft);
+}
+.adm-table td { padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
+.adm-table tr:last-child td { border-bottom: 0; }
+
+@media (max-width: 560px) {
+  .file-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
