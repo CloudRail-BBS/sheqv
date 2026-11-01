@@ -8,6 +8,7 @@ import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
 import { TitleRequestForm } from '@/components/title-request';
 import { LoginMethods } from '@/components/login-methods';
+import { LevelPill, LevelBar, RepPill } from '@/components/rank-badges';
 import { getIdentities } from '@/lib/me-identities';
 import { listMyTitleRequests } from '@/lib/titles';
 import { VerificationRequestForm } from '@/components/verification-request';
@@ -148,6 +149,8 @@ export default async function MePage({
               <UserBadge badge={badgeOf(user)} />
               <GroupTag group={user.group} />
               {user.developer && <span className="dev-chip">开发者</span>}
+              <LevelPill level={user.level} />
+              <RepPill rep={user.reputation} />
             </div>
             <div className="me-sub">
               @{user.username} · 注册于 {joined}
@@ -175,6 +178,24 @@ export default async function MePage({
               <span>{s.k}</span>
             </div>
           ))}
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="between" style={{ marginBottom: 10 }}>
+            <h3 style={{ fontSize: 13 }}>等级与信誉</h3>
+            <span className="small muted">活跃与规范参与会同时提升两项</span>
+          </div>
+          <div className="me-rank">
+            <div className="me-rank-head">
+              <LevelPill level={user.level} size="lg" />
+              <RepPill rep={user.reputation} size="lg" />
+            </div>
+            <LevelBar level={user.level} />
+            <p className="small muted" style={{ marginTop: 8, lineHeight: 1.75 }}>
+              等级只看积分（签到、发帖、评论都会加）；信誉综合账号年龄、内容数量、认证与违规记录，
+              {user.reputation?.hint ? `当前：${user.reputation.hint}。` : ''}
+            </p>
+          </div>
         </div>
 
         <LoginMethods state={identities} notice={bindNotice} />

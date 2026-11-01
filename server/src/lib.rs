@@ -33,6 +33,7 @@ pub mod dm;
 pub mod email_login;
 pub mod errors;
 pub mod forum;
+pub mod rank;
 pub mod wiki;
 pub mod groups;
 pub mod media;

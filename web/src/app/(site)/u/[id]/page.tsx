@@ -9,6 +9,7 @@ import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { resolveBadge } from '@/lib/badges';
 import { PostCard } from '@/components/post-card';
 import { VerifyMark } from '@/components/verify-mark';
+import { LevelPill, RepPill } from '@/components/rank-badges';
 import { NameBadges } from '@/components/name-badges';
 import { AchievementChips } from '@/components/achievement-chips';
 import { buildMetadata } from '@/lib/seo';
@@ -72,6 +73,8 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
             <div className="up-name">
               <b>{user.nickname}</b>
               <VerifyMark kind={user.verifyKind} label={user.verifyLabel} />
+              <LevelPill level={user.level} />
+              <RepPill rep={user.reputation} />
               <NameBadges badge={badge} group={group} size="sm" />
             </div>
             <div className="up-sub">
@@ -92,6 +95,10 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
             <div>
               <b>{mine.reduce((n, p) => n + p.likes, 0)}</b>
               <span>获赞</span>
+            </div>
+            <div>
+              <b>{user.reputation?.score ?? '—'}</b>
+              <span>信誉</span>
             </div>
           </div>
         </section>

@@ -33,7 +33,7 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
 
   return (
     <div className="cols">
-      <div className="col-main">
+      <div className="col-main wiki-main">
         <div className="crumb">
           <Link href="/wiki">百科</Link>
           <span style={{ margin: '0 7px' }}>/</span>

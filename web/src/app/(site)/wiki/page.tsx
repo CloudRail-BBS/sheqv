@@ -54,7 +54,7 @@ export default async function WikiPage({
 
   return (
     <div className="cols">
-      <div className="col-main">
+      <div className="col-main wiki-main">
         <div className="wiki-head">
           <div>
             <h1 className="page-title">百科</h1>

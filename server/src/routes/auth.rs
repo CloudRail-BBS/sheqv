@@ -214,10 +214,29 @@ pub async fn logout(headers: HeaderMap) -> Response {
 pub async fn state(State(st): State<AppState>, MaybeUser(maybe): MaybeUser) -> ApiResult<Response> {
     let total = users::count(&st.pool).await.map_err(ApiError::internal)?;
 
+    // 登录用户带上级与信誉：顶栏、我的页都用这份，不再单独发请求
+    let user = match &maybe {
+        Some(u) => {
+            let points = crate::rank::points_of(&st.pool, &u.id)
+                .await
+                .map_err(ApiError::internal)?;
+            let rep = crate::rank::reputation_of(&st.pool, &u.id)
+                .await
+                .map_err(ApiError::internal)?;
+            let mut v = json!(u);
+            if let Some(obj) = v.as_object_mut() {
+                obj.insert("level".into(), json!(crate::rank::level_of(points)));
+                obj.insert("reputation".into(), json!(rep));
+            }
+            v
+        }
+        None => serde_json::Value::Null,
+    };
+
     let mut res = Json(json!({
         "initialized": total > 0,
         "userCount": total,
-        "user": maybe,
+        "user": user,
     }))
     .into_response();
     res.headers_mut()

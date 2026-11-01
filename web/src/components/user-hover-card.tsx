@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import type { BadgeInfo } from '@/lib/badges';
 import type { PublicUser, UserGroup } from '@/lib/users';
 import { NameBadges } from './name-badges';
+import { LevelPill, RepPill } from './rank-badges';
 
 /**
  * 作者悬停卡片：鼠标停留 180ms 后展示公开资料。
@@ -154,6 +155,10 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
                   <NameBadges badge={badge} group={shownGroup} size="sm" />
                 </div>
                 <div className="uhc-handle">@{shown?.username || 'user'}</div>
+                <div className="uhc-rank">
+                  <LevelPill level={shown?.level} />
+                  <RepPill rep={shown?.reputation} />
+                </div>
               </div>
             </div>
 

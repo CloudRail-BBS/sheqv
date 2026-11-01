@@ -228,7 +228,24 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         stats: Some(user_stats(&st.pool, &row.id).await.map_err(ApiError::internal)?),
     };
 
-    Ok(Json(json!({ "ok": true, "user": profile })).into_response())
+    // 等级 / 信誉是算出来的，不落库；和资料一起下发，前端不用再请求一次
+    let points = crate::rank::points_of(&st.pool, &row.id)
+        .await
+        .map_err(ApiError::internal)?;
+    let mut user = json!(profile);
+    if let Some(obj) = user.as_object_mut() {
+        obj.insert("level".into(), json!(crate::rank::level_of(points)));
+        obj.insert(
+            "reputation".into(),
+            json!(
+                crate::rank::reputation_of(&st.pool, &row.id)
+                    .await
+                    .map_err(ApiError::internal)?
+            ),
+        );
+    }
+
+    Ok(Json(json!({ "ok": true, "user": user })).into_response())
 }
 
 /// GET /api/v1/users —— 公开用户列表（作者徽标批量渲染用）。

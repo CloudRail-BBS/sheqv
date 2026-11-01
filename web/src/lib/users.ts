@@ -24,6 +24,24 @@ export interface UserGroup {
   effect?: string;
 }
 
+/** 等级（后端按积分算，见 server/src/rank.rs） */
+export interface LevelInfo {
+  level: number;
+  title: string;
+  exp: number;
+  floor: number;
+  nextAt: number;
+  /** 0–100 */
+  progress: number;
+}
+
+/** 信誉：0–100 的综合分 */
+export interface Reputation {
+  score: number;
+  tier: string;
+  hint: string;
+}
+
 export interface PublicUser {
   id: string;
   username: string;
@@ -55,6 +73,9 @@ export interface PublicUser {
   profileBg?: string;
   /** 头像；空则用昵称首字 */
   avatar?: string;
+  /** 等级与信誉（会话状态与单人资料接口下发） */
+  level?: LevelInfo;
+  reputation?: Reputation;
   /** 名片统计（仅单人接口下发） */
   stats?: { posts: number; comments: number; points: number };
   email?: string;

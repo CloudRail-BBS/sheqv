@@ -5936,3 +5936,106 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .wiki-hist-link:hover { background: var(--panel-2); color: var(--blue); }
 .wiki-hist-link b { display: block; font-size: 12.5px; font-weight: 600; }
 .wiki-hist-link i { font-style: normal; font-size: 11px; color: var(--muted); }
+
+/* ── 等级 / 信誉 ─────────────────────────── */
+/* 等级牌参考 B 站：六边形、渐变、白字，颜色按段位变化 */
+.lv-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  vertical-align: middle;
+}
+.lv-badge {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 1px;
+  height: 20px; min-width: 38px; padding: 0 10px;
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0 50%);
+  background: linear-gradient(165deg, #8fbcff, #4a7ce0);
+  color: #fff; font-weight: 800; letter-spacing: 0.01em;
+  text-shadow: 0 1px 1px rgba(12, 32, 72, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+}
+.lv-badge i { font-style: normal; font-size: 8px; opacity: 0.9; letter-spacing: 0.04em; }
+.lv-badge b { font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lv-pill[data-size="lg"] .lv-badge { height: 24px; min-width: 44px; padding: 0 12px; }
+.lv-pill[data-size="lg"] .lv-badge i { font-size: 9px; }
+.lv-pill[data-size="lg"] .lv-badge b { font-size: 15px; }
+.lv-name { font-size: 12px; font-weight: 600; color: var(--text-2); }
+
+.lv-pill[data-lv="1"] .lv-badge { background: linear-gradient(160deg, #a8c7f2, #6f8db3); }
+.lv-pill[data-lv="2"] .lv-badge { background: linear-gradient(160deg, #7fb7ff, #2f6ff0); }
+.lv-pill[data-lv="3"] .lv-badge { background: linear-gradient(160deg, #6fe3d6, #0fa89b); }
+.lv-pill[data-lv="4"] .lv-badge { background: linear-gradient(160deg, #a6e86a, #4a9e22); }
+.lv-pill[data-lv="5"] .lv-badge { background: linear-gradient(160deg, #c99bff, #7c3aed); }
+.lv-pill[data-lv="6"] .lv-badge { background: linear-gradient(160deg, #ff9b8a, #e03131); }
+
+.rep-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 19px; padding: 0 8px; border-radius: 6px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text-2); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.rep-pill i { font-style: normal; font-size: 10.5px; color: var(--muted); }
+.rep-pill[data-size="lg"] { height: 24px; padding: 0 10px; font-size: 12px; border-radius: 8px; gap: 7px; }
+.rep-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex: none; }
+.rep-pill[data-tone="green"] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.rep-pill[data-tone="green"] .rep-dot { background: var(--ok); }
+.rep-pill[data-tone="blue"] { color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft); }
+.rep-pill[data-tone="blue"] .rep-dot { background: var(--blue); }
+.rep-pill[data-tone="amber"] { color: var(--warn, #b45309); border-color: color-mix(in srgb, var(--warn, #b45309) 35%, transparent); background: color-mix(in srgb, var(--warn, #b45309) 12%, transparent); }
+.rep-pill[data-tone="amber"] .rep-dot { background: var(--warn, #b45309); }
+.rep-pill[data-tone="red"] { color: var(--danger); border-color: var(--danger-line); background: var(--danger-soft); }
+.rep-pill[data-tone="red"] .rep-dot { background: var(--danger); }
+
+.lv-bar-wrap { margin-top: 10px; }
+.lv-bar { height: 6px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--line-soft); }
+.lv-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--blue-2)); transition: width 0.3s var(--ease, ease); }
+.lv-bar-text {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 6px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.lv-bar-text b { color: var(--text-2); font-weight: 600; }
+.me-rank-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.uhc-rank { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+/* ── 百科毛玻璃 ──────────────────────────── */
+.wiki-main { position: relative; isolation: isolate; }
+.wiki-main::before {
+  content: ''; position: absolute; z-index: 0; pointer-events: none;
+  left: -24px; right: -24px; top: 54px; bottom: 40px;
+  border-radius: 28px;
+  /* 一层彩色网格当「玻璃后面的背景」，卡片半透明 + 模糊后才有东西可透 */
+  background:
+    radial-gradient(42% 38% at 14% 18%, rgba(62, 124, 255, 0.62), transparent 70%),
+    radial-gradient(38% 34% at 82% 34%, rgba(124, 92, 255, 0.52), transparent 70%),
+    radial-gradient(40% 32% at 46% 82%, rgba(18, 185, 129, 0.36), transparent 72%),
+    radial-gradient(30% 26% at 92% 88%, rgba(236, 72, 153, 0.28), transparent 70%);
+  filter: blur(22px) saturate(105%);
+  opacity: 0.78;
+}
+.wiki-main > * { position: relative; z-index: 1; }
+.wiki-list,
+.wiki-article,
+.wiki-version {
+  background: color-mix(in srgb, var(--panel) 48%, transparent);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--glass-brd, var(--line));
+  box-shadow: 0 24px 60px -46px rgba(10, 16, 30, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .wiki-list,
+[data-theme="light"] .wiki-article,
+[data-theme="light"] .wiki-version {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.60),
+    rgba(255, 255, 255, 0.44)
+  );
+  box-shadow: 0 20px 46px -34px rgba(15, 23, 42, 0.28), inset 0 1px 0 #fff;
+}
+.wiki-row:hover { background: color-mix(in srgb, var(--blue) 6%, transparent); }
+.wiki-tabs {
+  background: color-mix(in srgb, var(--panel) 38%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 10px 10px 0 0;
+  padding: 0 12px;
+}
