@@ -158,9 +158,12 @@ pub async fn admin_create(
 pub async fn admin_update(
     State(st): State<AppState>,
     Path(id): Path<String>,
-    _: AdminActor,
+    actor: AdminActor,
     body: Bytes,
 ) -> ApiResult<Response> {
+    let Some(editor_id) = actor.user_id().map(str::to_string) else {
+        return Err(ApiError::forbidden());
+    };
     let Ok(obj) = serde_json::from_slice::<Value>(&body) else {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
     };
@@ -190,7 +193,7 @@ pub async fn admin_update(
         published: obj.get("published").and_then(|v| v.as_bool()),
     };
 
-    match wiki::update(&st.pool, &id, &patch)
+    match wiki::update(&st.pool, &id, &patch, &editor_id)
         .await
         .map_err(ApiError::internal)?
     {
@@ -212,4 +215,65 @@ pub async fn admin_remove(
         return Err(ApiError::not_found());
     }
     Ok(Json(json!({ "ok": true })).into_response())
+}
+
+/// GET /api/v1/wiki/{slug}/revisions —— 公开的历史版本列表
+pub async fn revisions(
+    State(st): State<AppState>,
+    Path(slug): Path<String>,
+) -> ApiResult<Response> {
+    let Some(id) = wiki::id_by_slug(&st.pool, &slug)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+    let items = wiki::revisions(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+/// GET /api/v1/wiki/{slug}/revisions/{revId} —— 某个版本的完整内容
+pub async fn revision(
+    State(st): State<AppState>,
+    Path((slug, rev_id)): Path<(String, String)>,
+) -> ApiResult<Response> {
+    let Some(id) = wiki::id_by_slug(&st.pool, &slug)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+    let item = wiki::revision(&st.pool, &id, &rev_id)
+        .await
+        .map_err(ApiError::internal)?
+        .ok_or_else(ApiError::not_found)?;
+    Ok(Json(json!({ "ok": true, "revision": item })).into_response())
+}
+
+/// POST /api/v1/admin/wiki/{id}/restore —— 回滚到某个历史版本
+pub async fn admin_restore(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+    actor: AdminActor,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Some(editor_id) = actor.user_id().map(str::to_string) else {
+        return Err(ApiError::forbidden());
+    };
+    let Ok(obj) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let Some(rev_id) = obj.get("revisionId").and_then(|v| v.as_str()) else {
+        return Err(ApiError::invalid_input("缺少版本号"));
+    };
+
+    match wiki::restore(&st.pool, &id, rev_id, &editor_id)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        Some(entry) => Ok(Json(json!({ "ok": true, "entry": entry })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
 }

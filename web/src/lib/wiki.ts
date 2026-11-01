@@ -50,3 +50,34 @@ export function tocOf(body: string): { id: string; label: string; level: number 
   }
   return out;
 }
+
+export interface RevisionBrief {
+  id: string;
+  title: string;
+  editor: string;
+  createdAt: number;
+}
+
+export interface Revision extends RevisionBrief {
+  summary: string;
+  body: string;
+  category: string;
+  tags: string[];
+}
+
+/** 历史版本列表（公开）；词条不存在时返回空 */
+export async function listRevisions(slug: string): Promise<RevisionBrief[]> {
+  const d = await apiGetOr<{ items: RevisionBrief[] }>(
+    `/api/v1/wiki/${encodeURIComponent(slug)}/revisions`,
+    { items: [] },
+  );
+  return d.items ?? [];
+}
+
+export async function getRevision(slug: string, id: string): Promise<Revision | null> {
+  const d = await apiGetOr<{ revision: Revision | null }>(
+    `/api/v1/wiki/${encodeURIComponent(slug)}/revisions/${encodeURIComponent(id)}`,
+    { revision: null },
+  );
+  return d.revision;
+}

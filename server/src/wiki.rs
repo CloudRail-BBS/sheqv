@@ -43,6 +43,30 @@ pub struct WikiEntry {
     pub updated_at: i64,
 }
 
+/// 历史版本条目（列表用，不带正文）
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevisionBrief {
+    pub id: String,
+    pub title: String,
+    pub editor: String,
+    pub created_at: i64,
+}
+
+/// 历史版本详情
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Revision {
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+    pub body: String,
+    pub category: String,
+    pub tags: Vec<String>,
+    pub editor: String,
+    pub created_at: i64,
+}
+
 #[derive(sqlx::FromRow)]
 struct Row {
     id: String,
@@ -269,11 +293,34 @@ pub struct PatchEntry<'a> {
     pub published: Option<bool>,
 }
 
+/// 保存前的快照：把当前内容原样写进 wiki_revisions
+async fn snapshot(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    entry_id: &str,
+    editor_id: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO wiki_revisions (id, entry_id, title, summary, body, category, tags, editor_id)
+         SELECT $1, id, title, summary, body, category, tags, $2
+           FROM wiki_entries WHERE id = $3",
+    )
+    .bind(crate::ids::next('r'))
+    .bind(editor_id)
+    .bind(entry_id)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
 pub async fn update(
     pool: &PgPool,
     id: &str,
     patch: &PatchEntry<'_>,
+    editor_id: &str,
 ) -> Result<Option<WikiEntry>, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    snapshot(&mut tx, id, editor_id).await?;
+
     let done = sqlx::query(
         "UPDATE wiki_entries SET
              title      = COALESCE($2, title),
@@ -297,15 +344,107 @@ pub async fn update(
             .map(|t| Value::Array(t.iter().map(|s| Value::String(s.clone())).collect())),
     )
     .bind(patch.published)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
 
     if done.rows_affected() == 0 {
+        tx.rollback().await?;
         return Ok(None);
     }
+    tx.commit().await?;
 
     let row: Option<Row> = sqlx::query_as(&format!("{SQL} WHERE w.id = $1"))
         .bind(id)
+        .fetch_optional(pool)
+        .await?;
+    Ok(row.map(Row::entry))
+}
+
+/// 某个词条的历史版本（新的在前）
+pub async fn revisions(
+    pool: &PgPool,
+    entry_id: &str,
+) -> Result<Vec<RevisionBrief>, sqlx::Error> {
+    let rows: Vec<(String, String, String, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT r.id, r.title, u.nickname, r.created_at
+           FROM wiki_revisions r JOIN users u ON u.id = r.editor_id
+          WHERE r.entry_id = $1
+          ORDER BY r.created_at DESC
+          LIMIT 100",
+    )
+    .bind(entry_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(id, title, editor, created_at)| RevisionBrief {
+            id,
+            title,
+            editor,
+            created_at: created_at.timestamp_millis(),
+        })
+        .collect())
+}
+
+pub async fn revision(
+    pool: &PgPool,
+    entry_id: &str,
+    rev_id: &str,
+) -> Result<Option<Revision>, sqlx::Error> {
+    let row: Option<(String, String, String, String, String, Value, String, DateTime<Utc>)> =
+        sqlx::query_as(
+            "SELECT r.id, r.title, r.summary, r.body, r.category, r.tags, u.nickname, r.created_at
+               FROM wiki_revisions r JOIN users u ON u.id = r.editor_id
+              WHERE r.entry_id = $1 AND r.id = $2",
+        )
+        .bind(entry_id)
+        .bind(rev_id)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(row.map(|(id, title, summary, body, category, tags, editor, created_at)| Revision {
+        id,
+        title,
+        summary,
+        body,
+        category,
+        tags: tags_of(&tags),
+        editor,
+        created_at: created_at.timestamp_millis(),
+    }))
+}
+
+/// 回滚到某个历史版本：先把当前内容存快照，再把版本内容写回词条。
+pub async fn restore(
+    pool: &PgPool,
+    entry_id: &str,
+    rev_id: &str,
+    editor_id: &str,
+) -> Result<Option<WikiEntry>, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    snapshot(&mut tx, entry_id, editor_id).await?;
+
+    let done = sqlx::query(
+        "UPDATE wiki_entries w SET
+             title = r.title, summary = r.summary, body = r.body,
+             category = r.category, tags = r.tags, updated_at = now()
+           FROM wiki_revisions r
+          WHERE w.id = $1 AND r.id = $2 AND r.entry_id = w.id",
+    )
+    .bind(entry_id)
+    .bind(rev_id)
+    .execute(&mut *tx)
+    .await?;
+
+    if done.rows_affected() == 0 {
+        tx.rollback().await?;
+        return Ok(None);
+    }
+    tx.commit().await?;
+
+    let row: Option<Row> = sqlx::query_as(&format!("{SQL} WHERE w.id = $1"))
+        .bind(entry_id)
         .fetch_optional(pool)
         .await?;
     Ok(row.map(Row::entry))
@@ -317,6 +456,14 @@ pub async fn remove(pool: &PgPool, id: &str) -> Result<bool, sqlx::Error> {
         .execute(pool)
         .await?;
     Ok(done.rows_affected() > 0)
+}
+
+/// 只取 id（历史版本接口用，避免 GET 详情那样把浏览数 +1）
+pub async fn id_by_slug(pool: &PgPool, slug: &str) -> Result<Option<String>, sqlx::Error> {
+    sqlx::query_scalar("SELECT id FROM wiki_entries WHERE slug = $1")
+        .bind(slug)
+        .fetch_optional(pool)
+        .await
 }
 
 pub async fn count(pool: &PgPool) -> Result<i64, sqlx::Error> {

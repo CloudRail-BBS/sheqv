@@ -146,6 +146,15 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/admin/wiki/{id}",
             patch(wiki::admin_update).delete(wiki::admin_remove),
         )
+        .route("/api/v1/wiki/{slug}/revisions", get(wiki::revisions))
+        .route(
+            "/api/v1/wiki/{slug}/revisions/{revId}",
+            get(wiki::revision),
+        )
+        .route(
+            "/api/v1/admin/wiki/{id}/restore",
+            patch(wiki::admin_restore),
+        )
         // 后台版本发布：列表 / 新建
         .route(
             "/api/v1/admin/apps",

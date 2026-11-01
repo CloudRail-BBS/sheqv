@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getWiki, tocOf, categoryLabel, fmtDay, WIKI_CATEGORIES } from '@/lib/wiki';
+import { getWiki, tocOf, categoryLabel, fmtDay, listRevisions, WIKI_CATEGORIES } from '@/lib/wiki';
 import { Markdown } from '@/lib/markdown';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
@@ -20,7 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function WikiEntryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [data, user] = await Promise.all([getWiki(slug), getCurrentUser()]);
+  const [data, user, revisions] = await Promise.all([
+    getWiki(slug),
+    getCurrentUser(),
+    listRevisions(slug),
+  ]);
   if (!data) notFound();
 
   const { entry, related } = data;
@@ -103,6 +107,17 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
             </nav>
           </div>
         )}
+
+        <div className="card rail-card">
+          <div className="rail-title">维护</div>
+          <Link href={`/wiki/${slug}/history`} className="wiki-hist-link">
+            <span>
+              <b>历史版本</b>
+              <i>{revisions.length > 0 ? `共 ${revisions.length} 个` : '还没有历史版本'}</i>
+            </span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
 
         <div className="card rail-card">
           <div className="rail-title">词条信息</div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { listWiki, WIKI_CATEGORIES, categoryLabel, fmtDay } from '@/lib/wiki';
 import { buildMetadata } from '@/lib/seo';
+import { getCurrentUser } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,16 @@ export async function generateMetadata() {
   });
 }
 
+/** 没有配图时用分类色块 + 首字当封面，比一排空图更整齐 */
+function Cover({ title, category }: { title: string; category: string }) {
+  return (
+    <span className="wiki-cover" data-cat={category} aria-hidden="true">
+      <b>{title.slice(0, 1)}</b>
+      <i>{categoryLabel(category)}</i>
+    </span>
+  );
+}
+
 export default async function WikiPage({
   searchParams,
 }: {
@@ -21,9 +32,10 @@ export default async function WikiPage({
   const q = (sp.q ?? '').trim();
   const active = WIKI_CATEGORIES.some((c) => c.key === sp.category) ? sp.category! : '';
 
-  const [items, all] = await Promise.all([
+  const [items, all, user] = await Promise.all([
     listWiki({ q, category: active }),
     q || active ? listWiki({}) : Promise.resolve(null),
+    getCurrentUser(),
   ]);
 
   const counts = new Map<string, number>();
@@ -43,37 +55,39 @@ export default async function WikiPage({
   return (
     <div className="cols">
       <div className="col-main">
-        <section className="card wiki-hero">
-          <span className="wiki-kicker">WIKI</span>
-          <h1 className="wiki-title">社区百科</h1>
-          <p className="wiki-lead">
-            开服参数、约战流程、资源规范、身份组与公约——常见问题的答案都收在这里，
-            找不到就去工单里问。
-          </p>
-          <form action="/wiki" className="wiki-search">
+        <div className="wiki-head">
+          <div>
+            <h1 className="page-title">百科</h1>
+            <p className="small muted" style={{ marginTop: 4 }}>
+              {total} 条词条 · 由站长维护，找不到答案就去工单里问
+            </p>
+          </div>
+          <form action="/wiki" className="wiki-search compact">
             {active && <input type="hidden" name="category" value={active} />}
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
               <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
-            <input name="q" defaultValue={q} placeholder="搜词条：怎么开服、约战怎么判负、资源怎么发…" />
-            <button type="submit" className="btn btn-primary btn-sm">
-              搜索
-            </button>
+            <input name="q" defaultValue={q} placeholder="搜索词条…" />
           </form>
-          <div className="wiki-stat">
-            共 <b className="mono">{total}</b> 条词条 · 由站长维护
-          </div>
-        </section>
+        </div>
 
-        <div className="wiki-cats">
-          <Link href={href({ category: '' })} className="chip" data-on={!active}>
-            全部
+        <div className="wiki-tabs">
+          <Link href={href({ category: '' })} className="wiki-tab" data-on={!active}>
+            全部条目
+            <span className="wiki-tab-n">{total}</span>
           </Link>
           {WIKI_CATEGORIES.map((c) => (
-            <Link key={c.key} href={href({ category: c.key })} className="chip" data-on={active === c.key}>
+            <Link
+              key={c.key}
+              href={href({ category: c.key })}
+              className="wiki-tab"
+              data-on={active === c.key}
+            >
               {c.label}
-              {(counts.get(c.key) ?? 0) > 0 && <span className="wiki-cat-n">{counts.get(c.key)}</span>}
+              {(counts.get(c.key) ?? 0) > 0 && (
+                <span className="wiki-tab-n">{counts.get(c.key)}</span>
+              )}
             </Link>
           ))}
         </div>
@@ -82,7 +96,9 @@ export default async function WikiPage({
           <div className="card card-pad wiki-empty">
             <b>{q ? '没有找到相关词条' : '这个词条分类还是空的'}</b>
             <p className="small muted">
-              {q ? '换个关键词试试，或者去工单里提问，站长会补进百科。' : '站长可以在后台「内容 → 百科」里添加。'}
+              {q
+                ? '换个关键词试试，或者去工单里提问，站长会补进百科。'
+                : '管理员可以在后台「内容 → 百科」里添加。'}
             </p>
             {q && (
               <Link href="/wiki" className="btn btn-sm btn-ghost">
@@ -91,23 +107,27 @@ export default async function WikiPage({
             )}
           </div>
         ) : (
-          <div className="wiki-grid">
+          <div className="card wiki-list">
             {items.map((it) => (
-              <Link key={it.id} href={`/wiki/${it.slug}`} className="card wiki-card">
-                <div className="wiki-card-top">
-                  <span className="wiki-tag">{categoryLabel(it.category)}</span>
-                  {it.tags.slice(0, 2).map((t) => (
-                    <span key={t} className="badge badge-ghost">
-                      {t}
-                    </span>
-                  ))}
+              <Link key={it.id} href={`/wiki/${it.slug}`} className="wiki-row">
+                <div className="wiki-row-main">
+                  <div className="wiki-row-top">
+                    <span className="wiki-tag">{categoryLabel(it.category)}</span>
+                    {it.tags.slice(0, 2).map((t) => (
+                      <span key={t} className="badge badge-ghost">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                  <h2 className="wiki-row-title">{it.title}</h2>
+                  <p className="wiki-row-desc">{it.summary || '这条词条还没有写摘要。'}</p>
+                  <div className="wiki-row-meta">
+                    <span>更新于 {fmtDay(it.updatedAt)}</span>
+                    <span>·</span>
+                    <span>{it.views} 次浏览</span>
+                  </div>
                 </div>
-                <h2 className="wiki-card-title">{it.title}</h2>
-                <p className="wiki-card-desc">{it.summary || '这条词条还没有写摘要。'}</p>
-                <div className="wiki-card-foot">
-                  <span>更新于 {fmtDay(it.updatedAt)}</span>
-                  <span className="mono">{it.views} 次浏览</span>
-                </div>
+                <Cover title={it.title} category={it.category} />
               </Link>
             ))}
           </div>
@@ -137,6 +157,13 @@ export default async function WikiPage({
           </Link>
         </div>
       </aside>
+
+      {user?.isAdmin && (
+        <Link href="/admin/wiki" className="wiki-fab">
+          <span aria-hidden="true">+</span>
+          新建条目
+        </Link>
+      )}
     </div>
   );
 }
