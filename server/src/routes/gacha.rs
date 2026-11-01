@@ -230,6 +230,15 @@ pub async fn admin_create(
     if descr.chars().count() > 120 {
         return Err(ApiError::invalid_input("描述不超过 120 字"));
     }
+    // 卡面插图：本站媒体地址或外链，空串表示继续用 emoji
+    let image = payload
+        .get("image")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    if image.chars().count() > 300 {
+        return Err(ApiError::invalid_input("图片地址过长"));
+    }
 
     let card = gacha::create(
         &st.pool,
@@ -238,6 +247,7 @@ pub async fn admin_create(
             rarity: &rarity,
             weight,
             emoji: &emoji,
+            image,
             color: &color,
             descr,
             stock,
@@ -293,6 +303,7 @@ pub async fn admin_patch(
                 .and_then(|v| v.as_i64())
                 .map(|v| v.clamp(1, 10_000) as i32),
             emoji: payload.get("emoji").and_then(|v| v.as_str()).map(str::trim),
+            image: payload.get("image").and_then(|v| v.as_str()).map(str::trim),
             color: payload.get("color").and_then(|v| v.as_str()).map(str::trim),
             descr,
             stock: payload

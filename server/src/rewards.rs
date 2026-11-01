@@ -520,12 +520,15 @@ pub async fn patch_prize(
     enabled: Option<bool>,
     weight: Option<i64>,
     stock: Option<Option<i64>>,
+    custom_image: Option<&str>,
 ) -> Result<bool, sqlx::Error> {
     let done = sqlx::query(
         "UPDATE lottery_prizes SET
             enabled = COALESCE($2, enabled),
             weight = COALESCE($3, weight),
-            stock = CASE WHEN $4::boolean THEN $5 ELSE stock END
+            stock = CASE WHEN $4::boolean THEN $5 ELSE stock END,
+            -- 空串表示清掉图片；没传这个字段则保持原图
+            custom_image = COALESCE($6, custom_image)
           WHERE id = $1",
     )
     .bind(id)
@@ -533,6 +536,7 @@ pub async fn patch_prize(
     .bind(weight.map(|w| w.clamp(1, 10000) as i32))
     .bind(stock.is_some())
     .bind(stock.flatten())
+    .bind(custom_image.map(|v| v.trim().to_string()))
     .execute(pool)
     .await?;
     Ok(done.rows_affected() > 0)

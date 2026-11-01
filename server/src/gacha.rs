@@ -4,6 +4,8 @@
 //! 1. 抽卡要**扣积分 + 扣库存 + 记录**，三件事在同一个事务里，任何一步失败都回滚；
 //! 2. 权重是「越大越常见」，只在 `active` 且还有库存的卡里抽；
 //! 3. 记录里存卡名与稀有度的快照，卡以后被删了，图鉴与历史仍然能显示。
+//!
+//! 卡面有两种画法：默认是「符号 + 主色」，后台也可以传一张图（`image`），有图优先用图。
 
 use chrono::{DateTime, Utc};
 use rand::Rng;
@@ -22,6 +24,8 @@ pub struct Card {
     pub rarity: String,
     pub weight: i32,
     pub emoji: String,
+    /// 卡面插图；空串表示用 emoji
+    pub image: String,
     pub color: String,
     pub descr: String,
     pub stock: i32,
@@ -38,7 +42,7 @@ pub struct DrawView {
     pub created_at: i64,
 }
 
-const COLS: &str = "id, name, rarity, weight, emoji, color, descr, stock, active";
+const COLS: &str = "id, name, rarity, weight, emoji, image, color, descr, stock, active";
 
 /// 稀有度从高到低，再按权重从小到大（越稀有越靠前）
 const ORDER: &str = "ORDER BY CASE rarity WHEN 'legend' THEN 0 WHEN 'epic' THEN 1
@@ -72,6 +76,7 @@ pub struct NewCard<'a> {
     pub rarity: &'a str,
     pub weight: i32,
     pub emoji: &'a str,
+    pub image: &'a str,
     pub color: &'a str,
     pub descr: &'a str,
     pub stock: i32,
@@ -81,14 +86,15 @@ pub struct NewCard<'a> {
 pub async fn create(pool: &PgPool, c: &NewCard<'_>) -> Result<Card, sqlx::Error> {
     let id = ids::next('g');
     sqlx::query(
-        "INSERT INTO gacha_cards (id, name, rarity, weight, emoji, color, descr, stock, active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO gacha_cards (id, name, rarity, weight, emoji, image, color, descr, stock, active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
     )
     .bind(&id)
     .bind(c.name)
     .bind(c.rarity)
     .bind(c.weight)
     .bind(c.emoji)
+    .bind(c.image)
     .bind(c.color)
     .bind(c.descr)
     .bind(c.stock)
@@ -106,6 +112,7 @@ pub struct PatchCard<'a> {
     pub rarity: Option<&'a str>,
     pub weight: Option<i32>,
     pub emoji: Option<&'a str>,
+    pub image: Option<&'a str>,
     pub color: Option<&'a str>,
     pub descr: Option<&'a str>,
     pub stock: Option<i32>,
@@ -119,10 +126,11 @@ pub async fn patch(pool: &PgPool, id: &str, c: &PatchCard<'_>) -> Result<Option<
              rarity = COALESCE($3, rarity),
              weight = COALESCE($4, weight),
              emoji  = COALESCE($5, emoji),
-             color  = COALESCE($6, color),
-             descr  = COALESCE($7, descr),
-             stock  = COALESCE($8, stock),
-             active = COALESCE($9, active)
+             image  = COALESCE($6, image),
+             color  = COALESCE($7, color),
+             descr  = COALESCE($8, descr),
+             stock  = COALESCE($9, stock),
+             active = COALESCE($10, active)
            WHERE id = $1",
     )
     .bind(id)
@@ -130,6 +138,7 @@ pub async fn patch(pool: &PgPool, id: &str, c: &PatchCard<'_>) -> Result<Option<
     .bind(c.rarity)
     .bind(c.weight)
     .bind(c.emoji)
+    .bind(c.image)
     .bind(c.color)
     .bind(c.descr)
     .bind(c.stock)

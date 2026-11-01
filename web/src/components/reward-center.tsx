@@ -457,7 +457,11 @@ export function RewardCenter({
             <div className="lt-prizes">
               {snap.prizes.map((p) => (
                 <div key={p.id} className="lt-prize" style={{ borderColor: `color-mix(in srgb, ${p.theme || '#3e7cff'} 40%, transparent)` }}>
-                  <span className="lt-dot" style={{ background: p.theme || 'var(--blue)' }} />
+                  {p.customImage ? (
+                    <img className="lt-thumb" src={p.customImage} alt="" loading="lazy" decoding="async" />
+                  ) : (
+                    <span className="lt-dot" style={{ background: p.theme || 'var(--blue)' }} />
+                  )}
                   <span>{p.name}</span>
                   {p.stock !== null && p.stock !== undefined && (
                     <span className="mono small muted" style={{ marginLeft: 'auto' }}>剩 {p.stock}</span>
@@ -544,7 +548,7 @@ export function RewardCenter({
                 <img className="gb-item-img" src={reveal.image} alt="" />
               )}
               <div className="gb-ticket-title">{reveal.title}</div>
-              {(reveal.points > 0 || reveal.giftPoints) && (
+              {(reveal.points > 0 || (reveal.giftPoints ?? 0) > 0) && (
                 <div className="gb-ticket-points">
                   <b className="mono">+{reveal.points > 0 ? reveal.points : reveal.giftPoints}</b>
                   <span>积分</span>

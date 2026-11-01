@@ -301,6 +301,7 @@ pub async fn admin_patch_prize(
         obj.get("enabled").and_then(|v| v.as_bool()),
         obj.get("weight").and_then(|v| v.as_i64()),
         stock,
+        obj.get("customImage").and_then(|v| v.as_str()),
     )
     .await
     .map_err(ApiError::internal)?;

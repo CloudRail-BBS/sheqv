@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { RewardImagePicker } from './reward-image-picker';
 
 /**
  * 后台 · 抽卡管理。
  *
- * 卡面是「符号 + 主色」，不依赖图片上传：改一个 emoji 与色值就能出新卡。
+ * 卡面默认是「符号 + 主色」，也可以传一张图；有图优先用图。
  * 权重越大越常见；库存 -1 表示不限量。
  */
 
@@ -18,6 +19,8 @@ export interface Card {
   rarity: Rarity;
   weight: number;
   emoji: string;
+  /** 卡面插图；空串表示用 emoji */
+  image: string;
   color: string;
   descr: string;
   stock: number;
@@ -37,6 +40,7 @@ const BLANK: Card = {
   rarity: 'common',
   weight: 100,
   emoji: '🎴',
+  image: '',
   color: '',
   descr: '',
   stock: -1,
@@ -88,6 +92,7 @@ export function AdminGacha({
       rarity: form.rarity,
       weight: Number(form.weight) || 100,
       emoji: form.emoji.trim() || '🎴',
+      image: form.image,
       color: form.color.trim(),
       descr: form.descr.trim(),
       stock: Number(form.stock),
@@ -213,7 +218,7 @@ export function AdminGacha({
                   className="gacha-admin-face"
                   style={{ background: `color-mix(in srgb, ${c.color || RARITY[c.rarity].color} 22%, var(--panel-2))` }}
                 >
-                  {c.emoji || '🎴'}
+                  {c.image ? <img src={c.image} alt="" /> : c.emoji || '🎴'}
                 </span>
                 <div className="gacha-admin-main">
                   <b>{c.name}</b>
@@ -251,7 +256,7 @@ export function AdminGacha({
               <div className="composer-panel-head" style={{ marginBottom: 10 }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <b className="composer-head-title">{creating ? '新建卡片' : '编辑卡片'}</b>
-                  <div className="composer-head-sub">符号 + 主色就是卡面，不需要上传图片</div>
+                  <div className="composer-head-sub">有图用图，没图就用符号 + 主色</div>
                 </div>
                 <button type="button" className="composer-icon-btn" aria-label="关闭" onClick={() => setForm(null)}>
                   ×
@@ -304,6 +309,14 @@ export function AdminGacha({
                     onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
                   />
                 </label>
+                <div className="gacha-form-wide">
+                  <RewardImagePicker
+                    value={form.image}
+                    onChange={(url) => setForm({ ...form, image: url })}
+                    label="卡面图片（可空）"
+                    hint="PNG / JPEG / WebP / GIF，不超过 2 MB；不传就用上面的符号 + 主色，建议竖版或 1:1。"
+                  />
+                </div>
                 <label className="field">
                   <span>符号</span>
                   <input

@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GiftCard, Prize } from '@/lib/reward-types';
 import { fmtCardDate } from '@/lib/reward-types';
+import { REWARD_IMAGE_ACCEPT, uploadRewardImage } from '@/lib/reward-image';
+import { RewardImagePicker } from './reward-image-picker';
 
 const CARD_EMPTY = {
   kind: 'gift',
@@ -39,6 +41,10 @@ export function AdminRewards() {
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [lastCodes, setLastCodes] = useState<string[]>([]);
+  /** 奖品行内「换图」：一个共享 input，用 ref 记当前换的是哪个奖品 */
+  const prizeImgRef = useRef<HTMLInputElement>(null);
+  const prizeImgTarget = useRef<string | null>(null);
+  const [imgBusy, setImgBusy] = useState(false);
 
   const load = useCallback(async () => {
     const [c, p] = await Promise.all([
@@ -128,6 +134,42 @@ export function AdminRewards() {
       body: JSON.stringify({ enabled: !p.enabled }),
     }).catch(() => null);
     if (res?.ok) void load();
+  }
+
+  function pickPrizeImage(id: string) {
+    prizeImgTarget.current = id;
+    prizeImgRef.current?.click();
+  }
+
+  /** 换奖品图：先传图拿地址，再把地址写回这条奖品 */
+  async function onPrizeImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    const id = prizeImgTarget.current;
+    prizeImgTarget.current = null;
+    if (!file || !id) return;
+
+    setMsg(null);
+    setImgBusy(true);
+    const up = await uploadRewardImage(file);
+    if (!up.ok) {
+      setImgBusy(false);
+      setMsg({ kind: 'err', text: up.message });
+      return;
+    }
+    const res = await fetch(`/api/v1/admin/rewards/prizes/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ customImage: up.url }),
+    }).catch(() => null);
+    setImgBusy(false);
+    if (!res?.ok) {
+      const data = (await res?.json().catch(() => null)) as { message?: string } | null;
+      setMsg({ kind: 'err', text: data?.message ?? '图片传上去了，但没能保存到奖品' });
+      return;
+    }
+    setMsg({ kind: 'ok', text: '奖品图片已更新' });
+    void load();
   }
 
   async function removePrize(id: string) {
@@ -225,15 +267,13 @@ export function AdminRewards() {
             </label>
             {form.rewardKind === 'custom' && (
               <>
-                <label className="field" style={{ gridColumn: '1 / -1' }}>
-                  <span>奖品图片地址（可空）</span>
-                  <input
-                    className="input mono"
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <RewardImagePicker
                     value={form.rewardImage}
-                    onChange={(e) => setForm({ ...form, rewardImage: e.target.value })}
-                    placeholder="https://…"
+                    onChange={(url) => setForm({ ...form, rewardImage: url })}
+                    label="奖品图片（可空）"
                   />
-                </label>
+                </div>
                 <label className="field" style={{ gridColumn: '1 / -1' }}>
                   <span>领取说明（可空）</span>
                   <input
@@ -338,15 +378,14 @@ export function AdminRewards() {
                     maxLength={30}
                   />
                 </label>
-                <label className="field" style={{ gridColumn: '1 / -1' }}>
-                  <span>图片地址（可空）</span>
-                  <input
-                    className="input mono"
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <RewardImagePicker
                     value={pf.customImage}
-                    onChange={(e) => setPf({ ...pf, customImage: e.target.value })}
-                    placeholder="https://…"
+                    onChange={(url) => setPf({ ...pf, customImage: url })}
+                    label="奖品图片（可空）"
+                    hint="PNG / JPEG / WebP / GIF，不超过 2 MB；抽中时会连图一起弹出来，建议 1:1。"
                   />
-                </label>
+                </div>
                 <label className="field" style={{ gridColumn: '1 / -1' }}>
                   <span>领取说明</span>
                   <input
@@ -368,7 +407,20 @@ export function AdminRewards() {
           <div className="lt-prizes" style={{ marginTop: 12 }}>
             {prizes.map((p) => (
               <div key={p.id} className="lt-prize" data-off={!p.enabled}>
-                <span className="lt-dot" style={{ background: p.theme || 'var(--blue)' }} />
+                {p.kind === 'custom' ? (
+                  <button
+                    type="button"
+                    className="lt-prize-thumb"
+                    data-empty={!p.customImage}
+                    onClick={() => pickPrizeImage(p.id)}
+                    disabled={imgBusy}
+                    title={p.customImage ? '更换图片' : '上传图片'}
+                  >
+                    {p.customImage ? <img src={p.customImage} alt="" /> : <span>图</span>}
+                  </button>
+                ) : (
+                  <span className="lt-dot" style={{ background: p.theme || 'var(--blue)' }} />
+                )}
                 <span>{p.name}</span>
                 <span className="mono small muted">w{p.weight ?? ''}</span>
                 <span className="mono small muted" style={{ marginLeft: 'auto' }}>
@@ -384,6 +436,7 @@ export function AdminRewards() {
             ))}
             {prizes.length === 0 && <p className="small muted">奖池是空的，先加一个奖品。</p>}
           </div>
+          <input ref={prizeImgRef} type="file" accept={REWARD_IMAGE_ACCEPT} hidden onChange={onPrizeImage} />
         </form>
       </div>
 

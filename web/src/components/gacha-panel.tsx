@@ -17,6 +17,8 @@ export interface GachaCard {
   name: string;
   rarity: Rarity;
   emoji: string;
+  /** 卡面插图；空串表示用 emoji */
+  image: string;
   color: string;
   descr: string;
   stock: number;
@@ -192,7 +194,11 @@ export function GachaPanel({
                 style={{ ['--gc' as string]: faceColor(c) } as React.CSSProperties}
               >
                 <div className="gacha-face">
-                  <span className="gacha-emoji">{c.emoji || '🎴'}</span>
+                  {c.image ? (
+                    <img className="gacha-art" src={c.image} alt="" loading="lazy" decoding="async" />
+                  ) : (
+                    <span className="gacha-emoji">{c.emoji || '🎴'}</span>
+                  )}
                   <span className="gacha-rarity">{RARITY[c.rarity]?.label ?? '普通'}</span>
                 </div>
                 <div className="gacha-info">
@@ -270,7 +276,11 @@ function GachaReveal({ card, onClose }: { card: GachaCard; onClose: () => void }
         <div className="gacha-pop">
           <span className="gacha-pop-kicker">获得卡片</span>
           <div className="gacha-pop-card">
-            <span className="gacha-emoji">{card.emoji || '🎴'}</span>
+            {card.image ? (
+              <img className="gacha-pop-art" src={card.image} alt="" />
+            ) : (
+              <span className="gacha-emoji">{card.emoji || '🎴'}</span>
+            )}
             <span className="gacha-rarity">{RARITY[card.rarity]?.label}</span>
           </div>
           <b className="gacha-pop-name">{card.name}</b>
