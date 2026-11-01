@@ -7,6 +7,7 @@ import type { GroupOption } from '@/lib/groups';
 import type { UserGroup } from '@/lib/users';
 import { UserBadge } from './user-badge';
 import { VerifyMark } from './verify-mark';
+import { AdminReputation } from './admin-reputation';
 
 export interface AdminUserRow {
   id: string;
@@ -47,6 +48,8 @@ export function AdminUsers({
   const [err, setErr] = useState<string | null>(null);
   /** 正在编辑头衔的用户 id */
   const [editing, setEditing] = useState<string | null>(null);
+  /** 正在查看信誉的用户 */
+  const [repUser, setRepUser] = useState<{ id: string; nickname: string } | null>(null);
   const [draft, setDraft] = useState('');
 
   async function patch(id: string, body: Record<string, unknown>) {
@@ -259,6 +262,12 @@ export function AdminUsers({
                       </button>
                       <button
                         className="btn btn-sm btn-ghost"
+                        onClick={() => setRepUser({ id: u.id, nickname: u.nickname })}
+                      >
+                        信誉
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
                         disabled={busyId === u.id || locked}
                         onClick={() => patch(u.id, { banned: !u.banned })}
                       >
@@ -286,7 +295,16 @@ export function AdminUsers({
         头衔留空会回落默认（管理员显示「管理员」，普通用户不显示）。
         「身份组」决定发帖 / 评论等权限，换组后立即生效（管理员不受组限制）；选「未分组」等于收回全部组权限。
         封禁立即生效——该账号的现有会话会被判为无效，不只是隐藏按钮。
+        信誉初始 100，只因为被拒内容自动扣分；「信誉」可以手动扣分或补回，每次都要填理由。
       </p>
+
+      {repUser && (
+        <AdminReputation
+          userId={repUser.id}
+          nickname={repUser.nickname}
+          onClose={() => setRepUser(null)}
+        />
+      )}
     </>
   );
 }

@@ -17,7 +17,8 @@ export default async function RewardsPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
-  const initialTab = tab === 'code' || tab === 'lottery' ? tab : 'cards';
+  const initialTab =
+    tab === 'code' || tab === 'lottery' || tab === 'gacha' ? tab : 'cards';
   const [user, settings] = await Promise.all([getCurrentUser(), getSettings()]);
   const hint = settings.rewardsHint || '礼品卡、兑换码与抽奖都在这里。礼品卡是点名发给你的，拆开时才有奖励。';
 

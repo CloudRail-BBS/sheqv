@@ -1,8 +1,8 @@
 //! 等级与信誉：**都是算出来的，不额外存表**。
 //!
 //! - 等级只看积分（`users.points`），曲线是 `100 × (L-1)²`，避免早期几百分就冲到满级；
-//! - 信誉是 0–100 的综合分：账号年龄、发帖评论量、认证、被拒内容与封禁状态各自加减，
-//!   每次读取时按当时的库内数据实时算，不需要定时任务，也不会和历史值打架。
+//! - 信誉**初始 100**：只因为「被拒内容 / 封禁」自动扣分，管理员还能在后台手动扣分（或恢复），
+//!   扣分记录落在 `reputation_adjustments`，总分 = 100 − 自动扣分 + 人工调整，实时算不落表。
 
 use serde::Serialize;
 use sqlx::PgPool;
@@ -72,11 +72,10 @@ pub struct Reputation {
 }
 
 pub struct Signals {
-    pub age_days: i64,
-    pub posts: i64,
-    pub comments: i64,
+    /// 被拒内容数量（自动扣分）
     pub rejected: i64,
-    pub verified: bool,
+    /// 管理员人工调整的累计值（可为负）
+    pub adjust: i64,
     pub banned: bool,
 }
 
@@ -89,54 +88,67 @@ pub fn reputation(s: &Signals) -> Reputation {
         };
     }
 
-    let mut score: i64 = 60;
+    // 初始 100；自动扣分只看被拒内容，其余都由管理员手动调整
+    let auto_deduct = (s.rejected * 6).clamp(0, 30);
+    let score = (100 - auto_deduct + s.adjust).clamp(0, 100);
 
-    // 账号年龄：每天 0.2 分，最多 +10（≈50 天封顶）
-    score += (s.age_days.clamp(0, 50) as f64 * 0.2) as i64;
-    // 发帖：每 2 帖 +1，最多 +10
-    score += (s.posts / 2).clamp(0, 10);
-    // 评论：每 10 条 +1，最多 +8
-    score += (s.comments / 10).clamp(0, 8);
-    // 认证：+8
-    if s.verified {
-        score += 8;
+    let tier = match score {
+        s if s >= 85 => "优秀",
+        s if s >= 70 => "良好",
+        s if s >= 50 => "正常",
+        s if s >= 30 => "待观察",
+        _ => "受限",
+    };
+
+    // 说明优先讲「为什么被扣」，没有扣分就直说初始分
+    let mut reasons: Vec<String> = Vec::new();
+    if s.rejected > 0 {
+        reasons.push(format!("{} 篇内容被拒 −{}", s.rejected, auto_deduct));
     }
-    // 被拒内容：每篇 -6，最多 -30
-    score -= (s.rejected * 6).clamp(0, 30);
-
-    let score = score.clamp(0, 100);
-    let (tier, hint) = match score {
-        s if s >= 85 => ("优秀", "长期活跃、内容稳定，社区里可以信任的成员"),
-        s if s >= 70 => ("良好", "参与度不错，没有明显的违规记录"),
-        s if s >= 50 => ("正常", "正常的社区成员"),
-        s if s >= 30 => ("待观察", "有过被拒内容或活跃度极低，多发点有用的内容会回升"),
-        _ => ("受限", "违规记录较多，建议先熟悉社区公约"),
+    if s.adjust < 0 {
+        reasons.push(format!("管理员扣除 {} 分", -s.adjust));
+    } else if s.adjust > 0 {
+        reasons.push(format!("管理员补回 {} 分", s.adjust));
+    }
+    let hint = if reasons.is_empty() {
+        "初始 100 分，暂无扣分".to_string()
+    } else {
+        reasons.join(" · ")
     };
 
     Reputation {
         score,
         tier: tier.into(),
-        hint: hint.into(),
+        hint,
     }
+}
+
+/// 一条人工调整记录
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Adjustment {
+    pub id: String,
+    pub delta: i64,
+    pub reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator: Option<String>,
+    pub created_at: i64,
 }
 
 /// 从库里取信号并算信誉（公开资料页与会话状态共用）
 pub async fn reputation_of(pool: &PgPool, user_id: &str) -> Result<Reputation, sqlx::Error> {
-    let row: Option<(i64, i64, i64, String, bool, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+    let row: Option<(i64, i64, bool)> = sqlx::query_as(
         "SELECT
-            (SELECT count(*) FROM posts WHERE author_id = $1 AND status = 'published')::bigint,
-            (SELECT count(*) FROM comments WHERE author_id = $1)::bigint,
             (SELECT count(*) FROM posts WHERE author_id = $1 AND status = 'rejected')::bigint,
-            u.verify_kind,
-            u.banned,
-            u.created_at
+            COALESCE((SELECT sum(delta) FROM reputation_adjustments WHERE user_id = $1), 0)::bigint,
+            u.banned
            FROM users u WHERE u.id = $1",
     )
     .bind(user_id)
     .fetch_optional(pool)
     .await?;
 
-    let Some((posts, comments, rejected, verify_kind, banned, created_at)) = row else {
+    let Some((rejected, adjust, banned)) = row else {
         return Ok(Reputation {
             score: 0,
             tier: "受限".into(),
@@ -144,15 +156,64 @@ pub async fn reputation_of(pool: &PgPool, user_id: &str) -> Result<Reputation, s
         });
     };
 
-    let age_days = (chrono::Utc::now() - created_at).num_days().max(0);
     Ok(reputation(&Signals {
-        age_days,
-        posts,
-        comments,
         rejected,
-        verified: !verify_kind.is_empty(),
+        adjust,
         banned,
     }))
+}
+
+/// 最近的人工调整记录（后台用）
+pub async fn adjustments(
+    pool: &PgPool,
+    user_id: &str,
+) -> Result<Vec<Adjustment>, sqlx::Error> {
+    let rows: Vec<(String, i32, String, Option<String>, chrono::DateTime<chrono::Utc>)> =
+        sqlx::query_as(
+            "SELECT a.id, a.delta, a.reason, u.nickname, a.created_at
+               FROM reputation_adjustments a
+               LEFT JOIN users u ON u.id = a.created_by
+              WHERE a.user_id = $1
+              ORDER BY a.created_at DESC
+              LIMIT 30",
+        )
+        .bind(user_id)
+        .fetch_all(pool)
+        .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(id, delta, reason, operator, created_at)| Adjustment {
+            id,
+            delta: delta as i64,
+            reason,
+            operator,
+            created_at: created_at.timestamp_millis(),
+        })
+        .collect())
+}
+
+/// 记一笔人工调整，返回调整后的信誉
+pub async fn adjust(
+    pool: &PgPool,
+    user_id: &str,
+    delta: i64,
+    reason: &str,
+    operator: Option<&str>,
+) -> Result<Reputation, sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO reputation_adjustments (id, user_id, delta, reason, created_by)
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(crate::ids::next('p'))
+    .bind(user_id)
+    .bind(delta as i32)
+    .bind(reason)
+    .bind(operator)
+    .execute(pool)
+    .await?;
+
+    reputation_of(pool, user_id).await
 }
 
 pub async fn points_of(pool: &PgPool, user_id: &str) -> Result<i64, sqlx::Error> {

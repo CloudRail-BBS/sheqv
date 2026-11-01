@@ -11,6 +11,7 @@ pub mod dev_teams;
 pub mod dm;
 pub mod files;
 pub mod groups;
+pub mod gacha;
 pub mod health;
 pub mod matches;
 pub mod me;
@@ -114,6 +115,18 @@ pub fn router(state: AppState) -> Router {
         )
         // 后台总览 / 待办
         .route("/api/v1/admin/overview", get(admin_todos::overview))
+        // 抽卡：卡池与抽卡
+        .route("/api/v1/gacha", get(gacha::overview))
+        .route("/api/v1/gacha/draw", post(gacha::draw))
+        .route(
+            "/api/v1/admin/gacha",
+            get(gacha::admin_list).post(gacha::admin_create),
+        )
+        .route("/api/v1/admin/gacha/config", patch(gacha::admin_config))
+        .route(
+            "/api/v1/admin/gacha/{id}",
+            patch(gacha::admin_patch).delete(gacha::admin_remove),
+        )
         .route(
             "/api/v1/admin/todos",
             get(admin_todos::list).post(admin_todos::create),
@@ -477,6 +490,10 @@ pub fn router(state: AppState) -> Router {
             patch(groups::patch).delete(groups::remove),
         )
         .route("/api/v1/admin/users/{id}/group", patch(groups::assign))
+        .route(
+            "/api/v1/admin/users/{id}/reputation",
+            get(admin::user_reputation).post(admin::adjust_reputation),
+        )
         .route("/api/v1/admin/afdian/sync", post(admin::sync_afdian))
         .route("/api/v1/admin/storage/test", post(admin::storage_test))
         .route(

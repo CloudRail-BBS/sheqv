@@ -6,8 +6,9 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { fmtCardDate, type RewardsSnapshot } from '@/lib/reward-types';
 import { fmtNum } from '@/lib/resource-types';
+import { GachaPanel } from './gacha-panel';
 
-type Tab = 'cards' | 'code' | 'lottery';
+type Tab = 'cards' | 'code' | 'lottery' | 'gacha';
 
 interface Reveal {
   heading: string;
@@ -28,6 +29,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'cards', label: '我的礼品卡' },
   { key: 'code', label: '兑换码' },
   { key: 'lottery', label: '抽奖' },
+  { key: 'gacha', label: '抽卡' },
 ];
 
 export function RewardCenter({
@@ -481,6 +483,12 @@ export function RewardCenter({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'gacha' && (
+        <div className="rw-gacha" role="tabpanel" aria-label="抽卡">
+          <GachaPanel onMsg={setMsg} />
         </div>
       )}
 

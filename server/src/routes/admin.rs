@@ -1093,3 +1093,80 @@ pub async fn adjust_points(
 
     Ok(Json(json!({ "ok": true, "points": balance })).into_response())
 }
+
+/// GET /api/v1/admin/users/{id}/reputation —— 当前信誉 + 最近的调整记录
+pub async fn user_reputation(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+    _: AdminActor,
+) -> ApiResult<Response> {
+    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM users WHERE id = $1")
+        .bind(&id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(ApiError::internal)?;
+    if exists.is_none() {
+        return Err(ApiError::not_found());
+    }
+
+    let reputation = crate::rank::reputation_of(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    let logs = crate::rank::adjustments(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+
+    Ok(Json(json!({ "ok": true, "reputation": reputation, "logs": logs })).into_response())
+}
+
+/// POST /api/v1/admin/users/{id}/reputation —— 扣分 / 补分
+///
+/// `delta` 为负数表示扣除；一次最多 ±100，理由必填（后台要能追溯是谁因为什么改的）。
+pub async fn adjust_reputation(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+    actor: AdminActor,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+
+    let delta = payload.get("delta").and_then(|v| v.as_i64()).unwrap_or(0);
+    if delta == 0 {
+        return Err(ApiError::invalid_input("调整值不能为 0"));
+    }
+    if !(-100..=100).contains(&delta) {
+        return Err(ApiError::invalid_input("单次调整范围是 -100 到 100"));
+    }
+
+    let reason = payload
+        .get("reason")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    if reason.chars().count() < 2 {
+        return Err(ApiError::invalid_input("写一句理由，方便以后追溯"));
+    }
+    if reason.chars().count() > 80 {
+        return Err(ApiError::invalid_input("理由不超过 80 字"));
+    }
+
+    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM users WHERE id = $1")
+        .bind(&id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(ApiError::internal)?;
+    if exists.is_none() {
+        return Err(ApiError::not_found());
+    }
+
+    let reputation = crate::rank::adjust(&st.pool, &id, delta, reason, actor.user_id())
+        .await
+        .map_err(ApiError::internal)?;
+    let logs = crate::rank::adjustments(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+
+    Ok(Json(json!({ "ok": true, "reputation": reputation, "logs": logs })).into_response())
+}

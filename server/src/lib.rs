@@ -33,6 +33,7 @@ pub mod dm;
 pub mod email_login;
 pub mod errors;
 pub mod forum;
+pub mod gacha;
 pub mod rank;
 pub mod todos;
 pub mod wiki;
