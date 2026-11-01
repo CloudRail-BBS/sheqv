@@ -1,8 +1,8 @@
-//! 蓝标 / 红标认证：用户提交 → 管理员审核 → 通过才写到 `users.verify_kind`。
+//! 认证：用户提交 → 管理员审核 → 通过才写到 `users.verify_kind`。
 //!
 //! 和头衔的区别：头衔只是一段展示文案，认证是**平台给身份背书**，
-//! 所以既不能自设、也不能像头衔那样换个样式玩；只有 `blue`（个人）与 `red`（机构）两种，
-//! 通过后名字后面固定挂一枚印记，鼠标悬停能看到认证说明。
+//! 所以既不能自设、也不能像头衔那样换个样式玩。可申请的是 `blue`（个人）与 `red`（机构）；
+//! `sponsor`（赞助者）不开放申请，只能由后台直接授予。
 //!
 //! 管理员也可以跳过申请直接授予（`set_direct`）：官方账号、合作方账号通常不会自己来提申请。
 
@@ -10,8 +10,10 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::PgPool;
 
-/// 两种认证。键与 CSS 的 `.vmark[data-vk="…"]` 对应。
+/// 用户可以申请的两种认证。键与 CSS 的 `.vmark[data-vk="…"]` 对应。
 pub const KINDS: [&str; 2] = ["blue", "red"];
+/// 后台可以直接授予的认证：比申请多一个 `sponsor`（赞助者），它不走申请流程。
+pub const GRANT_KINDS: [&str; 3] = ["blue", "red", "sponsor"];
 pub const STATUSES: [&str; 4] = ["pending", "approved", "rejected", "cancelled"];
 
 /// 主体名称：短一点，太长的「机构全称」在名字后面挂不住
@@ -25,10 +27,16 @@ pub fn valid_kind(v: &str) -> bool {
     KINDS.contains(&v)
 }
 
+/// 后台授予时允许的取值（含赞助者）
+pub fn grantable_kind(v: &str) -> bool {
+    GRANT_KINDS.contains(&v)
+}
+
 pub fn kind_label(v: &str) -> &'static str {
     match v {
         "blue" => "蓝标认证",
         "red" => "红标认证",
+        "sponsor" => "赞助者认证",
         _ => "认证",
     }
 }
@@ -330,7 +338,7 @@ pub async fn set_direct(
     kind: &str,
     label: &str,
 ) -> Result<bool, sqlx::Error> {
-    let clean = if valid_kind(kind) { kind } else { "" };
+    let clean = if grantable_kind(kind) { kind } else { "" };
     let label: String = if clean.is_empty() {
         String::new()
     } else {

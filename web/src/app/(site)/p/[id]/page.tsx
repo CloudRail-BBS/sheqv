@@ -6,7 +6,6 @@ import { getCurrentUser } from '@/lib/current-user';
 import { CommentComposer, PostLike } from '@/components/post-actions';
 import { FloorReply } from '@/components/floor-reply';
 import { PostTools } from '@/components/post-tools';
-import { VerifyMark } from '@/components/verify-mark';
 import { getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { getGroupMap, resolveGroup } from '@/lib/group-map';
@@ -170,7 +169,6 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   >
                     <b>{post.author}</b>
                   </UserHoverCard>
-                  <VerifyMark kind={post.authorVerify} />
                   <NameBadges badge={op.badge} group={op.group} size="sm" />
                   <AchievementChips
                     badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
@@ -231,7 +229,6 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                       >
                         <b>{c.author}</b>
                       </UserHoverCard>
-                      <VerifyMark kind={c.authorVerify} />
                       <NameBadges badge={u.badge} group={u.group} size="sm" />
                       <span className="pb-floor">#{c.floor}</span>
                     </div>

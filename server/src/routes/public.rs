@@ -192,6 +192,12 @@ pub struct PublicProfile {
     pub profile_bg: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub avatar: String,
+    /// 认证标记：blue / red / sponsor；空串不下发
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub verify_kind: String,
+    /// 认证说明（如「云轨社区运营组」）
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub verify_label: String,
     /// 名片上的数字：主题 / 回帖 / 积分。只有单人接口会填，列表接口不带。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stats: Option<UserStats>,
@@ -225,6 +231,8 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         developer_since: row.developer_at.map(|t| t.timestamp_millis()),
         profile_bg: row.profile_bg.clone(),
         avatar: row.avatar.clone(),
+        verify_kind: row.verify_kind.clone(),
+        verify_label: row.verify_label.clone(),
         stats: Some(user_stats(&st.pool, &row.id).await.map_err(ApiError::internal)?),
     };
 
@@ -269,6 +277,8 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
             developer_since: row.developer_at.map(|t| t.timestamp_millis()),
             profile_bg: row.profile_bg.clone(),
             avatar: row.avatar.clone(),
+            verify_kind: row.verify_kind.clone(),
+            verify_label: row.verify_label.clone(),
             stats: None,
         })
         .collect();

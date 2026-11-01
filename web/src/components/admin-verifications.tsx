@@ -136,7 +136,8 @@ export function AdminVerifications() {
   function choose(id: string) {
     setPick(id);
     const u = users.find((x) => x.id === id);
-    setGrantKind(u?.verifyKind === 'red' ? 'red' : u?.verifyKind === 'blue' ? 'blue' : 'blue');
+    const k = u?.verifyKind;
+    setGrantKind(k === 'red' ? 'red' : k === 'sponsor' ? 'sponsor' : 'blue');
     setGrantLabel(u?.verifyLabel ?? '');
   }
 
@@ -218,6 +219,7 @@ export function AdminVerifications() {
                 >
                   <option value="blue">蓝标 · 个人</option>
                   <option value="red">红标 · 机构</option>
+                  <option value="sponsor">赞助者 · 手掌爱心</option>
                   <option value="">取消认证</option>
                 </select>
               </label>

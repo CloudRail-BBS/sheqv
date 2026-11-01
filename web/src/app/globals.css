@@ -39,6 +39,11 @@
   --seal-red-line: rgba(240, 115, 111, 0.34);
   /* 认证印记里对勾的颜色 */
   --vmark-ink: #ffffff;
+  /* 认证徽章的固定品牌色：直接取自徽章原图，不随主题明暗调整 */
+  --verify-blue: #0b84ff;
+  --verify-red: #ff0000;
+  /* 赞助者徽章取自原图（#ba2130），深色下提亮一点，避免糊在背景里 */
+  --verify-sponsor: #d2263c;
   --btn-bg: linear-gradient(180deg, #fafafa, #e4e4e7);
   --btn-bg-hover: linear-gradient(180deg, #ffffff, #ededf0);
   --btn-bd: #ffffff;
@@ -225,6 +230,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 .sidebar {
   position: sticky; top: 76px;
+  /* 导航项多起来后整栏会超过一屏，sticky 又会让底部永远出不来，
+     所以限高 + 内部滚动：滚动时高亮块与条目仍在同一个滚动容器里，位置不会错 */
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
   display: flex; flex-direction: column; gap: 14px;
   padding: 12px 10px;
   border: 1px solid var(--line);
@@ -251,10 +263,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .side-item[data-active="true"] {
   background: var(--blue-soft);
   color: var(--text); font-weight: 600;
-}
-.side-item[data-active="true"]::before {
-  content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px;
-  border-radius: 0 2px 2px 0; background: var(--blue);
 }
 .side-item .cnt { margin-left: auto; font-size: 10.5px; color: var(--text-3); font-family: ui-monospace, monospace; }
 /* 图标装进小方块：一列方片把导航的节奏立起来 */
@@ -1358,8 +1366,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .vmark svg { display: block; width: 100%; height: 100%; }
 .vmark .vmark-tick { stroke: var(--vmark-ink); }
-.vmark[data-vk="blue"] { color: var(--blue); }
-.vmark[data-vk="red"] { color: var(--seal-red); }
+.vmark[data-vk="blue"] { color: var(--verify-blue); }
+.vmark[data-vk="red"] { color: var(--verify-red); }
+.vmark[data-vk="sponsor"] { color: var(--verify-sponsor); }
+/* 赞助者徽章用原图做蒙版上色：轮廓来自 PNG，颜色仍吃 currentColor */
+.vmark-img {
+  display: block; width: 100%; height: 100%;
+  background-color: currentColor;
+  -webkit-mask: url("/badges/sponsor.png") center / contain no-repeat;
+  mask: url("/badges/sponsor.png") center / contain no-repeat;
+}
 .vmark[data-size="lg"] { width: 18px; height: 18px; vertical-align: -3px; }
 
 /* ── 认证申请（我的页） ─────────────────── */
@@ -1481,12 +1497,35 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .auth-socials { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .auth-social {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  height: 40px; border-radius: 9px; border: 1px solid var(--line);
-  background: var(--panel-2); font-size: 13px; font-weight: 550; color: var(--text-2);
+  height: 38px; border-radius: 9px; border: 1px solid var(--line);
+  /* 原来是 --panel-2：整块发灰，看着像禁用状态；改成和卡片同底只留描边 */
+  background: var(--panel); font-size: 12.5px; font-weight: 550; color: var(--text-2);
   transition: border-color 0.14s, color 0.14s, background 0.14s;
 }
 .auth-social:hover { color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft); }
 .auth-social svg { flex: none; }
+
+/* 登录方式切换：做成分段控件。并排两个大按钮会变成两个「主按钮」，
+   和底下的「登录」抢视线；分段控件只在轨道里挪一块小胶囊 */
+.auth-seg {
+  display: flex; gap: 4px; margin-top: 14px; padding: 4px;
+  border-radius: 11px; background: var(--panel-2); border: 1px solid var(--line-soft);
+}
+.auth-seg-btn {
+  flex: 1; height: 30px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--text-2); font: inherit; font-size: 12.5px; font-weight: 550;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s, border-color 0.14s, box-shadow 0.14s;
+}
+.auth-seg-btn:hover { color: var(--text); }
+.auth-seg-btn[data-on="true"] {
+  background: var(--panel); border-color: var(--line); color: var(--blue); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+[data-theme="dark"] .auth-seg-btn[data-on="true"] {
+  background: var(--panel-3); border-color: var(--line-strong); box-shadow: none;
+}
 
 .auth-or { position: relative; text-align: center; margin-top: 4px; }
 .auth-or::before {
@@ -2953,6 +2992,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --seal-red-soft: rgba(217, 45, 32, 0.10);
   --seal-red-line: rgba(217, 45, 32, 0.26);
   --vmark-ink: #ffffff;
+  --verify-sponsor: #ba2130;
   /* 主按钮改为蓝色渐变，与参考站的「登录控制台」按钮同款 */
   --btn-bg: linear-gradient(180deg, #5b8dff, #3e7cff);
   --btn-bg-hover: linear-gradient(180deg, #6d9aff, #4b86ff);
@@ -6041,7 +6081,8 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 
 /* ── 导航切换动画（侧栏 / 底栏共用「游标」思路） ───── */
-.sidebar { position: relative; }
+/* 侧栏本身是 sticky（已定位），高亮块直接以它为包含块，不要再加 relative：
+   相对定位下 top: 76px 会把整块向下推，表现为顶部多出一段空隙 */
 .side-glider {
   position: absolute; left: 10px; right: 10px; z-index: 0;
   border-radius: 10px; background: var(--blue-soft);
@@ -6052,7 +6093,8 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 .side-glider[data-ready="true"] { opacity: 1; }
 .side-glider::before {
-  content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 2px;
+  /* 竖条只保留这一条：贴着高亮块左缘，跟着它一起滑动 */
+  content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px;
   border-radius: 0 2px 2px 0; background: var(--blue);
 }
 .side-item { position: relative; z-index: 1; }

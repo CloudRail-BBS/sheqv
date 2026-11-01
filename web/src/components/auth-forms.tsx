@@ -100,7 +100,7 @@ function AuthSocials({ providers }: { providers: ProviderFlags }) {
         </a>
       )}
       <div className="auth-or">
-        <span>或使用账号密码</span>
+        <span>或使用本站账号</span>
       </div>
     </div>
   );
@@ -251,7 +251,7 @@ export function RegisterForm(props: CommonProps & { isFirst: boolean }) {
 
       {needCaptcha && (
         <div style={{ marginTop: 12 }}>
-          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} auto />
+          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
         </div>
       )}
 
@@ -381,8 +381,10 @@ export function LoginForm(props: CommonProps) {
   const tab = (key: 'password' | 'email', label: string) => (
     <button
       type="button"
-      className={`btn ${mode === key ? 'btn-primary' : 'btn-ghost'}`}
-      style={{ flex: 1 }}
+      role="tab"
+      aria-selected={mode === key}
+      className="auth-seg-btn"
+      data-on={mode === key}
       onClick={() => {
         setMode(key);
         setErr(null);
@@ -407,14 +409,14 @@ export function LoginForm(props: CommonProps) {
         />
       )}
 
+      <AuthSocials providers={providers} />
+
       {emailEnabled && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <div className="auth-seg" role="tablist" aria-label="登录方式">
           {tab('password', '密码登录')}
           {tab('email', '邮箱验证码')}
         </div>
       )}
-
-      <AuthSocials providers={providers} />
 
       {mode === 'password' ? (
         <>
@@ -443,7 +445,7 @@ export function LoginForm(props: CommonProps) {
 
           {needCaptcha && (
             <div style={{ marginTop: 12 }}>
-              <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} auto />
+              <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
             </div>
           )}
         </>

@@ -1,6 +1,7 @@
-/** 蓝标 / 红标认证的纯类型（客户端组件可直接引用） */
+/** 认证标记的纯类型（客户端组件可直接引用） */
 
-export type VerifyKind = 'blue' | 'red';
+/** blue 个人 / red 机构 / sponsor 赞助者；赞助者只能由后台授予，不接受申请 */
+export type VerifyKind = 'blue' | 'red' | 'sponsor';
 export type VerifyStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export const VERIFY_KIND_META: Record<
@@ -18,6 +19,12 @@ export const VERIFY_KIND_META: Record<
     short: '红标',
     desc: '机构认证',
     hint: '发给组织与官方主体：公会、战队、开发团队、服务器团队、媒体等。',
+  },
+  sponsor: {
+    label: '赞助者认证',
+    short: '赞助者',
+    desc: '赞助者',
+    hint: '发给为社区提供赞助的成员；只能由后台直接授予，不接受申请。',
   },
 };
 
@@ -43,11 +50,12 @@ export const VERIFY_STATUS_LABEL: Record<VerifyStatus, string> = {
 export function verifyKindLabel(kind?: string): string {
   if (kind === 'blue') return VERIFY_KIND_META.blue.label;
   if (kind === 'red') return VERIFY_KIND_META.red.label;
+  if (kind === 'sponsor') return VERIFY_KIND_META.sponsor.label;
   return '未认证';
 }
 
 export function isVerifyKind(v: unknown): v is VerifyKind {
-  return v === 'blue' || v === 'red';
+  return v === 'blue' || v === 'red' || v === 'sponsor';
 }
 
 export interface VerifyRequest {

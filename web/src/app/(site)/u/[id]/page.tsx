@@ -8,7 +8,6 @@ import { listPosts } from '@/lib/forum-store';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { resolveBadge } from '@/lib/badges';
 import { PostCard } from '@/components/post-card';
-import { VerifyMark } from '@/components/verify-mark';
 import { LevelPill, RepPill } from '@/components/rank-badges';
 import { NameBadges } from '@/components/name-badges';
 import { AchievementChips } from '@/components/achievement-chips';
@@ -72,10 +71,9 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="up-name">
               <b>{user.nickname}</b>
-              <VerifyMark kind={user.verifyKind} label={user.verifyLabel} />
+              <NameBadges badge={badge} group={group} size="sm" />
               <LevelPill level={user.level} />
               <RepPill rep={user.reputation} />
-              <NameBadges badge={badge} group={group} size="sm" />
             </div>
             <div className="up-sub">
               @{user.username} · 加入于 {fmtDay(user.createdAt)}
