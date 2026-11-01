@@ -147,25 +147,40 @@ export function consoleTitle(pathname: string): string {
   return '管理后台';
 }
 
-export function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
+export function ConsoleNav({
+  onNavigate,
+  badges,
+}: {
+  onNavigate?: () => void;
+  /** href → 待处理数量，来自 /api/v1/admin/overview */
+  badges?: Record<string, number>;
+}) {
   const pathname = usePathname();
   return (
     <nav className="console-nav" aria-label="后台导航">
       {CONSOLE_GROUPS.map((group) => (
         <div key={group.label} className="console-nav-group">
           <div className="console-nav-label">{group.label}</div>
-          {group.items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="console-nav-item"
-              data-active={isConsoleActive(pathname, item.href)}
-              onClick={onNavigate}
-            >
-              <Icon d={ICONS[item.icon]} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {group.items.map((item) => {
+            const count = badges?.[item.href] ?? 0;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="console-nav-item"
+                data-active={isConsoleActive(pathname, item.href)}
+                onClick={onNavigate}
+              >
+                <Icon d={ICONS[item.icon]} />
+                <span>{item.label}</span>
+                {count > 0 && (
+                  <span className="console-nav-count" aria-label={`${count} 项待处理`}>
+                    {count > 99 ? '99+' : count}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       ))}
     </nav>
@@ -173,7 +188,7 @@ export function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 /** 移动端：顶栏汉堡 + 全高抽屉 */
-export function ConsoleDrawer() {
+export function ConsoleDrawer({ badges }: { badges?: Record<string, number> }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -210,7 +225,7 @@ export function ConsoleDrawer() {
       {mounted && open && createPortal(
         <div className="console-drawer-mask" onClick={() => setOpen(false)}>
           <aside className="console-drawer" onClick={(e) => e.stopPropagation()}>
-            <ConsoleNav onNavigate={() => setOpen(false)} />
+            <ConsoleNav badges={badges} onNavigate={() => setOpen(false)} />
           </aside>
         </div>,
         document.body,

@@ -1,6 +1,7 @@
 pub mod about;
 pub mod achievements;
 pub mod admin;
+pub mod admin_todos;
 pub mod agreements;
 pub mod apps;
 pub mod audit;
@@ -110,6 +111,16 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/posts/{id}/flags",
             patch(posts::admin_flags),
+        )
+        // 后台总览 / 待办
+        .route("/api/v1/admin/overview", get(admin_todos::overview))
+        .route(
+            "/api/v1/admin/todos",
+            get(admin_todos::list).post(admin_todos::create),
+        )
+        .route(
+            "/api/v1/admin/todos/{id}",
+            patch(admin_todos::patch).delete(admin_todos::remove),
         )
         .route("/api/v1/settings", get(public::settings))
         .route("/api/v1/changelog", get(changelog::public_list))

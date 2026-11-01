@@ -34,6 +34,7 @@ pub mod email_login;
 pub mod errors;
 pub mod forum;
 pub mod rank;
+pub mod todos;
 pub mod wiki;
 pub mod groups;
 pub mod media;
