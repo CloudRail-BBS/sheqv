@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { isNavActive, navItem, normalizeTabbar } from '@/lib/nav-config';
 
@@ -51,14 +52,60 @@ export function TabBar({ items }: { items?: string }) {
   const keys = normalizeTabbar(items);
   const fits = keys.length <= 5;
 
+  // 当前 tab 的高亮块：量一下图标胶囊的位置，切 tab 时滑动过去
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [glide, setGlide] = useState({ left: 0, top: 0, width: 42, height: 26, ready: false });
+
+  const measure = () => {
+    const activeKey = keys.find((k) => {
+      const it = navItem(k);
+      return it ? isNavActive(pathname, search, it.href) : false;
+    });
+    const el = activeKey ? itemRefs.current[activeKey] : null;
+    const pill = el?.querySelector<HTMLElement>('.tab-pill');
+    if (!pill) {
+      setGlide((g) => ({ ...g, ready: false }));
+      return;
+    }
+    setGlide({
+      left: pill.offsetLeft,
+      top: pill.offsetTop,
+      width: pill.offsetWidth,
+      height: pill.offsetHeight,
+      ready: true,
+    });
+  };
+
+  useLayoutEffect(measure, [pathname, search, items]);
+
+  // 横竖屏切换 / 窗口缩放后胶囊位置会变，重新量一次
+  useEffect(() => {
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, search, items]);
+
   return (
     <nav className="tabbar" aria-label="主导航" data-fits={fits}>
+      <span
+        className="tab-glider"
+        aria-hidden="true"
+        data-ready={glide.ready}
+        style={{ left: glide.left, top: glide.top, width: glide.width, height: glide.height }}
+      />
       {keys.map((key) => {
         const item = navItem(key);
         if (!item) return null;
         const active = isNavActive(pathname, search, item.href);
         return (
-          <Link key={key} href={item.href} data-active={active}>
+          <Link
+            key={key}
+            href={item.href}
+            data-active={active}
+            ref={(el) => {
+              itemRefs.current[key] = el;
+            }}
+          >
             <span className="tab-pill">
               <svg className="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
                 {ICONS[key] ?? ICONS.home}

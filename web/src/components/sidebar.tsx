@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { NAV_GROUPS, SIDEBAR_DEFAULT, isNavActive, parseNav } from '@/lib/nav-config';
 import { NavGlyph } from './nav-icons';
@@ -25,8 +26,29 @@ export function Sidebar({ items, dmUnread = 0 }: { items?: string; dmUnread?: nu
   const keys = parseNav(items, SIDEBAR_DEFAULT);
   const on = (href: string) => isNavActive(pathname, search, href);
 
+  // 当前项的高亮块用一块「游标」画，切换页面时滑过去而不是跳过去
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [glide, setGlide] = useState({ top: 0, height: 0, ready: false });
+
+  useLayoutEffect(() => {
+    const activeKey = NAV_GROUPS.flatMap((g) => g.items).find((it) => on(it.href))?.key;
+    const el = activeKey ? itemRefs.current[activeKey] : null;
+    if (!el) {
+      setGlide((g) => ({ ...g, ready: false }));
+      return;
+    }
+    setGlide({ top: el.offsetTop, height: el.offsetHeight, ready: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, search, items]);
+
   return (
     <aside className="sidebar">
+      <span
+        className="side-glider"
+        aria-hidden="true"
+        data-ready={glide.ready}
+        style={{ top: glide.top, height: glide.height }}
+      />
       {NAV_GROUPS.map((group) => {
         const visible = group.items.filter((item) => keys.includes(item.key));
         if (visible.length === 0) return null;
@@ -34,7 +56,15 @@ export function Sidebar({ items, dmUnread = 0 }: { items?: string; dmUnread?: nu
           <div key={group.id} className="side-group">
             <div className="side-label">{group.label}</div>
             {visible.map((item) => (
-              <Link key={item.key} href={item.href} className="side-item" data-active={on(item.href)}>
+              <Link
+                key={item.key}
+                href={item.href}
+                className="side-item"
+                data-active={on(item.href)}
+                ref={(el) => {
+                  itemRefs.current[item.key] = el;
+                }}
+              >
                 <Ico>
                   <NavGlyph k={item.key} />
                 </Ico>
