@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { AdminImagePicker } from './admin-image-picker';
 import { initialOf } from '@/lib/initials';
 
 interface Entry {
@@ -98,12 +99,12 @@ export function AdminAbout({ intro, join }: { intro: string; join: string }) {
       <EntrySection
         kind="person"
         title="社区成员"
-        hint="头像留空时用名字首字；「职责」显示在名字下方。"
+        hint="可以上传头像（留空用名字首字）；「职责」显示在名字下方。"
       />
       <EntrySection
         kind="partner"
         title="合作单位"
-        hint="填了链接会整块可点，建议带上对方 logo 或首字标识。"
+        hint="可以上传 logo；填了链接整块可点，没传时用名字首字。"
       />
     </>
   );
@@ -220,11 +221,16 @@ function EntrySection({ kind, title, hint }: { kind: 'person' | 'partner'; title
                   placeholder={kind === 'person' ? '职责 / 头衔' : '一句话说明'}
                   onChange={(e) => setEditing({ ...editing, role: e.target.value })}
                 />
-                <input
-                  className="input"
+                <AdminImagePicker
+                  kind="about"
                   value={editing.avatar}
-                  placeholder="头像 / logo 地址（可空）"
-                  onChange={(e) => setEditing({ ...editing, avatar: e.target.value })}
+                  onChange={(url) => setEditing({ ...editing, avatar: url })}
+                  label={kind === 'person' ? '头像（可空）' : 'Logo（可空）'}
+                  hint={
+                    kind === 'person'
+                      ? 'PNG / JPEG / WebP / GIF，不超过 2 MB；留空时用名字首字。'
+                      : 'PNG / JPEG / WebP / GIF，不超过 2 MB；建议方图，留空时用名字首字。'
+                  }
                 />
                 {kind === 'person' ? (
                   <input
@@ -273,7 +279,7 @@ function EntrySection({ kind, title, hint }: { kind: 'person' | 'partner'; title
             </div>
           ) : (
             <div key={item.id} className="about-admin-row">
-              <span className="about-admin-mark">
+              <span className="about-admin-mark" data-kind={kind}>
                 {item.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.avatar} alt="" loading="lazy" decoding="async" />

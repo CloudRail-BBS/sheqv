@@ -1,25 +1,27 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { REWARD_IMAGE_ACCEPT, uploadRewardImage } from '@/lib/reward-image';
+import { ADMIN_IMAGE_ACCEPT, uploadAdminImage, type AdminImageKind } from '@/lib/admin-image';
 
 /**
- * 奖品图片选择器：上传 / 更换 / 移除，也保留填外链的入口。
+ * 后台图片选择器：上传 / 更换 / 移除，也保留填外链的入口。
  *
- * 后台配奖品时以前只有一个「图片地址」输入框，得先把图传到别处再回来粘。
- * 这里直接选本地文件，走 `/api/v1/me/media?kind=reward` 存进本站媒体库，
- * 返回的地址写回表单字段（提交时才落库，所以取消表单不会留下半个奖品）。
+ * 奖品图、卡面图、关于页的头像与 logo 都用这一个组件，区别只在 `kind`
+ * （`reward` / `about`，服务端都只允许管理员上传）。
+ * 上传成功只是把地址写回表单字段，真正落库仍然走各自保存时的提交。
  */
-export function RewardImagePicker({
+export function AdminImagePicker({
   value,
   onChange,
   label = '奖品图片（可空）',
   hint = 'PNG / JPEG / WebP / GIF，不超过 2 MB；中奖弹窗里按正方形展示，建议上传 1:1。',
+  kind = 'reward',
 }: {
   value: string;
   onChange: (url: string) => void;
   label?: string;
   hint?: string;
+  kind?: AdminImageKind;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -35,7 +37,7 @@ export function RewardImagePicker({
 
     setBusy(true);
     setErr(null);
-    const result = await uploadRewardImage(file);
+    const result = await uploadAdminImage(file, kind);
     setBusy(false);
     if (!result.ok) {
       setErr(result.message);
@@ -63,7 +65,7 @@ export function RewardImagePicker({
           data-empty={!value}
           onClick={() => fileRef.current?.click()}
           disabled={busy}
-          aria-label={value ? '更换奖品图片' : '上传奖品图片'}
+          aria-label={value ? '更换图片' : '上传图片'}
         >
           {value ? <img src={value} alt="" /> : <span className="rw-imgpick-plus">＋</span>}
           {busy && <i className="rw-imgpick-mask">上传中…</i>}
@@ -129,7 +131,7 @@ export function RewardImagePicker({
         </div>
       </div>
 
-      <input ref={fileRef} type="file" accept={REWARD_IMAGE_ACCEPT} hidden onChange={onPick} />
+      <input ref={fileRef} type="file" accept={ADMIN_IMAGE_ACCEPT} hidden onChange={onPick} />
     </div>
   );
 }

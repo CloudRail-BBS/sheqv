@@ -28,8 +28,8 @@ pub async fn upload_media(
     if !media::kind_ok(kind) {
         return Err(ApiError::invalid_input("图片用途不正确"));
     }
-    // 奖品图会直接出现在福利中心与卡包里，只允许管理员上传
-    if kind == "reward" {
+    // 奖品图 / 关于页的头像与 logo 都是后台维护的展示图，只允许管理员上传
+    if kind == "reward" || kind == "about" {
         let allowed = crate::groups::can(&st.pool, &user.id, "admin.console")
             .await
             .map_err(ApiError::internal)?;
@@ -37,7 +37,7 @@ pub async fn upload_media(
             return Err(ApiError::with_message(
                 StatusCode::FORBIDDEN,
                 "forbidden",
-                "只有管理员能上传奖品图片",
+                "只有管理员能上传这张图片",
             ));
         }
     }

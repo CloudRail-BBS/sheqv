@@ -42,8 +42,9 @@ pub fn detect(body: &[u8]) -> Option<&'static str> {
 }
 
 pub fn kind_ok(kind: &str) -> bool {
-    // reward：后台配置抽奖奖品 / 礼品卡时上传的奖品图，仅管理员可用
-    matches!(kind, "avatar" | "background" | "post" | "reward")
+    // reward：后台配置抽奖奖品 / 礼品卡时的奖品图；
+    // about：关于社区的成员头像 / 合作单位 logo；两者都仅管理员可用
+    matches!(kind, "avatar" | "background" | "post" | "reward" | "about")
 }
 
 pub struct StoredMedia {

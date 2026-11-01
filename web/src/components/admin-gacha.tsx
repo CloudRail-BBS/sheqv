@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RewardImagePicker } from './reward-image-picker';
+import { AdminImagePicker } from './admin-image-picker';
 
 /**
  * 后台 · 抽卡管理。
@@ -310,7 +310,7 @@ export function AdminGacha({
                   />
                 </label>
                 <div className="gacha-form-wide">
-                  <RewardImagePicker
+                  <AdminImagePicker
                     value={form.image}
                     onChange={(url) => setForm({ ...form, image: url })}
                     label="卡面图片（可空）"

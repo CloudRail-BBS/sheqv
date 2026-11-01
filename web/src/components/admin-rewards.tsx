@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GiftCard, Prize } from '@/lib/reward-types';
 import { fmtCardDate } from '@/lib/reward-types';
-import { REWARD_IMAGE_ACCEPT, uploadRewardImage } from '@/lib/reward-image';
-import { RewardImagePicker } from './reward-image-picker';
+import { ADMIN_IMAGE_ACCEPT, uploadAdminImage } from '@/lib/admin-image';
+import { AdminImagePicker } from './admin-image-picker';
 
 const CARD_EMPTY = {
   kind: 'gift',
@@ -151,7 +151,7 @@ export function AdminRewards() {
 
     setMsg(null);
     setImgBusy(true);
-    const up = await uploadRewardImage(file);
+    const up = await uploadAdminImage(file, 'reward');
     if (!up.ok) {
       setImgBusy(false);
       setMsg({ kind: 'err', text: up.message });
@@ -268,7 +268,7 @@ export function AdminRewards() {
             {form.rewardKind === 'custom' && (
               <>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <RewardImagePicker
+                  <AdminImagePicker
                     value={form.rewardImage}
                     onChange={(url) => setForm({ ...form, rewardImage: url })}
                     label="奖品图片（可空）"
@@ -379,7 +379,7 @@ export function AdminRewards() {
                   />
                 </label>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <RewardImagePicker
+                  <AdminImagePicker
                     value={pf.customImage}
                     onChange={(url) => setPf({ ...pf, customImage: url })}
                     label="奖品图片（可空）"
@@ -436,7 +436,7 @@ export function AdminRewards() {
             ))}
             {prizes.length === 0 && <p className="small muted">奖池是空的，先加一个奖品。</p>}
           </div>
-          <input ref={prizeImgRef} type="file" accept={REWARD_IMAGE_ACCEPT} hidden onChange={onPrizeImage} />
+          <input ref={prizeImgRef} type="file" accept={ADMIN_IMAGE_ACCEPT} hidden onChange={onPrizeImage} />
         </form>
       </div>
 
