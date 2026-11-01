@@ -192,7 +192,8 @@ export default async function MePage({
             </div>
             <LevelBar level={user.level} />
             <p className="small muted" style={{ marginTop: 8, lineHeight: 1.75 }}>
-              等级只看积分（签到、发帖、评论都会加）；信誉综合账号年龄、内容数量、认证与违规记录，
+              等级看累计获得的积分（签到、发帖、评论、发资源都会加），抽奖、抽卡、兑换花掉的积分不会让等级下降；
+              信誉综合账号年龄、内容数量、认证与违规记录，
               {user.reputation?.hint ? `当前：${user.reputation.hint}。` : ''}
             </p>
           </div>

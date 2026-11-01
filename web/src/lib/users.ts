@@ -28,6 +28,7 @@ export interface UserGroup {
 export interface LevelInfo {
   level: number;
   title: string;
+  /** 累计获得的积分（决定等级，不是余额） */
   exp: number;
   floor: number;
   nextAt: number;

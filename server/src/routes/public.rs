@@ -237,12 +237,12 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
     };
 
     // 等级 / 信誉是算出来的，不落库；和资料一起下发，前端不用再请求一次
-    let points = crate::rank::points_of(&st.pool, &row.id)
+    let earned = crate::rank::earned_of(&st.pool, &row.id)
         .await
         .map_err(ApiError::internal)?;
     let mut user = json!(profile);
     if let Some(obj) = user.as_object_mut() {
-        obj.insert("level".into(), json!(crate::rank::level_of(points)));
+        obj.insert("level".into(), json!(crate::rank::level_of(earned)));
         obj.insert(
             "reputation".into(),
             json!(

@@ -11,7 +11,7 @@ export function LevelPill({ level, size = 'sm' }: { level?: LevelInfo; size?: 's
   // 参考 B 站的等级牌：六边形 + 渐变，颜色按段位走（蓝 → 青 → 绿 → 紫 → 红）
   const tier = Math.min(level.level, 6);
   return (
-    <span className="lv-pill" data-size={size} data-lv={tier} title={`${level.title} · ${level.exp} 积分`}>
+    <span className="lv-pill" data-size={size} data-lv={tier} title={`${level.title} · 累计 ${level.exp} 积分`}>
       <span className="lv-badge">
         <i>LV</i>
         <b>{level.level}</b>
@@ -45,7 +45,7 @@ export function RepPill({ rep, size = 'sm' }: { rep?: Reputation; size?: 'sm' | 
   );
 }
 
-/** 本级进度条：显示「还差多少分升级」 */
+/** 本级进度条：按累计获得积分算，显示「还差多少分升级」 */
 export function LevelBar({ level }: { level?: LevelInfo }) {
   if (!level) return null;
   const maxed = level.nextAt <= level.exp;
@@ -56,7 +56,7 @@ export function LevelBar({ level }: { level?: LevelInfo }) {
       </div>
       <div className="lv-bar-text">
         <span>
-          <b>{level.exp}</b> / {level.nextAt} 积分
+          累计 <b>{level.exp}</b> / {level.nextAt} 积分
         </span>
         <span>{maxed ? '已满级' : `距 Lv.${level.level + 1} 还差 ${level.nextAt - level.exp}`}</span>
       </div>

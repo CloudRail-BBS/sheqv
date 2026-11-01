@@ -217,7 +217,7 @@ pub async fn state(State(st): State<AppState>, MaybeUser(maybe): MaybeUser) -> A
     // 登录用户带上级与信誉：顶栏、我的页都用这份，不再单独发请求
     let user = match &maybe {
         Some(u) => {
-            let points = crate::rank::points_of(&st.pool, &u.id)
+            let earned = crate::rank::earned_of(&st.pool, &u.id)
                 .await
                 .map_err(ApiError::internal)?;
             let rep = crate::rank::reputation_of(&st.pool, &u.id)
@@ -225,7 +225,7 @@ pub async fn state(State(st): State<AppState>, MaybeUser(maybe): MaybeUser) -> A
                 .map_err(ApiError::internal)?;
             let mut v = json!(u);
             if let Some(obj) = v.as_object_mut() {
-                obj.insert("level".into(), json!(crate::rank::level_of(points)));
+                obj.insert("level".into(), json!(crate::rank::level_of(earned)));
                 obj.insert("reputation".into(), json!(rep));
             }
             v

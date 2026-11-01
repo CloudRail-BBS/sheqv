@@ -1,6 +1,8 @@
 //! 等级与信誉：**都是算出来的，不额外存表**。
 //!
-//! - 等级只看积分（`users.points`），曲线是 `100 × (L-1)²`，避免早期几百分就冲到满级；
+//! - 等级看**累计获得**积分（不是余额）：花掉的、被扣掉的都不降级，
+//!   但删帖 / 删评论 / 删资源的冲正会扣回去，避免「发一篇删一篇」刷等级；
+//!   曲线是 `100 × (L-1)²`，避免早期几百分就冲到满级；
 //! - 信誉**初始 100**：只因为「被拒内容 / 封禁」自动扣分，管理员还能在后台手动扣分（或恢复），
 //!   扣分记录落在 `reputation_adjustments`，总分 = 100 − 自动扣分 + 人工调整，实时算不落表。
 
@@ -12,7 +14,7 @@ use sqlx::PgPool;
 pub struct LevelInfo {
     pub level: i64,
     pub title: String,
-    /// 当前积分
+    /// 累计获得的积分（决定等级的那个数，不是余额）
     pub exp: i64,
     /// 本级起点（含）
     pub floor: i64,
@@ -222,4 +224,24 @@ pub async fn points_of(pool: &PgPool, user_id: &str) -> Result<i64, sqlx::Error>
         .fetch_optional(pool)
         .await
         .map(|v: Option<i64>| v.unwrap_or(0))
+}
+
+/// 累计获得积分：等级用的就是这个数。
+///
+/// - 只算正数流水，抽奖 / 抽卡 / 兑换 / 礼品卡的消耗不会让等级往回掉；
+/// - 但删帖、删评论、删资源的冲正（`*_revoke`，负数）要算进去，
+///   否则「发一篇删一篇」可以反复刷分刷等级；
+/// - 管理员手动扣分不算（那是惩罚，不夺走已经拿到的等级）。
+pub async fn earned_of(pool: &PgPool, user_id: &str) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT COALESCE(SUM(delta), 0)::bigint
+           FROM point_logs
+          WHERE user_id = $1
+            AND (delta > 0
+                 OR reason IN ('post_revoke', 'comment_revoke', 'resource_revoke'))",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map(|v: Option<i64>| v.unwrap_or(0))
 }
