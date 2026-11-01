@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CaptchaDialog } from './captcha-dialog';
+import type { CaptchaPayload } from './geetest';
 
 /**
  * 帖子详情里的两个交互块：
@@ -77,16 +79,21 @@ export function CommentComposer({
   signed,
   loggedIn,
   total,
+  captchaId = '',
 }: {
   postId: string;
   signed: boolean;
   loggedIn: boolean;
   total: number;
+  captchaId?: string;
 }) {
   const router = useRouter();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<CaptchaPayload | null>(null);
+  const [captchaOpen, setCaptchaOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // 楼层里的「回复」按钮发事件过来：填好引用前缀并聚焦，用户接着写
@@ -95,6 +102,7 @@ export function CommentComposer({
       const detail = (e as CustomEvent<{ floor: number; author: string }>).detail;
       if (!detail) return;
       setText(`回复 ${detail.author}：`);
+      setReplyTo(detail.author);
       setErr(null);
       inputRef.current?.focus();
       requestAnimationFrame(() => {
@@ -107,8 +115,17 @@ export function CommentComposer({
   }, []);
 
   async function comment() {
+    await doComment();
+  }
+
+  async function doComment(proofArg?: CaptchaPayload | null) {
     if (text.trim().length < 2) {
       setErr('评论至少 2 个字');
+      return;
+    }
+    const proof = proofArg ?? captcha;
+    if (captchaId && !proof && !captchaOpen) {
+      setCaptchaOpen(true);
       return;
     }
     setBusy(true);
@@ -116,16 +133,29 @@ export function CommentComposer({
     const res = await fetch(`/api/v1/posts/${postId}/comments`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ body: text }),
+      body: JSON.stringify({ body: text, captcha: proof ?? undefined }),
     }).catch(() => null);
-    const data = (await res?.json().catch(() => ({}))) as { message?: string; error?: string };
+    const data = (await res?.json().catch(() => ({}))) as {
+      message?: string;
+      error?: string;
+      comment?: { floor?: number };
+    };
     setBusy(false);
     if (!res?.ok) {
+      setCaptcha(null);
       setErr(data.message ?? data.error ?? '评论失败');
       return;
     }
     setText('');
+    setReplyTo(null);
+    const floor = data.comment?.floor;
     router.refresh();
+    // 刷新后把这楼滚进视野：新回复通常在最下面
+    if (typeof floor === 'number') {
+      setTimeout(() => {
+        document.getElementById(`post-${floor}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350);
+    }
   }
 
   return (
@@ -150,6 +180,21 @@ export function CommentComposer({
         </div>
       ) : (
         <>
+          {replyTo && (
+            <div className="reply-chip">
+              <span>回复 {replyTo}</span>
+              <button
+                type="button"
+                aria-label="取消引用"
+                onClick={() => {
+                  setReplyTo(null);
+                  setText('');
+                }}
+              >
+                ×
+              </button>
+            </div>
+          )}
           <textarea
             ref={inputRef}
             className="input textarea"
@@ -168,6 +213,17 @@ export function CommentComposer({
           </div>
         </>
       )}
+
+      <CaptchaDialog
+        open={captchaOpen}
+        captchaId={captchaId}
+        onDone={(p) => {
+          setCaptcha(p);
+          setCaptchaOpen(false);
+          void doComment(p);
+        }}
+        onCancel={() => setCaptchaOpen(false)}
+      />
     </section>
   );
 }

@@ -17,6 +17,9 @@ pub struct CommentView {
     pub author: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author_id: Option<String>,
+    /// 作者的认证标记：blue / red，未认证不返回
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author_verify: Option<String>,
     pub body: String,
     /// 楼层号：楼主是 1，第一条评论是 2
     pub floor: i64,
@@ -42,6 +45,14 @@ pub struct PostView {
     pub comments: i64,
     /// 浏览数（详情页每次打开 +1）
     pub views: i64,
+    /// 作者认证标记：blue / red
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author_verify: Option<String>,
+    pub pinned: bool,
+    pub featured: bool,
+    /// 编辑时间（毫秒）；没编辑过不返回
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edited_at: Option<i64>,
     pub comments_list: Vec<CommentView>,
     pub created_at: i64,
     pub is_new: bool,
@@ -67,6 +78,10 @@ struct PostRow {
     created_at: DateTime<Utc>,
     like_count: i32,
     views: i64,
+    pinned: bool,
+    featured: bool,
+    edited_at: Option<DateTime<Utc>>,
+    verify_kind: String,
     status: String,
     reject_reason: Option<String>,
     reviewed_at: Option<DateTime<Utc>>,
@@ -78,13 +93,14 @@ struct CommentRow {
     post_id: String,
     author_id: String,
     author: String,
+    verify_kind: String,
     body: String,
     created_at: DateTime<Utc>,
 }
 
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
-        u.nickname AS author, p.created_at, p.like_count, p.views, p.status, p.reject_reason,
-        p.reviewed_at
+        u.nickname AS author, u.verify_kind, p.created_at, p.like_count, p.views,
+        p.pinned, p.featured, p.edited_at, p.status, p.reject_reason, p.reviewed_at
    FROM posts p JOIN users u ON u.id = p.author_id";
 
 fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
@@ -109,6 +125,10 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         tags,
         likes: row.like_count as i64,
         liked: false,
+        author_verify: Some(row.verify_kind).filter(|v| !v.is_empty()),
+        pinned: row.pinned,
+        featured: row.featured,
+        edited_at: row.edited_at.map(|t| t.timestamp_millis()),
         comments: comments.len() as i64,
         views: row.views,
         comments_list: comments,
@@ -130,7 +150,8 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
     let rows: Vec<PostRow> = match keyword {
         None => {
             sqlx::query_as(&format!(
-                "{POST_SQL} WHERE p.status = 'published' ORDER BY p.created_at DESC"
+                "{POST_SQL} WHERE p.status = 'published'
+                 ORDER BY p.pinned DESC, p.created_at DESC"
             ))
             .fetch_all(pool)
             .await?
@@ -142,7 +163,7 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
                  WHERE p.title ILIKE $1 ESCAPE '\\'
                     OR p.body ILIKE $1 ESCAPE '\\'
                     OR p.tags::text ILIKE $1 ESCAPE '\\'
-                 ORDER BY p.created_at DESC"
+                 ORDER BY p.pinned DESC, p.created_at DESC"
             ))
             .bind(pattern)
             .fetch_all(pool)
@@ -157,7 +178,7 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
     // 只捞本次结果集的评论，避免全表扫描后大部分被丢掉
     let ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
     let comments: Vec<CommentRow> = sqlx::query_as(
-        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, c.body, c.created_at
+        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, u.verify_kind, c.body, c.created_at
            FROM comments c JOIN users u ON u.id = c.author_id
           WHERE c.post_id = ANY($1)
           ORDER BY c.created_at ASC",
@@ -175,6 +196,7 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
             id: c.id,
             author: c.author,
             author_id: Some(c.author_id),
+            author_verify: Some(c.verify_kind).filter(|v| !v.is_empty()),
             body: c.body,
             floor,
             at: c.created_at.timestamp_millis(),
@@ -205,6 +227,50 @@ pub fn escape_like(raw: &str) -> String {
     out
 }
 
+/// 作者（或管理员）二次编辑：只改标题与正文，状态不变，记 `edited_at`。
+pub async fn edit(
+    pool: &PgPool,
+    id: &str,
+    title: Option<&str>,
+    body: &str,
+) -> Result<Option<PostView>, sqlx::Error> {
+    let done = sqlx::query(
+        "UPDATE posts SET title = $2, body = $3, edited_at = now() WHERE id = $1",
+    )
+    .bind(id)
+    .bind(title)
+    .bind(body)
+    .execute(pool)
+    .await?;
+    if done.rows_affected() == 0 {
+        return Ok(None);
+    }
+    get(pool, id).await
+}
+
+/// 置顶 / 精华（后台）。传 None 表示这一项不动。
+pub async fn set_flags(
+    pool: &PgPool,
+    id: &str,
+    pinned: Option<bool>,
+    featured: Option<bool>,
+) -> Result<Option<PostView>, sqlx::Error> {
+    let done = sqlx::query(
+        "UPDATE posts SET pinned = COALESCE($2, pinned),
+                          featured = COALESCE($3, featured)
+          WHERE id = $1",
+    )
+    .bind(id)
+    .bind(pinned)
+    .bind(featured)
+    .execute(pool)
+    .await?;
+    if done.rows_affected() == 0 {
+        return Ok(None);
+    }
+    get(pool, id).await
+}
+
 pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Error> {
     let row: Option<PostRow> = sqlx::query_as(&format!("{POST_SQL} WHERE p.id = $1"))
         .bind(id)
@@ -223,7 +289,7 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
     }
 
     let comments: Vec<CommentRow> = sqlx::query_as(
-        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, c.body, c.created_at
+        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, u.verify_kind, c.body, c.created_at
            FROM comments c JOIN users u ON u.id = c.author_id
           WHERE c.post_id = $1 ORDER BY c.created_at ASC",
     )
@@ -239,6 +305,7 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
             id: c.id,
             author: c.author,
             author_id: Some(c.author_id),
+            author_verify: Some(c.verify_kind).filter(|v| !v.is_empty()),
             body: c.body,
             floor: i as i64 + 2,
             at: c.created_at.timestamp_millis(),
@@ -314,12 +381,12 @@ pub async fn add_comment(
         .await?;
 
     let id = crate::ids::next('c');
-    let (created_at, author): (DateTime<Utc>, String) = sqlx::query_as(
+    let (created_at, author, verify_kind): (DateTime<Utc>, String, String) = sqlx::query_as(
         "WITH ins AS (
              INSERT INTO comments (id, post_id, author_id, body, created_at)
              VALUES ($1, $2, $3, $4, now()) RETURNING created_at
          )
-         SELECT ins.created_at, u.nickname FROM ins, users u WHERE u.id = $3",
+         SELECT ins.created_at, u.nickname, u.verify_kind FROM ins, users u WHERE u.id = $3",
     )
     .bind(&id)
     .bind(post_id)
@@ -332,6 +399,7 @@ pub async fn add_comment(
         id,
         author,
         author_id: Some(user_id.to_string()),
+        author_verify: Some(verify_kind).filter(|v| !v.is_empty()),
         body: body.to_string(),
         floor: existing + 2,
         at: created_at.timestamp_millis(),

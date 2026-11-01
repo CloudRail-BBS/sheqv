@@ -187,8 +187,8 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
             {!userId && <div className="uhc-meta">站内用户</div>}
 
             {userId && (
-              <Link href={`/messages?to=${encodeURIComponent(userId)}`} className="uhc-action">
-                发送消息
+              <Link href={`/u/${encodeURIComponent(userId)}`} className="uhc-action">
+                查看主页
               </Link>
             )}
           </div>,

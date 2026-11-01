@@ -251,7 +251,7 @@ export function RegisterForm(props: CommonProps & { isFirst: boolean }) {
 
       {needCaptcha && (
         <div style={{ marginTop: 12 }}>
-          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
+          <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} auto />
         </div>
       )}
 
@@ -443,7 +443,7 @@ export function LoginForm(props: CommonProps) {
 
           {needCaptcha && (
             <div style={{ marginTop: 12 }}>
-              <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />
+              <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} auto />
             </div>
           )}
         </>

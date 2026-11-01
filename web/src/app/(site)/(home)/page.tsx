@@ -6,6 +6,7 @@ import { CheckinCard, CheckinGuest } from '@/components/checkin-card';
 import { winRateText } from '@/lib/org-types';
 import { listPosts } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
+import { publicCaptchaId } from '@/lib/geetest';
 import { getCurrentUser } from '@/lib/current-user';
 import { getSnapshot as getSponsorSnapshot, formatAmount } from '@/lib/sponsor-store';
 import { countUsers, getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
@@ -59,6 +60,7 @@ export default async function HomePage() {
   const pendingCount = MATCHES.filter((m) => m.status === 'submitted' || m.status === 'disputed').length;
   const sponsorUrl = await afdianPageUrl();
   const communitySigned = await isCommunitySigned();
+  const captchaId = await publicCaptchaId();
   const live = MATCHES[0] ?? null;
   const jsonLd = await websiteJsonLd();
 
@@ -76,6 +78,7 @@ export default async function HomePage() {
             nickname={user?.nickname ?? null}
             signed={communitySigned}
             avatar={user?.avatar}
+            captchaId={captchaId}
           />
         </div>
 

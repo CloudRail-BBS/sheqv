@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { MarkdownEditor } from './markdown-editor';
+import { CaptchaDialog } from './captcha-dialog';
+import type { CaptchaPayload } from './geetest';
 
 const TOPICS = ['地图', '整合包', '材质', '约战', '招募', '提问'];
 const CATEGORIES = [
@@ -25,7 +27,12 @@ interface Props {
   avatar?: string;
 }
 
-export function Composer({ nickname, signed, avatar }: Props) {
+export function Composer({
+  nickname,
+  signed,
+  avatar,
+  captchaId = '',
+}: Props & { captchaId?: string }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -38,6 +45,8 @@ export function Composer({ nickname, signed, avatar }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<CaptchaPayload | null>(null);
+  const [captchaOpen, setCaptchaOpen] = useState(false);
 
   // 草稿：本地保存，刷新/误关不丢；发布成功后清掉
   useEffect(() => setMounted(true), []);
@@ -130,7 +139,16 @@ export function Composer({ nickname, signed, avatar }: Props) {
   );
 
   async function submit() {
+    await doSubmit();
+  }
+
+  async function doSubmit(proofArg?: CaptchaPayload | null) {
     if (busy) return;
+    const proof = proofArg ?? captcha;
+    if (captchaId && !proof && !captchaOpen) {
+      setCaptchaOpen(true);
+      return;
+    }
     let finalTitle = title.trim();
     let finalBody = body.trim();
     // 标题栏直接粘链接时，先变成「站点名 + 链接正文」，再校验长度
@@ -163,10 +181,18 @@ export function Composer({ nickname, signed, avatar }: Props) {
       const res = await fetch('/api/v1/posts', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: finalTitle, body: finalBody, tags: allTags }),
+        body: JSON.stringify({
+          title: finalTitle,
+          body: finalBody,
+          tags: allTags,
+          captcha: proof ?? undefined,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? data.error ?? '发布失败');
+      if (!res.ok) {
+        setCaptcha(null);
+        throw new Error(data.message ?? data.error ?? '发布失败');
+      }
       setTitle('');
       setBody('');
       setTags([]);
@@ -420,6 +446,16 @@ export function Composer({ nickname, signed, avatar }: Props) {
           </div>
         </div>
       , document.body)}
+      <CaptchaDialog
+        open={captchaOpen}
+        captchaId={captchaId}
+        onDone={(p) => {
+          setCaptcha(p);
+          setCaptchaOpen(false);
+          void doSubmit(p);
+        }}
+        onCancel={() => setCaptchaOpen(false)}
+      />
     </>
   );
 }

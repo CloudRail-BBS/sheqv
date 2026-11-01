@@ -12,6 +12,8 @@ export interface CommentItem {
   author: string;
   authorId?: string;
   body: string;
+  /** 作者的认证标记：blue / red */
+  authorVerify?: string;
   /** 楼层号：楼主是 1，第一条回复是 2 */
   floor: number;
   at: number;
@@ -29,14 +31,19 @@ export interface PostView {
   likes: number;
   /** 当前登录用户是否已点赞 */
   liked: boolean;
+  /** 作者的认证标记：blue / red */
+  authorVerify?: string;
+  /** 置顶 / 精华 */
+  pinned: boolean;
+  featured: boolean;
+  /** 编辑时间（毫秒） */
+  editedAt?: number;
   comments: number;
   /** 浏览数（详情页每次打开 +1） */
   views: number;
   commentsList: CommentItem[];
   createdAt: number;
   isNew?: boolean;
-  /** 预留：库里暂没有置顶字段 */
-  pinned?: boolean;
   /** pending / published / rejected；非 published 的只有作者和审核人能看到 */
   status?: PostStatus;
   /** 未通过审核时的原因 */

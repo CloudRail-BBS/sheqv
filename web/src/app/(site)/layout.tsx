@@ -47,6 +47,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <header className="topbar">
         <div className="topbar-in">
           <MobileMenu
+            items={settings.sidebarItems}
             siteName={settings.siteName}
             user={user}
             points={pointsChip?.points ?? 0}

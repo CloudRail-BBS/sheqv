@@ -5,6 +5,8 @@ import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { CommentComposer, PostLike } from '@/components/post-actions';
 import { FloorReply } from '@/components/floor-reply';
+import { PostTools } from '@/components/post-tools';
+import { VerifyMark } from '@/components/verify-mark';
 import { getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
 import { resolveBadge } from '@/lib/badges';
 import { getGroupMap, resolveGroup } from '@/lib/group-map';
@@ -15,6 +17,7 @@ import { UserHoverCard } from '@/components/user-hover-card';
 import { buildMetadata, postJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import { getImageSizes } from '@/lib/media-sizes';
+import { publicCaptchaId } from '@/lib/geetest';
 import { Markdown, markdownToText } from '@/lib/markdown';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -62,6 +65,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     };
   };
 
+  const captchaId = await publicCaptchaId();
   const imageSizes = await getImageSizes(post.body).catch(() => ({}));
   const jsonLd = post.status !== 'published'
     ? ''
@@ -110,11 +114,30 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         {/* 每一楼都是帖子：楼主是 1 楼，回复从 2 楼起，结构和样式完全一致 */}
         <article className="card post-block" id="post-1">
             <div className="pb-title-block">
-              <h1 className="pb-title">{post.title ?? '无标题'}</h1>
+              <div className="pb-title-row">
+                <h1 className="pb-title">{post.title ?? '无标题'}</h1>
+                <PostTools
+                  postId={post.id}
+                  title={post.title ?? ''}
+                  body={post.body}
+                  canEdit={Boolean(user) && (user!.id === post.authorId || Boolean(user!.isAdmin))}
+                  canModerate={Boolean(user?.isAdmin)}
+                  pinned={post.pinned}
+                  featured={post.featured}
+                />
+              </div>
               <div className="pb-title-meta">
+                {post.pinned && <span className="badge badge-pin">置顶</span>}
+                {post.featured && <span className="badge badge-feature">精华</span>}
                 <time>{post.time}</time>
                 <span>·</span>
                 <span>{post.views} 次浏览</span>
+                {post.editedAt ? (
+                  <>
+                    <span>·</span>
+                    <span title={new Date(post.editedAt).toLocaleString('zh-CN')}>已编辑</span>
+                  </>
+                ) : null}
                 {post.tags.length > 0 && (
                   <span className="pb-title-tags">
                     {post.tags.map((t) => (
@@ -147,6 +170,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   >
                     <b>{post.author}</b>
                   </UserHoverCard>
+                  <VerifyMark kind={post.authorVerify} />
                   <NameBadges badge={op.badge} group={op.group} size="sm" />
                   <AchievementChips
                     badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
@@ -207,6 +231,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                       >
                         <b>{c.author}</b>
                       </UserHoverCard>
+                      <VerifyMark kind={c.authorVerify} />
                       <NameBadges badge={u.badge} group={u.group} size="sm" />
                       <span className="pb-floor">#{c.floor}</span>
                     </div>
@@ -241,45 +266,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             signed={signed}
             loggedIn={Boolean(user)}
             total={post.commentsList.length}
+            captchaId={captchaId}
           />
         )}
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">作者</div>
-          <div className="row" style={{ gap: 10 }}>
-            <span className="post-avatar" style={{ width: 38, height: 38, borderRadius: 11 }}>
-              {op.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={op.avatar} alt="" loading="lazy" decoding="async" />
-              ) : (
-                post.author.slice(0, 1)
-              )}
-            </span>
-            <div>
-              <div className="small row" style={{ fontWeight: 550, gap: 6 }}>
-                <UserHoverCard
-                  userId={post.authorId}
-                  name={post.author}
-                  avatar={op.avatar}
-                  badge={op.badge}
-                  group={op.group}
-                >
-                  <span>{post.author}</span>
-                </UserHoverCard>
-                <NameBadges badge={op.badge} group={op.group} size="sm" />
-              </div>
-              <div className="small muted">{guildName ? `${guildName}公会` : '个人发布'}</div>
-              <AchievementChips
-                badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
-                size="sm"
-              />
-            </div>
-          </div>
-          <Link href="/me" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }}>查看主页</Link>
-        </div>
-
         <div className="card rail-card">
           <div className="rail-title">发帖规则</div>
           <div className="rule-list">

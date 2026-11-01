@@ -114,6 +114,11 @@ export interface FeedItem {
   likes: number;
   /** 当前登录用户是否已点赞 */
   liked?: boolean;
+  /** 作者认证：blue / red */
+  authorVerify?: string;
+  /** 精华（置顶已有 pinned） */
+  featured?: boolean;
+  editedAt?: number;
   comments: number;
   /** 浏览数 */
   views?: number;

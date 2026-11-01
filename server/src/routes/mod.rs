@@ -103,9 +103,13 @@ pub fn router(state: AppState) -> Router {
             get(oauth::callback),
         )
         .route("/api/v1/posts", get(posts::list).post(posts::create))
-        .route("/api/v1/posts/{id}", get(public::post))
+        .route("/api/v1/posts/{id}", get(public::post).patch(posts::edit))
         .route("/api/v1/posts/{id}/comments", post(posts::comment))
         .route("/api/v1/posts/{id}/like", post(posts::like))
+        .route(
+            "/api/v1/admin/posts/{id}/flags",
+            patch(posts::admin_flags),
+        )
         .route("/api/v1/settings", get(public::settings))
         .route("/api/v1/changelog", get(changelog::public_list))
         .route("/api/v1/announcements", get(public::announcements))

@@ -8,6 +8,7 @@ use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
 
 use crate::auth::session;
+use crate::captcha::{self, CaptchaPayload, CaptchaResult};
 use crate::current_user::MaybeUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
@@ -143,6 +144,25 @@ pub async fn create(
         return Err(ApiError::invalid_input(msg));
     }
 
+    // 站点配了极验就必须带票：缺票直接拒绝，前端会弹验证层再重提
+    let s = settings::load(&st.pool, &st.cfg).await;
+    let captcha_payload: Option<CaptchaPayload> =
+        serde_json::from_value(obj.get("captcha").cloned().unwrap_or(Value::Null)).ok();
+    match captcha::verify(&st.http, &st.cfg, &s, captcha_payload.as_ref()).await {
+        CaptchaResult::Failed(code) => {
+            return Err(ApiError::with_message(
+                StatusCode::BAD_REQUEST,
+                "captcha_failed",
+                if code == "missing_captcha" {
+                    "请先完成人机验证"
+                } else {
+                    "人机验证未通过，请重试"
+                },
+            ));
+        }
+        _ => {}
+    }
+
     let tags = obj
         .get("tags")
         .and_then(|v| v.as_array())
@@ -217,6 +237,24 @@ pub async fn comment(
         .trim()
         .to_string();
 
+    let settings_now = settings::load(&st.pool, &st.cfg).await;
+    let captcha_payload: Option<CaptchaPayload> =
+        serde_json::from_value(payload.get("captcha").cloned().unwrap_or(Value::Null)).ok();
+    match captcha::verify(&st.http, &st.cfg, &settings_now, captcha_payload.as_ref()).await {
+        CaptchaResult::Failed(code) => {
+            return Err(ApiError::with_message(
+                StatusCode::BAD_REQUEST,
+                "captcha_failed",
+                if code == "missing_captcha" {
+                    "请先完成人机验证"
+                } else {
+                    "人机验证未通过，请重试"
+                },
+            ));
+        }
+        _ => {}
+    }
+
     let len = text.chars().count();
     if len < 2 {
         return Err(ApiError::invalid_input("评论至少 2 个字"));
@@ -255,6 +293,98 @@ pub async fn comment(
         Json(json!({ "ok": true, "comment": comment })),
     )
         .into_response())
+}
+
+/// PATCH /api/v1/posts/:id —— 作者本人或管理员二次编辑
+pub async fn edit(
+    State(st): State<AppState>,
+    Path(post_id): Path<String>,
+    MaybeUser(maybe): MaybeUser,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let user = maybe.ok_or_else(need_login)?;
+    let Some(post) = forum::get(&st.pool, &post_id)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+
+    let is_author = post.author_id.as_deref() == Some(user.id.as_str());
+    let can_moderate = groups::can(&st.pool, &user.id, "audit.review")
+        .await
+        .map_err(ApiError::internal)?;
+    if !is_author && !can_moderate {
+        return Err(ApiError::with_message(
+            StatusCode::FORBIDDEN,
+            "forbidden",
+            "只能编辑自己的帖子",
+        ));
+    }
+
+    let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let title = payload
+        .get("title")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .unwrap_or("");
+    let content = payload
+        .get("body")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .unwrap_or("");
+
+    if title.chars().count() > 80 {
+        return Err(ApiError::invalid_input("标题不超过 80 字"));
+    }
+    if content.chars().count() < 2 {
+        return Err(ApiError::invalid_input("正文至少 2 个字"));
+    }
+    if content.chars().count() > 8000 {
+        return Err(ApiError::invalid_input("正文不超过 8000 字"));
+    }
+
+    let updated = forum::edit(
+        &st.pool,
+        &post_id,
+        if title.is_empty() { None } else { Some(title) },
+        content,
+    )
+    .await
+    .map_err(ApiError::internal)?;
+
+    match updated {
+        Some(post) => Ok(Json(json!({ "ok": true, "post": post })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
+}
+
+/// PATCH /api/v1/admin/posts/:id/flags —— 置顶 / 精华
+pub async fn admin_flags(
+    State(st): State<AppState>,
+    Path(post_id): Path<String>,
+    _: crate::admin_auth::AdminActor,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+
+    let updated = forum::set_flags(
+        &st.pool,
+        &post_id,
+        payload.get("pinned").and_then(|v| v.as_bool()),
+        payload.get("featured").and_then(|v| v.as_bool()),
+    )
+    .await
+    .map_err(ApiError::internal)?;
+
+    match updated {
+        Some(post) => Ok(Json(json!({ "ok": true, "post": post })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
 }
 
 /// POST /api/v1/posts/:id/like —— 需登录；一人一票，再点一次取消。

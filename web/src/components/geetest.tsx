@@ -43,6 +43,8 @@ interface Props {
   onChange: (payload: CaptchaPayload | null) => void;
   /** 换值即重置实例，用于提交失败后重来 */
   resetKey: number;
+  /** 放进弹窗时用：实例一就绪就自动拉起验证层，不用再点一次按钮 */
+  auto?: boolean;
 }
 
 // gt4.js 会自己拉 gcaptcha4.css。那份样式里带大量 IE 时代的写法
@@ -103,7 +105,9 @@ function loadGt4(): Promise<void> {
   return loading;
 }
 
-export function Geetest({ captchaId, onChange, resetKey }: Props) {
+export function Geetest({ captchaId, onChange, resetKey, auto = false }: Props) {
+  const autoRef = useRef(auto);
+  autoRef.current = auto;
   const inst = useRef<GtInstance | null>(null);
   const changeRef = useRef(onChange);
   changeRef.current = onChange;
@@ -164,6 +168,16 @@ export function Geetest({ captchaId, onChange, resetKey }: Props) {
                 if (disposed) return;
                 if (watchdog) clearTimeout(watchdog);
                 setStatus('ready');
+                // 弹窗场景：就绪即弹层，用户不需要再点一次「开始验证」
+                if (autoRef.current) {
+                  setTimeout(() => {
+                    try {
+                      captcha.showCaptcha();
+                    } catch {
+                      /* 忽略：用户可以点下面的按钮重试 */
+                    }
+                  }, 60);
+                }
               });
 
               captcha.onSuccess(() => {

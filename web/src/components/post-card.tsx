@@ -9,6 +9,7 @@ import type { EarnedBadge } from '@/lib/achievements';
 import type { UserGroup } from '@/lib/users';
 import { UserHoverCard } from './user-hover-card';
 import { SmartImage } from './smart-image';
+import { VerifyMark } from './verify-mark';
 
 type Item = FeedItem & { href?: string };
 
@@ -126,6 +127,9 @@ export function PostCard({
           >
             <b>{item.author}</b>
           </UserHoverCard>
+          <VerifyMark kind={item.authorVerify} />
+          {item.pinned && <span className="fc-pin">置顶</span>}
+          {item.featured && <span className="fc-pin fc-pin-feature">精华</span>}
           <span className="fc-chip">{category}</span>
           <time className="fc-time">{item.time}</time>
         </div>
