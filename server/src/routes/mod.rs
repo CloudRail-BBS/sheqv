@@ -32,6 +32,7 @@ pub mod messages;
 pub mod tickets;
 pub mod titles;
 pub mod verifications;
+pub mod wiki;
 pub mod tournaments;
 
 use axum::Router;
@@ -134,6 +135,17 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agreements/signatures", get(agreements::signatures))
         .route("/api/v1/agreements/sign", post(agreements::sign))
         .route("/api/v1/app/latest", get(apps::latest))
+        // 百科：公开只读 + 后台维护
+        .route("/api/v1/wiki", get(wiki::list))
+        .route("/api/v1/wiki/{slug}", get(wiki::get))
+        .route(
+            "/api/v1/admin/wiki",
+            get(wiki::admin_list).post(wiki::admin_create),
+        )
+        .route(
+            "/api/v1/admin/wiki/{id}",
+            patch(wiki::admin_update).delete(wiki::admin_remove),
+        )
         // 后台版本发布：列表 / 新建
         .route(
             "/api/v1/admin/apps",

@@ -110,6 +110,8 @@ function isBlockStart(line: string): boolean {
 function blocks(text: string, sizes?: ImageSizes): ReactNode[] {
   const lines = text.replace(/\r\n/g, '\n').split('\n');
   const out: ReactNode[] = [];
+  // 同名标题的锚点后缀计数，保证 id 唯一
+  const anchorSeen = new Map<string, number>();
   let i = 0;
 
   while (i < lines.length) {
@@ -140,9 +142,14 @@ function blocks(text: string, sizes?: ImageSizes): ReactNode[] {
     if (heading) {
       const level = heading[1].length;
       const content = inline(heading[2], sizes);
-      if (level === 1) out.push(<h1 key={nextKey()}>{content}</h1>);
-      else if (level === 2) out.push(<h2 key={nextKey()}>{content}</h2>);
-      else out.push(<h3 key={nextKey()}>{content}</h3>);
+      // 给标题一个稳定 id，右侧「本页目录」才能跳转；同名标题加序号去重
+      const base = headingAnchor(heading[2]);
+      const seen = anchorSeen.get(base) ?? 0;
+      anchorSeen.set(base, seen + 1);
+      const id = seen === 0 ? base : `${base}-${seen + 1}`;
+      if (level === 1) out.push(<h1 key={nextKey()} id={id}>{content}</h1>);
+      else if (level === 2) out.push(<h2 key={nextKey()} id={id}>{content}</h2>);
+      else out.push(<h3 key={nextKey()} id={id}>{content}</h3>);
       i += 1;
       continue;
     }
@@ -231,6 +238,21 @@ export function Markdown({
 }
 
 /** 给摘要/搜索用：去掉常见 Markdown 标记 */
+/** 标题 → 锚点：保留中英文与数字，其余压成连字符 */
+export function headingAnchor(raw: string): string {
+  const cleaned = raw
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/[`*_~#]/g, '')
+    .trim()
+    .toLowerCase();
+  const slug = cleaned
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return slug || 'section';
+}
+
 export function markdownToText(text: string): string {
   return text
     .replace(/```[\s\S]*?```/g, ' ')
