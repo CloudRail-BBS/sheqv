@@ -54,24 +54,30 @@ export function TabBar({ items }: { items?: string }) {
 
   // 当前 tab 的高亮块：量一下图标胶囊的位置，切 tab 时滑动过去
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const navRef = useRef<HTMLElement | null>(null);
   const [glide, setGlide] = useState({ left: 0, top: 0, width: 42, height: 26, ready: false });
 
   const measure = () => {
+    const nav = navRef.current;
     const activeKey = keys.find((k) => {
       const it = navItem(k);
       return it ? isNavActive(pathname, search, it.href) : false;
     });
     const el = activeKey ? itemRefs.current[activeKey] : null;
     const pill = el?.querySelector<HTMLElement>('.tab-pill');
-    if (!pill) {
+    if (!nav || !pill) {
       setGlide((g) => ({ ...g, ready: false }));
       return;
     }
+    // 注意：pill 的 offsetParent 是外层 <a>，offsetLeft/Top 只能算「相对链接」的位置。
+    // 高亮块是相对 .tabbar 定位的，必须用两者的矩形差，否则永远贴在左上角。
+    const navRect = nav.getBoundingClientRect();
+    const pillRect = pill.getBoundingClientRect();
     setGlide({
-      left: pill.offsetLeft,
-      top: pill.offsetTop,
-      width: pill.offsetWidth,
-      height: pill.offsetHeight,
+      left: pillRect.left - navRect.left - nav.clientLeft + nav.scrollLeft,
+      top: pillRect.top - navRect.top - nav.clientTop + nav.scrollTop,
+      width: pillRect.width,
+      height: pillRect.height,
       ready: true,
     });
   };
@@ -81,12 +87,18 @@ export function TabBar({ items }: { items?: string }) {
   // 横竖屏切换 / 窗口缩放后胶囊位置会变，重新量一次
   useEffect(() => {
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    navRef.current?.addEventListener('scroll', measure, { passive: true });
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      navRef.current?.removeEventListener('scroll', measure);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, search, items]);
 
   return (
-    <nav className="tabbar" aria-label="主导航" data-fits={fits}>
+    <nav className="tabbar" aria-label="主导航" data-fits={fits} ref={navRef}>
       <span
         className="tab-glider"
         aria-hidden="true"

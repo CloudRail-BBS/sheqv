@@ -57,7 +57,9 @@ export function MobileMenu({
       onClick={() => setOpen(false)}
     >
       <span className="mobile-drawer-ico" aria-hidden="true">
-        <NavGlyph k={key} />
+        <svg viewBox="0 0 24 24" focusable="false">
+          <NavGlyph k={key} />
+        </svg>
       </span>
       <span>{label}</span>
       {extra}
