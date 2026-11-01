@@ -37,14 +37,20 @@ export function MobileMenu({
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
+    // 移动端的滚动在 .site-scroll 上（body 已是 overflow:hidden），
+    // 只锁 body 拦不住，抽屉打开后背后仍会跟着滑。
+    const box = document.querySelector<HTMLElement>('.site-scroll');
+    const previousBox = box?.style.overflow ?? '';
+    const previousBody = document.body.style.overflow;
+    if (box) box.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = previous;
+      if (box) box.style.overflow = previousBox;
+      document.body.style.overflow = previousBody;
       window.removeEventListener('keydown', onKey);
     };
   }, [open]);

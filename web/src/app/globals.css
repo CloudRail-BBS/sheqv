@@ -1761,26 +1761,45 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .brand { font-size: 14px; }
   .topbar-right { gap: 2px; }
 
+  /* 移动端把滚动从 body 挪到 .site-scroll：底栏在滚动容器之外，
+     页面怎么滑、地址栏怎么收缩，它都不会跟着动。
+     body 不再滚动，也就没有「fixed 跟着页面走」这一说了。 */
+  html:has(.site-scroll) { height: 100%; }
+  body:has(.site-scroll) {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .site-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  /* 页脚底部要给底栏让位，否则滑到底最后一行被压在栏下 */
+  .site-scroll .footer { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+
   .tabbar {
     display: flex;
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-    /* 自己合成一层：部分 Android WebView / iOS 里 fixed 会跟着页面滚，
-       提层后位置才稳（这也是「底栏不能常驻」的常见成因） */
-    transform: translateZ(0);
-    will-change: transform;
-    /* 只给「装不下 5 个」的配置留横向滚动，能放下时不要滚动容器 */
+    /* 实色而不是毛玻璃：iOS 上 fixed + backdrop-filter 在滚动时会重采样，
+       表现为整条栏轻微漂移，这里直接用面板色 */
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -10px 26px -20px rgba(0, 0, 0, 0.55);
+    /* 固定 5 格用 flex 均分，不开滚动容器；超过 5 项才在下面单独放开 */
+    overflow: hidden;
+    padding: 7px 8px calc(8px + env(safe-area-inset-bottom));
+  }
+  .tabbar[data-fits="false"] {
     overflow-x: auto; overflow-y: hidden;
     scroll-snap-type: x proximity;
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     touch-action: pan-x;
-    background: var(--glass-strong);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-top: 1px solid var(--line);
-    padding: 7px 8px calc(8px + env(safe-area-inset-bottom));
   }
-  .tabbar[data-fits="true"] { overflow: hidden; }
   .tabbar::-webkit-scrollbar { display: none; }
   .tabbar a {
     flex: 0 0 20%; min-width: 64px; scroll-snap-align: center;
@@ -6118,7 +6137,7 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .side-item { transition: background 0.16s, color 0.16s, padding-left 0.16s; }
 .side-item:hover { padding-left: 11px; }
 
-.tabbar { position: fixed; }
+/* 底栏的定位在移动端媒体查询里（桌面 display:none），这里不要再写一遍 position */
 .tab-glider {
   position: absolute; top: 9px; height: 26px; border-radius: 9px; z-index: 0;
   /* top/height 由组件实测后内联覆盖，这里只是首帧兜底 */
