@@ -71,13 +71,3 @@ export const getAdminTodos = cache(
     return { items: d.items ?? [], stats: d.stats ?? EMPTY_STATS };
   },
 );
-
-/** 队列角标：href → 数量，供侧栏用 */
-export async function getQueueCounts(): Promise<Record<string, number>> {
-  const { queues } = await getAdminOverview();
-  const map: Record<string, number> = {};
-  for (const q of queues) {
-    if (q.count > 0) map[q.href] = q.count;
-  }
-  return map;
-}

@@ -6,7 +6,7 @@ import { getSettings } from '@/lib/settings';
 import { BrandMark } from '@/components/brand-mark';
 import { ConsoleNav } from '@/components/console-nav';
 import { ConsoleTopbar } from '@/components/console-topbar';
-import { getAdminOverview, getQueueCounts } from '@/lib/admin-todos';
+import { getAdminOverview } from '@/lib/admin-todos';
 
 /**
  * 后台外壳：**不继承前台布局**。
@@ -35,7 +35,11 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   }
 
   // 侧栏角标 + 顶栏待办数：和首页共用同一次查询（getAdminOverview 有 cache）
-  const [overview, badges] = await Promise.all([getAdminOverview(), getQueueCounts()]);
+  const overview = await getAdminOverview();
+  const badges: Record<string, number> = {};
+  for (const q of overview.queues) {
+    if (q.count > 0) badges[q.href] = q.count;
+  }
 
   return (
     <div className="console">
