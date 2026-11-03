@@ -87,7 +87,8 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
               </div>
             ) : null}
             <div className="up-meta">
-              {user.title && <span className="badge badge-ghost">{user.title}</span>}
+              {/* 头衔已经由上面的 NameBadges 画在名字后面（带申请时选的样式），
+                  这里不要再摆一个灰色副本 */}
               {user.developer && <span className="dev-chip">开发者</span>}
               <AchievementChips badges={earned} size="sm" />
             </div>

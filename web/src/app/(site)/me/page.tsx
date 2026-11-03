@@ -156,7 +156,11 @@ export default async function MePage({
             </div>
             <div className="me-sub">
               @{user.username} · 注册于 {joined}
-              {user.uid ? <UidBadge uid={user.uid} style={user.uidStyle} /> : null}
+              {user.uid ? (
+                <span className="me-uid">
+                  <UidBadge uid={user.uid} style={user.uidStyle} />
+                </span>
+              ) : null}
             </div>
           </div>
           <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>

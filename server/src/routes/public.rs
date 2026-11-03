@@ -185,6 +185,12 @@ pub struct PublicProfile {
     pub created_at: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// 头衔外观：样式键（plain/blue/gold/…）与特效（shine/glow/pulse）。
+    /// 少这两个字段，审核通过的头衔在帖子和主页上会一律回落成默认蓝。
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub title_style: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub title_effect: String,
     /// 身份组的名字与颜色（只用于展示，权限永远在后端判）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<crate::users::GroupTag>,
@@ -232,6 +238,8 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
         is_admin: row.role == "admin",
         created_at: row.created_at.timestamp_millis(),
         title: row.title.clone(),
+        title_style: row.title_style.clone(),
+        title_effect: row.title_effect.clone(),
         group: row.group_tag(),
         developer: row.developer_at.is_some(),
         developer_since: row.developer_at.map(|t| t.timestamp_millis()),
@@ -280,6 +288,8 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
             is_admin: row.role == "admin",
             created_at: row.created_at.timestamp_millis(),
             title: row.title.clone(),
+            title_style: row.title_style.clone(),
+            title_effect: row.title_effect.clone(),
             group: row.group_tag(),
             developer: row.developer_at.is_some(),
             developer_since: row.developer_at.map(|t| t.timestamp_millis()),
