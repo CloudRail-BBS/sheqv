@@ -976,7 +976,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 
 @media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; padding: 16px 16px 40px; }
+  .app { grid-template-columns: 1fr; padding: 16px 16px 40px; --app-pad: 16px; }
   .sidebar { display: none; }
   .topbar-in { padding: 0 16px; gap: 10px; }
   .search { max-width: none; }
@@ -1768,7 +1768,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .only-mobile { display: none; }
 
 @media (max-width: 860px) {
-  .app { padding: 14px 14px 82px; }
+  .app { padding: 14px 14px 82px; --app-pad: 14px; }
   .sidebar { display: none; }
   .topbar .search { display: none; }
   .only-mobile { display: grid; }
@@ -3769,7 +3769,7 @@ body:has(.auth-page) .app {
 .mobile-drawer-user-name {
   display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
 }
-.mobile-drawer-user-name b { font-size: 14px; letter-spacing: -0.01em; }
+.mobile-drawer-user-name > b { font-size: 14px; letter-spacing: -0.01em; }
 .mobile-drawer-user-name .vmark { width: 14px; height: 14px; }
 .mobile-drawer-user-name .lv-pill { flex: none; }
 .mobile-drawer-avatar {
@@ -3780,8 +3780,9 @@ body:has(.auth-page) .app {
 }
 .mobile-drawer-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .mobile-drawer-user > div { min-width: 0; flex: 1; }
-.mobile-drawer-user b { display: block; font-size: 13px; }
-.mobile-drawer-user span { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+/* 只作用于「昵称 + 积分」这两行，别用裸 b / span：
+   等级牌、认证印记也是 span，被改成块级后数字会被六边形裁掉 */
+.mobile-drawer-user-main > span { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
 .mobile-drawer-section { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 .mobile-drawer-section:first-of-type { border-top: 0; }
 .mobile-drawer-label {
@@ -5714,17 +5715,8 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 }
 .fc-pin-feature { color: var(--gold); background: var(--gold-soft); border-color: var(--gold-line); }
 
-/* 置顶 / 精华：列表卡片上的标记。左侧竖条 + 实色标签，
-   比原来的浅色小 chip 更容易一眼看到（浅色底在浅色主题里几乎看不见）。 */
-.feed-card[data-flag]::before {
-  content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px;
-  border-radius: 0 3px 3px 0;
-}
-.feed-card[data-flag] { position: relative; }
-.feed-card[data-flag="pinned"]::before { background: var(--blue); }
-.feed-card[data-flag="featured"]::before {
-  background: linear-gradient(180deg, #f0cb7c, color-mix(in srgb, var(--gold) 70%, transparent));
-}
+/* 置顶 / 精华：只保留卡片上的实色标签，不再给卡片加左侧竖条
+   —— 竖条贴着圆角边缘，看起来像多出一条蓝色边框。 */
 
 .fc-flag {
   flex: none; height: 19px; padding: 0 7px 0 5px; border-radius: 6px;
@@ -6118,6 +6110,11 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   display: inline-flex; align-items: center; gap: 6px;
   vertical-align: middle;
 }
+.lv-pill > .lv-badge {
+  /* 外层若有通用的 span 规则（抽屉、卡片标题等），这里要压回去 */
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none; margin: 0; color: #fff; font-size: 13px; line-height: 1;
+}
 .lv-badge {
   position: relative;
   display: inline-flex; align-items: center; justify-content: center; gap: 1px;
@@ -6310,7 +6307,7 @@ body::before {
 }
 
 @media (max-width: 560px) {
-  .app { padding: 12px 12px calc(96px + env(safe-area-inset-bottom)); }
+  .app { padding: 12px 12px calc(96px + env(safe-area-inset-bottom)); --app-pad: 12px; }
   .wiki-tabs { gap: 14px; padding: 0 10px; }
   .wiki-tab { font-size: 12.5px; }
   .pb-head { flex-wrap: wrap; }
@@ -6935,13 +6932,6 @@ body::before {
   .perm-grid { grid-template-columns: 1fr; }
 }
 
-/* UID：夹在 @用户名后面的小标签，等宽字体便于对照 */
-.uid-tag {
-  display: inline-block; margin-left: 6px; padding: 0 6px;
-  border-radius: 5px; font-size: 10.5px; line-height: 17px;
-  color: var(--text-3); background: var(--panel-2); border: 1px solid var(--line-soft);
-  vertical-align: 1px;
-}
 
 /* ── 积分商城 ───────────────────────────── */
 .shop-page { display: flex; flex-direction: column; gap: 12px; }
@@ -7064,4 +7054,130 @@ body::before {
   .ev-cover img { height: 150px; min-height: 0; }
   .ev-detail-cover { height: 170px; }
   .ev-detail-body { padding: 14px; }
+}
+
+
+/* ── 移动端：顶栏与频道标签合成一组头部 ────────
+   原来是「一条通栏顶栏 + 一张浮在下面的圆角卡片」，两种材质、两套留白，
+   叠在一起像两个不相干的工具条。这里让标签行通栏、同底色，
+   只用一条分隔线跟顶栏接上，读起来是同一组导航。 */
+@media (max-width: 860px) {
+  .feed-tabs {
+    position: sticky;
+    top: calc(56px + env(safe-area-inset-top));
+    z-index: 30;
+    margin-inline: calc(-1 * var(--app-pad, 14px));
+    padding: 5px calc(var(--app-pad, 14px) - 2px);
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: var(--panel);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
+  .feed-tab { padding: 7px 12px; font-size: 13px; }
+  .feed-tabs .sort { padding-right: 2px; font-size: 11px; }
+}
+
+/* ── UID 徽标 ─────────────────────────────
+   五种外观共用一套骨架，只有材质不同；深浅主题都走令牌，
+   不要写死颜色，否则深色下会变成一块亮白。 */
+.uidbadge {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 22px; padding: 0 8px; border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 11px; line-height: 1; white-space: nowrap;
+  vertical-align: middle;
+  transition: transform 0.14s var(--ease), border-color 0.14s, background 0.14s;
+}
+.uidbadge i {
+  font-style: normal; font-size: 8.5px; font-weight: 600;
+  letter-spacing: 0.07em; opacity: 0.72;
+}
+.uidbadge b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.uidbadge[data-size="md"] { height: 26px; padding: 0 10px; gap: 6px; border-radius: 8px; }
+.uidbadge[data-size="md"] i { font-size: 9px; }
+.uidbadge[data-size="md"] b { font-size: 14px; }
+
+.uidbadge[data-style="plain"] {
+  background: var(--panel-2); border-color: var(--line-soft); color: var(--text-2);
+}
+.uidbadge[data-style="mono"] {
+  background: var(--panel-3); border: 1px dashed var(--line); color: var(--text);
+}
+.uidbadge[data-style="mono"] b::before { content: "#"; opacity: 0.4; margin-right: 1px; }
+.uidbadge[data-style="solid"] {
+  background: var(--blue); color: #fff;
+  box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--blue) 90%, transparent);
+}
+.uidbadge[data-style="solid"] i { opacity: 0.78; }
+.uidbadge[data-style="gradient"] {
+  background: linear-gradient(135deg, var(--blue), #7a5cff 92%); color: #fff;
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, #7a5cff 85%, transparent);
+}
+.uidbadge[data-style="gradient"] i { opacity: 0.82; }
+.uidbadge[data-style="outline"] {
+  background: transparent; border-color: var(--blue-line); color: var(--blue);
+}
+.uidbadge[data-style="outline"] i { opacity: 0.6; }
+
+.uidbadge[data-copy] { cursor: copy; }
+.uidbadge[data-copy]:hover { transform: translateY(-1px); border-color: var(--hover-bd); }
+.uidbadge[data-copy]:focus-visible { outline: none; box-shadow: var(--ring); }
+.uidbadge-done {
+  position: absolute; left: 50%; bottom: calc(100% + 6px);
+  transform: translate(-50%, 4px);
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 600; white-space: nowrap;
+  color: var(--panel); background: var(--text);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.16s, transform 0.16s;
+}
+.uidbadge-done:not(:empty) { opacity: 1; transform: translate(-50%, 0); }
+
+/* 个人主页：UID 单独一行，比挤在 @用户名 后面更像「名片」 */
+.up-uid { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.up-uid-hint { font-size: 11px; color: var(--text-3); }
+
+/* 「我的」里的 UID 外观选择 */
+.uid-picker { display: flex; flex-direction: column; gap: 12px; }
+.uid-picker-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.uid-picker-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.uid-picker-copy b { font-size: 13px; }
+.uid-options {
+  /* 桌面一行三张、共两行（3+2），比 4+1 留下一个大空格好看；
+     窄屏再退回两列（见下面的 560 断点） */
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;
+}
+.uid-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  text-align: left; cursor: pointer;
+  transition: border-color 0.14s, background 0.14s;
+}
+.uid-option:hover { border-color: var(--hover-bd); }
+.uid-option[data-on="true"] { border-color: var(--blue-line); background: var(--blue-soft); }
+.uid-option:disabled { opacity: 0.7; cursor: default; }
+.uid-option-preview { flex: none; display: grid; place-items: center; }
+.uid-option-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.uid-option-main b { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.uid-option[data-on="true"] .uid-option-main b { color: var(--blue); }
+.uid-option-main i { font-style: normal; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
+.uid-option-busy { margin-left: auto; font-size: 10.5px; color: var(--muted); }
+
+@media (max-width: 560px) {
+  .uid-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .uid-option { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .uid-option-preview { align-self: flex-start; }
+  .up-uid-hint { font-size: 10.5px; }
 }

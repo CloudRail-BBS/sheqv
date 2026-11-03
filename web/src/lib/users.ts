@@ -47,6 +47,8 @@ export interface PublicUser {
   id: string;
   /** 数字 UID（从 10001 起），对用户展示与搜索用 */
   uid?: number;
+  /** UID 的外观：plain / mono / solid / gradient / outline */
+  uidStyle?: string;
   username: string;
   nickname: string;
   role: Role;

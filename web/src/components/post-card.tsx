@@ -86,10 +86,7 @@ export function PostCard({
   }
 
   return (
-    <article
-      className={`card feed-card${cover ? '' : ' feed-card-text'}`}
-      data-flag={item.pinned ? 'pinned' : item.featured ? 'featured' : undefined}
-    >
+    <article className={`card feed-card${cover ? '' : ' feed-card-text'}`}>
       {cover && (
         <Link href={href} className="fc-cover" tabIndex={-1} aria-hidden="true">
           <SmartImage

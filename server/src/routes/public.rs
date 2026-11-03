@@ -174,6 +174,10 @@ fn is_false(v: &bool) -> bool {
 #[serde(rename_all = "camelCase")]
 pub struct PublicProfile {
     pub id: String,
+    /// 数字 UID：主页上给访客认人用
+    pub uid: i64,
+    /// UID 的外观（用户自己选的）
+    pub uid_style: String,
     pub username: String,
     pub nickname: String,
     pub role: crate::users::Role,
@@ -220,6 +224,8 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
 
     let profile = PublicProfile {
         id: row.id.clone(),
+        uid: row.uid,
+        uid_style: row.uid_style.clone(),
         username: row.username.clone(),
         nickname: row.nickname.clone(),
         role: crate::users::Role::from_db(&row.role),
@@ -266,6 +272,8 @@ pub async fn users(State(st): State<AppState>) -> ApiResult<Response> {
         .into_iter()
         .map(|row| PublicProfile {
             id: row.id.clone(),
+            uid: row.uid,
+            uid_style: row.uid_style.clone(),
             username: row.username.clone(),
             nickname: row.nickname.clone(),
             role: crate::users::Role::from_db(&row.role),

@@ -9,6 +9,7 @@ import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { resolveBadge } from '@/lib/badges';
 import { PostCard } from '@/components/post-card';
 import { LevelPill, RepPill } from '@/components/rank-badges';
+import { UidBadge } from '@/components/uid-badge';
 import { NameBadges } from '@/components/name-badges';
 import { AchievementChips } from '@/components/achievement-chips';
 import { buildMetadata } from '@/lib/seo';
@@ -76,11 +77,15 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
               <RepPill rep={user.reputation} />
             </div>
             <div className="up-sub">
-              @{user.username}
-              {user.uid ? <span className="uid-tag mono">UID {user.uid}</span> : null} · 加入于{' '}
-              {fmtDay(user.createdAt)}
+              @{user.username} · 加入于 {fmtDay(user.createdAt)}
               {user.group ? ` · ${user.group.name}` : ''}
             </div>
+            {user.uid ? (
+              <div className="up-uid">
+                <UidBadge uid={user.uid} style={user.uidStyle} size="md" copy />
+                <span className="up-uid-hint">点一下复制，方便互加好友与客服定位</span>
+              </div>
+            ) : null}
             <div className="up-meta">
               {user.title && <span className="badge badge-ghost">{user.title}</span>}
               {user.developer && <span className="dev-chip">开发者</span>}

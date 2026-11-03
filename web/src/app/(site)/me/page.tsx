@@ -18,6 +18,8 @@ import { listMyVerifyRequests } from '@/lib/verifications';
 import { UserBadge } from '@/components/user-badge';
 import { VerifyMark } from '@/components/verify-mark';
 import { GroupTag } from '@/components/group-tag';
+import { UidBadge } from '@/components/uid-badge';
+import { UidStylePicker } from '@/components/uid-style-picker';
 import { ImageClearButton, ImageUploadButton } from '@/components/image-upload';
 import { badgeOf } from '@/lib/badges';
 import { listPublicGroups } from '@/lib/groups';
@@ -153,8 +155,8 @@ export default async function MePage({
               <RepPill rep={user.reputation} />
             </div>
             <div className="me-sub">
-              @{user.username}
-              {user.uid ? <span className="uid-tag mono">UID {user.uid}</span> : null} · 注册于 {joined}
+              @{user.username} · 注册于 {joined}
+              {user.uid ? <UidBadge uid={user.uid} style={user.uidStyle} /> : null}
             </div>
           </div>
           <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>
@@ -198,6 +200,10 @@ export default async function MePage({
               {user.reputation?.hint ? `当前：${user.reputation.hint}。` : ''}
             </p>
           </div>
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 12 }}>
+          <UidStylePicker uid={user.uid} style={user.uidStyle} />
         </div>
 
         <LoginMethods state={identities} notice={bindNotice} />

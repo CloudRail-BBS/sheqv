@@ -359,6 +359,7 @@ pub async fn patch_me(
     if !obj.contains_key("title")
         && !obj.contains_key("profileBg")
         && !obj.contains_key("avatar")
+        && !obj.contains_key("uidStyle")
     {
         return Err(ApiError::invalid_input("没有要修改的内容"));
     }
@@ -416,6 +417,21 @@ pub async fn patch_me(
         if raw.is_empty() && !old.is_empty() {
             let _ = media::delete_url(&st, &user.id, &old).await;
         }
+    }
+
+    if let Some(style) = obj.get("uidStyle") {
+        let raw = style.as_str().unwrap_or("").trim();
+        // 只接受这几档：外观是纯展示，值写错会让前端静默退回默认
+        if !matches!(raw, "plain" | "mono" | "solid" | "gradient" | "outline") {
+            return Err(ApiError::with_message(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_uid_style",
+                "不支持的 UID 样式",
+            ));
+        }
+        updated = users::set_uid_style(&st.pool, &user.id, raw)
+            .await
+            .map_err(ApiError::internal)?;
     }
 
     let updated = updated.ok_or_else(ApiError::not_found)?;
