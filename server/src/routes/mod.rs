@@ -12,6 +12,7 @@ pub mod dm;
 pub mod files;
 pub mod groups;
 pub mod gacha;
+pub mod shop;
 pub mod health;
 pub mod matches;
 pub mod me;
@@ -120,6 +121,17 @@ pub fn router(state: AppState) -> Router {
         // 后台总览 / 待办
         .route("/api/v1/admin/overview", get(admin_todos::overview))
         // 抽卡：卡池与抽卡
+        // 积分商城
+        .route("/api/v1/shop", get(shop::list))
+        .route("/api/v1/shop/{id}/redeem", post(shop::redeem))
+        .route(
+            "/api/v1/admin/shop",
+            get(shop::admin_list).post(shop::admin_create),
+        )
+        .route(
+            "/api/v1/admin/shop/{id}",
+            patch(shop::admin_patch).delete(shop::admin_remove),
+        )
         .route("/api/v1/gacha", get(gacha::overview))
         .route("/api/v1/gacha/draw", post(gacha::draw))
         .route(

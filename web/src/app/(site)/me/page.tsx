@@ -153,7 +153,8 @@ export default async function MePage({
               <RepPill rep={user.reputation} />
             </div>
             <div className="me-sub">
-              @{user.username} · 注册于 {joined}
+              @{user.username}
+              {user.uid ? <span className="uid-tag mono">UID {user.uid}</span> : null} · 注册于 {joined}
             </div>
           </div>
           <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>

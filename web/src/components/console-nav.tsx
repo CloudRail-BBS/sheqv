@@ -52,6 +52,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/tasks', label: '任务', icon: 'check' },
       { href: '/admin/rewards', label: '福利与抽奖', icon: 'gift' },
       { href: '/admin/gacha', label: '抽卡', icon: 'image' },
+      { href: '/admin/shop', label: '积分商城', icon: 'gift' },
       { href: '/admin/points', label: '积分', icon: 'coin' },
       { href: '/admin/sponsors', label: '赞助', icon: 'heart' },
       { href: '/admin/settings/integrations', label: '赞助对接', icon: 'link' },

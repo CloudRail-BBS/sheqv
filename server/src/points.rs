@@ -22,7 +22,7 @@ pub const CHECKIN_BASE: i64 = 10;
 pub const STREAK_BONUS_MAX: i64 = 7;
 
 /// 与前端约定：这些 reason 会显示成中文
-pub const REASON_LABELS: [(&str, &str); 12] = [
+pub const REASON_LABELS: [(&str, &str); 13] = [
     ("post", "发帖"),
     ("comment", "评论"),
     ("checkin", "签到"),
@@ -30,6 +30,7 @@ pub const REASON_LABELS: [(&str, &str); 12] = [
     ("redeem", "兑换码"),
     ("gift", "礼品卡"),
     ("lottery", "抽奖消耗"),
+    ("shop", "商城兑换"),
     ("lottery_prize", "抽奖奖励"),
     // 删除内容时的冲正：名字带「冲正」，一眼能看出不是惩罚
     ("post_revoke", "删帖冲正"),

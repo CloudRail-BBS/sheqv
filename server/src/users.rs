@@ -92,13 +92,15 @@ pub struct UserRow {
     pub profile_bg: String,
     /// 头像地址；空表示用昵称首字
     pub avatar: String,
+    /// 对外展示的数字 UID（从 10001 起，注册时由序列分配）
+    pub uid: i64,
 }
 
-const COLUMNS: &str = "id, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, verify_kind, verify_label, verified_at, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
+const COLUMNS: &str = "id, uid, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, verify_kind, verify_label, verified_at, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
 
 /// 读用户时统一带出组的展示信息。
 /// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
-const SELECT_USER: &str = "SELECT u.id, u.username, u.nickname, u.password_hash, u.email, u.role,
+const SELECT_USER: &str = "SELECT u.id, u.uid, u.username, u.nickname, u.password_hash, u.email, u.role,
         u.created_at, u.banned, u.title, u.title_style, u.title_effect,
         u.verify_kind, u.verify_label, u.verified_at, u.badges,
         u.notif_read_at, u.last_login_at, u.group_id,
@@ -119,6 +121,8 @@ const RETURNING_GROUP: &str = "(SELECT name FROM groups WHERE id = users.group_i
 #[serde(rename_all = "camelCase")]
 pub struct PublicUser {
     pub id: String,
+    /// 数字 UID，个人主页与「我的」展示，也用于搜索
+    pub uid: i64,
     pub username: String,
     pub nickname: String,
     pub role: Role,
@@ -213,6 +217,7 @@ impl UserRow {
 
         PublicUser {
             id: self.id.clone(),
+            uid: self.uid,
             username: self.username.clone(),
             nickname: self.nickname.clone(),
             role,

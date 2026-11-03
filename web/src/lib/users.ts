@@ -45,6 +45,8 @@ export interface Reputation {
 
 export interface PublicUser {
   id: string;
+  /** 数字 UID（从 10001 起），对用户展示与搜索用 */
+  uid?: number;
   username: string;
   nickname: string;
   role: Role;

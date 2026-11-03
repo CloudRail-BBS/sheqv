@@ -76,7 +76,9 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
               <RepPill rep={user.reputation} />
             </div>
             <div className="up-sub">
-              @{user.username} · 加入于 {fmtDay(user.createdAt)}
+              @{user.username}
+              {user.uid ? <span className="uid-tag mono">UID {user.uid}</span> : null} · 加入于{' '}
+              {fmtDay(user.createdAt)}
               {user.group ? ` · ${user.group.name}` : ''}
             </div>
             <div className="up-meta">
