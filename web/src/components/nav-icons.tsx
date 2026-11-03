@@ -54,6 +54,7 @@ export const ICON_BY_KEY: Record<string, ReactNode> = {
   groups: NAV_ICON.tag,
   rewards: NAV_ICON.gift,
   shop: NAV_ICON.bag,
+  events: NAV_ICON.calendar,
   announcements: NAV_ICON.bell,
   sponsors: NAV_ICON.heart,
   agreements: NAV_ICON.doc,

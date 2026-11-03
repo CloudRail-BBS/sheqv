@@ -30,6 +30,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
       { key: 'teams', href: '/teams', label: '战队', group: 'browse' },
       { key: 'matches', href: '/matches', label: '约战', group: 'browse' },
       { key: 'tournaments', href: '/tournaments', label: '赛事', group: 'browse' },
+      { key: 'events', href: '/events', label: '活动', group: 'browse' },
       { key: 'servers', href: '/servers', label: '联机大厅', group: 'browse' },
       { key: 'resources', href: '/resources', label: '资源库', group: 'browse' },
       { key: 'wiki', href: '/wiki', label: '百科', group: 'browse' },

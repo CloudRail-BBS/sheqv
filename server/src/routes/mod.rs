@@ -13,6 +13,7 @@ pub mod files;
 pub mod groups;
 pub mod gacha;
 pub mod shop;
+pub mod events;
 pub mod health;
 pub mod matches;
 pub mod me;
@@ -121,6 +122,21 @@ pub fn router(state: AppState) -> Router {
         // 后台总览 / 待办
         .route("/api/v1/admin/overview", get(admin_todos::overview))
         // 抽卡：卡池与抽卡
+        // 活动
+        .route("/api/v1/events", get(events::list))
+        .route("/api/v1/events/{id}", get(events::detail))
+        .route(
+            "/api/v1/events/{id}/join",
+            post(events::join).delete(events::leave),
+        )
+        .route(
+            "/api/v1/admin/events",
+            get(events::admin_list).post(events::admin_create),
+        )
+        .route(
+            "/api/v1/admin/events/{id}",
+            patch(events::admin_patch).delete(events::admin_remove),
+        )
         // 积分商城
         .route("/api/v1/shop", get(shop::list))
         .route("/api/v1/shop/{id}/redeem", post(shop::redeem))

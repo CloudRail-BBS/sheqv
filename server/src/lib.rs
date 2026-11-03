@@ -35,6 +35,7 @@ pub mod errors;
 pub mod forum;
 pub mod gacha;
 pub mod shop;
+pub mod events;
 pub mod rank;
 pub mod todos;
 pub mod wiki;
