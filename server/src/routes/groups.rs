@@ -82,7 +82,7 @@ pub async fn list(State(st): State<AppState>, _: AdminActor) -> ApiResult<Respon
         "items": items,
         "permissions": groups::PERMISSIONS
             .iter()
-            .map(|(k, label)| json!({ "key": k, "label": label }))
+            .map(|(k, label)| json!({ "key": k, "label": label, "hint": groups::permission_hint(k) }))
             .collect::<Vec<_>>(),
         "agreements": agreements
             .iter()

@@ -112,6 +112,25 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
         {/* 每一楼都是帖子：楼主是 1 楼，回复从 2 楼起，结构和样式完全一致 */}
         <article className="card post-block" id="post-1">
+            {(post.pinned || post.featured) && (
+              <div className="pb-flagbar" data-flag={post.pinned ? 'pinned' : 'featured'}>
+                <span className="pb-flagbar-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    {post.pinned ? (
+                      <path d="M9 3h6l-1 6 4 3v2H6v-2l4-3zM12 14v7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+                    ) : (
+                      <path d="m12 3 2.6 5.4 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.3l5.9-.9z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                    )}
+                  </svg>
+                </span>
+                <b>{post.pinned ? '置顶帖' : '精华帖'}</b>
+                <span>
+                  {post.pinned
+                    ? '管理员把这篇文章放在了版块最前面'
+                    : '版主认为这篇内容值得一读'}
+                </span>
+              </div>
+            )}
             <div className="pb-title-block">
               <div className="pb-title-row">
                 <h1 className="pb-title">{post.title ?? '无标题'}</h1>
@@ -120,14 +139,28 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   title={post.title ?? ''}
                   body={post.body}
                   canEdit={Boolean(user) && (user!.id === post.authorId || Boolean(user!.isAdmin))}
-                  canModerate={Boolean(user?.isAdmin)}
+                  canModerate={Boolean(user?.isAdmin) || Boolean(user?.permissions?.includes('post.pin'))}
                   pinned={post.pinned}
                   featured={post.featured}
                 />
               </div>
               <div className="pb-title-meta">
-                {post.pinned && <span className="badge badge-pin">置顶</span>}
-                {post.featured && <span className="badge badge-feature">精华</span>}
+                {post.pinned && (
+                  <span className="post-flag" data-flag="pinned">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M9 3h6l-1 6 4 3v2H6v-2l4-3zM12 14v7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+                    </svg>
+                    置顶
+                  </span>
+                )}
+                {post.featured && (
+                  <span className="post-flag" data-flag="featured">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="m12 3 2.6 5.4 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.3l5.9-.9z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                    </svg>
+                    精华
+                  </span>
+                )}
                 <time>{post.time}</time>
                 <span>·</span>
                 <span>{post.views} 次浏览</span>
@@ -169,13 +202,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   >
                     <b>{post.author}</b>
                   </UserHoverCard>
-                  <NameBadges badge={op.badge} group={op.group} size="sm" />
+                  <NameBadges badge={op.badge} group={op.group} size="sm" showVerifyLabel />
                   <AchievementChips
                     badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
                     size="sm"
                   />
                   <span className="pb-op">楼主</span>
-                  {post.pinned && <span className="post-pin">置顶</span>}
                 </div>
                 <div className="pb-sub">
                   <time>{post.time}</time>

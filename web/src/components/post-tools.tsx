@@ -84,7 +84,7 @@ export function PostTools({
     if (flagBusy) return;
     setFlagBusy(kind);
     const next = { ...flags, [kind]: !flags[kind] };
-    const res = await fetch(`/api/v1/admin/posts/${postId}/flags`, {
+    const res = await fetch(`/api/v1/posts/${postId}/flags`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ [kind]: next[kind] }),

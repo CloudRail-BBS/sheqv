@@ -71,7 +71,7 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="up-name">
               <b>{user.nickname}</b>
-              <NameBadges badge={badge} group={group} size="sm" />
+              <NameBadges badge={badge} group={group} size="sm" showVerifyLabel />
               <LevelPill level={user.level} />
               <RepPill rep={user.reputation} />
             </div>

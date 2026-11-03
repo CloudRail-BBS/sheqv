@@ -1,7 +1,17 @@
 /** 任务与赛事的纯类型（客户端组件可直接引用） */
 
 export type TaskKind = 'daily' | 'weekly' | 'once';
-export type TaskMetric = 'checkin' | 'post' | 'comment' | 'like' | 'resource' | 'server';
+export type TaskMetric =
+  | 'checkin'
+  | 'post'
+  | 'comment'
+  | 'like'
+  | 'resource'
+  | 'server'
+  | 'gacha'
+  | 'lottery'
+  | 'tournament'
+  | 'dm';
 
 export interface UserTask {
   id: string;
@@ -30,6 +40,24 @@ export const TASK_METRIC_LABEL: Record<TaskMetric, string> = {
   like: '点赞',
   resource: '发布资源',
   server: '上传服务器',
+  gacha: '抽卡',
+  lottery: '抽奖',
+  tournament: '赛事报名',
+  dm: '发私信',
+};
+
+/** 任务卡上的「去完成」跳转：直接落到能推进这件事的页面 */
+export const TASK_METRIC_HREF: Record<TaskMetric, string> = {
+  checkin: '/points',
+  post: '/',
+  comment: '/',
+  like: '/',
+  resource: '/resources',
+  server: '/servers',
+  gacha: '/rewards?tab=gacha',
+  lottery: '/rewards?tab=lottery',
+  tournament: '/tournaments',
+  dm: '/messages',
 };
 
 export type TournamentStatus = 'draft' | 'signup' | 'running' | 'ended';

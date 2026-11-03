@@ -113,6 +113,10 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/admin/posts/{id}/flags",
             patch(posts::admin_flags),
         )
+        .route(
+            "/api/v1/posts/{id}/flags",
+            patch(posts::flags),
+        )
         // 后台总览 / 待办
         .route("/api/v1/admin/overview", get(admin_todos::overview))
         // 抽卡：卡池与抽卡

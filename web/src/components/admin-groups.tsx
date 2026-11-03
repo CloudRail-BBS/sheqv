@@ -21,6 +21,8 @@ interface Group {
 interface PermOption {
   key: string;
   label: string;
+  /** 这个权限能做什么 */
+  hint?: string;
 }
 
 interface AgreementOption {
@@ -336,17 +338,23 @@ export function AdminGroups() {
           </label>
 
           <p className="small muted" style={{ marginTop: 14 }}>权限</p>
-          <div className="row" style={{ flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
-            {perms.map((p) => (
-              <label key={p.key} className="check">
-                <input
-                  type="checkbox"
-                  checked={draft.permissions.includes(p.key)}
-                  onChange={() => setDraft({ ...draft, permissions: toggle(draft.permissions, p.key) })}
-                />
-                <span>{p.label}</span>
-              </label>
-            ))}
+          <div className="perm-grid">
+            {perms.map((p) => {
+              const on = draft.permissions.includes(p.key);
+              return (
+                <label key={p.key} className="perm-item" data-on={on}>
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => setDraft({ ...draft, permissions: toggle(draft.permissions, p.key) })}
+                  />
+                  <span className="perm-main">
+                    <b>{p.label}</b>
+                    {p.hint && <i>{p.hint}</i>}
+                  </span>
+                </label>
+              );
+            })}
           </div>
 
           <p className="small muted" style={{ marginTop: 14 }}>进入该组前必须签署的公约</p>

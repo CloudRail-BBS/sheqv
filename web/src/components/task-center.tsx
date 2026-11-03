@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   TASK_KIND_LABEL,
+  TASK_METRIC_HREF,
   TASK_METRIC_LABEL,
   type TaskKind,
   type UserTask,
@@ -113,15 +115,22 @@ export function TaskCenter({
                         <span className="task-points mono">+{t.rewardPoints}</span>
                         <span className="small muted">积分</span>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        data-on={t.claimable}
-                        disabled={!t.claimable || busy === t.id}
-                        onClick={() => claim(t)}
-                      >
-                        {t.claimed ? '已领取' : busy === t.id ? '领取中…' : t.progress >= t.target ? '领取' : '未完成'}
-                      </button>
+                      {t.progress >= t.target || t.claimed ? (
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          data-on={t.claimable}
+                          disabled={!t.claimable || busy === t.id}
+                          onClick={() => claim(t)}
+                        >
+                          {t.claimed ? '已领取' : busy === t.id ? '领取中…' : '领取'}
+                        </button>
+                      ) : (
+                        /* 没达标时不摆一个灰按钮，直接给能推进任务的动作 */
+                        <Link href={TASK_METRIC_HREF[t.metric]} className="btn btn-sm btn-ghost task-go">
+                          去完成
+                        </Link>
+                      )}
                     </article>
                   );
                 })}

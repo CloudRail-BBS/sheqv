@@ -13,17 +13,36 @@ use sqlx::PgPool;
 use crate::ids;
 
 /// 权限点清单。新增权限时只改这里，后台勾选项与判定会自动跟上。
-pub const PERMISSIONS: [(&str, &str); 9] = [
+pub const PERMISSIONS: [(&str, &str); 10] = [
     ("post.create", "发帖"),
     ("comment.create", "评论"),
     ("resource.publish", "发布资源"),
     ("post.delete.any", "删除任意帖子"),
+    ("post.pin", "置顶与加精"),
     ("audit.review", "审核内容"),
     ("admin.console", "进入后台"),
     ("group.manage", "管理身份组"),
     ("settings.manage", "修改站点设置"),
     ("user.manage", "管理用户"),
 ];
+
+/// 每个权限点「能做什么」的一句话说明，后台勾选时直接展示，
+/// 免得只看到「管理用户」四个字还得猜它包不包含封禁。
+pub fn permission_hint(key: &str) -> &'static str {
+    match key {
+        "post.create" => "发布新帖子；关掉后只能在已有帖子里回复",
+        "comment.create" => "在帖子下回复",
+        "resource.publish" => "发布资源到资源库，并自动获得开发者身份",
+        "post.delete.any" => "删除任何人的帖子与回复",
+        "post.pin" => "把帖子置顶或标为精华，不需要进入后台",
+        "audit.review" => "审核待发内容，通过或驳回",
+        "admin.console" => "进入 /admin 控制台并查看后台页面",
+        "group.manage" => "新建/修改身份组与其中的权限",
+        "settings.manage" => "修改站点设置、文案与页面提示",
+        "user.manage" => "改用户资料、封禁账号、授予认证",
+        _ => "",
+    }
+}
 
 pub fn is_known_permission(p: &str) -> bool {
     PERMISSIONS.iter().any(|(k, _)| *k == p)

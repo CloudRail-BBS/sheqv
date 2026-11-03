@@ -223,10 +223,15 @@ pub async fn state(State(st): State<AppState>, MaybeUser(maybe): MaybeUser) -> A
             let rep = crate::rank::reputation_of(&st.pool, &u.id)
                 .await
                 .map_err(ApiError::internal)?;
+            // 前端按权限决定「置顶 / 加精」等按钮显不显示，判定本身仍在后端
+            let perms = crate::groups::permissions_of(&st.pool, &u.id)
+                .await
+                .map_err(ApiError::internal)?;
             let mut v = json!(u);
             if let Some(obj) = v.as_object_mut() {
                 obj.insert("level".into(), json!(crate::rank::level_of(earned)));
                 obj.insert("reputation".into(), json!(rep));
+                obj.insert("permissions".into(), json!(perms));
             }
             v
         }

@@ -361,7 +361,40 @@ pub async fn edit(
     }
 }
 
-/// PATCH /api/v1/admin/posts/:id/flags —— 置顶 / 精华
+/// PATCH /api/v1/posts/:id/flags —— 置顶 / 精华
+///
+/// 以前只有 admin 能改；现在有 `post.pin` 权限的版主也能在帖子里直接操作，
+/// 不用为了置顶一个帖专门进后台。
+pub async fn flags(
+    State(st): State<AppState>,
+    Path(post_id): Path<String>,
+    MaybeUser(maybe): MaybeUser,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Some(user) = maybe else {
+        return Err(ApiError::new(StatusCode::UNAUTHORIZED, "unauthorized"));
+    };
+    require_permission(&st, &user.id, "post.pin", "没有置顶或加精的权限").await?;
+
+    let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let updated = forum::set_flags(
+        &st.pool,
+        &post_id,
+        payload.get("pinned").and_then(|v| v.as_bool()),
+        payload.get("featured").and_then(|v| v.as_bool()),
+    )
+    .await
+    .map_err(ApiError::internal)?;
+
+    match updated {
+        Some(post) => Ok(Json(json!({ "ok": true, "post": post })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
+}
+
+/// PATCH /api/v1/admin/posts/:id/flags —— 后台的置顶 / 精华
 pub async fn admin_flags(
     State(st): State<AppState>,
     Path(post_id): Path<String>,

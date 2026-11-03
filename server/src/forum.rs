@@ -151,7 +151,7 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
         None => {
             sqlx::query_as(&format!(
                 "{POST_SQL} WHERE p.status = 'published'
-                 ORDER BY p.pinned DESC, p.created_at DESC"
+                 ORDER BY p.pinned DESC, p.featured DESC, p.created_at DESC"
             ))
             .fetch_all(pool)
             .await?
@@ -163,7 +163,7 @@ pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx:
                  WHERE p.title ILIKE $1 ESCAPE '\\'
                     OR p.body ILIKE $1 ESCAPE '\\'
                     OR p.tags::text ILIKE $1 ESCAPE '\\'
-                 ORDER BY p.pinned DESC, p.created_at DESC"
+                 ORDER BY p.pinned DESC, p.featured DESC, p.created_at DESC"
             ))
             .bind(pattern)
             .fetch_all(pool)

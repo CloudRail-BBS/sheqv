@@ -14,15 +14,18 @@ export function NameBadges({
   badge,
   group,
   size,
+  showVerifyLabel = false,
 }: {
   badge?: BadgeInfo | null;
   group?: UserGroup | null;
   size?: 'sm';
+  /** 是否把认证主体显示在印记后面（详情页 / 个人主页用，列表里不显示） */
+  showVerifyLabel?: boolean;
 }) {
   const showGroup = group && group.name !== badge?.label;
   return (
     <>
-      <VerifyMark kind={badge?.verifyKind} label={badge?.verifyLabel} />
+      <VerifyMark kind={badge?.verifyKind} label={badge?.verifyLabel} withLabel={showVerifyLabel} />
       <UserBadge badge={badge} size={size} />
       {showGroup ? <GroupTag group={group} size={size} /> : null}
     </>

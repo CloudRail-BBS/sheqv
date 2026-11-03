@@ -12,16 +12,19 @@ export function VerifyMark({
   kind,
   label,
   size = 'sm',
+  withLabel = false,
 }: {
   kind?: string;
   label?: string;
   size?: 'sm' | 'lg';
+  /** 是否把认证主体（机构名 / 身份说明）显示在徽章后面 */
+  withLabel?: boolean;
 }) {
   if (!isVerifyKind(kind)) return null;
   const meta = VERIFY_KIND_META[kind];
   const text = label?.trim() ? `${meta.label} · ${label.trim()}` : meta.label;
 
-  return (
+  const mark = (
     <span
       className="vmark"
       data-vk={kind}
@@ -51,6 +54,16 @@ export function VerifyMark({
         />
       </svg>
       )}
+    </span>
+  );
+
+  // 列表里只留一枚小印记；个人主页 / 帖子作者区把主体名一起显示出来
+  if (!withLabel || !label?.trim()) return mark;
+
+  return (
+    <span className="vmark-wrap" data-vk={kind} title={text}>
+      {mark}
+      <span className="vmark-label">{label.trim()}</span>
     </span>
   );
 }

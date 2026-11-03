@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation';
 import type { PublicUser } from '@/lib/users';
 import { NAV_GROUPS, SIDEBAR_DEFAULT, parseNav } from '@/lib/nav-config';
 import { NavGlyph } from './nav-icons';
+import { LevelPill } from './rank-badges';
+import { VerifyMark } from './verify-mark';
 
 const isActive = (pathname: string, href: string) => {
   const base = href.split('?')[0];
@@ -98,7 +100,7 @@ export function MobileMenu({
               </button>
             </div>
 
-            <div className="mobile-drawer-user">
+            <div className="mobile-drawer-user" data-guest={!user}>
               <span className="mobile-drawer-avatar">
                 {user?.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -107,9 +109,17 @@ export function MobileMenu({
                   (user?.nickname ?? '?').slice(0, 1)
                 )}
               </span>
-              <div>
-                <b>{user?.nickname ?? '未登录'}</b>
-                <span>{user ? `${points} 积分` : '登录后参与社区'}</span>
+              <div className="mobile-drawer-user-main">
+                <div className="mobile-drawer-user-name">
+                  <b>{user?.nickname ?? '未登录'}</b>
+                  <VerifyMark kind={user?.verifyKind} label={user?.verifyLabel} />
+                  <LevelPill level={user?.level} />
+                </div>
+                <span>
+                  {user
+                    ? `${points} 积分${user.group ? ` · ${user.group.name}` : ''}`
+                    : '登录后参与社区'}
+                </span>
               </div>
               {!user && (
                 <Link href="/login" className="btn btn-primary btn-sm" onClick={() => setOpen(false)}>
@@ -137,6 +147,20 @@ export function MobileMenu({
                 </div>
               );
             })}
+
+            {user && (
+              <div className="mobile-drawer-quick">
+                <Link href="/points" onClick={() => setOpen(false)}>
+                  签到
+                </Link>
+                <Link href="/tasks" onClick={() => setOpen(false)}>
+                  任务
+                </Link>
+                <Link href="/rewards" onClick={() => setOpen(false)}>
+                  福利
+                </Link>
+              </div>
+            )}
 
             {user && (
               <div className="mobile-drawer-foot">

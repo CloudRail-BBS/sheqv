@@ -9,7 +9,19 @@ use sqlx::PgPool;
 use crate::points;
 
 pub const KINDS: [&str; 3] = ["daily", "weekly", "once"];
-pub const METRICS: [&str; 6] = ["checkin", "post", "comment", "like", "resource", "server"];
+pub const METRICS: [&str; 10] = [
+    "checkin",
+    "post",
+    "comment",
+    "like",
+    "resource",
+    "server",
+    // 与福利中心 / 赛事 / 私信联动：完成动作即推进进度，不需要额外埋点
+    "gacha",
+    "lottery",
+    "tournament",
+    "dm",
+];
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -65,6 +77,10 @@ fn metric_source(metric: &str) -> Option<(&'static str, &'static str, &'static s
         "like" => ("likes", "user_id", "at"),
         "resource" => ("resources", "author_id", "created_at"),
         "server" => ("game_servers", "owner_id", "created_at"),
+        "gacha" => ("gacha_draws", "user_id", "created_at"),
+        "lottery" => ("lottery_draws", "user_id", "created_at"),
+        "tournament" => ("tournament_entries", "user_id", "created_at"),
+        "dm" => ("dm_messages", "sender_id", "created_at"),
         _ => return None,
     })
 }

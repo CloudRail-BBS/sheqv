@@ -86,7 +86,10 @@ export function PostCard({
   }
 
   return (
-    <article className={`card feed-card${cover ? '' : ' feed-card-text'}`}>
+    <article
+      className={`card feed-card${cover ? '' : ' feed-card-text'}`}
+      data-flag={item.pinned ? 'pinned' : item.featured ? 'featured' : undefined}
+    >
       {cover && (
         <Link href={href} className="fc-cover" tabIndex={-1} aria-hidden="true">
           <SmartImage
@@ -95,7 +98,22 @@ export function PostCard({
             ratio={coverRatio}
             sizes="(max-width: 860px) 100vw, (max-width: 1180px) 40vw, 410px"
           />
-          {item.pinned && <span className="fc-pin">置顶</span>}
+          {item.pinned && (
+            <span className="fc-cover-flag" data-flag="pinned">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9 3h6l-1 6 4 3v2H6v-2l4-3zM12 14v7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+              </svg>
+              置顶
+            </span>
+          )}
+          {!item.pinned && item.featured && (
+            <span className="fc-cover-flag" data-flag="featured">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m12 3 2.6 5.4 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.3l5.9-.9z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              </svg>
+              精华
+            </span>
+          )}
         </Link>
       )}
 
@@ -128,8 +146,22 @@ export function PostCard({
             <b>{item.author}</b>
           </UserHoverCard>
           <VerifyMark kind={item.authorVerify} />
-          {item.pinned && <span className="fc-pin">置顶</span>}
-          {item.featured && <span className="fc-pin fc-pin-feature">精华</span>}
+          {item.pinned && (
+            <span className="fc-flag" data-flag="pinned">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9 3h6l-1 6 4 3v2H6v-2l4-3zM12 14v7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+              </svg>
+              置顶
+            </span>
+          )}
+          {item.featured && (
+            <span className="fc-flag" data-flag="featured">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m12 3 2.6 5.4 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.3l5.9-.9z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              </svg>
+              精华
+            </span>
+          )}
           <span className="fc-chip">{category}</span>
           <time className="fc-time">{item.time}</time>
         </div>

@@ -74,6 +74,8 @@ export interface PublicUser {
   profileBg?: string;
   /** 头像；空则用昵称首字 */
   avatar?: string;
+  /** 当前账号的权限集合（只有会话状态下发，判断按钮显隐用） */
+  permissions?: string[];
   /** 等级与信誉（会话状态与单人资料接口下发） */
   level?: LevelInfo;
   reputation?: Reputation;
