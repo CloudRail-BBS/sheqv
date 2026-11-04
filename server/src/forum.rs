@@ -50,6 +50,12 @@ pub struct PostView {
     pub author_verify: Option<String>,
     pub pinned: bool,
     pub featured: bool,
+    /// 管理员声明；空串不下发
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub admin_note: String,
+    /// 声明时间（毫秒）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub admin_note_at: Option<i64>,
     /// 编辑时间（毫秒）；没编辑过不返回
     #[serde(skip_serializing_if = "Option::is_none")]
     pub edited_at: Option<i64>,
@@ -80,6 +86,8 @@ struct PostRow {
     views: i64,
     pinned: bool,
     featured: bool,
+    admin_note: String,
+    admin_note_at: Option<DateTime<Utc>>,
     edited_at: Option<DateTime<Utc>>,
     verify_kind: String,
     status: String,
@@ -100,7 +108,8 @@ struct CommentRow {
 
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
         u.nickname AS author, u.verify_kind, p.created_at, p.like_count, p.views,
-        p.pinned, p.featured, p.edited_at, p.status, p.reject_reason, p.reviewed_at
+        p.pinned, p.featured, p.admin_note, p.admin_note_at,
+        p.edited_at, p.status, p.reject_reason, p.reviewed_at
    FROM posts p JOIN users u ON u.id = p.author_id";
 
 fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
@@ -128,6 +137,8 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         author_verify: Some(row.verify_kind).filter(|v| !v.is_empty()),
         pinned: row.pinned,
         featured: row.featured,
+        admin_note: row.admin_note,
+        admin_note_at: row.admin_note_at.map(|t| t.timestamp_millis()),
         edited_at: row.edited_at.map(|t| t.timestamp_millis()),
         comments: comments.len() as i64,
         views: row.views,
@@ -140,36 +151,98 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
     }
 }
 
+/// 管理员声明：传空串表示取消。返回更新后的帖子。
+pub async fn set_notice(
+    pool: &PgPool,
+    post_id: &str,
+    note: &str,
+) -> Result<Option<PostView>, sqlx::Error> {
+    let clean = note.trim();
+    let updated = sqlx::query_as::<_, PostRow>(&format!(
+        "UPDATE posts SET admin_note = $2,
+                admin_note_at = CASE WHEN $2 = '' THEN NULL ELSE now() END
+          WHERE id = $1
+         RETURNING id, title, body, guild, tags, author_id,
+                   (SELECT nickname FROM users WHERE id = author_id) AS author,
+                   (SELECT verify_kind FROM users WHERE id = author_id) AS verify_kind,
+                   created_at, like_count, views, pinned, featured,
+                   admin_note, admin_note_at, edited_at, status, reject_reason, reviewed_at"
+    ))
+    .bind(post_id)
+    .bind(clean)
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated.map(|r| to_view(r, Vec::new())))
+}
+
 /// 列表：新的在前。`q` 为空表示不筛选。
 ///
 /// 搜索走 `ILIKE`（配合 `pg_trgm` 索引），中文按子串命中；
 /// 用户输入里的 `%` `_` `\` 会被转义，避免把通配符当语法用。
-pub async fn list(pool: &PgPool, q: Option<&str>) -> Result<Vec<PostView>, sqlx::Error> {
+pub async fn list(
+    pool: &PgPool,
+    q: Option<&str>,
+    tab: &str,
+    viewer: Option<&str>,
+) -> Result<Vec<PostView>, sqlx::Error> {
     let keyword = q.map(str::trim).filter(|v| !v.is_empty());
-
-    let rows: Vec<PostRow> = match keyword {
-        None => {
-            sqlx::query_as(&format!(
-                "{POST_SQL} WHERE p.status = 'published'
-                 ORDER BY p.pinned DESC, p.featured DESC, p.created_at DESC"
-            ))
-            .fetch_all(pool)
-            .await?
-        }
-        Some(word) => {
-            let pattern = format!("%{}%", escape_like(word));
-            sqlx::query_as(&format!(
-                "{POST_SQL}
-                 WHERE p.title ILIKE $1 ESCAPE '\\'
-                    OR p.body ILIKE $1 ESCAPE '\\'
-                    OR p.tags::text ILIKE $1 ESCAPE '\\'
-                 ORDER BY p.pinned DESC, p.featured DESC, p.created_at DESC"
-            ))
-            .bind(pattern)
-            .fetch_all(pool)
-            .await?
-        }
+    let tab = match tab {
+        "new" | "following" | "joined" | "recommend" => tab,
+        _ => "recommend",
     };
+
+    let mut sql = format!("{POST_SQL} WHERE p.status = 'published'");
+    let mut binds: Vec<String> = Vec::new();
+
+    if let Some(word) = keyword {
+        binds.push(format!("%{}%", escape_like(word)));
+        let i = binds.len();
+        sql.push_str(&format!(
+            " AND (p.title ILIKE ${i} ESCAPE '\\'
+                OR p.body ILIKE ${i} ESCAPE '\\'
+                OR p.tags::text ILIKE ${i} ESCAPE '\\')"
+        ));
+    }
+
+    if tab == "following" || tab == "joined" {
+        // 未登录时这两个 tab 没有意义，直接返回空列表
+        let Some(me) = viewer else {
+            return Ok(Vec::new());
+        };
+        binds.push(me.to_string());
+        let i = binds.len();
+        if tab == "following" {
+            sql.push_str(&format!(
+                " AND p.author_id IN (SELECT followee_id FROM user_follows WHERE follower_id = ${i})"
+            ));
+        } else {
+            sql.push_str(&format!(
+                " AND (EXISTS (SELECT 1 FROM post_likes l WHERE l.post_id = p.id AND l.user_id = ${i})
+                    OR EXISTS (SELECT 1 FROM comments c WHERE c.post_id = p.id AND c.author_id = ${i}))"
+            ));
+        }
+    }
+
+    sql.push_str(match tab {
+        // 最新：纯时间序，置顶也不插队
+        "new" => " ORDER BY p.created_at DESC, p.id DESC",
+        // 推荐：置顶 → 精华 → 互动加权（赞 ×3 + 评论 ×2 + 浏览 /50）→ 时间
+        "recommend" => {
+            " ORDER BY p.pinned DESC, p.featured DESC,
+                (p.like_count * 3
+                 + (SELECT count(*) FROM comments c2 WHERE c2.post_id = p.id) * 2
+                 + p.views / 50) DESC,
+                p.created_at DESC"
+        }
+        // 关注 / 我参与的：仍然置顶优先，其余按时间
+        _ => " ORDER BY p.pinned DESC, p.featured DESC, p.created_at DESC",
+    });
+
+    let mut query = sqlx::query_as::<_, PostRow>(&sql);
+    for value in &binds {
+        query = query.bind(value);
+    }
+    let rows: Vec<PostRow> = query.fetch_all(pool).await?;
 
     if rows.is_empty() {
         return Ok(Vec::new());

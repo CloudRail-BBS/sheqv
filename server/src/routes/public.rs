@@ -9,6 +9,7 @@ use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use serde_json::{Map, Value, json};
 
+use crate::current_user::{CurrentUser, MaybeUser};
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::{announcements, settings, slides};
@@ -107,7 +108,6 @@ pub async fn slides(State(st): State<AppState>) -> ApiResult<Response> {
 
 use axum::extract::Path;
 
-use crate::current_user::MaybeUser;
 
 /// GET /api/v1/posts/{id}
 ///
@@ -222,7 +222,11 @@ pub struct UserStats {
 }
 
 /// GET /api/v1/users/{id}
-pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResult<Response> {
+pub async fn user(
+    State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
     let row = crate::users::find_by_id(&st.pool, &id)
         .await
         .map_err(ApiError::internal)?
@@ -265,9 +269,63 @@ pub async fn user(State(st): State<AppState>, Path(id): Path<String>) -> ApiResu
                     .map_err(ApiError::internal)?
             ),
         );
+
+        // 关注关系：主页要显示粉丝/关注数，以及当前访客是否已关注
+        let (followers, following) = crate::users::follow_counts(&st.pool, &row.id)
+            .await
+            .map_err(ApiError::internal)?;
+        obj.insert("followers".into(), json!(followers));
+        obj.insert("followingCount".into(), json!(following));
+        let is_following = match maybe.as_ref() {
+            Some(me) => crate::users::is_following(&st.pool, &me.id, &row.id)
+                .await
+                .map_err(ApiError::internal)?,
+            None => false,
+        };
+        obj.insert("isFollowing".into(), json!(is_following));
     }
 
     Ok(Json(json!({ "ok": true, "user": user })).into_response())
+}
+
+/// POST /api/v1/users/{id}/follow —— 关注某人
+pub async fn follow(
+    State(st): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    if me.id == id {
+        return Err(ApiError::invalid_input("不能关注自己"));
+    }
+    if crate::users::find_by_id(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+        .is_none()
+    {
+        return Err(ApiError::not_found());
+    }
+    crate::users::follow(&st.pool, &me.id, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    let (followers, _) = crate::users::follow_counts(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "following": true, "followers": followers })).into_response())
+}
+
+/// DELETE /api/v1/users/{id}/follow —— 取消关注
+pub async fn unfollow(
+    State(st): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    crate::users::unfollow(&st.pool, &me.id, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    let (followers, _) = crate::users::follow_counts(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "following": false, "followers": followers })).into_response())
 }
 
 /// GET /api/v1/users —— 公开用户列表（作者徽标批量渲染用）。

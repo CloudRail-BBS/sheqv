@@ -13,6 +13,8 @@ import { UidBadge } from '@/components/uid-badge';
 import { NameBadges } from '@/components/name-badges';
 import { AchievementChips } from '@/components/achievement-chips';
 import { buildMetadata } from '@/lib/seo';
+import { getCurrentUser } from '@/lib/current-user';
+import { FollowButton } from '@/components/follow-button';
 
 const fmtDay = (ts: number) => new Date(ts).toISOString().slice(0, 10);
 
@@ -36,7 +38,8 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   const user = await findById(id);
   if (!user) notFound();
 
-  const [posts, badges, groups, avatars, achievements] = await Promise.all([
+  const [viewer, posts, badges, groups, avatars, achievements] = await Promise.all([
+    getCurrentUser(),
     listPosts(),
     getBadgeMap(),
     getGroupMap(),
@@ -78,6 +81,8 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="up-sub">
               @{user.username} · 加入于 {fmtDay(user.createdAt)}
+              {typeof user.followers === 'number' ? ` · ${user.followers} 粉丝` : ''}
+              {typeof user.followingCount === 'number' ? ` · 关注 ${user.followingCount}` : ''}
               {user.group ? ` · ${user.group.name}` : ''}
             </div>
             {user.uid ? (
@@ -85,6 +90,11 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
                 <UidBadge uid={user.uid} style={user.uidStyle} size="md" copy />
                 {user.developer && <span className="dev-chip">开发者</span>}
                 <span className="up-uid-hint">点一下复制，方便互加好友与客服定位</span>
+              </div>
+            ) : null}
+            {viewer && viewer.id !== user.id ? (
+              <div className="up-actions">
+                <FollowButton userId={user.id} following={Boolean(user.isFollowing)} />
               </div>
             ) : null}
             <div className="up-meta">

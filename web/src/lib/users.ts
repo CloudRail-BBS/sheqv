@@ -49,6 +49,11 @@ export interface PublicUser {
   uid?: number;
   /** UID 的外观：plain / mono / solid / gradient / outline */
   uidStyle?: string;
+  /** 粉丝数 / 关注数（只有单人资料接口下发） */
+  followers?: number;
+  followingCount?: number;
+  /** 当前访客是否已关注 TA */
+  isFollowing?: boolean;
   username: string;
   nickname: string;
   role: Role;

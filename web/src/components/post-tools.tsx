@@ -21,6 +21,8 @@ export function PostTools({
   canModerate,
   pinned,
   featured,
+  canNotice = false,
+  adminNote = '',
 }: {
   postId: string;
   title: string;
@@ -29,6 +31,10 @@ export function PostTools({
   canModerate: boolean;
   pinned: boolean;
   featured: boolean;
+  /** 管理员：可以给任意帖子加声明 */
+  canNotice?: boolean;
+  /** 当前声明（空串表示没有） */
+  adminNote?: string;
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -38,22 +44,28 @@ export function PostTools({
   const [flagBusy, setFlagBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [flags, setFlags] = useState({ pinned, featured });
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [note, setNote] = useState(adminNote);
+  const [noticeBusy, setNoticeBusy] = useState(false);
+  const [noticeErr, setNoticeErr] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !noticeOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) setOpen(false);
+      if (e.key !== 'Escape') return;
+      if (open && !busy) setOpen(false);
+      if (noticeOpen && !noticeBusy) setNoticeOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, busy]);
+  }, [open, busy, noticeOpen, noticeBusy]);
 
   function close() {
     if (busy) return;
@@ -77,6 +89,25 @@ export function PostTools({
       return;
     }
     setOpen(false);
+    router.refresh();
+  }
+
+  async function saveNotice() {
+    if (noticeBusy) return;
+    setNoticeBusy(true);
+    setNoticeErr(null);
+    const res = await fetch(`/api/v1/posts/${postId}/notice`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ note: note.trim() }),
+    }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as { message?: string } | null;
+    setNoticeBusy(false);
+    if (!res?.ok) {
+      setNoticeErr(data?.message ?? '保存失败');
+      return;
+    }
+    setNoticeOpen(false);
     router.refresh();
   }
 
@@ -105,6 +136,20 @@ export function PostTools({
             编辑
           </button>
         )}
+        {canNotice && (
+          <button
+            type="button"
+            className="pb-tool"
+            data-on={Boolean(adminNote)}
+            onClick={() => {
+              setNote(adminNote);
+              setNoticeErr(null);
+              setNoticeOpen(true);
+            }}
+          >
+            {adminNote ? '改声明' : '声明'}
+          </button>
+        )}
         {canModerate && (
           <>
             <button
@@ -128,6 +173,78 @@ export function PostTools({
           </>
         )}
       </div>
+
+      {mounted &&
+        noticeOpen &&
+        createPortal(
+          <div className="composer-modal" role="dialog" aria-modal="true" aria-label="管理员声明">
+            <button
+              type="button"
+              className="composer-backdrop"
+              aria-label="关闭"
+              onClick={() => !noticeBusy && setNoticeOpen(false)}
+            />
+            <div className="composer-panel org-modal" style={{ width: 'min(560px, 94vw)' }}>
+              <div className="composer-panel-head">
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <b className="composer-head-title">管理员声明</b>
+                  <div className="composer-head-sub">
+                    显示在正文上方，编辑帖子不会覆盖它
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="composer-icon-btn"
+                  aria-label="关闭"
+                  onClick={() => setNoticeOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <label className="field">
+                声明内容
+                <textarea
+                  className="input textarea"
+                  rows={5}
+                  maxLength={500}
+                  value={note}
+                  placeholder="例如：本帖涉及的信息尚未核实，请以官方公告为准。"
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </label>
+
+              {noticeErr && (
+                <p className="small" style={{ marginTop: 8, color: 'var(--danger)' }}>
+                  {noticeErr}
+                </p>
+              )}
+
+              <div className="composer-modal-foot">
+                <span className="tip">{note.length} / 500 · 留空保存即取消声明</span>
+                <div className="row" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => setNoticeOpen(false)}
+                    disabled={noticeBusy}
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={() => void saveNotice()}
+                    disabled={noticeBusy}
+                  >
+                    {noticeBusy ? '保存中…' : '保存声明'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {mounted &&
         open &&

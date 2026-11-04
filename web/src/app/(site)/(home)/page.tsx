@@ -25,6 +25,9 @@ import { Carousel } from '@/components/carousel';
 import { buildMetadata, websiteJsonLd } from '@/lib/seo';
 import { initialOf } from '@/lib/initials';
 import { PushToggle } from '@/components/push-toggle';
+import { FeedTabs } from '@/components/feed-tabs';
+import { FeedFade } from '@/components/feed-fade';
+import { isFeedTab } from '@/lib/feed-types';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +37,14 @@ export async function generateMetadata() {
 
 const TAGS = ['地图', '整合包', '材质', '约战', '招募', '红石', 'PvP', '公告'];
 
-export default async function HomePage() {
-  const posts = await listPosts();
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab: rawTab } = await searchParams;
+  const tab = isFeedTab(rawTab) ? rawTab : 'recommend';
+  const posts = await listPosts(undefined, tab);
   // 封面按原图比例占位：先批量问一次尺寸（最多 24 张），瀑布流才不会跳
   const imageSizes = await getImageSizes(posts.map((p) => p.body).join('\n')).catch(() => ({}));
   const user = await getCurrentUser();
@@ -82,13 +91,7 @@ export default async function HomePage() {
           />
         </div>
 
-        <div className="feed-tabs">
-          <button className="feed-tab" data-on="true">推荐</button>
-          <button className="feed-tab">最新</button>
-          <button className="feed-tab">关注</button>
-          <button className="feed-tab">我参与的</button>
-          <span className="sort">按热度排序</span>
-        </div>
+        <FeedTabs value={tab} loggedIn={Boolean(user)} />
 
         {posts.length === 0 && (
           <div className="card empty-state">
@@ -103,17 +106,45 @@ export default async function HomePage() {
                 />
               </svg>
             </div>
-            <h3>还没有帖子</h3>
-            <p>
-              {user
-                ? communitySigned
-                  ? '成为第一个发帖的人。'
-                  : '签署《社区公约》后即可发布第一条内容。'
-                : '注册并登录后即可发布第一条内容。'}
-            </p>
-            <Link href={user ? (communitySigned ? '#composer' : '/agreements') : '/register'} className="btn btn-primary btn-sm">
-              {user ? (communitySigned ? '写下第一条' : '去签署公约') : '注册账号'}
-            </Link>
+            {tab === 'following' ? (
+              <>
+                <h3>{user ? '关注列表还是空的' : '登录后查看关注动态'}</h3>
+                <p>{user ? '在别人的主页点「关注」，这里就会出现 TA 的新帖。' : '登录后可以看到你关注的人发了什么。'}</p>
+                <Link href={user ? '/leaderboard' : '/login'} className="btn btn-primary btn-sm">
+                  {user ? '去发现社区成员' : '去登录'}
+                </Link>
+              </>
+            ) : tab === 'joined' ? (
+              <>
+                <h3>{user ? '还没有参与过帖子' : '登录后查看参与记录'}</h3>
+                <p>{user ? '点赞或回复过的帖子会收集在这里。' : '登录后可以看到你赞过、回复过的帖子。'}</p>
+                <Link href={user ? '/' : '/login'} className="btn btn-primary btn-sm">
+                  {user ? '去逛逛' : '去登录'}
+                </Link>
+              </>
+            ) : tab === 'new' ? (
+              <>
+                <h3>还没有帖子</h3>
+                <p>最新发布的帖子会出现在这里。</p>
+                <Link href={user ? (communitySigned ? '#composer' : '/agreements') : '/register'} className="btn btn-primary btn-sm">
+                  {user ? (communitySigned ? '写下第一条' : '去签署公约') : '注册账号'}
+                </Link>
+              </>
+            ) : (
+              <>
+                <h3>还没有帖子</h3>
+                <p>
+                  {user
+                    ? communitySigned
+                      ? '成为第一个发帖的人。'
+                      : '签署《社区公约》后即可发布第一条内容。'
+                    : '注册并登录后即可发布第一条内容。'}
+                </p>
+                <Link href={user ? (communitySigned ? '#composer' : '/agreements') : '/register'} className="btn btn-primary btn-sm">
+                  {user ? (communitySigned ? '写下第一条' : '去签署公约') : '注册账号'}
+                </Link>
+              </>
+            )}
           </div>
         )}
 
@@ -154,6 +185,7 @@ export default async function HomePage() {
           </div>
         )}
 
+        <FeedFade key={tab}>
         <div className="post-grid">
           {posts.slice(0, 10).map((f) => (
             <PostCard
@@ -167,6 +199,7 @@ export default async function HomePage() {
             />
           ))}
         </div>
+        </FeedFade>
 
         <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
           加载更多

@@ -7,6 +7,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
 
+use crate::admin_auth::AdminActor;
 use crate::auth::session;
 use crate::captcha::{self, CaptchaPayload, CaptchaResult};
 use crate::current_user::MaybeUser;
@@ -107,7 +108,12 @@ pub async fn list(
     Query(params): Query<HashMap<String, String>>,
 ) -> ApiResult<Response> {
     let q = params.get("q").map(String::as_str);
-    let mut items = forum::list(&st.pool, q).await.map_err(ApiError::internal)?;
+    // tab：recommend（默认，互动加权）/ new（最新）/ following（关注的人）/ joined（我赞过或回复过）
+    let tab = params.get("tab").map(String::as_str).unwrap_or("recommend");
+    let viewer = maybe.as_ref().map(|u| u.id.as_str());
+    let mut items = forum::list(&st.pool, q, tab, viewer)
+        .await
+        .map_err(ApiError::internal)?;
     forum::mark_liked(&st.pool, maybe.as_ref().map(|u| u.id.as_str()), &mut items)
         .await
         .map_err(ApiError::internal)?;
@@ -355,6 +361,36 @@ pub async fn edit(
     .await
     .map_err(ApiError::internal)?;
 
+    match updated {
+        Some(post) => Ok(Json(json!({ "ok": true, "post": post })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
+}
+
+/// PUT /api/v1/posts/:id/notice —— 管理员声明
+///
+/// 声明独立于正文，编辑帖子不会覆盖它；传空串即取消。
+pub async fn set_notice(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Path(post_id): Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let note = payload
+        .get("note")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim();
+    if note.chars().count() > 500 {
+        return Err(ApiError::invalid_input("声明不能超过 500 字"));
+    }
+
+    let updated = forum::set_notice(&st.pool, &post_id, note)
+        .await
+        .map_err(ApiError::internal)?;
     match updated {
         Some(post) => Ok(Json(json!({ "ok": true, "post": post })).into_response()),
         None => Err(ApiError::not_found()),

@@ -39,10 +39,20 @@ export interface QueueItem {
   oldest: number | null;
 }
 
+export interface RedisState {
+  /** 是否配了 REDIS_URL */
+  configured: boolean;
+  /** 是否真的连上了（连不上会降级进程内） */
+  connected: boolean;
+  note: string;
+}
+
 export interface AdminOverview {
   queues: QueueItem[];
   todos: TodoStats;
   pending: number;
+  /** 运行环境；老版本后端可能没有，读取时兜底 */
+  system?: { redis: RedisState };
 }
 
 const EMPTY_STATS: TodoStats = { open: 0, overdue: 0, doneToday: 0, doneTotal: 0 };
@@ -58,6 +68,8 @@ export const getAdminOverview = cache(async (): Promise<AdminOverview> => {
     queues: d.queues ?? [],
     todos: d.todos ?? EMPTY_STATS,
     pending: d.pending ?? 0,
+    // 解构时要带上，漏了后台就看不到 Redis 状态
+    system: d.system,
   };
 });
 

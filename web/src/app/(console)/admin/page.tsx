@@ -88,6 +88,13 @@ export default async function AdminPage() {
         </div>
       </header>
 
+      {overview.system?.redis && (
+        <div className="hint-box" data-tone={overview.system.redis.connected ? 'ok' : 'info'}>
+          <b>缓存：{overview.system.redis.connected ? 'Redis' : '进程内'}</b>
+          <span>{overview.system.redis.note}</span>
+        </div>
+      )}
+
       {caps.form === 'mobile' && (
         <div className="hint-box">
           窄屏下管理后台仍可用，表格会横向滚动；复杂操作建议在桌面端完成。

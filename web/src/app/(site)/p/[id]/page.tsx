@@ -142,6 +142,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   canModerate={Boolean(user?.isAdmin) || Boolean(user?.permissions?.includes('post.pin'))}
                   pinned={post.pinned}
                   featured={post.featured}
+                  canNotice={Boolean(user?.isAdmin)}
+                  adminNote={post.adminNote ?? ''}
                 />
               </div>
               <div className="pb-title-meta">
@@ -214,6 +216,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
             </header>
+
+            {post.adminNote && (
+              <div className="pb-notice" role="note">
+                <span className="pb-notice-tag">管理员声明</span>
+                <p>{post.adminNote}</p>
+              </div>
+            )}
 
             <div className="pb-body">
               <Markdown text={post.body} className="md-body post-md" imageSizes={imageSizes} />

@@ -624,6 +624,71 @@ pub async fn set_profile_bg(
     Ok(updated.map(|r| r.to_public()))
 }
 
+/* ── 关注 ───────────────────────────────── */
+
+/// 关注某人（幂等）。返回是否新插入。
+pub async fn follow(
+    pool: &PgPool,
+    follower_id: &str,
+    followee_id: &str,
+) -> Result<bool, sqlx::Error> {
+    if follower_id == followee_id {
+        return Ok(false);
+    }
+    let done = sqlx::query(
+        "INSERT INTO user_follows (follower_id, followee_id)
+         VALUES ($1, $2) ON CONFLICT DO NOTHING",
+    )
+    .bind(follower_id)
+    .bind(followee_id)
+    .execute(pool)
+    .await?;
+    Ok(done.rows_affected() > 0)
+}
+
+/// 取消关注（幂等）。
+pub async fn unfollow(
+    pool: &PgPool,
+    follower_id: &str,
+    followee_id: &str,
+) -> Result<bool, sqlx::Error> {
+    let done = sqlx::query("DELETE FROM user_follows WHERE follower_id = $1 AND followee_id = $2")
+        .bind(follower_id)
+        .bind(followee_id)
+        .execute(pool)
+        .await?;
+    Ok(done.rows_affected() > 0)
+}
+
+/// (粉丝数, 关注数)
+pub async fn follow_counts(pool: &PgPool, user_id: &str) -> Result<(i64, i64), sqlx::Error> {
+    let (followers, following): (i64, i64) = sqlx::query_as(
+        "SELECT
+           (SELECT count(*) FROM user_follows WHERE followee_id = $1)::bigint,
+           (SELECT count(*) FROM user_follows WHERE follower_id = $1)::bigint",
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+    Ok((followers, following))
+}
+
+/// 我是否关注了 TA。
+pub async fn is_following(
+    pool: &PgPool,
+    follower_id: &str,
+    followee_id: &str,
+) -> Result<bool, sqlx::Error> {
+    let hit: Option<(i32,)> = sqlx::query_as(
+        "SELECT 1 FROM user_follows WHERE follower_id = $1 AND followee_id = $2",
+    )
+    .bind(follower_id)
+    .bind(followee_id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(hit.is_some())
+}
+
 /// UID 的展示样式（用户自己在「我的」里挑）。
 pub async fn set_uid_style(
     pool: &PgPool,

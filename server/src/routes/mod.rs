@@ -41,7 +41,7 @@ pub mod tournaments;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{delete, get, patch, post};
+use axum::routing::{delete, get, patch, post, put};
 
 use crate::state::AppState;
 
@@ -116,6 +116,10 @@ pub fn router(state: AppState) -> Router {
             patch(posts::admin_flags),
         )
         .route(
+            "/api/v1/posts/{id}/notice",
+            put(posts::set_notice),
+        )
+        .route(
             "/api/v1/posts/{id}/flags",
             patch(posts::flags),
         )
@@ -173,6 +177,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/announcements/{id}", get(public::announcement))
         .route("/api/v1/users", get(public::users))
         .route("/api/v1/users/{id}", get(public::user))
+        .route(
+            "/api/v1/users/{id}/follow",
+            post(public::follow).delete(public::unfollow),
+        )
         .route("/api/v1/stats", get(public::stats))
         .route("/api/v1/about", get(about::public))
         .route(

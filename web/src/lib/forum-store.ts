@@ -36,6 +36,9 @@ export interface PostView {
   /** 置顶 / 精华 */
   pinned: boolean;
   featured: boolean;
+  /** 管理员声明（空则不显示） */
+  adminNote?: string;
+  adminNoteAt?: number;
   /** 编辑时间（毫秒） */
   editedAt?: number;
   comments: number;
@@ -70,9 +73,14 @@ function adapt(p: RawPost): PostView {
   return { ...p, time: p.time ?? relTime(p.createdAt) };
 }
 
-export async function listPosts(query?: string): Promise<PostView[]> {
-  const qs = query?.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-  const d = await apiGetOr<{ items: RawPost[] }>(`/api/v1/posts${qs}`, { items: [] });
+export async function listPosts(query?: string, tab?: string): Promise<PostView[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set('q', query.trim());
+  if (tab && tab !== 'recommend') params.set('tab', tab);
+  const qs = params.toString();
+  const d = await apiGetOr<{ items: RawPost[] }>(`/api/v1/posts${qs ? `?${qs}` : ''}`, {
+    items: [],
+  });
   return d.items.map(adapt);
 }
 

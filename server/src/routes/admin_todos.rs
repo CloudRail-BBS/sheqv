@@ -181,11 +181,29 @@ pub async fn overview(State(st): State<AppState>, _: AdminActor) -> ApiResult<Re
     let stats = todos::stats(&st.pool).await.map_err(ApiError::internal)?;
     let pending: i64 = queues.iter().map(|q| q.count).sum();
 
+    // 运行环境：后台要能看到缓存到底走 Redis 还是进程内
+    let redis_configured = st.cfg.redis_url.is_some();
+    let redis_connected = st.cache.is_redis();
+    let redis_note = if redis_connected {
+        "已连接：缓存与登录/私信限流都走 Redis，多实例共享"
+    } else if redis_configured {
+        "配了 REDIS_URL 但连不上，已降级为进程内；多实例下限流不共享"
+    } else {
+        "未配置 REDIS_URL：单实例够用，缓存与限流在进程内；多实例部署建议配上"
+    };
+
     Ok(Json(json!({
         "ok": true,
         "queues": queues,
         "todos": stats,
         "pending": pending,
+        "system": {
+            "redis": {
+                "configured": redis_configured,
+                "connected": redis_connected,
+                "note": redis_note,
+            },
+        },
     }))
     .into_response())
 }
