@@ -155,7 +155,9 @@ export default async function MePage({
               <RepPill rep={user.reputation} />
             </div>
             <div className="me-sub">
-              @{user.username} · 注册于 {joined}
+              <span className="me-sub-line">
+                @{user.username} · 注册于 {joined}
+              </span>
               {user.uid ? (
                 <span className="me-uid">
                   <UidBadge uid={user.uid} style={user.uidStyle} />
