@@ -472,10 +472,6 @@ export default async function MePage({
                 </span>
               </div>
             )}
-            <div className="rail-item">
-              <span>密码</span>
-              <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>scrypt 哈希</span>
-            </div>
           </div>
           <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
             忘记密码请联系管理员重置。
