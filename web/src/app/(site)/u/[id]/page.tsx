@@ -69,7 +69,7 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
               user.nickname.slice(0, 1)
             )}
           </span>
-          <div style={{ minWidth: 0, flex: 1 }}>
+          <div className="up-info">
             <div className="up-name">
               <b>{user.nickname}</b>
               <NameBadges badge={badge} group={group} size="sm" showVerifyLabel />
@@ -83,13 +83,13 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
             {user.uid ? (
               <div className="up-uid">
                 <UidBadge uid={user.uid} style={user.uidStyle} size="md" copy />
+                {user.developer && <span className="dev-chip">开发者</span>}
                 <span className="up-uid-hint">点一下复制，方便互加好友与客服定位</span>
               </div>
             ) : null}
             <div className="up-meta">
               {/* 头衔已经由上面的 NameBadges 画在名字后面（带申请时选的样式），
-                  这里不要再摆一个灰色副本 */}
-              {user.developer && <span className="dev-chip">开发者</span>}
+                  这里不要再摆一个灰色副本；开发者标记挪到 UID 那一行 */}
               <AchievementChips badges={earned} size="sm" />
             </div>
           </div>
