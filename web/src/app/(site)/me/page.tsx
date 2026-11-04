@@ -473,12 +473,6 @@ export default async function MePage({
               </div>
             )}
             <div className="rail-item">
-              <span>角色</span>
-              <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)' }}>
-                {user.role}
-              </span>
-            </div>
-            <div className="rail-item">
               <span>密码</span>
               <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>scrypt 哈希</span>
             </div>
