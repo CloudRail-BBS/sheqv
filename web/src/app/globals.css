@@ -1002,6 +1002,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* ── 我的 / 公告 ─────────────────────────── */
 
 .me-card { padding: 18px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+/* 昵称 / 徽章那一列：占满剩余宽度并允许内部换行，
+   否则一长串身份标签会顶出卡片右边缘（移动端最明显） */
+.me-info { flex: 1; min-width: 0; }
 .me-hero {
   position: relative; min-height: 148px; padding: 46px 22px 20px;
   align-items: center; overflow: hidden;
@@ -1049,11 +1052,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .me-sub-line { white-space: nowrap; }
 .me-uid { display: inline-flex; align-items: center; }
-/* 手机上没有横向余量：日期占满一行，UID 落到下一行左对齐，
-   免得被 1cm 间距顶到卡片右边缘 */
+/* 手机上把间距收小：能并排就并排，放不下时正常换行（换行后靠左，不再缩进） */
 @media (max-width: 560px) {
   .me-sub { column-gap: 10px; }
-  .me-sub-line { flex: 1 0 100%; }
+  /* 头像下面单独占一行，昵称与标签有足够宽度，不用挤在头像右侧 */
+  .me-info { flex: 1 0 100%; }
+  .me-hero { padding: 44px 14px 16px; gap: 12px; }
 }
 .me-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .me-stats .card { padding: 12px 14px; }
@@ -7195,3 +7199,12 @@ body::before {
   .uid-option-preview { align-self: flex-start; }
   .up-uid-hint { font-size: 10.5px; }
 }
+
+/* ── 上传反馈 ─────────────────────────────
+   压缩提示 / 拖拽高亮。都用令牌，深色主题下不会变成亮白块。 */
+.img-upload-note { font-size: 10.5px; color: var(--ok); line-height: 1.4; }
+.res-drop[data-drag="true"] {
+  background: var(--blue-soft);
+  box-shadow: inset 0 0 0 1px var(--blue-line);
+}
+.res-drop[data-drag="true"] .res-drop-hint { color: var(--blue); font-weight: 600; }

@@ -144,8 +144,8 @@ export default async function MePage({
             </div>
             <ImageUploadButton kind="avatar" label="换头像" className="me-avatar-upload" />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div className="row" style={{ gap: 7 }}>
+          <div className="me-info">
+            <div className="row wrap" style={{ gap: 7 }}>
               <span className="me-name">{user.nickname}</span>
               <VerifyMark kind={user.verifyKind} label={user.verifyLabel} size="lg" />
               <UserBadge badge={badgeOf(user)} />

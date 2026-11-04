@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from 'react';
 import { Markdown } from '@/lib/markdown';
+import { compressImage, formatBytes, imageTypeError, uploadWithProgress } from '@/lib/upload';
 
 const EMOJIS = ['👍', '🎉', '🔥', '😂', '❤️', '✅', '⚔️', '🧱', '🚀', '👀', '🤝', '💡'];
 
@@ -40,7 +41,8 @@ export function MarkdownEditor({
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<'write' | 'preview'>('write');
-  const [uploading, setUploading] = useState(false);
+  /** 正在上传的图片进度：第几张 / 共几张 / 当前百分比 */
+  const [uploading, setUploading] = useState<{ done: number; total: number; pct: number } | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -71,45 +73,88 @@ export function MarkdownEditor({
     });
   }
 
-  async function upload(file: File) {
-    if (!file.type.startsWith('image/')) {
+  const MAX_IMAGE = 2 * 1024 * 1024;
+
+  /** 一次可以传多张：串行上传，逐张插入，避免并发把顺序打乱 */
+  async function uploadAll(list: File[]) {
+    const files = list.filter((f) => f.type.startsWith('image/') || !f.type);
+    if (files.length === 0) {
       setErr('只能上传图片');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setErr('图片不能超过 2MB');
-      return;
-    }
-    setUploading(true);
+
     setErr(null);
-    const res = await fetch('/api/v1/me/media?kind=post', {
-      method: 'POST',
-      headers: { 'content-type': file.type },
-      body: file,
-    }).catch(() => null);
-    setUploading(false);
-    if (!res?.ok) {
-      const data = (await res?.json().catch(() => null)) as { message?: string } | null;
-      setErr(data?.message ?? '上传失败');
-      return;
+    const snippets: string[] = [];
+
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      const typeErr = imageTypeError(file);
+      if (typeErr) {
+        setErr(`${file.name}：${typeErr}`);
+        break;
+      }
+
+      setUploading({ done: i, total: files.length, pct: 0 });
+      const { file: prepared } = await compressImage(file, {
+        maxEdge: 1600,
+        maxBytes: MAX_IMAGE * 0.8,
+      });
+      if (prepared.size > MAX_IMAGE) {
+        setErr(
+          file.type === 'image/gif'
+            ? `${file.name}：GIF 动图不能压缩，请控制在 2MB 以内`
+            : `${file.name} 压缩后仍有 ${formatBytes(prepared.size)}，换一张小点的吧`,
+        );
+        break;
+      }
+
+      const res = await uploadWithProgress('/api/v1/me/media?kind=post', prepared, {
+        headers: { 'content-type': prepared.type || 'application/octet-stream' },
+        onProgress: (pct) => setUploading({ done: i, total: files.length, pct }),
+        timeoutMs: 60_000,
+      });
+      if (!res.ok) {
+        setErr(res.message ?? `${file.name} 上传失败`);
+        break;
+      }
+      const url = (res.data as { url?: string } | null)?.url;
+      if (!url) {
+        setErr('上传成功但没拿到图片地址');
+        break;
+      }
+      const alt = file.name.replace(/\.[^.]+$/, '').slice(0, 30) || '图片';
+      snippets.push(`![${alt}](${url})`);
+      setUploading({ done: i + 1, total: files.length, pct: 100 });
     }
-    const data = (await res.json()) as { url: string };
-    const alt = file.name.replace(/\.[^.]+$/, '').slice(0, 30) || '图片';
-    replaceSelection(`\n![${alt}](${data.url})\n`);
+
+    setUploading(null);
+    if (snippets.length > 0) {
+      // 一次插入，避免多张时闭包里的 value 互相覆盖
+      insertBlock(snippets.map((x) => `\n${x}\n`).join(''));
+    }
+  }
+
+  /** 在上传结束时插入正文；用 DOM 里的当前值，上传期间打的字不会被冲掉 */
+  function insertBlock(text: string) {
+    const el = ref.current;
+    const base = el ? el.value : value;
+    const start = el?.selectionStart ?? base.length;
+    const end = el?.selectionEnd ?? base.length;
+    onChange(base.slice(0, start) + text + base.slice(end));
   }
 
   function onPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const file = [...e.clipboardData.files].find((f) => f.type.startsWith('image/'));
-    if (!file) return;
+    const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
     e.preventDefault();
-    void upload(file);
+    void uploadAll(files);
   }
 
   function onDrop(e: React.DragEvent<HTMLTextAreaElement>) {
-    const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
-    if (!file) return;
+    const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
     e.preventDefault();
-    void upload(file);
+    void uploadAll(files);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -163,8 +208,12 @@ export function MarkdownEditor({
         1≡
       </button>
       <span className="md-sep" />
-      <button type="button" title="上传图片" onClick={() => fileRef.current?.click()} disabled={uploading}>
-        {uploading ? '上传中…' : '图片'}
+      <button type="button" title="上传图片（可多选，支持粘贴与拖入）" onClick={() => fileRef.current?.click()} disabled={Boolean(uploading)}>
+        {uploading
+          ? `${uploading.total > 1 ? `${uploading.done + 1}/${uploading.total} ` : ''}${
+              uploading.pct > 0 ? `${uploading.pct}%` : '压缩中…'
+            }`
+          : '图片'}
       </button>
       <div className="md-emoji-wrap">
         <button type="button" title="表情" onClick={() => setEmojiOpen((v) => !v)}>
@@ -192,10 +241,11 @@ export function MarkdownEditor({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         hidden
+        multiple
         onChange={(e) => {
-          const f = e.target.files?.[0];
+          const list = [...(e.target.files ?? [])];
           e.target.value = '';
-          if (f) void upload(f);
+          if (list.length > 0) void uploadAll(list);
         }}
       />
     </>

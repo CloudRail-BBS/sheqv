@@ -60,6 +60,8 @@ export function ResourceUpload({
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  /** 文件拖到文件区上方时高亮，松手即传 */
+  const [dragging, setDragging] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const [uploadLabel, setUploadLabel] = useState('');
   /** 已上传的附件（fileId + 名称 + 大小），提交时只传 id，服务端按上传记录取名字 */
@@ -475,7 +477,26 @@ export function ResourceUpload({
                 </span>
               }
               beforeFooter={
-                <div className="res-drop">
+                <div
+                  className="res-drop"
+                  data-drag={dragging}
+                  onDragOver={(e) => {
+                    if (![...e.dataTransfer.types].includes('Files')) return;
+                    e.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={(e) => {
+                    // 拖到子元素上也会触发 leave，用 relatedTarget 判一下是否真的离开
+                    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                    setDragging(false);
+                  }}
+                  onDrop={(e) => {
+                    if (e.dataTransfer.files.length === 0) return;
+                    e.preventDefault();
+                    setDragging(false);
+                    void uploadFiles(e.dataTransfer.files);
+                  }}
+                >
                   <input
                     ref={fileRef}
                     type="file"
@@ -498,9 +519,11 @@ export function ResourceUpload({
                       {uploading ? `上传中 ${uploadPct}%` : '添加本地文件'}
                     </button>
                     <span className="res-drop-hint">
-                      {uploading && uploadLabel
-                        ? `正在上传 ${uploadLabel}`
-                        : `${attachments.length} / 8 · 单个 ≤100MB`}
+                      {dragging
+                        ? '松开即可上传'
+                        : uploading && uploadLabel
+                          ? `正在上传 ${uploadLabel}`
+                          : `${attachments.length} / 8 · 单个 ≤100MB · 可直接拖入`}
                     </span>
                     {totalBytes > 0 && (
                       <span className="res-drop-size mono">{fmtSize(totalBytes)}</span>

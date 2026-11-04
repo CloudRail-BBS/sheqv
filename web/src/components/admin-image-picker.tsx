@@ -25,6 +25,7 @@ export function AdminImagePicker({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [pct, setPct] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   /** 外链输入：默认折叠，避免多一个必填框 */
   const [linkOpen, setLinkOpen] = useState(false);
@@ -36,8 +37,9 @@ export function AdminImagePicker({
     if (!file) return;
 
     setBusy(true);
+    setPct(0);
     setErr(null);
-    const result = await uploadAdminImage(file, kind);
+    const result = await uploadAdminImage(file, kind, setPct);
     setBusy(false);
     if (!result.ok) {
       setErr(result.message);
@@ -68,7 +70,7 @@ export function AdminImagePicker({
           aria-label={value ? '更换图片' : '上传图片'}
         >
           {value ? <img src={value} alt="" /> : <span className="rw-imgpick-plus">＋</span>}
-          {busy && <i className="rw-imgpick-mask">上传中…</i>}
+          {busy && <i className="rw-imgpick-mask">{pct > 0 ? `上传中 ${pct}%` : '压缩中…'}</i>}
         </button>
 
         <div className="rw-imgpick-side">
@@ -79,7 +81,7 @@ export function AdminImagePicker({
               onClick={() => fileRef.current?.click()}
               disabled={busy}
             >
-              {busy ? '上传中…' : value ? '更换' : '上传图片'}
+              {busy ? (pct > 0 ? `上传中 ${pct}%` : '压缩中…') : value ? '更换' : '上传图片'}
             </button>
             {value && (
               <button

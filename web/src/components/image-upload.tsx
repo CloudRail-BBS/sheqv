@@ -2,27 +2,23 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { compressImage, formatBytes, imageTypeError, uploadWithProgress } from '@/lib/upload';
 
 type Kind = 'avatar' | 'background';
 
+/** 与服务端 media::MAX_BYTES 一致 */
 const MAX = 2 * 1024 * 1024;
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
 
-async function postImage(kind: Kind, file: File): Promise<{ ok: boolean; message?: string }> {
-  const res = await fetch(`/api/v1/me/media?kind=${kind}`, {
-    method: 'POST',
-    headers: { 'content-type': file.type || 'application/octet-stream' },
-    body: file,
-  }).catch(() => null);
+/** 头像 512 足够清晰（展示最大 96px），背景按服务端的 1600 */
+const MAX_EDGE: Record<Kind, number> = { avatar: 512, background: 1600 };
 
-  if (!res?.ok) {
-    const data = (await res?.json().catch(() => null)) as { message?: string } | null;
-    return { ok: false, message: data?.message ?? '上传失败' };
-  }
-  return { ok: true };
-}
-
-/** 头像 / 主页背景上传：选图即上传，成功后 refresh 让服务端数据重新渲染 */
+/**
+ * 头像 / 主页背景上传：选图 → 本地压缩 → 带进度上传 → 刷新。
+ *
+ * 压缩这一步很关键：手机照片动辄 5–8MB，服务端 2MB 就会拒；
+ * 压完通常只剩几百 KB，既传得上去也快。
+ */
 export function ImageUploadButton({
   kind,
   label,
@@ -35,39 +31,83 @@ export function ImageUploadButton({
   const router = useRouter();
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (!ACCEPT.split(',').includes(file.type)) {
-      setErr('只支持 PNG / JPEG / WebP / GIF');
-      return;
-    }
-    if (file.size > MAX) {
-      setErr('图片不能超过 2MB');
+
+    const typeErr = imageTypeError(file);
+    if (typeErr) {
+      setErr(typeErr);
       return;
     }
 
     setBusy(true);
     setErr(null);
-    const result = await postImage(kind, file);
-    setBusy(false);
-    if (!result.ok) {
-      setErr(result.message ?? '上传失败');
+    setNote(null);
+    setStage('压缩中…');
+
+    const { file: prepared, originalSize, compressed } = await compressImage(file, {
+      maxEdge: MAX_EDGE[kind],
+      maxBytes: MAX * 0.8,
+    });
+
+    if (prepared.size > MAX) {
+      setBusy(false);
+      setStage('');
+      setErr(
+        file.type === 'image/gif'
+          ? `GIF 动图不能压缩（会丢帧），请换一张 2MB 以内的`
+          : `图片压缩后仍有 ${formatBytes(prepared.size)}，请换一张小一点的`,
+      );
       return;
     }
-    router.refresh();
+
+    setStage('上传中 0%');
+    const res = await uploadWithProgress(`/api/v1/me/media?kind=${kind}`, prepared, {
+      headers: { 'content-type': prepared.type || 'application/octet-stream' },
+      onProgress: (pct) => setStage(`上传中 ${pct}%`),
+      timeoutMs: 60_000,
+    });
+
+    if (!res.ok) {
+      setBusy(false);
+      setStage('');
+      setErr(res.message ?? '上传失败');
+      return;
+    }
+
+    if (compressed) {
+      const saved = Math.round((1 - prepared.size / originalSize) * 100);
+      setNote(`${formatBytes(originalSize)} → ${formatBytes(prepared.size)}（省 ${saved}%）`);
+    }
+    setStage('完成');
+    // 让「已压缩」提示露一下再刷新，刷新后组件会重新挂载
+    window.setTimeout(() => {
+      setBusy(false);
+      setStage('');
+      router.refresh();
+    }, 500);
   }
 
   return (
     <span className="img-upload">
       <input ref={ref} type="file" accept={ACCEPT} hidden onChange={onPick} />
-      <button type="button" className={className} onClick={() => ref.current?.click()} disabled={busy}>
-        {busy ? '上传中…' : label}
+      <button
+        type="button"
+        className={className}
+        onClick={() => ref.current?.click()}
+        disabled={busy}
+        aria-busy={busy}
+      >
+        {busy ? stage || '处理中…' : label}
       </button>
       {err && <span className="img-upload-err">{err}</span>}
+      {!err && note && <span className="img-upload-note">{note}</span>}
     </span>
   );
 }
