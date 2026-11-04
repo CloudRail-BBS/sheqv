@@ -7284,3 +7284,34 @@ body::before {
   }
   .up-stats div { flex: 1; }
 }
+
+/* ── 阅读与表单：再给一点呼吸感 ─────────────
+   Apple 的正文更松：15px / 1.85，段距 14，标题与正文拉开 20–26。
+   只调正文与输入框，不动按钮密度（后台工具栏承受不了更大的高度）。 */
+
+.md-body { font-size: 15px; line-height: 1.85; }
+.md-body p { margin: 0 0 14px; }
+.md-body h1 { font-size: 24px; }
+.md-body h2 { font-size: 19px; margin: 26px 0 10px; }
+.md-body h3 { font-size: 16px; margin: 20px 0 8px; }
+.md-body ul, .md-body ol { margin: 10px 0 14px; }
+.md-body li { margin: 4px 0; }
+.md-body blockquote { margin: 16px 0; padding: 10px 16px; border-radius: 0 10px 10px 0; }
+.md-image img { border-radius: 12px; }
+.pb-reply-body { font-size: 14.5px; line-height: 1.85; }
+
+/* 输入框：圆角与卡片同一个语汇，聚焦用品牌蓝而不是灰白 */
+.input { border-radius: 10px; font-size: 13.5px; }
+.input:hover { border-color: var(--hover-bd); }
+.input:focus { border-color: var(--blue-line); box-shadow: 0 0 0 3px var(--blue-soft); }
+.textarea { padding: 10px 12px; line-height: 1.7; }
+
+@media (max-width: 700px) {
+  .md-body { font-size: 15.5px; line-height: 1.9; }
+  .md-body h2 { font-size: 18.5px; }
+  .pb-title { font-size: 20px; }
+  .pb-reply-body { font-size: 15px; }
+  /* 触控目标：普通输入 40，避免 34px 在手机上太难点 */
+  .input:not(.textarea) { height: 40px; }
+  .textarea { min-height: 96px; }
+}
