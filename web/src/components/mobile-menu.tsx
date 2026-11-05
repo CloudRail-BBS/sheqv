@@ -129,7 +129,10 @@ export function MobileMenu({
             </div>
 
             {NAV_GROUPS.map((group) => {
-              const visible = group.items.filter((i) => keys.includes(i.key));
+              // 组内顺序跟侧栏一致：按后台保存的 keys 排，不能用注册表顺序
+              const visible = keys
+                .map((key) => group.items.find((i) => i.key === key))
+                .filter((i): i is (typeof group.items)[number] => Boolean(i));
               if (visible.length === 0) return null;
               return (
                 <div className="mobile-drawer-section" key={group.id}>

@@ -50,7 +50,11 @@ export function Sidebar({ items, dmUnread = 0 }: { items?: string; dmUnread?: nu
         style={{ top: glide.top, height: glide.height }}
       />
       {NAV_GROUPS.map((group) => {
-        const visible = group.items.filter((item) => keys.includes(item.key));
+        // 组内顺序必须按后端存的 keys 走：原来用 group.items.filter()
+        // 等于永远按注册表顺序渲染，后台怎么调 ↑↓ 都不会变
+        const visible = keys
+          .map((key) => group.items.find((item) => item.key === key))
+          .filter((item): item is (typeof group.items)[number] => Boolean(item));
         if (visible.length === 0) return null;
         return (
           <div key={group.id} className="side-group">

@@ -5,7 +5,7 @@
  * 未知 key 自动忽略，配置为空回落到默认，删掉某个功能也不会把导航打散。
  */
 
-export type NavGroupId = 'browse' | 'sections' | 'workspace';
+export type NavGroupId = 'browse' | 'sections' | 'workspace' | 'community';
 
 export interface NavItemDef {
   key: string;
@@ -55,22 +55,28 @@ export const NAV_GROUPS: NavGroupDef[] = [
   },
   {
     id: 'workspace',
-    label: '工作台',
+    label: '我的',
     items: [
       { key: 'me', href: '/me', label: '我的', group: 'workspace' },
-      { key: 'tickets', href: '/tickets', label: '工单', group: 'workspace' },
       { key: 'points', href: '/points', label: '积分与签到', group: 'workspace' },
       { key: 'tasks', href: '/tasks', label: '任务中心', group: 'workspace' },
-      { key: 'groups', href: '/groups', label: '身份组', group: 'workspace' },
       { key: 'rewards', href: '/rewards', label: '福利中心', group: 'workspace' },
       { key: 'shop', href: '/shop', label: '积分商城', group: 'workspace' },
-      { key: 'announcements', href: '/announcements', label: '公告', group: 'workspace' },
-      { key: 'sponsors', href: '/sponsors', label: '赞助者', group: 'workspace' },
-      { key: 'agreements', href: '/agreements', label: '公约', group: 'workspace' },
-      { key: 'policies', href: '/policies', label: '政策与协议', group: 'workspace' },
-      { key: 'about', href: '/about', label: '关于社区', group: 'workspace' },
-      { key: 'changelog', href: '/changelog', label: '更新日志', group: 'workspace' },
-      { key: 'download', href: '/download', label: '客户端下载', group: 'workspace' },
+      { key: 'tickets', href: '/tickets', label: '工单', group: 'workspace' },
+    ],
+  },
+  {
+    id: 'community',
+    label: '社区',
+    items: [
+      { key: 'announcements', href: '/announcements', label: '公告', group: 'community' },
+      { key: 'groups', href: '/groups', label: '身份组', group: 'community' },
+      { key: 'sponsors', href: '/sponsors', label: '赞助者', group: 'community' },
+      { key: 'agreements', href: '/agreements', label: '公约', group: 'community' },
+      { key: 'policies', href: '/policies', label: '政策与协议', group: 'community' },
+      { key: 'about', href: '/about', label: '关于社区', group: 'community' },
+      { key: 'changelog', href: '/changelog', label: '更新日志', group: 'community' },
+      { key: 'download', href: '/download', label: '客户端下载', group: 'community' },
     ],
   },
 ];

@@ -244,19 +244,23 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   background: var(--panel);
   box-shadow: var(--shadow);
 }
-.side-group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.side-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 /* 分组之间用一条细线断开，比单纯拉大间距更有层次 */
-.side-group + .side-group { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.side-group + .side-group { padding-top: 10px; border-top: 1px solid var(--line-soft); }
+/* 侧栏整栏会滚动，分组标题吸顶：滚到「我的」时还能看见自己在哪一组 */
 .side-label {
+  position: sticky; top: 0; z-index: 1;
   display: flex; align-items: center; gap: 8px;
   font-size: 10px; letter-spacing: 0.12em; color: var(--text-3);
-  padding: 0 8px 7px; text-transform: uppercase; font-weight: 600;
+  padding: 6px 8px 6px; margin-bottom: 1px;
+  background: var(--panel);
+  text-transform: uppercase; font-weight: 600;
 }
 .side-label::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
 .side-item {
   position: relative; display: flex; align-items: center; gap: 9px;
-  padding: 6px 8px; border-radius: 9px;
-  font-size: 13.5px; color: var(--text-2);
+  padding: 5px 8px; border-radius: 9px;
+  font-size: 13px; color: var(--text-2);
   transition: background 0.14s, color 0.14s;
 }
 .side-item:hover { background: var(--panel-2); color: var(--text); }
@@ -267,7 +271,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .side-item .cnt { margin-left: auto; font-size: 10.5px; color: var(--text-3); font-family: ui-monospace, monospace; }
 /* 图标装进小方块：一列方片把导航的节奏立起来 */
 .side-ico {
-  width: 26px; height: 26px; padding: 5px; border-radius: 8px; flex: none;
+  width: 24px; height: 24px; padding: 5px; border-radius: 8px; flex: none;
   background: var(--panel-2); border: 1px solid var(--line-soft);
   color: var(--text-2); opacity: 1;
   transition: background 0.14s, border-color 0.14s, color 0.14s;
@@ -2819,8 +2823,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .nav-row {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; padding: 3px 0; font-size: 12.5px;
+  gap: 8px; padding: 3px 6px; margin-inline: -6px; border-radius: 7px;
+  font-size: 12.5px;
 }
+.nav-row:hover { background: var(--panel-2); }
 .nav-row[data-on="false"] { opacity: 0.55; }
 .nav-check {
   display: inline-flex; align-items: center; gap: 7px;
@@ -2831,9 +2837,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .nav-check[data-disabled="true"] { opacity: 0.4; cursor: not-allowed; }
 .nav-move { display: inline-flex; gap: 2px; flex: none; }
 .nav-move button {
-  width: 22px; height: 22px; border-radius: 5px; cursor: pointer;
+  width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--line); background: var(--panel);
-  color: var(--muted); font-size: 11px; line-height: 1;
+  color: var(--text-2); font-size: 12px; line-height: 1;
+  display: inline-grid; place-items: center;
 }
 .nav-move button:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
 .nav-move button:disabled { opacity: 0.3; cursor: default; }

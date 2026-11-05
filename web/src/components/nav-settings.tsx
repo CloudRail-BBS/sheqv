@@ -91,10 +91,18 @@ export function NavSettings({
 
         {NAV_GROUPS.map((group) => {
           const groupKeys = sideKeys.filter((k) => group.items.some((i) => i.key === k));
+          // 已选的按配置顺序排在前面，未选的按注册表顺序跟在后面。
+          // 原来直接按 group.items 渲染，点了 ↑↓ 行不会动，看着像「调不动」
+          const rows = [
+            ...groupKeys
+              .map((k) => group.items.find((i) => i.key === k))
+              .filter((i): i is (typeof group.items)[number] => Boolean(i)),
+            ...group.items.filter((i) => !sideKeys.includes(i.key)),
+          ];
           return (
             <div key={group.id} className="nav-group">
               <div className="nav-group-title">{group.label}</div>
-              {group.items.map((item) => {
+              {rows.map((item) => {
                 const on = sideKeys.includes(item.key);
                 const at = groupKeys.indexOf(item.key);
                 return (
