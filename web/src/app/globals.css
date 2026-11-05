@@ -249,13 +249,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .side-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 /* 分组之间用一条细线断开，比单纯拉大间距更有层次 */
 .side-group + .side-group { padding-top: 10px; border-top: 1px solid var(--line-soft); }
-/* 侧栏整栏会滚动，分组标题吸顶：滚到「我的」时还能看见自己在哪一组 */
+/* 分组标题跟着列表一起滚。
+   之前是 sticky + 实色底：侧栏内部一滚动，标题就钉在顶部把上面的条目盖住，
+   看起来像「标题滑不动、还压着内容」。侧栏本身已经限高滚动，不需要再吸顶。 */
 .side-label {
-  position: sticky; top: 0; z-index: 1;
   display: flex; align-items: center; gap: 8px;
   font-size: 10px; letter-spacing: 0.12em; color: var(--text-3);
   padding: 6px 8px 6px; margin-bottom: 1px;
-  background: var(--panel);
   text-transform: uppercase; font-weight: 600;
 }
 .side-label::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
@@ -1073,6 +1073,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* 行盒固定 22px，和徽标等高，两者中心才对得齐 */
 .me-sub-line { white-space: nowrap; line-height: 22px; }
 .me-uid { display: inline-flex; align-items: center; }
+/* 头像下面那份 UID 只在手机上出现（见 mobile.css） */
+.me-uid-ava { display: none; }
 /* 手机上：日期占一行，徽标换到下一行靠左（auto 边距清零） */
 @media (max-width: 560px) {
   .me-sub { column-gap: 10px; }

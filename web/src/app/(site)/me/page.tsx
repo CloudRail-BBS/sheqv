@@ -144,6 +144,12 @@ export default async function MePage({
               )}
             </div>
             <ImageUploadButton kind="avatar" label="换头像" className="me-avatar-upload" />
+            {/* 手机上 UID 跟到头像下面（桌面端这一份隐藏，见 mobile.css） */}
+            {user.uid ? (
+              <span className="me-uid me-uid-ava">
+                <UidBadge uid={user.uid} style={user.uidStyle} />
+              </span>
+            ) : null}
           </div>
           <div className="me-info">
             <div className="row wrap" style={{ gap: 7 }}>

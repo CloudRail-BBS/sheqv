@@ -230,6 +230,11 @@
   }
   .site-scroll .me-hero > .me-cover-actions { position: absolute; top: 12px; right: 12px; }
   .site-scroll .me-ava { width: 76px; height: 76px; border-radius: 24px; font-size: 26px; }
+  /* UID 挪到头像下方，跟「换头像」排成一列；信息区那边就不重复显示了 */
+  .site-scroll .me-uid-ava { display: inline-flex; margin-top: 2px; max-width: 76px; }
+  .site-scroll .me-uid-ava .uidbadge { padding: 0 6px; gap: 4px; }
+  .site-scroll .me-uid-ava .uidbadge b { font-size: 11px; }
+  .site-scroll .me-info .me-uid { display: none; }
   .site-scroll .me-name { font-size: 21px; }
   /* 操作按钮靠右排成胶囊，不要横贯整张卡 */
   .site-scroll .me-hero > .row:last-child {
