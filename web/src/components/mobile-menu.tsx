@@ -3,19 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { PublicUser } from '@/lib/users';
-import { NAV_GROUPS, SIDEBAR_DEFAULT, parseNav } from '@/lib/nav-config';
+import { NAV_GROUPS, SIDEBAR_DEFAULT, isNavActive, parseNav } from '@/lib/nav-config';
 import { NavGlyph } from './nav-icons';
 import { LevelPill } from './rank-badges';
 import { VerifyMark } from './verify-mark';
 import { ThemeToggle } from '@/components/theme-toggle';
-
-const isActive = (pathname: string, href: string) => {
-  const base = href.split('?')[0];
-  if (base === '/') return pathname === '/';
-  return pathname === base || pathname.startsWith(`${base}/`);
-};
 
 export function MobileMenu({
   siteName,
@@ -32,6 +26,7 @@ export function MobileMenu({
   items?: string;
 }) {
   const pathname = usePathname();
+  const search = useSearchParams();
   const keys = parseNav(items, SIDEBAR_DEFAULT);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -62,7 +57,9 @@ export function MobileMenu({
     <Link
       href={href}
       className="mobile-drawer-item"
-      data-active={isActive(pathname, href)}
+      // 与侧栏共用同一套判定：带 ?game= / ?category= 的分区必须参数也匹配，
+      // 否则 /resources 下的四个分区会一起点亮
+      data-active={isNavActive(pathname, search, href)}
       onClick={() => setOpen(false)}
     >
       <span className="mobile-drawer-ico" aria-hidden="true">
