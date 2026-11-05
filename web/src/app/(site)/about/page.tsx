@@ -44,7 +44,7 @@ export default async function AboutPage() {
         {about.people.length > 0 && (
           <section className="about-section">
             <div className="section-h">
-              <h2>社区成员</h2>
+              <h2>团队成员</h2>
               <span className="hint">{about.people.length} 位</span>
             </div>
             <div className="about-people">

@@ -98,7 +98,7 @@ export function AdminAbout({ intro, join }: { intro: string; join: string }) {
 
       <EntrySection
         kind="person"
-        title="社区成员"
+        title="团队成员"
         hint="可以上传头像（留空用名字首字）；「职责」显示在名字下方。"
       />
       <EntrySection

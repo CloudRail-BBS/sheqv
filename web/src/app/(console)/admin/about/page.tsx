@@ -23,7 +23,7 @@ export default async function AdminAboutPage() {
         <div>
           <h1 className="page-title">关于社区</h1>
           <p className="small muted" style={{ marginTop: 4 }}>
-            这里配置的内容会出现在「关于社区」页：站点介绍、社区成员与合作单位。
+            这里配置的内容会出现在「关于社区」页：站点介绍、团队成员与合作单位。
           </p>
         </div>
       </div>
