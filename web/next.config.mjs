@@ -63,6 +63,11 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       })),
+      // 字体分片按 unicode-range 切好就不再变；换字体时文件名会一起换，可以放心长缓存
+      {
+        source: '/fonts/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
     ];
   },
 };
