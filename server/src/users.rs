@@ -96,9 +96,13 @@ pub struct UserRow {
     pub uid: i64,
     /// UID 的展示样式：plain / mono / solid / gradient / outline
     pub uid_style: String,
+    /// 禁言到期时间；None 表示未禁言
+    pub muted_until: Option<DateTime<Utc>>,
+    /// 禁言原因（展示给被禁言的人）
+    pub mute_reason: String,
 }
 
-const COLUMNS: &str = "id, uid, uid_style, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, verify_kind, verify_label, verified_at, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar";
+const COLUMNS: &str = "id, uid, uid_style, username, nickname, password_hash, email, role, created_at, banned, title, title_style, title_effect, verify_kind, verify_label, verified_at, badges, notif_read_at, last_login_at, group_id, developer_at, profile_bg, avatar, muted_until, mute_reason";
 
 /// 读用户时统一带出组的展示信息。
 /// 用 LEFT JOIN 而不是每次再查一遍：列表页一屏几十个作者，N+1 会很明显。
@@ -106,7 +110,7 @@ const SELECT_USER: &str = "SELECT u.id, u.uid, u.uid_style, u.username, u.nickna
         u.created_at, u.banned, u.title, u.title_style, u.title_effect,
         u.verify_kind, u.verify_label, u.verified_at, u.badges,
         u.notif_read_at, u.last_login_at, u.group_id,
-        u.developer_at, u.profile_bg, u.avatar,
+        u.developer_at, u.profile_bg, u.avatar, u.muted_until, u.mute_reason,
         g.name AS group_name, g.color AS group_color, g.slug AS group_slug,
         g.style AS group_style, g.effect AS group_effect
    FROM users u LEFT JOIN groups g ON g.id = u.group_id";
@@ -159,6 +163,12 @@ pub struct PublicUser {
     pub group: Option<GroupTag>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// 禁言到期（毫秒）；未禁言不返回
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub muted_until: Option<i64>,
+    /// 禁言原因；空串不返回
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub mute_reason: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub providers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -174,6 +184,31 @@ pub struct PublicUser {
     /// 头像；空串不下发
     #[serde(skip_serializing_if = "String::is_empty")]
     pub avatar: String,
+}
+
+impl PublicUser {
+    /// 禁言提示文案；没被禁言返回 `None`。
+    /// 内容接口在写库前统一调它，文案直接回给前端展示。
+    pub fn mute_notice(&self) -> Option<String> {
+        let until = self.muted_until?;
+        let left = until - Utc::now().timestamp_millis();
+        if left <= 0 {
+            return None;
+        }
+        let mins = (left / 60_000).max(1);
+        let span = if mins >= 1440 {
+            format!("{} 天", mins / 1440)
+        } else if mins >= 60 {
+            format!("{} 小时", mins / 60)
+        } else {
+            format!("{mins} 分钟")
+        };
+        Some(if self.mute_reason.is_empty() {
+            format!("你已被禁言，约 {span}后恢复")
+        } else {
+            format!("你已被禁言，约 {span}后恢复（原因：{}）", self.mute_reason)
+        })
+    }
 }
 
 fn is_false(v: &bool) -> bool {
@@ -245,8 +280,47 @@ impl UserRow {
             developer_since: self.developer_at.map(|t| t.timestamp_millis()),
             profile_bg: self.profile_bg.clone(),
             avatar: self.avatar.clone(),
+            // 已过期的禁言不再下发，前端不用自己再比时间
+            muted_until: self
+                .muted_until
+                .filter(|t| *t > Utc::now())
+                .map(|t| t.timestamp_millis()),
+            mute_reason: self.mute_reason.clone(),
         }
     }
+}
+
+/* ── 禁言 ───────────────────────────────── */
+
+/// 设置禁言到期时间与原因（到期自动失效，不需要定时任务）
+pub async fn mute(
+    pool: &PgPool,
+    id: &str,
+    until: DateTime<Utc>,
+    reason: &str,
+) -> Result<Option<UserRow>, sqlx::Error> {
+    let updated = sqlx::query_as::<_, UserRow>(&format!(
+        "UPDATE users SET muted_until = $2, mute_reason = $3
+          WHERE id = $1 RETURNING {COLUMNS}, {RETURNING_GROUP}"
+    ))
+    .bind(id)
+    .bind(until)
+    .bind(reason.trim())
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated)
+}
+
+/// 解除禁言
+pub async fn unmute(pool: &PgPool, id: &str) -> Result<Option<UserRow>, sqlx::Error> {
+    let updated = sqlx::query_as::<_, UserRow>(&format!(
+        "UPDATE users SET muted_until = NULL, mute_reason = ''
+          WHERE id = $1 RETURNING {COLUMNS}, {RETURNING_GROUP}"
+    ))
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(updated)
 }
 
 /* ── 校验 ───────────────────────────────── */

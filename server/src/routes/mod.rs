@@ -234,6 +234,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/matches/{id}", get(matches::get))
         .route("/api/v1/matches/{id}/accept", post(matches::accept))
         .route("/api/v1/ops/summary", get(ops::summary))
+        .route("/api/v1/ops/users", get(ops::members))
+        .route(
+            "/api/v1/ops/users/{id}/mute",
+            post(ops::mute_member).delete(ops::unmute_member),
+        )
         .route("/api/v1/policies", get(policies::list))
         .route("/api/v1/policies/{slug}", get(policies::get))
         // 后台政策管理：内置的《用户协议》《隐私政策》《免责声明》也要能改

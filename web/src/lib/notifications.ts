@@ -30,6 +30,7 @@ export const NOTE_KIND_LABEL: Record<string, string> = {
   ticket: '工单',
   task: '任务',
   match: '约战',
+  mute: '禁言',
   system: '系统',
 };
 

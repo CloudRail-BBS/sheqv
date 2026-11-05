@@ -305,6 +305,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             loggedIn={Boolean(user)}
             total={post.commentsList.length}
             captchaId={captchaId}
+            mutedUntil={user?.mutedUntil ?? 0}
+            muteReason={user?.muteReason ?? ''}
           />
         )}
       </div>

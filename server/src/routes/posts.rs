@@ -131,6 +131,10 @@ pub async fn create(
     require_permission(&st, &user.id, "post.create", "当前身份组没有发帖权限").await?;
     require_community(&st, &user.id, &headers).await?;
     require_group_agreements(&st, &user.id).await?;
+    // 禁言期内不能发新帖；文案里带剩余时长与原因
+    if let Some(notice) = user.mute_notice() {
+        return Err(ApiError::with_message(StatusCode::FORBIDDEN, "muted", notice));
+    }
 
     let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
@@ -232,6 +236,9 @@ pub async fn comment(
     require_permission(&st, &user.id, "comment.create", "当前身份组没有评论权限").await?;
     require_community(&st, &user.id, &headers).await?;
     require_group_agreements(&st, &user.id).await?;
+    if let Some(notice) = user.mute_notice() {
+        return Err(ApiError::with_message(StatusCode::FORBIDDEN, "muted", notice));
+    }
 
     let Ok(payload) = serde_json::from_slice::<Value>(&body) else {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));

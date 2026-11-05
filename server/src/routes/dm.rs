@@ -70,6 +70,15 @@ pub async fn send(
     Path(peer): Path<String>,
     body: Bytes,
 ) -> ApiResult<Response> {
+    // 禁言期内也不能发私信：否则换个地方继续骚扰
+    if let Some(notice) = me.mute_notice() {
+        return Err(ApiError::with_message(
+            StatusCode::FORBIDDEN,
+            "muted",
+            notice,
+        ));
+    }
+
     let Some(b) = parse_body(&body) else {
         return Err(ApiError::invalid_input("请求体不是合法 JSON"));
     };

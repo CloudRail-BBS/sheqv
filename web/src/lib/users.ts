@@ -71,6 +71,10 @@ export interface PublicUser {
   verifyKind?: string;
   /** 认证说明，鼠标悬停展示 */
   verifyLabel?: string;
+  /** 禁言到期（毫秒）；未禁言不返回 */
+  mutedUntil?: number;
+  /** 禁言原因 */
+  muteReason?: string;
   verifiedAt?: number;
   /** 身份组 id（未分组时不返回） */
   groupId?: string;

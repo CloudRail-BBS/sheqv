@@ -80,14 +80,20 @@ export function CommentComposer({
   loggedIn,
   total,
   captchaId = '',
+  mutedUntil = 0,
+  muteReason = '',
 }: {
   postId: string;
   signed: boolean;
   loggedIn: boolean;
   total: number;
   captchaId?: string;
+  /** 禁言到期（毫秒）；大于当前时间说明还在禁言期 */
+  mutedUntil?: number;
+  muteReason?: string;
 }) {
   const router = useRouter();
+  const muted = mutedUntil > Date.now();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -177,6 +183,15 @@ export function CommentComposer({
       ) : !signed ? (
         <div className="hint-box">
           未签署《社区公约》不能回复。<Link href="/agreements">去签署</Link>
+        </div>
+      ) : muted ? (
+        <div className="hint-box" data-tone="warn">
+          <b>你正在被禁言</b>
+          <span>
+            解除时间 {new Date(mutedUntil).toLocaleString('zh-CN', { hour12: false })}
+            {muteReason ? `（原因：${muteReason}）` : ''}
+            {'，期间不能回复。'}
+          </span>
         </div>
       ) : (
         <>

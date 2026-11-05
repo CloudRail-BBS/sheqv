@@ -14,6 +14,7 @@ const ITEMS: { href: string; label: string; queue?: string }[] = [
   { href: '/ops/review', label: '帖子审核', queue: 'posts' },
   { href: '/ops/verifications', label: '认证', queue: 'verifications' },
   { href: '/ops/titles', label: '头衔', queue: 'titles' },
+  { href: '/ops/members', label: '成员' },
 ];
 
 export function OpsNav({ badges = {} }: { badges?: Record<string, number> }) {

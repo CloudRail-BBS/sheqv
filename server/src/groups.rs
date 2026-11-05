@@ -13,7 +13,7 @@ use sqlx::PgPool;
 use crate::ids;
 
 /// 权限点清单。新增权限时只改这里，后台勾选项与判定会自动跟上。
-pub const PERMISSIONS: [(&str, &str); 11] = [
+pub const PERMISSIONS: [(&str, &str); 12] = [
     ("post.create", "发帖"),
     ("comment.create", "评论"),
     ("resource.publish", "发布资源"),
@@ -21,6 +21,7 @@ pub const PERMISSIONS: [(&str, &str); 11] = [
     ("post.pin", "置顶与加精"),
     ("audit.review", "审核内容"),
     ("ops.console", "进入运营面板"),
+    ("user.mute", "禁言成员"),
     ("admin.console", "进入后台"),
     ("group.manage", "管理身份组"),
     ("settings.manage", "修改站点设置"),
@@ -38,6 +39,7 @@ pub fn permission_hint(key: &str) -> &'static str {
         "post.pin" => "把帖子置顶或标为精华，不需要进入后台",
         "audit.review" => "审核待发内容，通过或驳回",
         "ops.console" => "进入 /ops 运营面板：查看运营数据，审核帖子、认证与头衔",
+        "user.mute" => "在运营面板里禁言 / 解除禁言：禁言期间不能发帖、评论与私信",
         "admin.console" => "进入 /admin 控制台并查看后台页面",
         "group.manage" => "新建/修改身份组与其中的权限",
         "settings.manage" => "修改站点设置、文案与页面提示",
