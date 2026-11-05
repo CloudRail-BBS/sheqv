@@ -27,6 +27,7 @@ import { initialOf } from '@/lib/initials';
 import { PushToggle } from '@/components/push-toggle';
 import { FeedTabs } from '@/components/feed-tabs';
 import { FeedFade } from '@/components/feed-fade';
+import { ComposeFab } from '@/components/compose-fab';
 import { isFeedTab } from '@/lib/feed-types';
 
 export const dynamic = 'force-dynamic';
@@ -81,6 +82,7 @@ export default async function HomePage({
   }).format(new Date());
 
   return (
+    <>
     <div className="cols">
       <script
         type="application/ld+json"
@@ -466,5 +468,8 @@ export default async function HomePage({
         </div>
       </aside>
     </div>
+    {/* 手机端：发帖入口改成右下角悬浮按钮（桌面由顶栏的「发帖」承担） */}
+    <ComposeFab loggedIn={Boolean(user)} signed={communitySigned} />
+    </>
   );
 }

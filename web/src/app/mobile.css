@@ -13,8 +13,9 @@
    .composer-modal 这类前台专属前缀，后台与控制台不会被波及）。
    ══════════════════════════════════════════════════════════════ */
 
-/* 大标题只在手机上出现 */
+/* 大标题、悬浮发帖只在手机上出现 */
 .m-hero { display: none; }
+.compose-fab { display: none; }
 
 @media (max-width: 860px) {
   :root {
@@ -214,7 +215,24 @@
   .site-scroll .pb-name { font-size: 13.5px; }
 
   /* ── 我的：资料头 + 分组列表 ─────────────── */
-  .site-scroll .me-hero { border-radius: 24px; padding: 46px 16px 14px; gap: 12px; }
+  /* 资料头改成两行网格：头像 + 信息一行，操作按钮一行。
+     原来靠 flex 换行，中间会空出一大条 */
+  .site-scroll .me-hero {
+    border-radius: 24px;
+    padding: 44px 16px 14px;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas: 'avatar info' 'actions actions';
+    column-gap: 14px; row-gap: 10px;
+    align-items: start;
+  }
+  .site-scroll .me-hero > .me-avatar-wrap { grid-area: avatar; }
+  .site-scroll .me-hero > .me-info { grid-area: info; }
+  .site-scroll .me-hero > .row:last-child {
+    grid-area: actions; width: 100%; margin-left: 0 !important;
+    justify-content: flex-end; gap: 8px;
+  }
+  .site-scroll .me-hero > .me-cover-actions { position: absolute; top: 12px; right: 12px; }
   .site-scroll .me-ava { width: 76px; height: 76px; border-radius: 24px; font-size: 26px; }
   .site-scroll .me-name { font-size: 21px; }
   /* 操作按钮靠右排成胶囊，不要横贯整张卡 */
@@ -292,6 +310,55 @@
 
   /* 内容不足一屏时，让页脚沉到底部，别在半中间截断 */
   .site-scroll .content { min-height: calc(100svh - 150px); }
+
+  /* ── 内容优先：首屏只留导航与内容 ─────────── */
+
+  /* 首页那张「说点什么」的卡片在手机上让位给右下角的悬浮按钮 */
+  .site-scroll #composer { display: none; }
+
+  .compose-fab {
+    display: grid; place-items: center;
+    position: fixed; right: 16px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    z-index: 56;
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 0; background: var(--blue); color: #fff;
+    box-shadow:
+      0 16px 34px -14px rgba(62, 124, 255, 0.75),
+      0 4px 10px -4px rgba(15, 23, 42, 0.35);
+    transition: transform 0.16s var(--ease), box-shadow 0.16s var(--ease);
+  }
+  .compose-fab:active { transform: scale(0.94); }
+
+  /* 轮播在手机上收成一条「公告卡」：高度降下来，正文两行，
+     不抢首屏，但仍然在信息流之前 */
+  .site-scroll .carousel { border-radius: 18px; }
+  /* 高度自适应：标题 + 两行正文 + CTA 放得下就 150，放不下也不会互相压 */
+  .site-scroll .slide { height: auto; min-height: 150px; padding: 16px 18px 18px; }
+  .site-scroll .slide .kicker { font-size: 10px; letter-spacing: 0.1em; }
+  .site-scroll .slide h2 { font-size: 18px; margin: 6px 0 4px; line-height: 1.35; }
+  .site-scroll .slide p {
+    font-size: 12.5px; line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .site-scroll .slide-cta { margin-top: 10px; height: 28px; font-size: 11.5px; border-radius: 999px; }
+  .site-scroll .cnav { display: none; }
+  .site-scroll .dots { right: 12px; bottom: 9px; }
+
+  /* 页头说明最多两行，把空间留给列表本身 */
+  .site-scroll .page-head p,
+  .site-scroll .col-main > .between:first-child p {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 开发团队：「创建团队」原来是夹在榜单和列表中间的一张卡，
+     手机上把它挪到列表之后，让团队列表先出现 */
+  .site-scroll .col-main > .dt-create-wrap { order: 9; }
+
+  /* 底部多留一点：悬浮按钮不会压住最后一张卡 */
+  .site-scroll .content { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 
   /* ── 弹窗 → 底部 Sheet ────────────────────── */
   .composer-modal {
