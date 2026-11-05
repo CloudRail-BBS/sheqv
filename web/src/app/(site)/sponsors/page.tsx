@@ -3,6 +3,7 @@ import { getSnapshot, formatAmount, formatDate } from '@/lib/sponsor-store';
 import { afdianConfigured, afdianPageUrl } from '@/lib/afdian';
 import { getCurrentUser } from '@/lib/current-user';
 import { buildMetadata } from '@/lib/seo';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,8 +137,7 @@ export default async function SponsorsPage() {
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">赞助去向</div>
+        <FoldCard title="赞助去向">
           <div className="rule-list">
             <div className="rule-row">
               <span className="n">1</span>
@@ -152,10 +152,9 @@ export default async function SponsorsPage() {
               <span>不投放广告，也不卖榜单位置</span>
             </div>
           </div>
-        </div>
+        </FoldCard>
 
-        <div className="card rail-card">
-          <div className="rail-title">关于名单</div>
+        <FoldCard title="关于名单">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             金额与时间来自爱发电开放接口，按累计赞助额排序，同额按最近一次支持时间。
             需要匿名的赞助者可在爱发电侧设置，或联系管理员在后台隐藏。
@@ -166,7 +165,7 @@ export default async function SponsorsPage() {
               {configured ? '自动同步' : '未同步'}
             </span>
           </div>
-        </div>
+        </FoldCard>
 
         <div className="card rail-card">
           <div className="rail-title">快捷</div>

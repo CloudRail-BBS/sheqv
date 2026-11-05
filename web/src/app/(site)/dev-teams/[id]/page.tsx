@@ -10,6 +10,7 @@ import { DevTeamOwner } from '@/components/dev-team-owner';
 import { DevTeamAvatar } from '@/components/dev-team-avatar';
 import { buildMetadata } from '@/lib/seo';
 import { fmtNum } from '@/lib/resource-types';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -132,8 +133,7 @@ export default async function DevTeamDetail({ params }: { params: Promise<{ id: 
           />
         )}
 
-        <div className="card rail-card">
-          <div className="rail-title">怎么加入</div>
+        <FoldCard title="怎么加入">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             负责人按昵称邀请，对方必须已经是开发者（发布过至少一个资源）。
             成员可以以团队名义发布资源，团队榜按作品下载与点赞计分。
@@ -141,10 +141,9 @@ export default async function DevTeamDetail({ params }: { params: Promise<{ id: 
           <Link href="/resources/new" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
             发布团队作品
           </Link>
-        </div>
+        </FoldCard>
 
-        <div className="card rail-card">
-          <div className="rail-title">团队分</div>
+        <FoldCard title="团队分">
           <dl className="kv">
             <dt>资源数</dt>
             <dd className="mono">× 4</dd>
@@ -156,7 +155,7 @@ export default async function DevTeamDetail({ params }: { params: Promise<{ id: 
           <p className="small muted" style={{ marginTop: 8 }}>
             与开发者个人榜同一套口径。
           </p>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

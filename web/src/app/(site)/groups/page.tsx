@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { listPublicGroups } from '@/lib/groups';
 import { GroupTag } from '@/components/group-tag';
 import { buildMetadata } from '@/lib/seo';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -124,8 +125,7 @@ export default async function GroupsPage() {
           )}
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">怎么获得</div>
+        <FoldCard title="怎么获得">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             注册后自动进入「默认」组；其他身份组由管理员在后台分配。
             部分组要求先签署公约，未签署时不能获得该组的权限。
@@ -141,7 +141,7 @@ export default async function GroupsPage() {
           <Link href="/agreements" className="btn btn-sm btn-ghost" style={{ marginTop: 12 }}>
             查看社区公约
           </Link>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

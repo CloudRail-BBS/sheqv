@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { listPolicies } from '@/lib/policy-store';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,8 +54,7 @@ export default async function PoliciesPage() {
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">说明</div>
+        <FoldCard title="说明">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             政策用于说明服务规则、责任边界与数据处理方式，不替代《社区公约》的签署门槛。
             公约签名与证书在「公约」页查看。
@@ -62,7 +62,7 @@ export default async function PoliciesPage() {
           <Link href="/agreements" className="btn btn-sm btn-ghost" style={{ marginTop: 10 }}>
             查看公约与签署
           </Link>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

@@ -11,6 +11,7 @@ import { buildMetadata } from '@/lib/seo';
 import { fmtNum } from '@/lib/resource-types';
 import { rankClass } from '@/lib/org-types';
 import { getSettings } from '@/lib/settings';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,8 +121,7 @@ export default async function DevTeamsPage({
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">团队分怎么算</div>
+        <FoldCard title="团队分怎么算">
           <dl className="kv">
             <dt>资源数</dt>
             <dd className="mono">× 4</dd>
@@ -136,10 +136,9 @@ export default async function DevTeamsPage({
           <Link href="/leaderboard#developers" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
             完整开发者榜
           </Link>
-        </div>
+        </FoldCard>
 
-        <div className="card rail-card">
-          <div className="rail-title">三种组织别混</div>
+        <FoldCard title="三种组织别混">
           <dl className="kv">
             <dt>公会</dt>
             <dd>社区组织，按积分上公会榜</dd>
@@ -151,7 +150,7 @@ export default async function DevTeamsPage({
           <p className="small muted" style={{ marginTop: 10, lineHeight: 1.7 }}>
             加入其中一个，不影响另外两个的身份。
           </p>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

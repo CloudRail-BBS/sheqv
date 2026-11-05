@@ -23,6 +23,7 @@ import { fmtNum } from '@/lib/resource-types';
 import { DevTeamAvatar } from '@/components/dev-team-avatar';
 import { DevTeamShare } from '@/components/dev-team-share';
 import { initialOf } from '@/lib/initials';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -351,8 +352,7 @@ export default async function LeaderboardPage({
           )}
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">计分规则</div>
+        <FoldCard title="计分规则">
           <div className="rule-list">
             <div className="rule-row">
               <span className="n">1</span>
@@ -367,10 +367,9 @@ export default async function LeaderboardPage({
               <span>公会与战队分开排名，互相不占名额</span>
             </div>
           </div>
-        </div>
+        </FoldCard>
 
-        <div className="card rail-card">
-          <div className="rail-title">开发者榜</div>
+        <FoldCard title="开发者榜">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             资源下载 1 分、点赞 3 分；团队另加每个资源 4 分。
             个人榜只算个人署名的资源，团队榜只算挂在团队名下的资源。
@@ -378,14 +377,13 @@ export default async function LeaderboardPage({
           <Link href="/resources" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
             去资源库
           </Link>
-        </div>
+        </FoldCard>
 
-        <div className="card rail-card">
-          <div className="rail-title">分享图</div>
+        <FoldCard title="分享图">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             点榜单右上角「生成分享图」，会按当前游戏筛选导出 1080×1440 的 PNG（含前 8 名）。
           </p>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

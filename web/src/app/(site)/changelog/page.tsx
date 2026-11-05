@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { listChangelog } from '@/lib/changelog-store';
 import { buildMetadata } from '@/lib/seo';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,18 +70,16 @@ export default async function ChangelogPage() {
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">版本号怎么读</div>
+        <FoldCard title="版本号怎么读">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             形如 <code>2026.10.28.2</code>：年份.月份.日期.当天第几次发布。同一天多次上线时末位递增。
           </p>
-        </div>
-        <div className="card rail-card">
-          <div className="rail-title">想看细节</div>
+        </FoldCard>
+        <FoldCard title="想看细节">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             更技术的说明在开发文档的「变更记录」章节；这里只讲用户能感知到的变化。
           </p>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

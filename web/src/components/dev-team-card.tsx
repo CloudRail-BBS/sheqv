@@ -7,7 +7,6 @@ import { fmtNum } from '@/lib/resource-types';
 export function DevTeamCard({ team }: { team: DevTeam }) {
   return (
     <Link href={`/dev-teams/${team.id}`} className="card dev-team-card">
-      <span className="dt-accent" style={{ background: team.color || 'var(--blue)' }} />
       <div className="dt-head">
         <DevTeamAvatar team={team} size={42} />
         <div style={{ minWidth: 0 }}>

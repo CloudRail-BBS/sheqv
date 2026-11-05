@@ -5,6 +5,7 @@ import { ResourceCard } from '@/components/resource-card';
 import { ResourceUpload } from '@/components/resource-upload';
 import { listMyDevTeams } from '@/lib/dev-team-store';
 import { EmptyState } from '@/components/empty-state';
+import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 import {
@@ -193,8 +194,7 @@ export default async function ResourcesPage({
           </Link>
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">发布说明</div>
+        <FoldCard title="发布说明">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             资源发布后立即可见，不做人工预审；违规内容由后台下架。
             下载按「同一账号同一天」计一次，点赞每个账号只能点一次。
@@ -205,7 +205,7 @@ export default async function ResourcesPage({
           <Link href="/dev-teams" className="btn btn-sm btn-ghost" style={{ marginTop: 10 }}>
             看看开发团队
           </Link>
-        </div>
+        </FoldCard>
 
         {/* 只有真的筛过才显示，否则这张卡只是把上面的选项再抄一遍 */}
         {(sp.game || sp.category || sp.q || sort !== 'new') && (

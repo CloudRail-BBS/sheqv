@@ -3,6 +3,7 @@ import { formatSignedAt } from '@/lib/agreements';
 import { listActive } from '@/lib/agreement-store';
 import { SignAgreement } from '@/components/sign-agreement';
 import { getCurrentUser } from '@/lib/current-user';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,8 +118,7 @@ export default async function AgreementsPage() {
           </div>
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">签署规则</div>
+        <FoldCard title="签署规则">
           <div className="rule-list">
             <div className="rule-row">
               <span className="n">1</span>
@@ -133,7 +133,7 @@ export default async function AgreementsPage() {
               <span>签署记录可在「我的」查看，可导出</span>
             </div>
           </div>
-        </div>
+        </FoldCard>
 
         <div className="card rail-card">
           <div className="rail-title">版本记录</div>

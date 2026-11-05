@@ -360,6 +360,47 @@
   /* 底部多留一点：悬浮按钮不会压住最后一张卡 */
   .site-scroll .content { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 
+  /* ── 说明卡：手机上折成一行 ───────────────── */
+  /* 单列之后右侧栏落到正文末尾，几张说明卡拼起来就是一两屏纯文字。
+     折起来只留标题，想看再点开；桌面端始终展开（见 globals.css）。 */
+  /* 侧栏小标题在手机上不再用「大写小字」，跟折叠行同一档字号，
+     否则同一列里「我的排名」和「计分规则」会一个灰一个黑 */
+  .site-scroll .rail-title {
+    font-size: 12.5px; letter-spacing: 0; text-transform: none;
+    font-weight: 600; color: var(--text-2);
+  }
+  .site-scroll .fold-card { padding: 0 16px; }
+  .site-scroll .fold-static { display: none; }
+  /* 手机上横向空间够，词条列按最长的词放宽，「Rusted Warfare」不用折行 */
+  .site-scroll .kv { grid-template-columns: minmax(78px, max-content) 1fr; }
+  .site-scroll .fold-head {
+    display: flex;
+    min-height: 50px; margin: 0; padding: 0;
+    font-size: 13px; letter-spacing: 0; text-transform: none;
+    font-weight: 600; color: var(--text); cursor: pointer;
+  }
+  .site-scroll .fold-head::before { height: 14px; }
+  .site-scroll .fold-hint {
+    display: inline; margin-left: auto;
+    font-size: 11.5px; font-weight: 500; letter-spacing: 0;
+    color: var(--text-3);
+  }
+  .site-scroll .fold-chevron {
+    display: block; flex: none; width: 18px; height: 18px;
+    color: var(--text-3);
+    transition: transform 0.24s var(--ease);
+  }
+  .site-scroll .fold-card[data-open='true'] .fold-chevron { transform: rotate(180deg); }
+  .site-scroll .fold-card[data-open='false'] .fold-body { display: none; }
+  .site-scroll .fold-card[data-open='true'] .fold-body {
+    padding-bottom: 14px;
+    animation: mFoldIn 0.22s var(--ease);
+  }
+  @keyframes mFoldIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+
   /* ── 弹窗 → 底部 Sheet ────────────────────── */
   .composer-modal {
     place-items: end stretch;

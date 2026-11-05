@@ -3,6 +3,7 @@ import { listAnnouncements, type AnnouncementKind } from '@/lib/announcement-sto
 import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,13 +75,12 @@ export default async function AnnouncementsPage() {
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">怎么看公告</div>
+        <FoldCard title="怎么看公告">
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             置顶的排在最上面；分类只有规则 / 版本 / 活动 / 系统四种。
             公告由管理员在后台维护，改完立即生效，不需要重新部署。
           </p>
-        </div>
+        </FoldCard>
         <div className="card rail-card">
           <div className="rail-title">相关</div>
           <div className="rail-list">

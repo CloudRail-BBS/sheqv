@@ -315,6 +315,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   content: ""; width: 3px; height: 12px; border-radius: 2px; flex: none;
   background: linear-gradient(180deg, var(--blue), var(--blue-2));
 }
+/* 说明卡的折叠头：桌面端显示左边的静态标题，折叠按钮只给手机 */
+.fold-head {
+  display: none;
+  width: 100%; padding: 0; border: 0; background: none;
+  font-family: inherit; text-align: left; cursor: default;
+  -webkit-appearance: none; appearance: none;
+}
+.fold-hint, .fold-chevron { display: none; }
+.fold-body { display: block; }
 .mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mini-stat {
   padding: 10px 12px; border-radius: 10px;
@@ -783,9 +792,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .crumb { font-size: 11.5px; color: var(--muted); padding: 2px 0; }
 .crumb a:hover { color: var(--text-2); }
 .page-title { font-size: 23px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; }
+/* 标签列固定 78px；手机上再放宽到「最长的词」（见 mobile.css） */
 .kv { display: grid; grid-template-columns: 78px 1fr; gap: 8px 12px; font-size: 12px; }
 .kv dt { color: var(--muted); }
-.kv dd { color: var(--text-2); }
+/* dd 默认带 40px 左缩进，会把「词条 / 值」两列顶得对不齐 */
+.kv dd { margin: 0; color: var(--text-2); }
 
 /* ── match ───────────────────────────────── */
 
@@ -2311,7 +2322,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   transition: border-color 0.18s, transform 0.18s;
 }
 .dev-team-card:hover { transform: translateY(-1px); border-color: var(--line-strong); }
-.dt-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
 .dt-head { display: flex; align-items: center; gap: 10px; }
 .dt-mark {
   width: 42px; height: 42px; border-radius: 11px; flex: none;

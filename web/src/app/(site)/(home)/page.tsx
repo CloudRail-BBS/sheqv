@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MATCHES, MATCH_STATUS_LABEL } from '@/lib/data';
 import { listOrgs } from '@/lib/orgs';
+import { FoldCard } from '@/components/fold-card';
 import { getPoints } from '@/lib/points';
 import { CheckinCard, CheckinGuest } from '@/components/checkin-card';
 import { winRateText } from '@/lib/org-types';
@@ -446,8 +447,7 @@ export default async function HomePage({
           </div>
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">社区规则</div>
+        <FoldCard title="社区规则">
           <div className="rule-list">
             <div className="rule-row">
               <span className="n">1</span>
@@ -465,7 +465,7 @@ export default async function HomePage({
           <Link href="/matches" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }}>
             查看完整规则
           </Link>
-        </div>
+        </FoldCard>
       </aside>
     </div>
     {/* 手机端：发帖入口改成右下角悬浮按钮（桌面由顶栏的「发帖」承担） */}

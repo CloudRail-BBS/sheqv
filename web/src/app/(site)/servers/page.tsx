@@ -6,6 +6,7 @@ import { RelayBoard } from '@/components/relay-board';
 import { ServerUpload } from '@/components/server-upload';
 import { MySubmissions } from '@/components/my-submissions';
 import { EmptyState } from '@/components/empty-state';
+import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 
@@ -112,8 +113,7 @@ export default async function ServersPage({
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">大厅说明</div>
+        <FoldCard title="大厅说明">
           <dl className="kv">
             <dt>审核</dt>
             <dd>上传后人工过一遍，通过才展示</dd>
@@ -130,7 +130,7 @@ export default async function ServersPage({
             提交后可以在「我的提交」里看状态；填错地址就删掉重传，不用等审核。
             站点只接受公网地址，内网 IP 会在提交时被挡下。
           </p>
-        </div>
+        </FoldCard>
 
         {active === 'rusted_warfare' && rw.length > 0 && (
           <div className="card rail-card">

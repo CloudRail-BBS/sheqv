@@ -5,6 +5,7 @@ import { CHECKIN_BASE, STREAK_BONUS_MAX, fmtTime, reasonLabel } from '@/lib/poin
 import { CheckinCard } from '@/components/checkin-card';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,8 +135,7 @@ export default async function PointsPage() {
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">怎么拿积分</div>
+        <FoldCard title="怎么拿积分">
           <div className="rule-list">
             <div className="rule-row">
               <span className="n">1</span>
@@ -150,7 +150,7 @@ export default async function PointsPage() {
               <span>积分只增不减，管理员可以在后台手动调整</span>
             </div>
           </div>
-        </div>
+        </FoldCard>
 
         <div className="card rail-card">
           <div className="rail-title">连签规则</div>

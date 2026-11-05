@@ -19,6 +19,7 @@ import { AuditProgress } from '@/components/audit-progress';
 import { getImageSizes } from '@/lib/media-sizes';
 import { publicCaptchaId } from '@/lib/geetest';
 import { Markdown, markdownToText } from '@/lib/markdown';
+import { FoldCard } from '@/components/fold-card';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -317,14 +318,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">发帖规则</div>
+        <FoldCard title="发帖规则">
           <div className="rule-list">
             <div className="rule-row"><span className="n">1</span><span>发帖与评论需先签署《社区公约》</span></div>
             <div className="rule-row"><span className="n">2</span><span>转载注明作者与许可协议</span></div>
             <div className="rule-row"><span className="n">3</span><span>招募信息请发到对应分区</span></div>
           </div>
-        </div>
+        </FoldCard>
       </aside>
     </div>
   );

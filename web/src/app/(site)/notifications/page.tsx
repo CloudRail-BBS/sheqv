@@ -3,6 +3,7 @@ import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
 import { getNotifications, noteKindLabel, noteKindTone, timeAgo } from '@/lib/notifications';
 import { MarkAllRead } from '@/components/notification-bell';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,14 +89,13 @@ export default async function NotificationsPage() {
       </div>
 
       <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">未读怎么算</div>
+        <FoldCard title="未读怎么算">
           <p className="small muted" style={{ lineHeight: 1.75 }}>
             点「全部标为已读」会清掉所有未读通知。
             待确认比赛属于「待处理」，不随已读消失。
             {!user && ' 登录后未读状态会跟着账号走，换设备也一致。'}
           </p>
-        </div>
+        </FoldCard>
         <div className="card rail-card">
           <div className="rail-title">快捷入口</div>
           <div className="rail-list">

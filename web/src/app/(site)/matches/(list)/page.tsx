@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/empty-state';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 import { initialOf } from '@/lib/initials';
+import { FoldCard } from '@/components/fold-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,8 +144,7 @@ export default async function MatchesPage({
           </div>
         </div>
 
-        <div className="card rail-card">
-          <div className="rail-title">确权流程</div>
+        <FoldCard title="确权流程">
           <ol className="steps" style={{ margin: 0 }}>
             <li>发起约战，约定赛制与地图</li>
             <li>对方接受后锁定名单快照</li>
@@ -152,7 +152,7 @@ export default async function MatchesPage({
             <li>一致自动确认，不一致转争议</li>
             <li>仲裁裁定后计入战绩</li>
           </ol>
-        </div>
+        </FoldCard>
 
         <div className="card rail-card">
           <div className="rail-title">我的组织</div>
