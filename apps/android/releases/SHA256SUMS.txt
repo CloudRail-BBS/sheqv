@@ -1,2 +1,3 @@
-f7d5d4f06024da9a22a5e55d614dcfe13b023acb8adf3d0da2f18bbfb87b976f  BlockArena-0.1.1-release.apk
+85f451e9e7379dfb61d71862778ccb18d0c21cb06b2e0a9b28189749010dc9ab  BlockArena-0.1.2-release.apk
 aab1f317843767ecb7fc3f088c92d33ed81cb2b83552d870d95011c90dba639a  BlockArena-0.1.2-debug.apk
+f7d5d4f06024da9a22a5e55d614dcfe13b023acb8adf3d0da2f18bbfb87b976f  BlockArena-0.1.1-release.apk
