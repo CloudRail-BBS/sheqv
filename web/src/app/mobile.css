@@ -410,7 +410,8 @@
   .composer-panel {
     width: 100%;
     max-height: 92dvh;
-    padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
+    /* 底部内边距交给工具栏自己（它要通栏到底），否则栏下会留一条底色带 */
+    padding: 6px 16px 0;
     border-radius: 22px 22px 0 0;
     border: 0;
     animation: mSheetIn 0.28s cubic-bezier(0.22, 0.9, 0.28, 1);
@@ -423,6 +424,18 @@
     margin: 4px auto 12px;
     border-radius: 999px;
     background: var(--line-strong, var(--line));
+  }
+  /* 底部工具栏通栏：面板左右各有 16px 内边距（底部内边距已交给工具栏），
+     工具栏不外扩就会在两侧留一条白边，看着像没铺满。 */
+  .composer-panel .md-toolbar-bottom {
+    margin: 0 -16px;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+  /* 上传报错落在工具栏下方，同样要让开底部安全区 */
+  .composer-panel .md-inline-err {
+    margin: 0 -16px;
+    padding: 6px 16px calc(8px + env(safe-area-inset-bottom));
   }
   .composer-panel-head { margin-bottom: 10px; }
   .composer-head-title { font-size: 16px; }
