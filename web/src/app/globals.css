@@ -2980,6 +2980,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 /* 工具区：按「文本 / 块 / 插入」分组，组间用一根淡分割线，不靠间距硬猜 */
 .md-tools { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; min-width: 0; }
+.md-tools-scroll { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; min-width: 0; }
 .md-group { display: flex; align-items: center; gap: 2px; }
 /* 图片/表情属于「插入」，和上面的排版工具有点不一样，靠右站 */
 .md-group-end { margin-left: auto; padding-left: 2px; }
@@ -4126,28 +4127,33 @@ body:has(.auth-page) .app {
   .composer-panel .md-composer-editor .md-preview-inner { padding: 13px 14px; }
   .composer-panel .md-toolbar-bottom {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "lead tools"
-      "right right";
-    gap: 5px 8px;
-    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+      "tools"
+      "right";
+    gap: 6px;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
     position: sticky;
     bottom: 0;
     z-index: 6;
   }
-  .composer-panel .md-leading { grid-area: lead; }
+  /* 工具栏里不再重复头像：抽屉抬头已经写了「以 xxx 的身份发布」 */
+  .composer-panel .md-leading { display: none; }
   .composer-panel .md-tools {
     grid-area: tools;
     display: flex;
     flex-wrap: nowrap;
-    gap: 0;
+    gap: 4px;
     min-width: 0;
-    overflow-x: auto;
-    padding-bottom: 1px;
-    scrollbar-width: none;
   }
-  .composer-panel .md-tools::-webkit-scrollbar { display: none; }
+  /* 排版工具横向滚动，图片/表情固定在右端 */
+  .composer-panel .md-tools-scroll {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; flex-wrap: nowrap; gap: 0;
+    overflow-x: auto; scrollbar-width: none;
+    padding-bottom: 1px;
+  }
+  .composer-panel .md-tools-scroll::-webkit-scrollbar { display: none; }
   .composer-panel .md-toolbar-bottom .md-tools button { flex: none; }
   .composer-panel .md-toolbar-right {
     grid-area: right;
@@ -4170,15 +4176,6 @@ body:has(.auth-page) .app {
 /* 资源弹窗移动端：文件区与折叠带不被工具栏挤掉 */
 @media (max-width: 700px) {
   .res-drop .res-file-row { gap: 7px; }
-}
-
-/* 移动端工具栏：宁可换行，也不要让图片/表情入口藏在横向滚动里 */
-@media (max-width: 700px) {
-  .composer-panel .md-tools {
-    flex-wrap: wrap;
-    overflow: visible;
-    padding-bottom: 0;
-  }
 }
 
 @media (max-width: 700px) {

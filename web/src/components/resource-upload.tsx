@@ -294,7 +294,7 @@ export function ResourceUpload({
               <div className="composer-head-actions">
                 <button
                   type="button"
-                  className="composer-icon-btn"
+                  className="composer-icon-btn composer-expand"
                   aria-label={expanded ? '还原大小' : '放大编辑'}
                   title={expanded ? '还原大小' : '放大编辑'}
                   onClick={() => setExpanded((v) => !v)}

@@ -224,6 +224,8 @@ export function MarkdownEditor({
 
   const tools = (
     <>
+      {/* 排版工具：手机上这一排横向滚动，图片/表情固定在右端不跟着滚 */}
+      <div className="md-tools-scroll">
       <div className="md-group">
         <button type="button" aria-label="粗体" title="粗体 · Ctrl+B" onClick={() => replaceSelection('**', '**', '粗体')}>
           <MdIcon name="bold" />
@@ -261,6 +263,7 @@ export function MarkdownEditor({
         <button type="button" aria-label="有序列表" title="有序列表" onClick={() => prefixLine('1. ')}>
           <MdIcon name="ordered" />
         </button>
+      </div>
       </div>
       <div className="md-group md-group-end">
         <button

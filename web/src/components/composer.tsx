@@ -333,7 +333,7 @@ export function Composer({
               <div className="composer-head-actions">
                 <button
                   type="button"
-                  className="composer-icon-btn"
+                  className="composer-icon-btn composer-expand"
                   aria-label={expanded ? '还原大小' : '放大编辑'}
                   title={expanded ? '还原大小' : '放大编辑'}
                   onClick={() => setExpanded((v) => !v)}
@@ -453,7 +453,7 @@ export function Composer({
               onChange={setBody}
               rows={12}
               maxLength={8000}
-              placeholder="在此输入。使用工具栏或 Markdown 进行格式化，拖动或粘贴图片。"
+              placeholder="写点什么…支持 Markdown 与图片"
               onSubmit={submit}
               leading={
                 <span className="composer-me" title="以你的身份发布">
