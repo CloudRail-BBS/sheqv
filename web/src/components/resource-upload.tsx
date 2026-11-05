@@ -152,6 +152,11 @@ export function ResourceUpload({
       setAttachments(next);
       const bytes = next.reduce((n, a) => n + a.size, 0);
       set('sizeMb', (bytes / 1024 / 1024).toFixed(2));
+      // 标题还空着就用第一个文件名顶上（去掉扩展名），省得再手打一遍
+      if (!form.title.trim()) {
+        const base = next[0]?.name.replace(/\.[^.]+$/, '').trim().slice(0, 60);
+        if (base) set('title', base);
+      }
     }
   }
 
@@ -573,11 +578,17 @@ export function ResourceUpload({
               }
               actions={
                 <>
-                  <span className="composer-count">{form.body.length} 字</span>
+                  <span className="composer-count">
+                    {form.body.length} 字 · 标题 {form.title.trim().length}/60
+                  </span>
                   {err ? (
                     <span className="composer-err">{err}</span>
+                  ) : !form.title.trim() ? (
+                    <span className="composer-hint">先填标题，或上传文件自动带上</span>
+                  ) : attachments.length === 0 && !form.url.trim() ? (
+                    <span className="composer-hint">还需要文件或外链地址</span>
                   ) : (
-                    <span className="composer-saved">发布后立即可见</span>
+                    <span className="composer-saved">草稿随发布一起提交</span>
                   )}
                   <button type="button" className="composer-discard" onClick={close} disabled={busy}>
                     舍弃
@@ -586,7 +597,13 @@ export function ResourceUpload({
                     type="button"
                     className="composer-submit"
                     onClick={submit}
-                    disabled={busy || uploading}
+                    disabled={
+                      busy ||
+                      uploading ||
+                      form.title.trim().length < 2 ||
+                      (attachments.length === 0 && !form.url.trim())
+                    }
+                    title="发布资源（⌘/Ctrl + Enter）"
                   >
                     {busy ? '发布中…' : '发布资源'}
                   </button>

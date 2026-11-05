@@ -3539,6 +3539,29 @@ body:has(.auth-page) .app {
 .composer-count { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .composer-saved { font-size: 10px; color: var(--muted); }
 .composer-err { font-size: 10px; color: var(--danger); max-width: 180px; }
+/* 「还差什么」的提示：说清下一步，而不是等点了按钮才报错 */
+.composer-hint { font-size: 10.5px; color: var(--text-3); }
+/* 快捷键只在有指针的宽屏上提示；手机上说出来也没用 */
+.composer-kbd {
+  display: none; padding: 1px 6px; border-radius: 5px;
+  border: 1px solid var(--line-soft); color: var(--text-3);
+  font-size: 10px; letter-spacing: 0.02em;
+}
+@media (hover: hover) and (min-width: 861px) {
+  .composer-kbd { display: inline-block; }
+}
+/* 恢复草稿的提示条：给一个「清空重写」的出口，别让旧内容赖着 */
+.composer-restored {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 10px; padding: 7px 10px 7px 12px;
+  border: 1px dashed var(--line); border-radius: 9px;
+  background: var(--panel-2); font-size: 11.5px; color: var(--text-2);
+}
+.composer-restored button {
+  margin-left: auto; padding: 0; border: 0; background: none;
+  color: var(--blue); font: inherit; font-size: 11.5px; cursor: pointer;
+}
+.composer-submit:disabled, .composer-discard:disabled { opacity: 0.5; cursor: not-allowed; }
 .composer-discard {
   height: 34px; padding: 0 10px; border: 0; border-radius: 8px;
   background: transparent; color: var(--text-2); font-size: 12px; cursor: pointer;

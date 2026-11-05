@@ -45,6 +45,9 @@ export function Composer({
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** 打开时是否从本地草稿恢复过：给一条「已恢复」提示，顺便提供清空入口 */
+  const [restored, setRestored] = useState(false);
+  const titleRef = useRef<HTMLInputElement>(null);
   const [captcha, setCaptcha] = useState<CaptchaPayload | null>(null);
   const [captchaOpen, setCaptchaOpen] = useState(false);
 
@@ -79,6 +82,7 @@ export function Composer({
         if (typeof d.category === 'string' && CATEGORY_KEYS.includes(d.category)) {
           setCategory(d.category);
         }
+        setRestored(Boolean(d.body || d.title));
       }
     } catch {
       /* 坏草稿直接忽略 */
@@ -131,6 +135,16 @@ export function Composer({
     };
   }, [open]);
 
+  const titleLen = title.trim().length;
+  const bodyLen = body.trim().length;
+  const ready = titleLen >= 4 && titleLen <= 60 && bodyLen >= 10 && bodyLen <= 8000;
+  const hint =
+    titleLen < 4
+      ? `标题还差 ${4 - titleLen} 字`
+      : bodyLen < 10
+        ? `正文还差 ${10 - bodyLen} 字`
+        : '可以发布了';
+
   const avatarNode = avatar ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img className="post-avatar-img" src={avatar} alt="" loading="lazy" decoding="async" />
@@ -140,6 +154,25 @@ export function Composer({
 
   async function submit() {
     await doSubmit();
+  }
+
+  /** 舍弃：清掉本地草稿再关。只点右上角 × 的话草稿会留着，下次接着写 */
+  function discard() {
+    if (title.trim() || body.trim()) {
+      if (!window.confirm('舍弃这次编辑？本地草稿也会一起清掉。')) return;
+    }
+    setTitle('');
+    setBody('');
+    setTags([]);
+    setCategory('常规');
+    setErr(null);
+    setRestored(false);
+    try {
+      localStorage.removeItem(`ba-draft-${nickname}`);
+    } catch {
+      /* 隐私模式忽略 */
+    }
+    setOpen(false);
   }
 
   async function doSubmit(proofArg?: CaptchaPayload | null) {
@@ -163,6 +196,7 @@ export function Composer({
     }
     if (finalTitle.length < 4 || finalTitle.length > 60) {
       setErr('标题需为 4–60 字');
+      titleRef.current?.focus();
       return;
     }
     if (finalBody.length < 10) {
@@ -318,6 +352,15 @@ export function Composer({
               </div>
             </div>
 
+            {restored && (
+              <div className="composer-restored">
+                <span>已恢复上次未发完的草稿</span>
+                <button type="button" onClick={discard}>
+                  清空重写
+                </button>
+              </div>
+            )}
+
             <div className="composer-meta">
               <div className="composer-cat" ref={catRef}>
                 <span className="composer-meta-label">版块</span>
@@ -395,6 +438,7 @@ export function Composer({
             </div>
 
             <input
+              ref={titleRef}
               className="composer-title-input"
               placeholder="输入标题，或在此处粘贴链接"
               value={title}
@@ -418,16 +462,21 @@ export function Composer({
               }
               actions={
                 <>
-                  <span className="composer-count">{body.length} 字</span>
+                  <span className="composer-count">
+                    {body.length} 字 · 标题 {title.length}/60
+                  </span>
                   {err ? (
                     <span className="composer-err">{err}</span>
-                  ) : (
+                  ) : ready ? (
                     <span className="composer-saved">草稿已自动保存</span>
+                  ) : (
+                    <span className="composer-hint">{hint}</span>
                   )}
+                  <span className="composer-kbd">⌘/Ctrl + Enter</span>
                   <button
                     type="button"
                     className="composer-discard"
-                    onClick={() => setOpen(false)}
+                    onClick={discard}
                     disabled={busy}
                   >
                     舍弃
@@ -436,7 +485,8 @@ export function Composer({
                     type="button"
                     className="composer-submit"
                     onClick={submit}
-                    disabled={busy}
+                    disabled={busy || !ready}
+                    title={ready ? '发布（⌘/Ctrl + Enter）' : hint}
                   >
                     {busy ? '发布中…' : '创建帖子'}
                   </button>
