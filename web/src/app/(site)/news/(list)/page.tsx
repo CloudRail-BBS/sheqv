@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { listNews, listNewsColumns, newsStamp } from '@/lib/news-store';
+import { canExportPaper, listNews, listNewsColumns, newsStamp } from '@/lib/news-store';
+import { getCurrentUser } from '@/lib/current-user';
 import { buildMetadata } from '@/lib/seo';
 import { EmptyState } from '@/components/empty-state';
 import { FoldCard } from '@/components/fold-card';
@@ -21,10 +22,12 @@ export default async function NewsPage({
 }) {
   const sp = await searchParams;
   const col = (sp.col ?? '').trim();
-  const [columns, items] = await Promise.all([
+  const [user, columns, items] = await Promise.all([
+    getCurrentUser(),
     listNewsColumns(),
     listNews({ column: col || undefined, limit: 60 }),
   ]);
+  const canExport = canExportPaper(user);
   const active = columns.find((c) => c.slug === col);
   const lead = items[0];
   const rest = items.slice(1);
@@ -46,9 +49,11 @@ export default async function NewsPage({
               {active?.intro || '社区要闻、赛事报道与开发者动态，按栏目归档；任意时间段的稿件可以拼成一期报刊。'}
             </p>
           </div>
-          <Link href="/news/paper" className="btn btn-primary news-cta">
-            导出报刊
-          </Link>
+          {canExport && (
+            <Link href="/news/paper" className="btn btn-primary news-cta">
+              导出报刊
+            </Link>
+          )}
         </div>
 
         <div className="row wrap news-chiprow" style={{ gap: 6 }}>
@@ -126,9 +131,11 @@ export default async function NewsPage({
           <p className="small muted" style={{ lineHeight: 1.8, marginTop: 8 }}>
             报刊不是另存一份：按时间区间现场拼版，改稿后重新导出即可。
           </p>
-          <Link href="/news/paper" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
-            去拼一期报纸
-          </Link>
+          {canExport && (
+            <Link href="/news/paper" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
+              去拼一期报纸
+            </Link>
+          )}
         </FoldCard>
         <div className="card rail-card">
           <div className="rail-title">栏目</div>

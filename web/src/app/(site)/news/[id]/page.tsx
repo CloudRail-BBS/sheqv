@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getNews, newsDay } from '@/lib/news-store';
+import { canExportPaper, getNews, newsDay } from '@/lib/news-store';
+import { getCurrentUser } from '@/lib/current-user';
 import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -19,8 +20,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function NewsDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = await getNews(id);
+  const [item, user] = await Promise.all([getNews(id), getCurrentUser()]);
   if (!item) notFound();
+  const canExport = canExportPaper(user);
 
   const paragraphs = item.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 
@@ -64,9 +66,11 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
             <Link href="/news" className="btn btn-sm btn-ghost">
               ← 回新闻版
             </Link>
-            <Link href="/news/paper" className="btn btn-sm btn-ghost">
-              导出为报刊
-            </Link>
+            {canExport && (
+              <Link href="/news/paper" className="btn btn-sm btn-ghost">
+                导出为报刊
+              </Link>
+            )}
           </div>
         </article>
       </div>

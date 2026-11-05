@@ -1,4 +1,5 @@
 import { apiGet, apiGetOr } from './api-client';
+import type { PublicUser } from './users';
 
 /** 新闻栏目（后台可增删改，顺序即报刊版面顺序） */
 export interface NewsColumn {
@@ -56,6 +57,15 @@ export async function getNews(id: string): Promise<NewsArticle | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * 报刊导出是受限动作：管理员天然通过，其他账号看身份组里有没有 `news.export`。
+ * 页面要在服务端先判一次，不能只靠隐藏按钮。
+ */
+export function canExportPaper(user: PublicUser | null): boolean {
+  if (!user) return false;
+  return Boolean(user.isAdmin || user.permissions?.includes('news.export'));
 }
 
 /** 2026.11.05 —— 报刊版式用点分日期 */

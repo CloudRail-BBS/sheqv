@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { listNews, listNewsColumns, newsDay, shanghaiDay } from '@/lib/news-store';
+import { canExportPaper, listNews, listNewsColumns, newsDay, shanghaiDay } from '@/lib/news-store';
+import { getCurrentUser } from '@/lib/current-user';
 import { buildMetadata } from '@/lib/seo';
 import { PaperToolbar } from '@/components/paper-toolbar';
 
@@ -16,11 +17,53 @@ export async function generateMetadata() {
 
 const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 
+/** 没权限时看到的是这面墙，而不是一张能打印的报纸 */
+function Locked({ loggedIn }: { loggedIn: boolean }) {
+  return (
+    <div className="paper-wrap">
+      <div className="crumb">
+        <Link href="/news">新闻</Link>
+        <span style={{ margin: '0 7px' }}>/</span>
+        <span>报刊</span>
+      </div>
+
+      <div className="card paper-locked">
+        <span className="paper-locked-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26">
+            <rect x="5" y="10" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M12 14v2.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </span>
+        <h1>报刊导出需要权限</h1>
+        <p>
+          {loggedIn
+            ? '这个账号还没有「导出报刊」权限。管理员可以在后台的身份组里勾上这一项。'
+            : '登录之后，具备编辑部权限的账号可以把新闻拼成报刊并打印。'}
+        </p>
+        <div className="row" style={{ gap: 8, justifyContent: 'center' }}>
+          <Link href="/news" className="btn btn-sm btn-ghost">
+            回新闻版
+          </Link>
+          {!loggedIn && (
+            <Link href="/login" className="btn btn-sm btn-primary">
+              去登录
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function NewsPaperPage({
   searchParams,
 }: {
   searchParams: Promise<{ from?: string; to?: string; cols?: string }>;
 }) {
+  const user = await getCurrentUser();
+  if (!canExportPaper(user)) return <Locked loggedIn={Boolean(user)} />;
+
   const sp = await searchParams;
   const from = isDay(sp.from ?? '') ? sp.from! : shanghaiDay(-29);
   const to = isDay(sp.to ?? '') ? sp.to! : shanghaiDay();

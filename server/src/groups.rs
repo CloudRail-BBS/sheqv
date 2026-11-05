@@ -13,7 +13,7 @@ use sqlx::PgPool;
 use crate::ids;
 
 /// 权限点清单。新增权限时只改这里，后台勾选项与判定会自动跟上。
-pub const PERMISSIONS: [(&str, &str); 12] = [
+pub const PERMISSIONS: [(&str, &str); 13] = [
     ("post.create", "发帖"),
     ("comment.create", "评论"),
     ("resource.publish", "发布资源"),
@@ -26,6 +26,7 @@ pub const PERMISSIONS: [(&str, &str); 12] = [
     ("group.manage", "管理身份组"),
     ("settings.manage", "修改站点设置"),
     ("user.manage", "管理用户"),
+    ("news.export", "导出报刊"),
 ];
 
 /// 每个权限点「能做什么」的一句话说明，后台勾选时直接展示，
@@ -44,6 +45,7 @@ pub fn permission_hint(key: &str) -> &'static str {
         "group.manage" => "新建/修改身份组与其中的权限",
         "settings.manage" => "修改站点设置、文案与页面提示",
         "user.manage" => "改用户资料、封禁账号、授予认证",
+        "news.export" => "把一段时间的新闻导成报刊（/news/paper），可打印或存为 PDF",
         _ => "",
     }
 }
