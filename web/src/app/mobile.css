@@ -4,7 +4,7 @@
    这一层不是「桌面版缩窄」，而是照着手机重排的一版：
 
    - 外壳：贴边内容 + 52px 玻璃顶栏 + 底部 tabbar，没有页脚堆叠
-   - 首页：大标题 → 频道胶囊 → 发帖入口 → 单列大卡
+   - 首页：公告卡 → 频道胶囊 → 单列大卡（发帖走右下角悬浮按钮）
    - 帖子：文章式排版（大标题、16px 正文）+ 底部「写回复」悬浮条
    - 我的：资料头 + 分组卡片列表（inset grouped）
    - 弹窗：发帖 / 声明一律变成底部 Sheet
@@ -13,8 +13,7 @@
    .composer-modal 这类前台专属前缀，后台与控制台不会被波及）。
    ══════════════════════════════════════════════════════════════ */
 
-/* 大标题、悬浮发帖只在手机上出现 */
-.m-hero { display: none; }
+/* 悬浮发帖只在手机上出现 */
 .compose-fab { display: none; }
 
 @media (max-width: 860px) {
@@ -101,19 +100,6 @@
   .site-scroll .col-main > .between:first-child > div:first-child { flex: 1 0 100%; min-width: 0; }
   .site-scroll .col-main > .between:first-child > .row { margin-left: auto; }
   .site-scroll .page-head p { margin-top: 5px; font-size: 13px; line-height: 1.6; }
-
-  /* ── 大标题 ───────────────────────────────── */
-  .site-scroll .m-hero { display: block; padding: 16px 0 4px; }
-  .m-hero-eyebrow {
-    font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
-    text-transform: uppercase; color: var(--text-3);
-  }
-  .m-hero h1 {
-    margin: 3px 0 0;
-    font-size: 30px; font-weight: 700; line-height: 1.15;
-    letter-spacing: -0.03em; color: var(--text);
-  }
-  .m-hero p { margin: 5px 0 0; font-size: 12.5px; color: var(--muted); }
 
   /* ── 频道胶囊 ─────────────────────────────── */
   .site-scroll .feed-tabs {
