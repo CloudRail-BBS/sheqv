@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { NAV_GROUPS, SIDEBAR_DEFAULT, isNavActive, parseNav } from '@/lib/nav-config';
 import { NavGlyph } from './nav-icons';
@@ -28,7 +28,19 @@ export function Sidebar({ items, dmUnread = 0 }: { items?: string; dmUnread?: nu
 
   // 当前项的高亮块用一块「游标」画，切换页面时滑过去而不是跳过去
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const boxRef = useRef<HTMLElement | null>(null);
   const [glide, setGlide] = useState({ top: 0, height: 0, ready: false });
+  // 侧栏自己滚动时把「第一组标题」藏起来：它会正好卡在上沿，露半截很难看
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const onScroll = () => setScrolled(box.scrollTop > 8);
+    box.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => box.removeEventListener('scroll', onScroll);
+  }, []);
 
   useLayoutEffect(() => {
     const activeKey = NAV_GROUPS.flatMap((g) => g.items).find((it) => on(it.href))?.key;
@@ -42,7 +54,11 @@ export function Sidebar({ items, dmUnread = 0 }: { items?: string; dmUnread?: nu
   }, [pathname, search, items]);
 
   return (
-    <aside className="sidebar">
+    <aside
+      className="sidebar"
+      ref={boxRef}
+      data-scrolled={scrolled ? 'true' : 'false'}
+    >
       <span
         className="side-glider"
         aria-hidden="true"

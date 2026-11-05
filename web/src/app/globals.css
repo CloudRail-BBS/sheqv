@@ -257,7 +257,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   font-size: 10px; letter-spacing: 0.12em; color: var(--text-3);
   padding: 6px 8px 6px; margin-bottom: 1px;
   text-transform: uppercase; font-weight: 600;
+  transition: opacity 0.18s var(--ease);
 }
+/* 滚起来时第一组标题正好压在上沿，直接淡出，别露半截 */
+.sidebar[data-scrolled='true'] .side-group:first-of-type > .side-label { opacity: 0; }
 .side-label::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
 .side-item {
   position: relative; display: flex; align-items: center; gap: 9px;
@@ -7524,6 +7527,11 @@ body::before {
 /* ── 外链跳转提示 ─────────────────────────
    全站一个守卫：外站链接先确认再走，避免「看起来像站内」的钓鱼链接。 */
 .ext-modal { max-width: 460px; display: flex; flex-direction: column; gap: 12px; }
+/* 手机上其他弹窗从头往下排，只有这条「即将离开」的短提示放屏幕中间：
+   它只让人看一眼就做决定，贴顶会显得像表单 */
+@media (max-width: 700px) {
+  .modal-mask.ext-mask { place-items: center; }
+}
 .ext-head { display: flex; gap: 12px; align-items: flex-start; }
 .ext-ico {
   flex: 0 0 auto; width: 36px; height: 36px; border-radius: 12px;
