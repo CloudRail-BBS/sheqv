@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+// 移动端专属版式：放在 globals 之后，同权重规则由它覆盖
+import './mobile.css';
 import { getRequestCaps, getTheme } from '@/lib/request-caps';
 import { CapProvider } from '@/components/cap-provider';
 import { ExternalLinkGuard } from '@/components/external-link-guard';

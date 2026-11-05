@@ -9,6 +9,7 @@ import { NAV_GROUPS, SIDEBAR_DEFAULT, parseNav } from '@/lib/nav-config';
 import { NavGlyph } from './nav-icons';
 import { LevelPill } from './rank-badges';
 import { VerifyMark } from './verify-mark';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const isActive = (pathname: string, href: string) => {
   const base = href.split('?')[0];
@@ -164,6 +165,12 @@ export function MobileMenu({
                 </Link>
               </div>
             )}
+
+            {/* 手机顶栏不摆主题开关，收进抽屉 */}
+            <div className="drawer-theme">
+              <span>深色模式</span>
+              <ThemeToggle />
+            </div>
 
             {user && (
               <div className="mobile-drawer-foot">

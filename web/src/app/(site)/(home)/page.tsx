@@ -73,6 +73,13 @@ export default async function HomePage({
   const live = MATCHES[0] ?? null;
   const jsonLd = await websiteJsonLd();
 
+  const heroDate = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(new Date());
+
   return (
     <div className="cols">
       <script
@@ -80,6 +87,13 @@ export default async function HomePage({
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <div className="col-main">
+        {/* 手机上的大标题：桌面端 display:none，不占位 */}
+        <div className="m-hero">
+          <p className="m-hero-eyebrow">{heroDate}</p>
+          <h1>社区</h1>
+          <p>{user ? `${user.nickname}，今天社区里有什么新东西` : '看看大家今天在做什么'}</p>
+        </div>
+
         <Carousel slides={slides} />
 
         <div id="composer">

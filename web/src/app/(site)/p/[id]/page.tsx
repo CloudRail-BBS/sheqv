@@ -4,6 +4,7 @@ import { getPost } from '@/lib/forum-store';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getCurrentUser } from '@/lib/current-user';
 import { CommentComposer, PostLike } from '@/components/post-actions';
+import { ReplyDock } from '@/components/reply-dock';
 import { FloorReply } from '@/components/floor-reply';
 import { PostTools } from '@/components/post-tools';
 import { getAvatarMap, getBadgeMap, resolveAvatar } from '@/lib/users';
@@ -299,15 +300,19 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             rejectReason={post.rejectReason}
           />
         ) : (
-          <CommentComposer
-            postId={post.id}
-            signed={signed}
-            loggedIn={Boolean(user)}
-            total={post.commentsList.length}
-            captchaId={captchaId}
-            mutedUntil={user?.mutedUntil ?? 0}
-            muteReason={user?.muteReason ?? ''}
-          />
+          <>
+            <CommentComposer
+              postId={post.id}
+              signed={signed}
+              loggedIn={Boolean(user)}
+              total={post.commentsList.length}
+              captchaId={captchaId}
+              mutedUntil={user?.mutedUntil ?? 0}
+              muteReason={user?.muteReason ?? ''}
+            />
+            {/* 手机端：帖子太长时不必滚到底才能回复 */}
+            {user && signed && !(user.mutedUntil && user.mutedUntil > Date.now()) && <ReplyDock />}
+          </>
         )}
       </div>
 

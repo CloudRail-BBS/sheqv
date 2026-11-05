@@ -1,0 +1,347 @@
+/* ══════════════════════════════════════════════════════════════
+   移动端 App 界面（≤ 860）
+   ──────────────────────────────────────────────────────────────
+   这一层不是「桌面版缩窄」，而是照着手机重排的一版：
+
+   - 外壳：贴边内容 + 52px 玻璃顶栏 + 底部 tabbar，没有页脚堆叠
+   - 首页：大标题 → 频道胶囊 → 发帖入口 → 单列大卡
+   - 帖子：文章式排版（大标题、16px 正文）+ 底部「写回复」悬浮条
+   - 我的：资料头 + 分组卡片列表（inset grouped）
+   - 弹窗：发帖 / 声明一律变成底部 Sheet
+
+   只在 ≤860 生效，桌面端完全不受影响（选择器都带 .site-scroll /
+   .composer-modal 这类前台专属前缀，后台与控制台不会被波及）。
+   ══════════════════════════════════════════════════════════════ */
+
+/* 大标题只在手机上出现 */
+.m-hero { display: none; }
+
+@media (max-width: 860px) {
+  :root {
+    --m-inset: 16px;   /* 内容左右内缩 */
+    --m-radius: 20px;  /* 卡片圆角 */
+    --m-gap: 12px;     /* 卡片间距 */
+  }
+
+  /* ── 外壳 ───────────────────────────────── */
+  .site-scroll { background: var(--bg); }
+
+  .site-scroll .app {
+    display: block;
+    max-width: none;
+    padding: 0;
+    gap: 0;
+  }
+  .site-scroll .content {
+    /* 顶部留一点：第一张卡片不要贴在顶栏下沿 */
+    padding: 10px var(--m-inset) calc(84px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: var(--m-gap);
+  }
+  /* 列表页的列容器在手机上不再有额外间距 */
+  /* align-items 从桌面的 grid 继承下来不是 stretch，会让列按内容宽度撑开、
+     比内容区还宽（多出来的那 15px 就是横向错位的来源） */
+  .site-scroll .cols { display: flex; flex-direction: column; align-items: stretch; gap: var(--m-gap); }
+  .site-scroll .col-main { width: 100%; }
+  .site-scroll .rail { position: static; top: auto; }
+
+  /* 页脚在手机上收到最底部、只留一行法务信息 */
+  .site-scroll .footer {
+    padding: 10px var(--m-inset) calc(84px + env(safe-area-inset-bottom));
+    border-top: 0;
+  }
+  .site-scroll .footer-in {
+    flex-direction: column; align-items: flex-start; gap: 6px;
+    font-size: 11px; line-height: 1.6;
+  }
+  .site-scroll .footer-in > span { margin-left: 0 !important; flex-wrap: wrap; row-gap: 6px; }
+
+  /* ── 顶栏：52px，玻璃，只有一层 ──────────── */
+  .site-scroll .topbar {
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    border-bottom-color: var(--glass-brd);
+    box-shadow: none;
+  }
+  .site-scroll .topbar-in { height: 52px; padding: 0 10px; gap: 8px; }
+  .site-scroll .brand { font-size: 15.5px; gap: 8px; }
+  .site-scroll .brand-mark { width: 25px; height: 25px; border-radius: 8px; }
+  /* 手机上只留「搜索 / 通知 / 我的」三个动作，主题开关挪进抽屉 */
+  .site-scroll .topbar .theme-toggle,
+  .site-scroll .topbar .points-chip { display: none; }
+  .site-scroll .topbar .icon-btn { width: 38px; height: 38px; border-radius: 50%; }
+  .site-scroll .topbar-right { gap: 0; }
+
+  /* 面包屑在手机上是重复导航，交给系统返回 */
+  .site-scroll .crumb { display: none; }
+
+  /* ── 卡片：无描边的分组面 ─────────────────── */
+  .site-scroll .card {
+    border-radius: var(--m-radius);
+    border-color: transparent;
+    box-shadow:
+      0 1px 1px rgba(15, 23, 42, 0.03),
+      0 12px 28px -26px rgba(15, 23, 42, 0.55);
+  }
+  [data-theme='dark'] .site-scroll .card {
+    border-color: var(--line-soft);
+    box-shadow: none;
+  }
+
+  /* ── 列表页页头：标题独占一行，操作按钮落到下一行靠右 ── */
+  .site-scroll .page-head {
+    flex-wrap: wrap; justify-content: flex-end;
+    align-items: flex-start; gap: 10px;
+  }
+  .site-scroll .page-head > div:first-child { flex: 1 0 100%; min-width: 0; }
+  .site-scroll .page-head .btn,
+  .site-scroll .page-head .row { flex: 0 0 auto; }
+  .site-scroll .page-title { font-size: 26px; letter-spacing: -0.025em; line-height: 1.2; }
+  /* 有的列表页用的是 .between 做页头（标题 + 右侧按钮），同样竖排 */
+  .site-scroll .col-main > .between:first-child { flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+  .site-scroll .col-main > .between:first-child > div:first-child { flex: 1 0 100%; min-width: 0; }
+  .site-scroll .col-main > .between:first-child > .row { margin-left: auto; }
+  .site-scroll .page-head p { margin-top: 5px; font-size: 13px; line-height: 1.6; }
+
+  /* ── 大标题 ───────────────────────────────── */
+  .site-scroll .m-hero { display: block; padding: 16px 0 4px; }
+  .m-hero-eyebrow {
+    font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--text-3);
+  }
+  .m-hero h1 {
+    margin: 3px 0 0;
+    font-size: 30px; font-weight: 700; line-height: 1.15;
+    letter-spacing: -0.03em; color: var(--text);
+  }
+  .m-hero p { margin: 5px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  /* ── 频道胶囊 ─────────────────────────────── */
+  .site-scroll .feed-tabs {
+    position: sticky;
+    top: calc(52px + env(safe-area-inset-top));
+    z-index: 30;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: var(--bg);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .site-scroll .feed-tabs::-webkit-scrollbar { display: none; }
+  .site-scroll .feed-tab {
+    flex: 0 0 auto;
+    padding: 7px 15px;
+    border-radius: 999px;
+    font-size: 14px;
+    color: var(--text-2);
+  }
+  .site-scroll .feed-tab[data-on='true'] { color: var(--text); font-weight: 600; }
+  /* 选中块 = 白色胶囊，压在灰色页面上（iOS 分段控件） */
+  .site-scroll .feed-tab-pill {
+    border-radius: 999px;
+    background: var(--panel);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.10),
+      0 0 0 1px var(--line-soft);
+  }
+  .site-scroll .feed-tabs .sort { display: none; }
+
+  /* ── 发帖入口：一颗胶囊 ───────────────────── */
+  .site-scroll .composer-trigger {
+    padding: 9px 10px 9px 12px;
+    border-radius: 999px;
+  }
+  .site-scroll .composer-trigger .composer-top { gap: 10px; }
+  .site-scroll .composer-trigger .post-avatar { width: 34px; height: 34px; border-radius: 11px; }
+  .site-scroll .composer-trigger .composer-input {
+    border: 0; background: transparent; padding: 0; min-height: 0;
+    font-size: 14px; color: var(--muted);
+    /* 一行放不下就省略，不要换行把胶囊撑成两行 */
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .site-scroll .composer-trigger .btn {
+    height: 34px; border-radius: 999px; padding: 0 15px; font-size: 13px;
+  }
+
+  .site-scroll .composer-guest {
+    padding: 10px 12px;
+    border-radius: 22px;
+  }
+  .site-scroll .composer-guest .composer-top { gap: 10px; }
+  .site-scroll .composer-guest .post-avatar { width: 34px; height: 34px; border-radius: 11px; }
+  .site-scroll .composer-guest .btn { height: 34px; border-radius: 999px; padding: 0 15px; }
+
+  /* ── 信息流卡片：单列、大标题、三行摘要 ───── */
+  .site-scroll .post-grid { column-count: 1; column-gap: 0; }
+  .site-scroll .post-grid > .feed-card { margin-bottom: var(--m-gap); }
+  .site-scroll .feed-card { border-radius: var(--m-radius); }
+  .site-scroll .feed-card:hover { box-shadow: none; }
+  .site-scroll .fc-body { padding: 12px 15px 13px; }
+  .site-scroll .fc-title {
+    font-size: 16.5px; line-height: 1.45; letter-spacing: -0.012em;
+  }
+  .site-scroll .fc-excerpt {
+    margin-top: 5px; font-size: 13.5px; line-height: 1.65;
+    -webkit-line-clamp: 3; line-clamp: 3;
+  }
+  .site-scroll .fc-head { gap: 7px; }
+  .site-scroll .fc-avatar { width: 30px; height: 30px; border-radius: 10px; }
+  .site-scroll .fc-foot { padding-top: 9px; margin-top: 10px; }
+
+  /* ── 帖子详情：文章式 ─────────────────────── */
+  .site-scroll .post-block { border-radius: var(--m-radius); }
+  .site-scroll .pb-title-block { padding: 18px 16px 10px; }
+  .site-scroll .pb-title {
+    font-size: 23px; line-height: 1.32; letter-spacing: -0.025em;
+  }
+  .site-scroll .pb-title-meta { margin-top: 8px; font-size: 12px; }
+  .site-scroll .pb-title-tags { margin-top: 10px; }
+  .site-scroll .pb-body { font-size: 16px; line-height: 1.78; }
+  .site-scroll .md-body { font-size: 16px; line-height: 1.8; }
+  .site-scroll .md-body h2 { font-size: 19px; margin: 26px 0 10px; }
+  .site-scroll .md-body p { margin-bottom: 15px; }
+  .site-scroll .pb-floor { border-radius: 16px; padding: 14px 14px 12px; }
+  .site-scroll .pb-reply-body { font-size: 15px; line-height: 1.75; }
+  .site-scroll .post-block > .pb-head { padding: 16px 16px 0; }
+
+  /* 楼层里的小头像与名字靠得更近 */
+  .site-scroll .pb-avatar { width: 36px; height: 36px; border-radius: 12px; }
+  .site-scroll .pb-name { font-size: 13.5px; }
+
+  /* ── 我的：资料头 + 分组列表 ─────────────── */
+  .site-scroll .me-hero { border-radius: 24px; padding: 46px 16px 14px; gap: 12px; }
+  .site-scroll .me-ava { width: 76px; height: 76px; border-radius: 24px; font-size: 26px; }
+  .site-scroll .me-name { font-size: 21px; }
+  /* 操作按钮靠右排成胶囊，不要横贯整张卡 */
+  .site-scroll .me-hero > .row:last-child {
+    width: 100%; justify-content: flex-end; gap: 8px; margin-left: 0 !important;
+  }
+  .site-scroll .me-hero > .row:last-child .btn { flex: 0 0 auto; height: 34px; border-radius: 999px; }
+
+  /* 四个数字并成一张卡：中间用细线分隔，像系统设置里的分组 */
+  .site-scroll .me-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    background: var(--panel); border-radius: 18px; overflow: hidden;
+    box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03), 0 12px 28px -26px rgba(15, 23, 42, 0.5);
+  }
+  .site-scroll .me-stats .card {
+    border: 0; border-radius: 0; box-shadow: none;
+    background: transparent; padding: 14px 16px;
+  }
+  .site-scroll .me-stats .card:nth-child(odd) { border-right: 1px solid var(--line-soft); }
+  .site-scroll .me-stats .card:nth-child(n + 3) { border-top: 1px solid var(--line-soft); }
+  .site-scroll .me-stats b { font-size: 22px; }
+  .site-scroll .rail-card { border-radius: 18px; }
+  .site-scroll .rail-item { min-height: 46px; align-items: center; }
+
+  /* ── 弹窗 → 底部 Sheet ────────────────────── */
+  .composer-modal {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .composer-panel {
+    width: 100%;
+    max-height: 92dvh;
+    padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    border: 0;
+    animation: mSheetIn 0.28s cubic-bezier(0.22, 0.9, 0.28, 1);
+  }
+  /* 顶部小横条：一眼知道可以下拉关闭 */
+  .composer-panel::before {
+    content: '';
+    display: block;
+    width: 36px; height: 4px;
+    margin: 4px auto 12px;
+    border-radius: 999px;
+    background: var(--line-strong, var(--line));
+  }
+  .composer-panel-head { margin-bottom: 10px; }
+  .composer-head-title { font-size: 16px; }
+  .composer-head-sub { font-size: 11.5px; }
+  .composer-modal-foot {
+    padding-top: 10px;
+    padding-bottom: 2px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .composer-modal-foot .btn { border-radius: 999px; }
+
+  /* ── 底部栏：图标 + 胶囊 ──────────────────── */
+  .tabbar {
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-top-color: var(--line-soft);
+  }
+  .tabbar a { font-size: 10px; gap: 3px; }
+  .tabbar .tab-pill { width: 46px; height: 28px; border-radius: 10px; }
+  .tabbar a[data-active='true'] .tab-pill { background: var(--blue-soft); }
+  .tabbar .tab-icon { width: 20px; height: 20px; }
+
+  /* ── 帖子底部「写回复」悬浮条 ────────────── */
+  .reply-dock {
+    display: none;
+    position: fixed;
+    left: 12px; right: 12px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 55;
+    align-items: center; gap: 10px;
+    padding: 7px 8px 7px 16px;
+    border-radius: 999px;
+    /* 实色不用毛玻璃：iOS 上 fixed + backdrop-filter 滚动时会重采样（tabbar 踩过），
+       而且半透明时下面的正文会透上来，读不清 */
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    box-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.6);
+    animation: mDockIn 0.26s cubic-bezier(0.22, 0.9, 0.28, 1);
+  }
+  .reply-dock[data-show='true'] { display: flex; }
+  .reply-dock-text {
+    flex: 1; min-width: 0;
+    font-size: 14px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .reply-dock-go {
+    flex: none; height: 34px; padding: 0 16px;
+    border: 0; border-radius: 999px;
+    background: var(--blue); color: #fff;
+    font-size: 13.5px; font-weight: 600;
+  }
+
+  /* 深色下白色胶囊不够分明，换成面板色 + 一圈细边 */
+  [data-theme='dark'] .site-scroll .feed-tab-pill {
+    background: var(--panel-2);
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  @keyframes mSheetIn {
+    from { transform: translateY(18px); opacity: 0.6; }
+    to { transform: none; opacity: 1; }
+  }
+  @keyframes mDockIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+}
+
+/* 抽屉里的外观开关（只在手机上出现） */
+.drawer-theme { display: none; }
+@media (max-width: 860px) {
+  .drawer-theme {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 10px 2px 2px;
+    font-size: 13px; color: var(--text-2);
+  }
+}
+
+/* 平板（700–860）：把内容收成阅读列，底部栏按钮聚在中间，
+   不然一行卡片会横铺 800+，跟手机版看起来像被拉扁了 */
+@media (min-width: 700px) and (max-width: 860px) {
+  .site-scroll .content,
+  .site-scroll .footer { max-width: 720px; margin-inline: auto; }
+  .tabbar { justify-content: center; gap: 20px; }
+  .tabbar[data-fits='true'] a { flex: 0 0 auto; min-width: 78px; }
+}
