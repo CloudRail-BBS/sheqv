@@ -33,6 +33,7 @@ pub mod servers;
 pub mod sponsors;
 pub mod tasks;
 pub mod changelog;
+pub mod news;
 pub mod messages;
 pub mod tickets;
 pub mod titles;
@@ -174,6 +175,9 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/settings", get(public::settings))
         .route("/api/v1/changelog", get(changelog::public_list))
+        .route("/api/v1/news", get(news::public_list))
+        .route("/api/v1/news/columns", get(news::public_columns))
+        .route("/api/v1/news/{id}", get(news::public_one))
         .route("/api/v1/announcements", get(public::announcements))
         .route("/api/v1/announcements/{id}", get(public::announcement))
         .route("/api/v1/users", get(public::users))
@@ -287,6 +291,22 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/changelog/{id}",
             patch(changelog::patch).delete(changelog::remove),
+        )
+        .route(
+            "/api/v1/admin/news",
+            get(news::admin_list).post(news::create),
+        )
+        .route(
+            "/api/v1/admin/news/columns",
+            get(news::admin_columns).post(news::create_column),
+        )
+        .route(
+            "/api/v1/admin/news/columns/{id}",
+            patch(news::patch_column).delete(news::remove_column),
+        )
+        .route(
+            "/api/v1/admin/news/{id}",
+            patch(news::patch).delete(news::remove),
         )
         .route(
             "/api/v1/admin/tickets",

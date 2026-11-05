@@ -26,6 +26,13 @@
   /* ── 外壳 ───────────────────────────────── */
   .site-scroll { background: var(--bg); }
 
+  /* 滚动容器占满整屏，但全局给 `::-webkit-scrollbar` 定了 9px 宽：
+     在部分浏览器/WebView 里这会让滚动条变成「占位式」，页面一长右侧就
+     平白少掉 9–12px，看起来像「右边空隙忽然变大」。手机是手指滑动，
+     滚动条没有信息价值，直接藏掉，宽度才是恒定的。 */
+  .site-scroll { scrollbar-width: none; }
+  .site-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
   .site-scroll .app {
     display: block;
     max-width: none;

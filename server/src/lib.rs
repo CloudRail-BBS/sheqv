@@ -30,6 +30,7 @@ pub mod config;
 pub mod current_user;
 pub mod db;
 pub mod dm;
+pub mod news;
 pub mod email_login;
 pub mod errors;
 pub mod forum;

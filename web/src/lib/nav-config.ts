@@ -26,6 +26,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     label: '浏览',
     items: [
       { key: 'home', href: '/', label: '首页', group: 'browse' },
+      { key: 'news', href: '/news', label: '新闻', group: 'browse' },
       { key: 'guilds', href: '/guilds', label: '公会', group: 'browse' },
       { key: 'teams', href: '/teams', label: '战队', group: 'browse' },
       { key: 'matches', href: '/matches', label: '约战', group: 'browse' },

@@ -31,6 +31,7 @@ export const NAV_ICON: Record<string, ReactNode> = {
   heart: <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
   code: <path d="m8 6-5 6 5 6M16 6l5 6-5 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
   doc: <path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />,
+  news: <><path d="M4 5h12v14H4zM16 9h4v8a2 2 0 0 1-2 2H6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M7 9h6M7 12h6M7 15h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></>,
 };
 
 export const ICON_BY_KEY: Record<string, ReactNode> = {
@@ -55,6 +56,7 @@ export const ICON_BY_KEY: Record<string, ReactNode> = {
   rewards: NAV_ICON.gift,
   shop: NAV_ICON.bag,
   events: NAV_ICON.calendar,
+  news: NAV_ICON.news,
   announcements: NAV_ICON.bell,
   sponsors: NAV_ICON.heart,
   agreements: NAV_ICON.doc,
