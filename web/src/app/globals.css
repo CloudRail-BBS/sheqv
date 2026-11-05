@@ -428,9 +428,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 [data-theme="light"] .user-hover-card {
   box-shadow: 0 18px 48px -24px rgba(15, 23, 42, 0.35);
 }
-.uhc-head { display: flex; align-items: center; gap: 10px; }
+.uhc-head { display: flex; align-items: flex-start; gap: 11px; }
 .uhc-avatar {
-  width: 44px; height: 44px; border-radius: 13px; flex: none;
+  width: 46px; height: 46px; border-radius: 14px; flex: none;
   display: grid; place-items: center; overflow: hidden;
   color: #fff; font-size: 17px; font-weight: 650;
   background: linear-gradient(150deg, var(--blue), var(--blue-2));
@@ -438,15 +438,18 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .uhc-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .uhc-name {
   display: flex; align-items: center; gap: 6px; min-width: 0;
-  font-size: 14px; font-weight: 650; color: var(--text);
+  font-size: 14.5px; font-weight: 650; letter-spacing: -0.01em; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.uhc-handle { margin-top: 2px; font-size: 11px; color: var(--muted); }
-.uhc-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
-.uhc-meta {
-  margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line-soft);
-  font-size: 10.5px; color: var(--muted);
+.uhc-handle { margin-top: 3px; font-size: 11px; color: var(--muted); }
+.uhc-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 9px; }
+/* 底部一行：加入时间靠左、「查看主页」靠右 */
+.uhc-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
 }
+.uhc-meta { font-size: 11px; color: var(--muted); }
 @keyframes uhcIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -4554,36 +4557,28 @@ body:has(.auth-page) .app {
 .dm-cnt { color: var(--blue); font-weight: 700; }
 
 /* 作者卡里的「发私信」动作 */
-.uhc-action {
-  display: block; margin-top: 10px; padding: 6px 10px;
-  border: 1px solid var(--line); border-radius: 8px;
-  background: var(--panel-2); color: var(--text-2);
-  font-size: 12px; text-align: center;
-  transition: background 0.14s, border-color 0.14s, color 0.14s;
-}
-.uhc-action:hover {
-  background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue);
-}
-
 /* 名片三格统计（主题 / 回帖 / 积分） */
 .uhc-stats {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  margin-top: 12px; padding: 9px 2px;
+  margin-top: 13px; padding: 10px 2px;
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
 }
 .uhc-stats > div { text-align: center; border-left: 1px solid var(--line-soft); }
 .uhc-stats > div:first-child { border-left: 0; }
 .uhc-stats b {
-  display: block; font-size: 15px; font-weight: 700;
+  display: block; font-size: 16px; font-weight: 650;
   letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
 }
-.uhc-stats span { display: block; margin-top: 1px; font-size: 10px; color: var(--muted); }
+.uhc-stats span { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
 
+/* 小胶囊，不再是一整条横贯名片的按钮 */
 .uhc-action {
-  display: block; margin-top: 10px; padding: 7px 10px;
-  border: 1px solid var(--blue-line); border-radius: 9px;
+  display: inline-flex; align-items: center; gap: 4px;
+  flex: 0 0 auto;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--blue-line);
   background: var(--blue-soft); color: var(--blue);
-  font-size: 12.5px; font-weight: 600; text-align: center;
+  font-size: 11.5px; font-weight: 600; text-decoration: none;
   transition: background 0.14s, color 0.14s, border-color 0.14s;
 }
 .uhc-action:hover {
@@ -7501,4 +7496,76 @@ body::before {
   .ops-main { padding: 14px 14px 56px; }
   .ops-stat b { font-size: 21px; }
   .ops-brand b { font-size: 12.5px; }
+}
+
+/* ── 外链跳转提示 ─────────────────────────
+   全站一个守卫：外站链接先确认再走，避免「看起来像站内」的钓鱼链接。 */
+.ext-modal { max-width: 460px; display: flex; flex-direction: column; gap: 12px; }
+.ext-head { display: flex; gap: 12px; align-items: flex-start; }
+.ext-ico {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: var(--warn-soft); color: var(--warn);
+  box-shadow: inset 0 0 0 1px var(--warn-line);
+}
+.ext-title-wrap h2 {
+  margin: 0; font-size: 15.5px; font-weight: 650; letter-spacing: -0.01em;
+}
+.ext-title-wrap p { margin: 4px 0 0; }
+.ext-warn {
+  margin: 0; padding: 10px 12px; border-radius: 10px;
+  font-size: 12.5px; line-height: 1.8; color: var(--text-2);
+  background: var(--warn-soft); border: 1px solid var(--warn-line);
+}
+.ext-url {
+  margin: 0; font-size: 11px; line-height: 1.6; color: var(--muted);
+  word-break: break-all;
+  max-height: 3.4em; overflow: hidden;
+}
+.ext-foot { display: flex; gap: 8px; justify-content: flex-end; }
+.ext-foot .btn { height: 36px; border-radius: 999px; padding: 0 18px; }
+
+/* 正文里的外链：结尾一个很小的 ↗，提示「会跳出去」 */
+.md-body a[target="_blank"]:not([href^="/"]):not([href^="#"])::after {
+  content: "↗";
+  margin-left: 2px; font-size: 0.82em; opacity: 0.6;
+}
+/* 刚支持的裸链接可能很长，别把正文撑破 */
+.md-body a { overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+  .ext-foot { flex-direction: column-reverse; }
+  .ext-foot .btn { width: 100%; }
+}
+
+/* ── 频道标签的滑动选中块 ─────────────────
+   位置由 JS 量出来（字重变化、侧栏收起都会改宽度），
+   这里只负责长什么样、怎么动。 */
+.feed-tabs { --tabs-pad-y: 4px; position: relative; }
+.feed-tab { position: relative; z-index: 1; }
+.feed-tab-pill {
+  position: absolute; left: 0; top: var(--tabs-pad-y);
+  height: calc(100% - var(--tabs-pad-y) * 2);
+  border-radius: 7px;
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--blue-line);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 0.9, 0.28, 1),
+    width 0.3s cubic-bezier(0.22, 0.9, 0.28, 1),
+    opacity 0.18s var(--ease);
+  will-change: transform, width;
+}
+.feed-tab-pill[data-ready] { opacity: 1; }
+/* 有滑块时，选中的标签自己不画底，避免两层叠出更深的色块 */
+.feed-tabs[data-pill="true"] .feed-tab[data-on="true"] {
+  background: transparent; box-shadow: none;
+}
+@media (max-width: 860px) {
+  .feed-tabs { --tabs-pad-y: 5px; }
+  .feed-tab-pill { border-radius: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feed-tab-pill { transition: opacity 0.12s linear; }
 }

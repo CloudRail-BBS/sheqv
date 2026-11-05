@@ -93,6 +93,7 @@ export default async function HomePage({
 
         <FeedTabs value={tab} loggedIn={Boolean(user)} />
 
+        <FeedFade key={tab}>
         {posts.length === 0 && (
           <div className="card empty-state">
             <div className="empty-ico" aria-hidden="true">
@@ -185,7 +186,6 @@ export default async function HomePage({
           </div>
         )}
 
-        <FeedFade key={tab}>
         <div className="post-grid">
           {posts.slice(0, 10).map((f) => (
             <PostCard
@@ -201,9 +201,11 @@ export default async function HomePage({
         </div>
         </FeedFade>
 
-        <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
-          加载更多
-        </button>
+        {posts.length > 0 && (
+          <button className="btn btn-ghost" style={{ width: '100%', height: 38 }}>
+            加载更多
+          </button>
+        )}
       </div>
 
       <aside className="rail">

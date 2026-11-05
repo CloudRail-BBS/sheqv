@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { getRequestCaps, getTheme } from '@/lib/request-caps';
 import { CapProvider } from '@/components/cap-provider';
+import { ExternalLinkGuard } from '@/components/external-link-guard';
 import { buildMetadata } from '@/lib/seo';
 
 /**
@@ -39,7 +40,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <body>
-        <CapProvider state={caps}>{children}</CapProvider>
+        <CapProvider state={caps}>
+          <ExternalLinkGuard />
+          {children}
+        </CapProvider>
       </body>
     </html>
   );

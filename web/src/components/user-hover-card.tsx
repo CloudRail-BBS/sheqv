@@ -181,21 +181,23 @@ export function UserHoverCard({ userId, name, avatar, badge, group, children }: 
               </div>
             )}
 
-            {(shownGroup || shown?.developer || shown?.title) && (
+            {/* 头衔已经由 NameBadges 画在昵称后面，这里只补「开发者」这类额外标记，
+                否则同一个人会出现两枚一样的头衔（截图里就是这样） */}
+            {shown?.developer && (
               <div className="uhc-tags">
-                {shown?.developer && <span className="dev-chip">开发者</span>}
-                {shown?.title && <span className="badge badge-ghost">{shown.title}</span>}
+                <span className="dev-chip">开发者</span>
               </div>
             )}
 
-            {joined && <div className="uhc-meta">加入于 {joined}</div>}
-            {!userId && <div className="uhc-meta">站内用户</div>}
-
-            {userId && (
-              <Link href={`/u/${encodeURIComponent(userId)}`} className="uhc-action">
-                查看主页
-              </Link>
-            )}
+            <div className="uhc-foot">
+              <span className="uhc-meta">{joined ? `加入于 ${joined}` : '站内用户'}</span>
+              {userId && (
+                <Link href={`/u/${encodeURIComponent(userId)}`} className="uhc-action">
+                  查看主页
+                  <span aria-hidden="true">→</span>
+                </Link>
+              )}
+            </div>
           </div>,
           document.body,
         )}
