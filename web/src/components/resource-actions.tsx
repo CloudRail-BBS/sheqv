@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fmtNum, fmtSize, type ResourceFile } from '@/lib/resource-types';
+import { nativeSaveUrl } from '@/lib/native-download';
 
 /**
  * 资源详情页的操作区：点赞与下载。
@@ -67,7 +68,12 @@ export function ResourceActions({
     setLikes(data.likeCount);
   }
 
-  function trigger(href: string) {
+  async function trigger(href: string, filename?: string) {
+    // APK 里走系统下载器：WebView 自己不会处理附件
+    if (await nativeSaveUrl(href, filename)) {
+      setMsg('已开始下载，可在通知栏或「下载」目录查看');
+      return;
+    }
     if (!directDownload) {
       setMsg('当前环境不支持直接下载，请复制链接到浏览器打开');
       return;
@@ -98,7 +104,7 @@ export function ResourceActions({
     const data = (await res.json()) as { url: string; downloadCount: number };
     setDownloads(data.downloadCount);
     setBusy(null);
-    trigger(data.url);
+    void trigger(data.url, files[0]?.name);
   }
 
   async function downloadFile(fileId: string) {
@@ -128,7 +134,7 @@ export function ResourceActions({
     setBusyFile(null);
     setFileDownloads((prev) => ({ ...prev, [fileId]: data.fileDownloads }));
     setDownloads(data.downloadCount);
-    trigger(data.url);
+    void trigger(data.url, files.find((f) => f.id === fileId)?.name);
   }
 
   async function remove() {

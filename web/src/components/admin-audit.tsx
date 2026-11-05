@@ -33,7 +33,7 @@ interface PendingResource {
   aiReason: string | null;
 }
 
-export function AdminAudit({ canTest = true }: { canTest?: boolean } = {}) {
+export function AdminAudit({ canTest = true, canDelete = false }: { canTest?: boolean; canDelete?: boolean } = {}) {
   const [tab, setTab] = useState<'post' | 'resource'>('post');
   const [resItems, setResItems] = useState<PendingResource[]>([]);
   const [resCount, setResCount] = useState(0);
@@ -97,6 +97,19 @@ export function AdminAudit({ canTest = true }: { canTest?: boolean } = {}) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function removePost(p: PendingPost) {
+    if (!window.confirm(`删除「${p.title?.trim() || '这篇帖子'}」？删除后不可恢复。`)) return;
+    setBusy(p.id);
+    const res = await fetch(`/api/v1/ops/posts/${p.id}`, { method: 'DELETE' }).catch(() => null);
+    setBusy(null);
+    if (!res?.ok) {
+      setMsg({ kind: 'err', text: '删除失败（需要「删除任意帖子」权限）' });
+      return;
+    }
+    setMsg({ kind: 'ok', text: '已删除' });
+    void load();
+  }
 
   async function review(id: string, approve: boolean, why?: string) {
     setBusy(id);
@@ -252,6 +265,16 @@ export function AdminAudit({ canTest = true }: { canTest?: boolean } = {}) {
                   <button className="btn btn-sm btn-ghost" onClick={() => { setRejecting(p.id); setReason(''); }}>
                     拒绝
                   </button>
+                  {canDelete && (
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      style={{ color: 'var(--danger)' }}
+                      disabled={busy === p.id}
+                      onClick={() => void removePost(p)}
+                    >
+                      删除
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -242,3 +242,126 @@ pub async fn unmute_member(
     .await;
     Ok(Json(json!({ "ok": true })).into_response())
 }
+
+/* ── 联机大厅审核 ─────────────────────────────
+   运营只做一件事：看过、给结论。地址校验与探测仍然由 `servers` 负责，
+   审核通过后探测循环会自己接手。 */
+
+/// GET /api/v1/ops/servers —— 待审在前，已处理的排在后面
+pub async fn servers_queue(State(st): State<AppState>, _: OpsActor) -> ApiResult<Response> {
+    use crate::servers::{self, ServerView};
+    let mut items = servers::list(&st.pool, None, true)
+        .await
+        .map_err(ApiError::internal)?;
+    items.sort_by(|a, b| {
+        let rank = |s: &ServerView| if s.status == "pending" { 0 } else { 1 };
+        rank(a).cmp(&rank(b)).then(b.created_at.cmp(&a.created_at))
+    });
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+#[derive(serde::Deserialize)]
+struct ReviewBody {
+    status: String,
+}
+
+/// PATCH /api/v1/ops/servers/{id} —— 只接受审核结果
+pub async fn server_review(
+    State(st): State<AppState>,
+    _: OpsActor,
+    Path(id): Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    use crate::servers;
+    let Ok(payload) = serde_json::from_slice::<ReviewBody>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let status = payload.status.trim().to_string();
+    if !["approved", "rejected", "pending"].contains(&status.as_str()) {
+        return Err(ApiError::invalid_input("状态不合法"));
+    }
+
+    let item = servers::review(&st.pool, &id, &status)
+        .await
+        .map_err(|e| match e {
+            servers::ServerError::Db(err) => ApiError::internal(err),
+            servers::ServerError::Invalid(msg) => ApiError::invalid_input(msg),
+            _ => ApiError::not_found(),
+        })?
+        .ok_or_else(ApiError::not_found)?;
+
+    Ok(Json(json!({ "ok": true, "item": item })).into_response())
+}
+
+/* ── 赛事报名审核 ─────────────────────────────
+   报名是赛事下的条目，这里跨赛事统一看：待审的排在前面。 */
+
+/// GET /api/v1/ops/tournament-entries
+pub async fn entries_queue(State(st): State<AppState>, _: OpsActor) -> ApiResult<Response> {
+    let items = crate::tournaments::recent_entries(&st.pool, 120)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+/// PATCH /api/v1/ops/tournament-entries/{id}
+pub async fn entry_review(
+    State(st): State<AppState>,
+    _: OpsActor,
+    Path(id): Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<ReviewBody>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let status = payload.status.trim().to_string();
+    if !["approved", "rejected", "pending"].contains(&status.as_str()) {
+        return Err(ApiError::invalid_input("状态不合法"));
+    }
+
+    let Some((user_id, title)) = crate::tournaments::review_entry(&st.pool, &id, &status)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+
+    if status != "pending" {
+        crate::tournaments::notify_review(&st.pool, &user_id, &title, &status).await;
+    }
+
+    Ok(Json(json!({ "ok": true })).into_response())
+}
+
+/* ── 删帖 ─────────────────────────────────────
+   运营删帖要单独一条权限（`post.delete.any`），不能因为能审核就顺手删号。
+   管理员天然通过；用 ADMIN_TOKEN 进来的也放行。 */
+
+/// DELETE /api/v1/ops/posts/{id}
+pub async fn delete_post(
+    State(st): State<AppState>,
+    actor: OpsActor,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    if let Some(uid) = actor.user_id() {
+        let ok = crate::groups::can(&st.pool, uid, "post.delete.any")
+            .await
+            .map_err(ApiError::internal)?;
+        if !ok {
+            return Err(ApiError::with_message(
+                StatusCode::FORBIDDEN,
+                "forbidden",
+                "没有删除帖子的权限",
+            ));
+        }
+    }
+
+    let done = crate::forum::delete(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?;
+    if done {
+        Ok(Json(json!({ "ok": true })).into_response())
+    } else {
+        Err(ApiError::not_found())
+    }
+}

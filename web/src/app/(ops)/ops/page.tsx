@@ -11,9 +11,11 @@ export async function generateMetadata() {
 
 const n = (v: number) => v.toLocaleString('zh-CN');
 
-/** 队列 → 运营面板里的对应页面；面板没有的（联机大厅 / 工单 / 赛事）引导去后台 */
+/** 队列 → 运营面板里的对应页面；面板没有的（工单）引导去后台 */
 const OPS_QUEUE_HREF: Record<string, string> = {
   posts: '/ops/review',
+  servers: '/ops/servers',
+  entries: '/ops/tournaments',
   verifications: '/ops/verifications',
   titles: '/ops/titles',
 };

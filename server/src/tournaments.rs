@@ -543,3 +543,52 @@ pub async fn review_entry(
     .await?;
     Ok(row)
 }
+
+/// 报名审核结果通知；`pending` 不发。
+pub async fn notify_review(pool: &PgPool, user_id: &str, title: &str, status: &str) {
+    let (head, body) = if status == "approved" {
+        (
+            "赛事报名已通过",
+            format!("「{title}」的报名已通过，赛程与结果都会在赛事页更新。"),
+        )
+    } else {
+        (
+            "赛事报名未通过",
+            format!("「{title}」的报名没有通过，可以补充资料后重新提交。"),
+        )
+    };
+    let _ = crate::notifications::push(pool, user_id, "tournament", head, &body, "/tournaments").await;
+}
+
+/// 运营面板用：跨赛事拉最近报名，待审的排在最前面
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct OpsEntry {
+    pub id: String,
+    pub tournament_id: String,
+    pub tournament_title: String,
+    pub user_id: String,
+    pub nickname: String,
+    pub team_name: String,
+    pub contact: String,
+    pub note: String,
+    pub status: String,
+    /// 毫秒时间戳
+    pub created_at: i64,
+}
+
+pub async fn recent_entries(pool: &PgPool, limit: i64) -> Result<Vec<OpsEntry>, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT e.id, e.tournament_id, t.title AS tournament_title, e.user_id, u.nickname,
+                e.team_name, e.contact, e.note, e.status,
+                (extract(epoch FROM e.created_at) * 1000)::bigint AS created_at
+           FROM tournament_entries e
+           JOIN tournaments t ON t.id = e.tournament_id
+           JOIN users u ON u.id = e.user_id
+          ORDER BY (e.status = 'pending') DESC, e.created_at DESC
+          LIMIT $1",
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await
+}

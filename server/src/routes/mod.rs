@@ -238,6 +238,17 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/matches/{id}", get(matches::get))
         .route("/api/v1/matches/{id}/accept", post(matches::accept))
         .route("/api/v1/ops/summary", get(ops::summary))
+        .route("/api/v1/ops/posts/{id}", delete(ops::delete_post))
+        .route("/api/v1/ops/servers", get(ops::servers_queue))
+        .route("/api/v1/ops/servers/{id}", patch(ops::server_review))
+        .route(
+            "/api/v1/ops/tournament-entries",
+            get(ops::entries_queue),
+        )
+        .route(
+            "/api/v1/ops/tournament-entries/{id}",
+            patch(ops::entry_review),
+        )
         .route("/api/v1/ops/users", get(ops::members))
         .route(
             "/api/v1/ops/users/{id}/mute",

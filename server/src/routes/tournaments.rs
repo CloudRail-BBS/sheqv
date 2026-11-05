@@ -360,27 +360,8 @@ pub async fn admin_review(
         return Err(ApiError::not_found());
     };
 
-    if status == "approved" || status == "rejected" {
-        let (head, body) = if status == "approved" {
-            (
-                "赛事报名已通过",
-                format!("「{title}」的报名已通过，赛程与结果都会在赛事页更新。"),
-            )
-        } else {
-            (
-                "赛事报名未通过",
-                format!("「{title}」的报名没有通过，可以补充资料后重新提交。"),
-            )
-        };
-        let _ = crate::notifications::push(
-            &st.pool,
-            &user_id,
-            "tournament",
-            head,
-            &body,
-            "/tournaments",
-        )
-        .await;
+    if status != "pending" {
+        tournaments::notify_review(&st.pool, &user_id, &title, &status).await;
     }
     Ok(Json(json!({ "ok": true })).into_response())
 }

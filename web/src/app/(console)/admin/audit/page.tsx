@@ -21,7 +21,7 @@ export default async function AdminAuditPage() {
         审核策略在「设置 → 内容审核」里调整；这里处理等待人工判断的内容。
       </p>
 
-      <AdminAudit />
+      <AdminAudit canDelete />
     </div>
   );
 }

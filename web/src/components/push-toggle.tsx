@@ -24,6 +24,20 @@ function decodeKey(base64url: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/** 把浏览器抛的英文错误翻成能照做的中文；多数是设备没有可用的推送服务 */
+function explain(e: unknown): string {
+  const err = e as { name?: string; message?: string };
+  const raw = err?.message ?? '';
+  if (/push service/i.test(raw) || err?.name === 'AbortError') {
+    return '这台设备的浏览器连不上系统推送服务（国产 ROM 或第三方浏览器常见缺少 Google 推送）。换 Chrome 打开本站再试，或等客户端版本。';
+  }
+  if (err?.name === 'NotAllowedError') {
+    return '通知权限被拒绝了，需要在浏览器设置里允许本站通知';
+  }
+  if (/站点还没有准备好推送密钥/.test(raw)) return raw;
+  return raw || '开启失败，稍后再试';
+}
+
 async function registerWorker(): Promise<ServiceWorkerRegistration> {
   const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
   await navigator.serviceWorker.ready;
@@ -91,7 +105,7 @@ export function PushToggle({ variant = 'compact' }: { variant?: 'compact' | 'wid
       setMsg('已开启：有新消息会在这里弹出通知');
     } catch (e) {
       setState('off');
-      setMsg(e instanceof Error ? e.message : '开启失败');
+      setMsg(explain(e));
     }
   }, []);
 

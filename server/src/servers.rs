@@ -399,6 +399,44 @@ pub async fn update(
     Ok(row.map(Row::view))
 }
 
+
+/// 审核结果：改状态 + 通知提交者。`pending` 只改状态（撤回用，不通知）。
+pub async fn review(
+    pool: &PgPool,
+    id: &str,
+    status: &str,
+) -> Result<Option<ServerView>, ServerError> {
+    let patch = PatchServer {
+        status: Some(status.to_string()),
+        ..Default::default()
+    };
+    let Some(item) = update(pool, id, &patch).await? else {
+        return Ok(None);
+    };
+    if status != "pending" {
+        notify_review(pool, &item, status).await;
+    }
+    Ok(Some(item))
+}
+
+/// 审核结果要让提交者知道，否则只能自己去「我的提交」里翻。
+pub async fn notify_review(pool: &PgPool, item: &ServerView, status: &str) {
+    let (title, body) = if status == "approved" {
+        (
+            "服务器已通过审核",
+            format!("「{}」已出现在联机大厅，探测会自动开始。", item.name),
+        )
+    } else {
+        (
+            "服务器未通过审核",
+            format!("「{}」这次没有通过，可以改完再提交。", item.name),
+        )
+    };
+    if let Some(owner) = item.owner_id.as_deref() {
+        let _ = crate::notifications::push(pool, owner, "server", title, &body, "/servers").await;
+    }
+}
+
 pub async fn delete(pool: &PgPool, id: &str) -> Result<bool, sqlx::Error> {
     let affected = sqlx::query("DELETE FROM game_servers WHERE id = $1")
         .bind(id)

@@ -11,6 +11,9 @@ export async function generateMetadata() {
 export default async function OpsReviewPage() {
   const gate = await getOpsGate();
   if (!gate.ok) return null;
+  const canDelete = Boolean(
+    gate.user?.isAdmin || gate.user?.permissions?.includes('post.delete.any'),
+  );
 
   return (
     <>
@@ -21,7 +24,7 @@ export default async function OpsReviewPage() {
         </p>
       </div>
       {/* 运营面板不提供「测试 AI 配置」，那是管理员调参用的 */}
-      <AdminAudit canTest={false} />
+      <AdminAudit canTest={false} canDelete={canDelete} />
     </>
   );
 }

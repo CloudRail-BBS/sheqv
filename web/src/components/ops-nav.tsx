@@ -12,6 +12,8 @@ import { usePathname } from 'next/navigation';
 const ITEMS: { href: string; label: string; queue?: string }[] = [
   { href: '/ops', label: '概览' },
   { href: '/ops/review', label: '帖子审核', queue: 'posts' },
+  { href: '/ops/servers', label: '服务器', queue: 'servers' },
+  { href: '/ops/tournaments', label: '赛事报名', queue: 'entries' },
   { href: '/ops/verifications', label: '认证', queue: 'verifications' },
   { href: '/ops/titles', label: '头衔', queue: 'titles' },
   { href: '/ops/members', label: '成员' },

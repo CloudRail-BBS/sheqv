@@ -30,15 +30,25 @@ import java.io.File
 class FileBridgePlugin : Plugin() {
     @PluginMethod
     fun saveUrlToDownloads(call: PluginCall) {
-        val url = call.getString("url") ?: return call.reject("缺少 url")
-        val name = safeName(call.getString("filename") ?: "resource.bin")
+        val raw = call.getString("url") ?: return call.reject("缺少 url")
+        // 站内地址补成绝对地址；DownloadManager 不认相对路径
+        val url = if (raw.startsWith("http")) raw else "https://crbbsx.com$raw"
+        val wanted = call.getString("filename")?.takeIf { it.isNotBlank() }
+        val name = wanted?.let { safeName(it) }
         val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle(name)
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(false)
+        if (name != null) {
+            request.setTitle(name).setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
+        }
+        // 站内下载要过会话校验：把 WebView 的 Cookie 一起带上，否则 401
+        val cookie = android.webkit.CookieManager.getInstance().getCookie(url)
+        if (!cookie.isNullOrEmpty()) request.addRequestHeader("Cookie", cookie)
+        call.getString("mime")?.takeIf { it.isNotEmpty() }?.let { request.setMimeType(it) }
         val dm = context.getSystemService(DownloadManager::class.java)
         val id = dm.enqueue(request)
-        call.resolve(JSObject().put("id", id))
+        call.resolve(JSObject().put("id", id).put("filename", name ?: ""))
     }
 
     @PluginMethod
