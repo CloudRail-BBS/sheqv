@@ -36,7 +36,7 @@ const nextKey = () => `md-${(seq += 1)}`;
 
 function inline(text: string, sizes?: ImageSizes): ReactNode[] {
   const pattern =
-    /(\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|\*[^*]+\*|_[^_]+_|`[^`]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/g;
+    /(\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|\*[^*]+\*|_[^_]+_|`[^`]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s<>"'）】]+)/g;
   const out: ReactNode[] = [];
   let last = 0;
   let match: RegExpExecArray | null;
@@ -83,6 +83,20 @@ function inline(text: string, sizes?: ImageSizes): ReactNode[] {
             {inline(m[1])}
           </a>,
         );
+      } else {
+        out.push(token);
+      }
+    } else if (token.startsWith('http')) {
+      // 裸链接也点得动；句末标点属于正文，不吞进 href
+      const trimmed = token.replace(/[.,;:!?，。；：！？、]+$/, '');
+      const href = safeUrl(trimmed);
+      if (href) {
+        out.push(
+          <a key={nextKey()} href={href} target="_blank" rel="noreferrer noopener">
+            {trimmed}
+          </a>,
+        );
+        if (trimmed.length < token.length) out.push(token.slice(trimmed.length));
       } else {
         out.push(token);
       }
