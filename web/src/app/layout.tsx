@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next';
+// 站点指定字体（自托管思源黑体分片），必须在 globals 之前：body 的 font-family 要用它
+import './fonts.css';
 import './globals.css';
 // 移动端专属版式：放在 globals 之后，同权重规则由它覆盖
 import './mobile.css';

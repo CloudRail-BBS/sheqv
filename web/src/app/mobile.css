@@ -182,6 +182,9 @@
 
   /* ── 帖子详情：文章式 ─────────────────────── */
   .site-scroll .post-block { border-radius: var(--m-radius); }
+  /* 置顶 / 精华条：原来贴在卡片最上沿，10px 圆角被卡片的 20px 圆角裁掉上缘，
+     看着像被切了一刀。这里四周内缩，让它以完整的胶囊露出来。 */
+  .site-scroll .pb-flagbar { margin: 12px 12px 4px; }
   .site-scroll .pb-title-block { padding: 18px 16px 10px; }
   .site-scroll .pb-title {
     font-size: 23px; line-height: 1.32; letter-spacing: -0.025em;

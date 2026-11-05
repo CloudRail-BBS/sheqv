@@ -93,9 +93,11 @@ body {
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
-  /* 中文优先：苹方 → 鸿蒙 → MiSans → 雅黑 UI → 思源，最后回落到系统无衬线 */
-  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "MiSans",
-    "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  /* 站点指定字体：自托管的思源黑体分片排第一位。
+     安卓换主题字体会顶替 system-ui / sans-serif，自托管字体不参与系统替换，
+     所有设备看到的才是同一套字形；后面的本机字体只作加载失败时的兜底。 */
+  font-family: "CloudRail Sans", system-ui, -apple-system, "PingFang SC", "HarmonyOS Sans SC",
+    "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   font-size: 14.5px;
   line-height: 1.66;
   letter-spacing: 0.008em;
