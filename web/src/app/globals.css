@@ -7126,19 +7126,21 @@ body::before {
 
 /* ── 移动端：顶栏与频道标签合成一组头部 ────────
    原来是「一条通栏顶栏 + 一张浮在下面的圆角卡片」，两种材质、两套留白，
-   叠在一起像两个不相干的工具条。这里让标签行通栏、同底色，
-   只用一条分隔线跟顶栏接上，读起来是同一组导航。 */
+   叠在一起像两个不相干的工具条。这里去掉卡片外壳，只用底色 + 一条下划线
+   跟内容衔接，读起来是同一块头部。
+   注意**不要**用负边距做成通栏：通栏会左右各宽出一截，比卡片还宽，
+   视觉上就是「这一行偏了」。留在列内，左右与卡片严格对齐。 */
 @media (max-width: 860px) {
   .feed-tabs {
     position: sticky;
     top: calc(56px + env(safe-area-inset-top));
     z-index: 30;
-    margin-inline: calc(-1 * var(--app-pad, 14px));
-    padding: 5px calc(var(--app-pad, 14px) - 2px);
+    margin-inline: 0;
+    padding: 5px 4px;
     border: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-soft);
     border-radius: 0;
-    background: var(--panel);
+    background: var(--bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
@@ -7548,7 +7550,9 @@ body::before {
 /* ── 频道标签的滑动选中块 ─────────────────
    位置由 JS 量出来（字重变化、侧栏收起都会改宽度），
    这里只负责长什么样、怎么动。 */
-.feed-tabs { --tabs-pad-y: 4px; position: relative; }
+/* 已经是 sticky（本身就是定位元素），不要再写 position: relative ——
+   后出现的 relative 会覆盖 sticky，标签栏就再也吸不住顶了。 */
+.feed-tabs { --tabs-pad-y: 4px; }
 .feed-tab { position: relative; z-index: 1; }
 .feed-tab-pill {
   position: absolute; left: 0; top: var(--tabs-pad-y);
