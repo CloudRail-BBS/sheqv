@@ -476,9 +476,8 @@ export function ResourceUpload({
               placeholder="安装方式、依赖、已知问题…… 支持 Markdown 与图片。"
               onSubmit={submit}
               leading={
-                <span className="composer-me">
+                <span className="composer-me" title="以你的身份发布">
                   <span className="composer-me-avatar">{avatarNode}</span>
-                  <b>ME</b>
                 </span>
               }
               beforeFooter={
@@ -578,35 +577,42 @@ export function ResourceUpload({
               }
               actions={
                 <>
-                  <span className="composer-count">
-                    {form.body.length} 字 · 标题 {form.title.trim().length}/60
+                  <span className="composer-status">
+                    <span className="composer-count">
+                      {form.body.length} 字 · 标题 {form.title.trim().length}/60
+                    </span>
+                    {err ? (
+                      <span className="composer-err">{err}</span>
+                    ) : !form.title.trim() ? (
+                      <span className="composer-hint">先填标题，或上传文件自动带上</span>
+                    ) : attachments.length === 0 && !form.url.trim() ? (
+                      <span className="composer-hint">还需要文件或外链地址</span>
+                    ) : (
+                      <span className="composer-saved">
+                        <span className="composer-dot" aria-hidden="true" />
+                        可以发布了
+                      </span>
+                    )}
                   </span>
-                  {err ? (
-                    <span className="composer-err">{err}</span>
-                  ) : !form.title.trim() ? (
-                    <span className="composer-hint">先填标题，或上传文件自动带上</span>
-                  ) : attachments.length === 0 && !form.url.trim() ? (
-                    <span className="composer-hint">还需要文件或外链地址</span>
-                  ) : (
-                    <span className="composer-saved">草稿随发布一起提交</span>
-                  )}
-                  <button type="button" className="composer-discard" onClick={close} disabled={busy}>
-                    舍弃
-                  </button>
-                  <button
-                    type="button"
-                    className="composer-submit"
-                    onClick={submit}
-                    disabled={
-                      busy ||
-                      uploading ||
-                      form.title.trim().length < 2 ||
-                      (attachments.length === 0 && !form.url.trim())
-                    }
-                    title="发布资源（⌘/Ctrl + Enter）"
-                  >
-                    {busy ? '发布中…' : '发布资源'}
-                  </button>
+                  <span className="composer-actions">
+                    <button type="button" className="composer-discard" onClick={close} disabled={busy}>
+                      舍弃
+                    </button>
+                    <button
+                      type="button"
+                      className="composer-submit"
+                      onClick={submit}
+                      disabled={
+                        busy ||
+                        uploading ||
+                        form.title.trim().length < 2 ||
+                        (attachments.length === 0 && !form.url.trim())
+                      }
+                      title="发布资源（⌘/Ctrl + Enter）"
+                    >
+                      {busy ? '发布中…' : '发布资源'}
+                    </button>
+                  </span>
                 </>
               }
             />

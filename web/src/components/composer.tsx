@@ -462,34 +462,43 @@ export function Composer({
               }
               actions={
                 <>
-                  <span className="composer-count">
-                    {body.length} 字 · 标题 {title.length}/60
+                  <span className="composer-status">
+                    <span className="composer-count">
+                      {body.length} 字 · 标题 {title.length}/60
+                    </span>
+                    {err ? (
+                      <span className="composer-err">{err}</span>
+                    ) : ready ? (
+                      <span className="composer-saved">
+                        <span className="composer-dot" aria-hidden="true" />
+                        草稿已保存
+                      </span>
+                    ) : (
+                      <span className="composer-hint">{hint}</span>
+                    )}
                   </span>
-                  {err ? (
-                    <span className="composer-err">{err}</span>
-                  ) : ready ? (
-                    <span className="composer-saved">草稿已自动保存</span>
-                  ) : (
-                    <span className="composer-hint">{hint}</span>
-                  )}
-                  <span className="composer-kbd">⌘/Ctrl + Enter</span>
-                  <button
-                    type="button"
-                    className="composer-discard"
-                    onClick={discard}
-                    disabled={busy}
-                  >
-                    舍弃
-                  </button>
-                  <button
-                    type="button"
-                    className="composer-submit"
-                    onClick={submit}
-                    disabled={busy || !ready}
-                    title={ready ? '发布（⌘/Ctrl + Enter）' : hint}
-                  >
-                    {busy ? '发布中…' : '创建帖子'}
-                  </button>
+                  <span className="composer-actions">
+                    <span className="composer-kbd" aria-hidden="true">
+                      ⌘/Ctrl ↵
+                    </span>
+                    <button
+                      type="button"
+                      className="composer-discard"
+                      onClick={discard}
+                      disabled={busy}
+                    >
+                      舍弃
+                    </button>
+                    <button
+                      type="button"
+                      className="composer-submit"
+                      onClick={submit}
+                      disabled={busy || !ready}
+                      title={ready ? '发布（⌘/Ctrl + Enter）' : hint}
+                    >
+                      {busy ? '发布中…' : '创建帖子'}
+                    </button>
+                  </span>
                 </>
               }
             />

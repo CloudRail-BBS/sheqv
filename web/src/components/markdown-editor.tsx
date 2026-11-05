@@ -7,10 +7,57 @@ import { compressImage, formatBytes, imageTypeError, uploadWithProgress } from '
 const EMOJIS = ['👍', '🎉', '🔥', '😂', '❤️', '✅', '⚔️', '🧱', '🚀', '👀', '🤝', '💡'];
 
 /**
+ * 工具栏图标：16px、1.7 描边、统一网格。
+ * 之前用 ⌗ / •≡ / 1≡ / ❝ 这些字符凑，字号与视觉重量各不相同，一排看过去是歪的；
+ * 换成同一套描边图标后，按钮之间的节奏才一致。
+ */
+const ICONS = {
+  bold: <path d="M7 5h5.2a3.4 3.4 0 0 1 0 6.8H7zM7 11.8h5.8a3.6 3.6 0 0 1 0 7.2H7z" />,
+  italic: <path d="M15 5h-4M13 19H9M14.5 5 9.5 19" />,
+  strike: <path d="M6 12h12M8.2 8.4A3.4 3.4 0 0 1 11.6 5c1.9 0 3.4.9 3.9 2.3M15.8 15.2A3.5 3.5 0 0 1 12.2 19c-1.9 0-3.5-1-4-2.4" />,
+  heading: <path d="M6 5v14M18 5v14M6 12h12" />,
+  quote: <path d="M5 5v14M10 8h9M10 12h7M10 16h5" />,
+  code: <path d="m9 8-4 4 4 4M15 8l4 4-4 4" />,
+  block: <path d="M4 6h16v12H4zM9.5 10 8 12l1.5 2M14.5 10 16 12l-1.5 2" />,
+  link: <path d="M10.5 13.5a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 0 0-5.7-5.7l-1 1M13.5 10.5a4 4 0 0 0-5.7 0l-2.3 2.3a4 4 0 0 0 5.7 5.7l1-1" />,
+  bullet: <path d="M9 7h10M9 12h10M9 17h10M5 7h.01M5 12h.01M5 17h.01" />,
+  ordered: (
+    <>
+      <path d="M10 7h9M10 12h9M10 17h9" />
+      <path d="M4 6.2 5.2 5.5V9M4 14.4c0-.8.7-1.4 1.4-1.4s1.3.6 1.3 1.3c0 1.2-2.7 1.7-2.7 3.2h2.8" />
+    </>
+  ),
+  image: <path d="M4 5h16v14H4zM4 15.5 9 11l4.5 4.5M14 13l2-2 4 3.5M9.2 9.2h.01" />,
+  emoji: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9 10h.01M15 10h.01M8.5 14.5c.9 1.2 2 1.8 3.5 1.8s2.6-.6 3.5-1.8" />,
+} as const;
+
+function MdIcon({ name }: { name: keyof typeof ICONS }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+/**
  * Markdown 编辑器。
  *
  * default：管理后台用，工具栏在顶部 + 写/预览切换 + 字数。
  * composer：发帖弹窗用，无边框正文 + 底部工具栏，可传入头像与发布按钮。
+ *
+ * 预览在桌面端是**右侧分栏**（左写右看，边打字边看效果），
+ * 手机上仍是原来的整页切换——小屏并排两栏谁都看不清。
  */
 export function MarkdownEditor({
   value,
@@ -177,64 +224,83 @@ export function MarkdownEditor({
 
   const tools = (
     <>
-      <button type="button" title="粗体 Ctrl+B" onClick={() => replaceSelection('**', '**', '粗体')}>
-        <b>B</b>
-      </button>
-      <button type="button" title="斜体 Ctrl+I" onClick={() => replaceSelection('*', '*', '斜体')}>
-        <i>I</i>
-      </button>
-      <button type="button" title="删除线" onClick={() => replaceSelection('~~', '~~', '删除线')}>
-        <s>S</s>
-      </button>
-      <button type="button" title="标题" onClick={() => prefixLine('## ')}>
-        H
-      </button>
-      <button type="button" title="引用" onClick={() => prefixLine('> ')}>
-        ❝
-      </button>
-      <button type="button" title="行内代码" onClick={() => replaceSelection('`', '`', 'code')}>
-        {'</>'}
-      </button>
-      <button type="button" title="代码块" onClick={() => replaceSelection('\n```\n', '\n```\n', '代码')}>
-        ⌗
-      </button>
-      <button type="button" title="链接 Ctrl+K" onClick={() => replaceSelection('[', '](https://)', '链接文字')}>
-        ↗
-      </button>
-      <button type="button" title="无序列表" onClick={() => prefixLine('- ')}>
-        •≡
-      </button>
-      <button type="button" title="有序列表" onClick={() => prefixLine('1. ')}>
-        1≡
-      </button>
-      <span className="md-sep" />
-      <button type="button" title="上传图片（可多选，支持粘贴与拖入）" onClick={() => fileRef.current?.click()} disabled={Boolean(uploading)}>
-        {uploading
-          ? `${uploading.total > 1 ? `${uploading.done + 1}/${uploading.total} ` : ''}${
-              uploading.pct > 0 ? `${uploading.pct}%` : '压缩中…'
-            }`
-          : '图片'}
-      </button>
-      <div className="md-emoji-wrap">
-        <button type="button" title="表情" onClick={() => setEmojiOpen((v) => !v)}>
-          ☺
+      <div className="md-group">
+        <button type="button" aria-label="粗体" title="粗体 · Ctrl+B" onClick={() => replaceSelection('**', '**', '粗体')}>
+          <MdIcon name="bold" />
         </button>
-        {emojiOpen && (
-          <div className="md-emoji-pop">
-            {EMOJIS.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => {
-                  replaceSelection(e);
-                  setEmojiOpen(false);
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        )}
+        <button type="button" aria-label="斜体" title="斜体 · Ctrl+I" onClick={() => replaceSelection('*', '*', '斜体')}>
+          <MdIcon name="italic" />
+        </button>
+        <button type="button" aria-label="删除线" title="删除线" onClick={() => replaceSelection('~~', '~~', '删除线')}>
+          <MdIcon name="strike" />
+        </button>
+      </div>
+      <span className="md-sep" aria-hidden="true" />
+      <div className="md-group">
+        <button type="button" aria-label="标题" title="标题" onClick={() => prefixLine('## ')}>
+          <MdIcon name="heading" />
+        </button>
+        <button type="button" aria-label="引用" title="引用" onClick={() => prefixLine('> ')}>
+          <MdIcon name="quote" />
+        </button>
+        <button type="button" aria-label="行内代码" title="行内代码" onClick={() => replaceSelection('`', '`', 'code')}>
+          <MdIcon name="code" />
+        </button>
+        <button type="button" aria-label="代码块" title="代码块" onClick={() => replaceSelection('\n```\n', '\n```\n', '代码')}>
+          <MdIcon name="block" />
+        </button>
+      </div>
+      <span className="md-sep" aria-hidden="true" />
+      <div className="md-group">
+        <button type="button" aria-label="插入链接" title="插入链接 · Ctrl+K" onClick={() => replaceSelection('[', '](https://)', '链接文字')}>
+          <MdIcon name="link" />
+        </button>
+        <button type="button" aria-label="无序列表" title="无序列表" onClick={() => prefixLine('- ')}>
+          <MdIcon name="bullet" />
+        </button>
+        <button type="button" aria-label="有序列表" title="有序列表" onClick={() => prefixLine('1. ')}>
+          <MdIcon name="ordered" />
+        </button>
+      </div>
+      <div className="md-group md-group-end">
+        <button
+          type="button"
+          aria-label="上传图片"
+          title="上传图片（可多选，支持粘贴与拖入）"
+          className={uploading ? 'md-uploading' : undefined}
+          onClick={() => fileRef.current?.click()}
+          disabled={Boolean(uploading)}
+        >
+          {uploading ? (
+            <span className="md-upload">
+              {uploading.total > 1 ? `${uploading.done + 1}/${uploading.total} ` : ''}
+              {uploading.pct > 0 ? `${uploading.pct}%` : '压缩中'}
+            </span>
+          ) : (
+            <MdIcon name="image" />
+          )}
+        </button>
+        <div className="md-emoji-wrap">
+          <button type="button" aria-label="表情" title="表情" onClick={() => setEmojiOpen((v) => !v)}>
+            <MdIcon name="emoji" />
+          </button>
+          {emojiOpen && (
+            <div className="md-emoji-pop">
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => {
+                    replaceSelection(e);
+                    setEmojiOpen(false);
+                  }}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <input
         ref={fileRef}
@@ -252,39 +318,50 @@ export function MarkdownEditor({
   );
 
   const tabs = (
-    <div className="md-tabs">
-      <button type="button" data-on={tab === 'write'} onClick={() => setTab('write')}>
-        写
-      </button>
-      <button type="button" data-on={tab === 'preview'} onClick={() => setTab('preview')}>
-        预览
-      </button>
+    <div className="md-tabs" role="tablist" aria-label="编辑与预览">
+      {(['write', 'preview'] as const).map((k) => (
+        <button
+          key={k}
+          type="button"
+          role="tab"
+          aria-selected={tab === k}
+          data-on={tab === k}
+          onClick={() => setTab(k)}
+        >
+          {k === 'write' ? '写' : '预览'}
+        </button>
+      ))}
     </div>
   );
 
-  const editor = tab === 'write' ? (
-    <textarea
-      ref={ref}
-      className="md-input"
-      rows={rows}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      maxLength={maxLength}
-      onPaste={onPaste}
-      onDrop={onDrop}
-      onKeyDown={onKeyDown}
-      placeholder={placeholder}
-    />
-  ) : (
-    <div className="md-preview">
-      {value.trim() ? <Markdown text={value} /> : <p className="muted">还没有内容。</p>}
+  const panes = (
+    <div className="md-panes" data-mode={tab}>
+      <textarea
+        ref={ref}
+        className="md-input"
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        maxLength={maxLength}
+        onPaste={onPaste}
+        onDrop={onDrop}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+      />
+      {tab === 'preview' && (
+        <div className="md-preview">
+          <div className="md-preview-inner">
+            {value.trim() ? <Markdown text={value} /> : <p className="muted">还没有内容。</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 
   if (variant === 'composer') {
     return (
       <div className="md-editor md-composer-editor">
-        {editor}
+        {panes}
         {beforeFooter}
         <div className="md-toolbar md-toolbar-bottom">
           {leading && <div className="md-leading">{leading}</div>}
@@ -305,7 +382,7 @@ export function MarkdownEditor({
         <div className="md-tools">{tools}</div>
         {tabs}
       </div>
-      {editor}
+      {panes}
       <div className="md-foot">
         <span>{value.length} 字</span>
         <span>支持 Markdown · 可拖入图片 · Ctrl+B / I / K</span>

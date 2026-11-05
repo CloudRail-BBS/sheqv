@@ -2974,34 +2974,83 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .md-editor { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
 .md-toolbar {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+  padding: 5px 8px; border-bottom: 1px solid var(--line); background: var(--panel-2);
   flex-wrap: wrap;
 }
-.md-tools { display: flex; align-items: center; gap: 1px; flex-wrap: wrap; }
+
+/* 工具区：按「文本 / 块 / 插入」分组，组间用一根淡分割线，不靠间距硬猜 */
+.md-tools { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; min-width: 0; }
+.md-group { display: flex; align-items: center; gap: 2px; }
+/* 图片/表情属于「插入」，和上面的排版工具有点不一样，靠右站 */
+.md-group-end { margin-left: auto; padding-left: 2px; }
 .md-tools button {
-  min-width: 30px; height: 28px; padding: 0 6px; border: 0; border-radius: 6px;
-  background: transparent; color: var(--text-2); font-size: 12px; cursor: pointer;
+  display: grid; place-items: center;
+  width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text-2); cursor: pointer;
   font-family: inherit;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease), transform 0.1s var(--ease);
 }
-.md-tools button:hover { background: var(--panel); color: var(--text); }
-.md-tools button:disabled { opacity: 0.5; cursor: default; }
-.md-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
-.md-tabs { display: flex; gap: 2px; }
+.md-tools button:hover { background: var(--panel-3); color: var(--text); }
+.md-tools button:active:not(:disabled) { transform: scale(0.94); }
+.md-tools button:disabled { opacity: 0.55; cursor: default; }
+.md-tools button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.md-upload { font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+/* 上传进度要显示「2/3 45%」，按钮临时放宽，别把字挤出按钮外 */
+.md-tools button.md-uploading { width: auto; min-width: 30px; padding: 0 7px; }
+.md-sep { width: 1px; height: 18px; background: var(--line); margin: 0 6px; flex: none; }
+
+/* 写 / 预览：分段控件（轨道 + 滑块），一眼看出当前在哪一档 */
+.md-tabs {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px;
+  border-radius: 9px; background: var(--panel-3);
+}
 .md-tabs button {
-  height: 26px; padding: 0 9px; border-radius: 6px; border: 1px solid transparent;
-  background: transparent; color: var(--muted); font-size: 11px; cursor: pointer;
+  height: 24px; padding: 0 11px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--muted);
+  font-family: inherit; font-size: 11.5px; font-weight: 500; cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease), box-shadow 0.16s var(--ease);
 }
+.md-tabs button:hover { color: var(--text-2); }
 .md-tabs button[data-on="true"] {
-  background: var(--panel); border-color: var(--line); color: var(--text);
+  background: var(--panel); color: var(--text);
+  box-shadow: 0 1px 2px rgba(10, 12, 18, 0.14);
 }
+
+/* 正文区：默认单栏；桌面端开预览时右栏并排（见文件末尾的宽屏规则） */
+.md-panes { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .md-input {
   width: 100%; min-height: 160px; padding: 12px 14px; border: 0; outline: none;
   background: transparent; color: var(--text); resize: vertical;
   font-family: inherit; font-size: 13.5px; line-height: 1.8;
 }
 .md-preview {
-  min-height: 160px; max-height: 460px; overflow: auto; padding: 12px 14px;
-  background: var(--panel);
+  min-height: 160px; max-height: 460px; overflow: auto; padding: 0;
+  background: var(--panel); position: relative;
+}
+.md-preview-inner { padding: 12px 14px; }
+
+/* 桌面端预览：并排到正文右侧，边写边看（左写右读，视线不用来回跳）。
+   手机上仍是整页切换——390px 并排两栏，两边都看不清。
+   右栏用绝对定位铺满单元格，高度跟着正文走，切预览时编辑器不会突然变高。 */
+@media (min-width: 861px) {
+  .md-panes[data-mode='preview'] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .md-panes[data-mode='preview'] > .md-preview {
+    border-left: 1px solid var(--line);
+    background: var(--panel-2);
+    max-height: none;
+    overflow: hidden;
+  }
+  .md-panes[data-mode='preview'] > .md-preview > .md-preview-inner {
+    position: absolute; inset: 0; overflow: auto;
+  }
+}
+@media (max-width: 860px) {
+  .md-panes[data-mode='preview'] > .md-input { display: none; }
+}
+
+/* 窄屏工具栏会换行，插入组跟着行首排，别单独飘到右边 */
+@media (max-width: 860px) {
+  .md-group-end { margin-left: 0; }
 }
 .md-foot {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -3428,8 +3477,12 @@ body:has(.auth-page) .app {
   flex: 1 1 auto;
   min-height: 0;
 }
-.composer-panel .md-composer-editor .md-input { flex: 1 1 auto; min-height: 140px; }
-.composer-panel .md-composer-editor .md-preview { flex: 1 1 auto; min-height: 140px; overflow: auto; }
+.composer-panel .md-composer-editor .md-panes {
+  flex: 1 1 auto; min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+.composer-panel .md-composer-editor .md-input { height: 100%; min-height: 140px; }
+.composer-panel .md-composer-editor .md-preview { min-height: 140px; max-height: none; }
 .composer-panel.is-expanded {
   width: min(1080px, 96vw);
   height: min(92vh, 1000px);
@@ -3506,13 +3559,21 @@ body:has(.auth-page) .app {
   min-height: 140px; padding: 16px 18px;
   font-size: 14px; line-height: 1.85;
 }
-.composer-panel .md-composer-editor .md-preview {
-  min-height: 140px; max-height: none; padding: 16px 18px;
-}
+.composer-panel .md-composer-editor .md-preview-inner { padding: 16px 18px; }
+/* 底部工具栏分两行：
+   第一行是排版工具（左）与写/预览（右），第二行是状态与动作。
+   分隔线只画在第二行上方，像「工具条 + 收尾条」，而不是两条平行工具栏。 */
 .composer-panel .md-toolbar-bottom {
   border-top: 1px solid var(--line); border-bottom: 0;
-  padding: 7px 12px; gap: 8px; background: var(--panel-2);
+  padding: 8px 12px; gap: 6px 8px; background: var(--panel-2);
   flex-wrap: wrap;
+}
+.composer-panel .md-toolbar-bottom .md-tools { flex: 1 1 auto; }
+.composer-panel .md-toolbar-bottom .md-toolbar-right {
+  flex: 1 1 100%;
+  margin-left: 0; padding-top: 7px;
+  border-top: 1px solid var(--line-soft);
+  justify-content: flex-start;
 }
 .composer-panel .md-toolbar-bottom .md-tools {
   gap: 0; flex: 1 1 auto; min-width: 0;
@@ -3534,7 +3595,14 @@ body:has(.auth-page) .app {
 }
 .composer-me-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .md-toolbar-right {
-  display: flex; align-items: center; gap: 7px; margin-left: auto;
+  display: flex; align-items: center; gap: 8px; margin-left: auto;
+}
+.composer-status { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.composer-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
+/* 就绪提示用一个小绿点，比多一行字轻 */
+.composer-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--ok); display: inline-block; flex: none;
 }
 .composer-count { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .composer-saved { font-size: 10px; color: var(--muted); }
@@ -3563,19 +3631,27 @@ body:has(.auth-page) .app {
 }
 .composer-submit:disabled, .composer-discard:disabled { opacity: 0.5; cursor: not-allowed; }
 .composer-discard {
-  height: 34px; padding: 0 10px; border: 0; border-radius: 8px;
-  background: transparent; color: var(--text-2); font-size: 12px; cursor: pointer;
+  height: 34px; padding: 0 11px; border: 1px solid transparent; border-radius: 9px;
+  background: transparent; color: var(--text-2); font-size: 12.5px; cursor: pointer;
   font-family: inherit;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
 }
-.composer-discard:hover { background: var(--panel); color: var(--text); }
+.composer-discard:hover:not(:disabled) { background: var(--panel-3); color: var(--text); }
 .composer-submit {
-  height: 34px; padding: 0 18px; border: 0; border-radius: 8px;
-  background: var(--text); color: var(--panel);
-  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: opacity 0.14s;
+  height: 34px; padding: 0 18px; border: 1px solid var(--btn-bd); border-radius: 9px;
+  background: var(--btn-bg); color: var(--accent-ink);
+  box-shadow: var(--btn-glow);
+  font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background 0.16s var(--ease), transform 0.1s var(--ease), box-shadow 0.16s var(--ease);
 }
-.composer-submit:hover { opacity: 0.86; }
-.composer-submit:disabled, .composer-discard:disabled { opacity: 0.5; cursor: default; }
+.composer-submit:hover:not(:disabled) { background: var(--btn-bg-hover); }
+.composer-submit:active:not(:disabled) { transform: translateY(1px); }
+/* 禁用态不靠半透明：换成中性底色，读起来是「还没轮到你点」而不是「按钮坏了」 */
+.composer-submit:disabled {
+  background: var(--panel-3); color: var(--text-3);
+  border-color: var(--line); box-shadow: none; cursor: default;
+}
+.composer-discard:disabled { opacity: 0.5; cursor: default; }
 .md-inline-err { padding: 4px 14px 8px; font-size: 10.5px; color: var(--danger); }
 
 .md-emoji-wrap { position: relative; display: inline-flex; }
@@ -3599,7 +3675,7 @@ body:has(.auth-page) .app {
   .composer-tags-line { padding-left: 0; align-items: flex-start; }
   .composer-title-input { height: 54px; font-size: 17px; padding: 0 14px; }
   .composer-panel .md-composer-editor .md-input { min-height: 200px; padding: 14px; }
-  .composer-panel .md-composer-editor .md-preview { padding: 14px; }
+  .composer-panel .md-composer-editor .md-preview-inner { padding: 14px; }
   .composer-panel-head {
     padding: calc(12px + env(safe-area-inset-top)) 14px 10px;
   }
@@ -4039,7 +4115,7 @@ body:has(.auth-page) .app {
     padding: 13px 14px;
     font-size: 13.5px;
   }
-  .composer-panel .md-composer-editor .md-preview { padding: 13px 14px; }
+  .composer-panel .md-composer-editor .md-preview-inner { padding: 13px 14px; }
   .composer-panel .md-toolbar-bottom {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -4076,8 +4152,9 @@ body:has(.auth-page) .app {
     gap: 6px;
   }
   .composer-panel .md-toolbar-right .md-tabs { margin-right: auto; }
-  .composer-count { display: inline; font-size: 10px; }
+  .composer-count { display: none; }
   .composer-saved { display: none; }
+  .composer-status { gap: 6px; }
   .composer-discard { height: 32px; padding: 0 8px; }
   .composer-submit { height: 32px; padding: 0 14px; }
 }
