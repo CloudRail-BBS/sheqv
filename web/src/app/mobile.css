@@ -239,6 +239,60 @@
   .site-scroll .rail-card { border-radius: 18px; }
   .site-scroll .rail-item { min-height: 46px; align-items: center; }
 
+  /* ── 通用：窄屏下的行与筛选 ───────────────── */
+
+  /* 一堆 chip 的筛选行在手机上改成「一行横向滚动」，
+     否则 8 个分类会折成三行，把内容推到屏幕外面去 */
+  .site-scroll .row.wrap:has(> .chip),
+  .site-scroll .chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    padding-bottom: 2px;
+  }
+  .site-scroll .row.wrap:has(> .chip)::-webkit-scrollbar,
+  .site-scroll .chip-row::-webkit-scrollbar { display: none; }
+  .site-scroll .row.wrap:has(> .chip) > .chip,
+  .site-scroll .chip-row > * { flex: 0 0 auto; }
+
+  /* 板块标题：标题与按钮一行，说明另起一行占满 */
+  .site-scroll .section-h { flex-wrap: wrap; align-items: center; row-gap: 8px; }
+  .site-scroll .section-h h2 { flex: 0 0 auto; white-space: nowrap; font-size: 16px; }
+  .site-scroll .section-h .hint { flex: 1 0 100%; order: 3; font-size: 12px; line-height: 1.6; }
+  .site-scroll .section-h .row { order: 2; margin-left: auto; }
+  .site-scroll .section-h .more { margin-left: 0; }
+  /* 横向滚动的筛选行里，右侧那句提示没地方放了，直接收起 */
+  .site-scroll .row.wrap:has(> .chip) > .sort { display: none; }
+
+  /* 卡片/区块里「标题 + 右侧按钮」放不下时换行，而不是把标题竖着挤扁 */
+  .site-scroll .between { flex-wrap: wrap; row-gap: 8px; }
+  .site-scroll .between > :first-child { min-width: 0; }
+
+  /* 触控目标：手机上的胶囊、分组标签不低于 34 */
+  .site-scroll .chip { height: 34px; display: inline-flex; align-items: center; }
+  .site-scroll .btn-sm { height: 34px; }
+  .site-scroll .seg,
+  .site-scroll .seg a,
+  .site-scroll .seg button { min-height: 36px; }
+
+  /* 卡片里的段落与表格不要贴边 */
+  .site-scroll .card-pad { padding: 14px 16px; }
+
+  /* 页签与头像小按钮补足触控高度 */
+  .site-scroll .rw-tabs { display: flex; width: 100%; }
+  .site-scroll .rw-tab { height: 36px; flex: 1 0 auto; justify-content: center; }
+  .site-scroll .me-avatar-upload { min-height: 26px; padding: 2px 6px; }
+
+  /* ── 列表行：工单 / 通用条目 ─────────────── */
+  .site-scroll .ticket-row { align-items: flex-start; }
+  .site-scroll .ticket-row-top { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .site-scroll .ticket-row-subject { font-size: 15px; font-weight: 600; line-height: 1.4; white-space: normal; }
+  .site-scroll .ticket-row-side { flex-direction: row; align-items: center; gap: 8px; padding-top: 2px; font-size: 11px; white-space: nowrap; }
+
+  /* 内容不足一屏时，让页脚沉到底部，别在半中间截断 */
+  .site-scroll .content { min-height: calc(100svh - 150px); }
+
   /* ── 弹窗 → 底部 Sheet ────────────────────── */
   .composer-modal {
     place-items: end stretch;
