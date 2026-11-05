@@ -33,7 +33,7 @@ interface PendingResource {
   aiReason: string | null;
 }
 
-export function AdminAudit() {
+export function AdminAudit({ canTest = true }: { canTest?: boolean } = {}) {
   const [tab, setTab] = useState<'post' | 'resource'>('post');
   const [resItems, setResItems] = useState<PendingResource[]>([]);
   const [resCount, setResCount] = useState(0);
@@ -155,9 +155,11 @@ export function AdminAudit() {
           <span className="badge">{tab === 'post' ? pendingCount : resCount}</span>
         </h3>
         <div className="row" style={{ gap: 8 }}>
-          <button className="btn btn-sm btn-ghost" onClick={testAi} disabled={testing}>
-            {testing ? '测试中…' : '测试 AI 配置'}
-          </button>
+          {canTest && (
+            <button className="btn btn-sm btn-ghost" onClick={testAi} disabled={testing}>
+              {testing ? '测试中…' : '测试 AI 配置'}
+            </button>
+          )}
           <button className="btn btn-sm btn-ghost" onClick={() => void load()}>
             刷新
           </button>

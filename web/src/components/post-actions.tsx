@@ -198,14 +198,26 @@ export function CommentComposer({
           <textarea
             ref={inputRef}
             className="input textarea"
-            rows={3}
+            rows={4}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="不超过 300 字；点某楼的「回复」会自动带上引用"
+            onKeyDown={(e) => {
+              // ⌘/Ctrl + Enter 直接发送：长回复不用再去点按钮
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (!busy && text.trim().length >= 2) void comment();
+              }
+            }}
+            placeholder="说点什么…（点某楼的「回复」会自动引用）"
             maxLength={300}
           />
           <div className="comment-form-foot">
-            <span className="small muted">{text.length} / 300</span>
+            <span className="count" data-near={text.length >= 260 ? 'true' : undefined}>
+              {text.length} / 300
+            </span>
+            <span className="kbd-hint">
+              <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 发送
+            </span>
             {err && <span className="small" style={{ color: 'var(--danger)' }}>{err}</span>}
             <button type="button" className="btn btn-primary btn-sm" onClick={comment} disabled={busy}>
               {busy ? '发送中…' : '发表回复'}

@@ -12,7 +12,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde_json::{Map, Value, json};
 
-use crate::admin_auth::AdminActor;
+use crate::admin_auth::OpsActor;
 use crate::current_user::CurrentUser;
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
@@ -104,7 +104,7 @@ pub async fn cancel(
 /// GET /api/v1/admin/verification-requests?status=pending
 pub async fn admin_list(
     State(st): State<AppState>,
-    _: AdminActor,
+    _: OpsActor,
     Query(q): Query<HashMap<String, String>>,
 ) -> ApiResult<Response> {
     let status = q.get("status").map(String::as_str).unwrap_or("pending");
@@ -122,7 +122,7 @@ pub async fn admin_list(
 /// PATCH /api/v1/admin/verification-requests/{id}
 pub async fn admin_review(
     State(st): State<AppState>,
-    actor: AdminActor,
+    actor: OpsActor,
     Path(id): Path<String>,
     body: Bytes,
 ) -> ApiResult<Response> {

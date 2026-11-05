@@ -97,6 +97,68 @@ function inline(text: string, sizes?: ImageSizes): ReactNode[] {
   return out;
 }
 
+/**
+ * 哔哩哔哩视频链接识别。
+ *
+ * 支持 `bilibili.com/video/BV…`、`av…`（含 `?p=` 分 P），也接受 `m.` 移动站域名。
+ * 只认「整行就是一个视频链接」的情况（裸链接或 `[标题](链接)`）——
+ * 混在句子中间的仍然按普通链接处理，不然正文会被一个播放器从中间劈开。
+ */
+export interface BiliVideo {
+  /** BV 号或 av 号（原样保留前缀） */
+  id: string;
+  page: number;
+  /** 规整后的站内地址，用来做「在 B 站观看」 */
+  href: string;
+}
+
+export function biliVideoOf(raw: string): BiliVideo | null {
+  const text = raw.trim();
+  if (!/^https?:\/\//i.test(text)) return null;
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)bilibili\.com$/i.test(url.hostname)) return null;
+  const m = /^\/video\/(BV[0-9A-Za-z]{10}|av\d+)/i.exec(url.pathname);
+  if (!m) return null;
+  const id = m[1];
+  const rawPage = Number(url.searchParams.get('p') ?? '1');
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
+  return {
+    id,
+    page,
+    href: `https://www.bilibili.com/video/${id}${page > 1 ? `?p=${page}` : ''}`,
+  };
+}
+
+function BiliEmbed({ video }: { video: BiliVideo }) {
+  const id = video.id.toLowerCase().startsWith('av')
+    ? `aid=${video.id.slice(2)}`
+    : `bvid=${video.id}`;
+  return (
+    <figure className="md-video">
+      <div className="md-video-frame">
+        <iframe
+          src={`https://player.bilibili.com/player.html?${id}&p=${video.page}&autoplay=0&danmaku=0&high_quality=1`}
+          title="哔哩哔哩视频"
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="no-referrer-when-downgrade"
+          allow="fullscreen; picture-in-picture"
+        />
+      </div>
+      <figcaption>
+        <a href={video.href} target="_blank" rel="noreferrer noopener">
+          在哔哩哔哩观看
+        </a>
+      </figcaption>
+    </figure>
+  );
+}
+
 function isBlockStart(line: string): boolean {
   return (
     /^#{1,3}\s+/.test(line) ||
@@ -209,6 +271,17 @@ function blocks(text: string, sizes?: ImageSizes): ReactNode[] {
       para.push(lines[i]);
       i += 1;
     }
+    // 整段就是一个 B 站链接 → 换成播放器（裸链接或 [标题](链接) 都算）
+    const only = para.length === 1 ? para[0].trim() : '';
+    if (only) {
+      const linked = /^\[[^\]]*\]\(([^)]+)\)$/.exec(only);
+      const video = biliVideoOf(linked ? linked[1] : only);
+      if (video) {
+        out.push(<BiliEmbed key={nextKey()} video={video} />);
+        continue;
+      }
+    }
+
     out.push(
       <p key={nextKey()}>
         {para.map((p, idx) => (

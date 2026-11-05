@@ -21,10 +21,13 @@ async fn require_reviewer(st: &AppState, maybe: MaybeUser) -> Result<PublicUser,
     let user = maybe.0.ok_or_else(|| {
         ApiError::with_message(StatusCode::UNAUTHORIZED, "need_login", "请先登录")
     })?;
-    if groups::can(&st.pool, &user.id, "audit.review")
+    let allowed = groups::can(&st.pool, &user.id, "audit.review")
         .await
         .map_err(ApiError::internal)?
-    {
+        || groups::can(&st.pool, &user.id, "ops.console")
+            .await
+            .map_err(ApiError::internal)?;
+    if allowed {
         Ok(user)
     } else {
         Err(ApiError::with_message(

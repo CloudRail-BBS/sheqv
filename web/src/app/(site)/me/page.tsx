@@ -6,6 +6,7 @@ import { listPosts } from '@/lib/forum-store';
 import { listActive } from '@/lib/agreement-store';
 import { getSignatures } from '@/lib/agreement-state';
 import { LogoutButton } from '@/components/logout-button';
+import { canEnterOps } from '@/lib/ops-auth';
 import { TitleRequestForm } from '@/components/title-request';
 import { LoginMethods } from '@/components/login-methods';
 import { LevelPill, LevelBar, RepPill } from '@/components/rank-badges';
@@ -166,6 +167,11 @@ export default async function MePage({
             </div>
           </div>
           <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>
+            {canEnterOps(user) && (
+              <Link href="/ops" className="btn btn-sm btn-ghost">
+                运营面板
+              </Link>
+            )}
             {user.isAdmin && (
               <Link href="/admin" className="btn btn-sm btn-ghost">
                 管理后台

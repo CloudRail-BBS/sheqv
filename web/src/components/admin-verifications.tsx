@@ -34,7 +34,7 @@ interface AdminUserLite {
  * 两块：上半是用户提交的申请（可改类型与对外说明），
  * 下半是「直接授予」——官方账号、合作方不会自己来提申请，管理员要能一句话点亮。
  */
-export function AdminVerifications() {
+export function AdminVerifications({ canGrant = true }: { canGrant?: boolean } = {}) {
   const [status, setStatus] = useState('pending');
   const [items, setItems] = useState<VerifyRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +168,10 @@ export function AdminVerifications() {
 
   return (
     <>
-      <div className="card card-pad verify-grant">
+      <div
+        className="card card-pad verify-grant"
+        style={canGrant ? undefined : { display: 'none' }}
+      >
         <div className="between">
           <div>
             <b>直接授予</b>

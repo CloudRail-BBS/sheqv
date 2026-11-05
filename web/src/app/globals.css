@@ -1118,7 +1118,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* ── 后台表单 ───────────────────────────── */
 
 .adm-form { display: grid; grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-.textarea { height: auto; padding: 8px 10px; line-height: 1.65; resize: vertical; }
+.textarea {
+  /* 不写 width 时浏览器只给 ~20 列的固有宽度，整行输入框会缩成一小块 */
+  width: 100%; display: block;
+  height: auto; padding: 10px 12px; line-height: 1.7; resize: vertical;
+}
 .clause-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
 
 @media (max-width: 860px) {
@@ -4800,8 +4804,48 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .floor-acts { display: flex; gap: 6px; flex-wrap: wrap; }
 
 
-/* 底部回复框 */
-.comment-form .textarea { margin-top: 2px; }
+/* 底部回复框：标题一行、输入框整宽、底部一行计数 + 按钮 */
+.comment-form { scroll-margin-top: 84px; }
+.comment-form .console-h3 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+.comment-form .textarea {
+  margin-top: 10px;
+  min-height: 104px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  font-size: 13.5px;
+}
+.comment-form .textarea:focus { background: var(--panel); }
+.comment-form-foot { padding-top: 2px; }
+.comment-form-foot .count {
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px; color: var(--muted);
+}
+.comment-form-foot .count[data-near="true"] { color: var(--warn); }
+.comment-form-foot .kbd-hint {
+  font-size: 11px; color: var(--text-3);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.comment-form-foot .kbd-hint kbd {
+  font-family: inherit; font-size: 10.5px;
+  padding: 1px 5px; border-radius: 5px;
+  border: 1px solid var(--line); background: var(--panel-3); color: var(--text-2);
+}
+.comment-form-foot .btn { margin-left: auto; height: 34px; border-radius: 999px; padding: 0 18px; }
+@media (max-width: 700px) {
+  .comment-form .textarea { min-height: 92px; font-size: 14px; }
+  .comment-form-foot .kbd-hint { display: none; }
+}
+
+/* ── 正文里的 B 站播放器 ─────────────── */
+.md-video { margin: 16px 0; }
+.md-video-frame {
+  position: relative; aspect-ratio: 16 / 9;
+  border-radius: 12px; overflow: hidden; background: #000;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.md-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.md-video figcaption { margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.md-video figcaption a { color: var(--blue); }
 .reply-chip {
   display: inline-flex; align-items: center; gap: 8px;
   margin-bottom: 8px; padding: 4px 4px 4px 10px;
@@ -7365,4 +7409,96 @@ body::before {
 @media (max-width: 560px) {
   .pb-notice { margin: 0 12px 12px; padding: 9px 12px; }
   .pb-notice p { font-size: 12.5px; }
+}
+
+/* ── 运营面板 ─────────────────────────────
+   比后台轻的一层：一条顶栏 + 一排横向标签，没有侧栏。
+   颜色全走令牌，深浅主题共用一套。 */
+.ops { min-height: 100vh; background: var(--bg); }
+.ops-topbar {
+  position: sticky; top: 0; z-index: 40;
+  padding-top: env(safe-area-inset-top);
+  background: var(--glass-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-brd);
+}
+.ops-topbar-in {
+  max-width: 1080px; margin: 0 auto; padding: 10px 20px 0;
+  display: flex; align-items: center; gap: 12px;
+}
+.ops-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--text); }
+.ops-brand span { display: flex; flex-direction: column; line-height: 1.25; }
+.ops-brand b { font-size: 13px; font-weight: 650; }
+.ops-brand em { font-style: normal; font-size: 10.5px; color: var(--muted); }
+.ops-top-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ops-user {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--blue-soft); color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue-line);
+  font-size: 12px; font-weight: 650;
+}
+.ops-tabs-in { max-width: 1080px; margin: 0 auto; padding: 8px 20px 10px; }
+.ops-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.ops-tabs::-webkit-scrollbar { display: none; }
+.ops-tab {
+  flex: 0 0 auto; position: relative;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 14px; border-radius: 999px;
+  font-size: 12.5px; color: var(--text-2); text-decoration: none;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+.ops-tab:hover { background: var(--panel-3); color: var(--text); }
+.ops-tab[data-on="true"] {
+  background: var(--blue-soft); color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue-line); font-weight: 600;
+}
+.ops-tab-dot {
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  background: var(--blue); color: #fff;
+  font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.ops-main {
+  max-width: 1080px; margin: 0 auto; padding: 18px 20px 64px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ops-page-head h1 { font-size: 20px; letter-spacing: -0.02em; }
+.ops-page-head p { margin-top: 4px; }
+.ops-page-head .badge { align-self: flex-start; }
+
+.ops-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; }
+.ops-stat { padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.ops-stat b {
+  font-size: 24px; font-weight: 650; letter-spacing: -0.025em;
+  line-height: 1.2; font-variant-numeric: tabular-nums;
+}
+.ops-stat span { font-size: 11.5px; color: var(--muted); }
+.ops-stat em { font-style: normal; font-size: 11px; color: var(--ok); }
+
+.ops-queues, .ops-about { padding: 16px 18px; }
+.ops-h2 { font-size: 13.5px; font-weight: 650; }
+.ops-queue-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.ops-queue-list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-top: 1px solid var(--line-soft);
+}
+.ops-queue-list li:first-child { border-top: 0; }
+.ops-queue-list li[data-empty="true"] { opacity: 0.55; }
+.ops-queue-name { font-size: 12.5px; }
+.ops-queue-count { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 13px; }
+.ops-queue-age, .ops-queue-hint { font-size: 11px; color: var(--text-3); }
+.ops-queue-list li .btn, .ops-queue-hint { margin-left: auto; }
+.ops-list { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.9; color: var(--text-2); }
+
+.ops-denied-wrap { display: grid; place-items: center; min-height: 100vh; padding: 20px; }
+.ops-denied { max-width: 460px; width: 100%; }
+
+@media (max-width: 700px) {
+  .ops-topbar-in { padding: 9px 14px 0; }
+  .ops-tabs-in { padding: 6px 14px 9px; }
+  .ops-main { padding: 14px 14px 56px; }
+  .ops-stat b { font-size: 21px; }
+  .ops-brand b { font-size: 12.5px; }
 }

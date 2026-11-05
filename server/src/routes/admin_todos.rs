@@ -11,7 +11,7 @@ use axum::response::{IntoResponse, Response};
 use chrono::NaiveDate;
 use serde_json::{Value, json};
 
-use crate::admin_auth::AdminActor;
+use crate::admin_auth::{AdminActor, OpsActor};
 use crate::errors::{ApiError, ApiResult};
 use crate::state::AppState;
 use crate::todos::{self, NewTodo, PatchTodo};
@@ -176,7 +176,7 @@ pub async fn remove(
 /// GET /api/v1/admin/overview —— 后台外壳与首页共用
 ///
 /// 只做聚合：待办统计 + 六条队列的积压情况。返回体很小，可以每次请求都取。
-pub async fn overview(State(st): State<AppState>, _: AdminActor) -> ApiResult<Response> {
+pub async fn overview(State(st): State<AppState>, _: OpsActor) -> ApiResult<Response> {
     let queues = todos::queues(&st.pool).await.map_err(ApiError::internal)?;
     let stats = todos::stats(&st.pool).await.map_err(ApiError::internal)?;
     let pending: i64 = queues.iter().map(|q| q.count).sum();
