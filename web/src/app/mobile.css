@@ -561,3 +561,21 @@
   .site-scroll .content,
   .site-scroll .footer { max-width: 720px; margin-inline: auto; }
 }
+
+/* ── 百科投稿编辑器（手机）：头部收窄、说明让位给输入，按钮铺满一行 ── */
+@media (max-width: 700px) {
+  .wiki-editor { margin-top: 8px; border-radius: 14px; }
+  .we-head { flex-direction: column; gap: 10px; padding: 16px 16px 14px; }
+  .we-kicker { font-size: 10.5px; }
+  .we-title { font-size: 19px; }
+  .we-head p { font-size: 12px; line-height: 1.7; }
+  .we-steps { align-self: flex-start; }
+  .we-section { padding: 14px 16px; gap: 7px; }
+  .we-label span { display: none; }
+  .we-title-input { height: 44px; font-size: 16px; }
+  .we-summary { min-height: 58px; font-size: 14.5px; }
+  .we-foot { padding: 12px 16px 14px; gap: 10px; }
+  .we-status { width: 100%; }
+  .we-foot-acts { margin-left: 0; width: 100%; }
+  .we-foot-acts .btn-primary { flex: 1; }
+}

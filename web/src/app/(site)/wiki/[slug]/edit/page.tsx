@@ -34,28 +34,26 @@ export default async function WikiEditPage({ params }: { params: Promise<{ slug:
   if (!user) redirect(`/login?next=/wiki/${encodeURIComponent(slug)}/edit`);
 
   return (
-    <div className="cols">
-      <div className="col-main">
-        {signed ? (
-          <WikiEditor
-            slug={slug}
-            captchaId={settings.geetestId ?? ''}
-            categories={categories}
-            initial={{
-              title: data.entry.title,
-              summary: data.entry.summary,
-              category: data.entry.category,
-              body: data.entry.body,
-              tags: data.entry.tags,
-            }}
-          />
-        ) : (
-          <div className="card card-pad hint-box">
-            未签署《社区公约》不能编辑百科。
-            <Link href="/agreements">去签署</Link>
-          </div>
-        )}
-      </div>
+    <div className="col-main">
+      {signed ? (
+        <WikiEditor
+          slug={slug}
+          captchaId={settings.geetestId ?? ''}
+          categories={categories}
+          initial={{
+            title: data.entry.title,
+            summary: data.entry.summary,
+            category: data.entry.category,
+            body: data.entry.body,
+            tags: data.entry.tags,
+          }}
+        />
+      ) : (
+        <div className="card card-pad hint-box">
+          未签署《社区公约》不能编辑百科。
+          <Link href="/agreements">去签署</Link>
+        </div>
+      )}
     </div>
   );
 }

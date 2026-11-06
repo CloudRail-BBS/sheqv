@@ -3,6 +3,8 @@ import { listWiki, fmtDay } from '@/lib/wiki';
 import { catLabel, listCategories, type ContentCategory } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
+import { getSettings } from '@/lib/settings';
+import { WikiCompose } from '@/components/wiki-compose';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +44,11 @@ export default async function WikiPage({
   const cats = await listCategories('wiki');
   const active = sp.category && cats.some((c) => c.key === sp.category) ? sp.category : '';
 
-  const [items, all, user] = await Promise.all([
+  const [items, all, user, settings] = await Promise.all([
     listWiki({ q, category: active }),
     q || active ? listWiki({}) : Promise.resolve(null),
     getCurrentUser(),
+    getSettings(),
   ]);
 
   const counts = new Map<string, number>();
@@ -81,9 +84,13 @@ export default async function WikiPage({
               </svg>
               <input name="q" defaultValue={q} placeholder="搜索词条…" />
             </form>
-            <Link href="/wiki/submit" className="btn btn-sm btn-primary wiki-submit-btn">
-              投稿
-            </Link>
+            {user ? (
+              <WikiCompose categories={cats} captchaId={settings.geetestId ?? ''} />
+            ) : (
+              <Link href="/login?next=/wiki" className="btn btn-sm btn-primary wiki-submit-btn">
+                投稿
+              </Link>
+            )}
           </div>
         </div>
 
@@ -175,10 +182,7 @@ export default async function WikiPage({
       </aside>
 
       {user && (
-        <Link href="/wiki/submit" className="wiki-fab">
-          <span aria-hidden="true">+</span>
-          投稿词条
-        </Link>
+        <WikiCompose variant="fab" categories={cats} captchaId={settings.geetestId ?? ''} />
       )}
     </div>
   );

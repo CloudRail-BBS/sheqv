@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getWiki, tocOf, fmtDay, listRevisions } from '@/lib/wiki';
 import { catLabel, listCategories } from '@/lib/category-store';
+import { getSettings } from '@/lib/settings';
+import { WikiCompose } from '@/components/wiki-compose';
 import { Markdown } from '@/lib/markdown';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
@@ -21,11 +23,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function WikiEntryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [data, user, revisions, cats] = await Promise.all([
+  const [data, user, revisions, cats, settings] = await Promise.all([
     getWiki(slug),
     getCurrentUser(),
     listRevisions(slug),
     listCategories('wiki'),
+    getSettings(),
   ]);
   if (!data) notFound();
 
@@ -50,9 +53,19 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
               </span>
             ))}
             {user && (
-              <Link href={`/wiki/${encodeURIComponent(entry.slug)}/edit`} className="wiki-edit">
-                编辑词条
-              </Link>
+              <WikiCompose
+                variant="text"
+                slug={entry.slug}
+                categories={cats}
+                captchaId={settings.geetestId ?? ''}
+                initial={{
+                  title: entry.title,
+                  summary: entry.summary,
+                  category: entry.category,
+                  body: entry.body,
+                  tags: entry.tags,
+                }}
+              />
             )}
           </div>
 

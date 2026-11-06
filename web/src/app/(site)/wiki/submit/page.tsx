@@ -28,17 +28,15 @@ export default async function WikiSubmitPage() {
   if (!user) redirect('/login?next=/wiki/submit');
 
   return (
-    <div className="cols">
-      <div className="col-main">
-        {signed ? (
-          <WikiEditor captchaId={settings.geetestId ?? ''} categories={categories} />
-        ) : (
-          <div className="card card-pad hint-box">
-            未签署《社区公约》不能投稿。
-            <Link href="/agreements">去签署</Link>
-          </div>
-        )}
-      </div>
+    <div className="col-main">
+      {signed ? (
+        <WikiEditor captchaId={settings.geetestId ?? ''} categories={categories} />
+      ) : (
+        <div className="card card-pad hint-box">
+          未签署《社区公约》不能投稿。
+          <Link href="/agreements">去签署</Link>
+        </div>
+      )}
     </div>
   );
 }

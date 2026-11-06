@@ -6306,7 +6306,8 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 
 .wiki-fab {
   position: fixed; right: 26px; bottom: 26px; z-index: 45;
-  display: inline-flex; align-items: center; gap: 7px;
+  /* 桌面页头已有「投稿」，这颗悬浮按钮只在手机上出现 */
+  display: none; align-items: center; gap: 7px;
   height: 44px; padding: 0 18px; border-radius: 999px;
   background: var(--blue); color: #fff; font-size: 13px; font-weight: 600;
   box-shadow: 0 12px 30px -12px rgba(62, 124, 255, 0.75);
@@ -6316,7 +6317,7 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .wiki-fab:hover { transform: translateY(-1px); box-shadow: 0 16px 36px -14px rgba(62, 124, 255, 0.85); }
 
 @media (max-width: 860px) {
-  .wiki-fab { right: 16px; bottom: 88px; }
+  .wiki-fab { display: inline-flex; right: 16px; bottom: 88px; }
 }
 @media (max-width: 700px) {
   .wiki-cover { width: 86px; height: 62px; padding: 7px 8px; }
@@ -8118,15 +8119,161 @@ body::before {
 .wiki-head-acts { display: flex; align-items: center; gap: 8px; }
 .wiki-submit-btn { height: 34px; padding: 0 16px; border-radius: 999px; }
 
-.wiki-editor { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
-.wiki-editor-head h1 { margin-bottom: 2px; }
-.wiki-editor .field { display: flex; flex-direction: column; gap: 5px; }
-.wiki-editor .field > span { font-size: 12px; color: var(--muted); }
-.wiki-cat-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.wiki-cat-label { font-size: 12px; color: var(--muted); }
-.wiki-editor-body { display: flex; flex-direction: column; gap: 6px; }
-.wiki-editor-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.wiki-editor-foot .btn { margin-left: auto; }
+/* 投稿编辑器：一张卡里分节（标题 / 分类 / 摘要 / 正文），头尾用浅色带分隔。
+   桌面收成 880px 的阅读列，手机上整宽。 */
+.wiki-editor {
+  display: flex; flex-direction: column; gap: 0;
+  /* margin auto 会让 flex 子项按内容宽收缩，必须显式 width:100% 才吃满 1000 */
+  width: 100%; max-width: 1000px; margin: 12px auto 0; padding: 0;
+  overflow: hidden; border-radius: 16px;
+}
+.we-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 18px;
+  padding: 20px 22px 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 6%, var(--panel)), var(--panel));
+  border-bottom: 1px solid var(--line-soft);
+}
+.we-head-main { min-width: 0; }
+.we-kicker { display: block; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; color: var(--blue); }
+.we-title { margin: 5px 0 0; font-size: 21px; font-weight: 660; letter-spacing: -0.02em; line-height: 1.3; }
+.we-head p { margin: 6px 0 0; max-width: 54ch; font-size: 12.5px; line-height: 1.75; color: var(--muted); }
+.we-steps {
+  display: flex; flex: none; gap: 3px; margin: 2px 0 0; padding: 3px;
+  list-style: none; border-radius: 999px;
+  background: var(--panel-2); border: 1px solid var(--line-soft);
+}
+.we-steps li { padding: 4px 10px; border-radius: 999px; font-size: 11px; color: var(--muted); }
+.we-steps li[data-on="true"] {
+  background: var(--panel); color: var(--blue); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+}
+
+.we-section {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 16px 22px; border-bottom: 1px solid var(--line-soft);
+}
+.we-section-body { padding-bottom: 18px; }
+.we-label { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.we-label b { flex: none; font-size: 12.5px; font-weight: 650; color: var(--text); }
+.we-label span {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11.5px; color: var(--muted);
+}
+.we-label em {
+  flex: none; margin-left: auto; font-style: normal; font-size: 11px;
+  color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.we-title-input { height: 46px; font-size: 17px; font-weight: 550; letter-spacing: -0.01em; }
+.we-summary { min-height: 62px; line-height: 1.7; }
+.we-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.we-foot {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 22px 16px;
+  background: color-mix(in srgb, var(--panel-2) 60%, var(--panel));
+}
+.we-status { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+.we-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+.we-status[data-ok="true"] { color: var(--ok); }
+.we-status[data-ok="true"] i {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent);
+}
+.we-err { color: var(--danger); }
+.we-foot-acts { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* 分节容器：页面上跟着卡片走，弹窗里变成可滚动区 */
+.we-body { display: flex; flex-direction: column; min-width: 0; }
+
+/* 悬浮按钮与「编辑词条」都改成了 button，先抹掉浏览器默认外观 */
+.wiki-fab { border: 0; cursor: pointer; font-family: inherit; }
+.wiki-edit {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-weight: inherit;
+}
+
+/* ── 百科投稿弹窗 ─────────────────────────── */
+.wiki-modal-mask {
+  position: fixed; inset: 0; z-index: 130;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(9, 13, 20, 0.52);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: wikiMaskIn 0.18s ease-out;
+}
+.wiki-modal {
+  display: flex; flex-direction: column;
+  width: min(960px, 100%); height: min(88vh, 880px);
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow:
+    0 44px 90px -46px rgba(6, 10, 20, 0.6),
+    0 10px 26px -18px rgba(6, 10, 20, 0.4);
+  animation: wikiModalIn 0.22s cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+.wiki-modal-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  flex: none; padding: 15px 20px 13px;
+  border-bottom: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 6%, var(--panel)), var(--panel));
+}
+.wiki-modal-head b { display: block; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+.wiki-modal-head span { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+.wiki-modal-close {
+  flex: none; width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--panel-2); color: var(--muted);
+  font-size: 18px; line-height: 1; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.wiki-modal-close:hover { background: var(--panel-3); color: var(--text); }
+.wiki-modal-body { display: flex; flex: 1; min-height: 0; }
+
+/* 弹窗里的编辑器：去掉卡片外框，分节自己滚，底栏固定在面板底部 */
+.wiki-editor[data-in-modal='true'] {
+  flex: 1; min-width: 0; min-height: 0;
+  max-width: none; height: 100%; margin: 0; padding: 0;
+  border: 0; border-radius: 0; box-shadow: none; background: transparent;
+}
+.wiki-editor[data-in-modal='true'] .we-body {
+  flex: 1; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent;
+}
+.wiki-editor[data-in-modal='true'] .we-body::-webkit-scrollbar { width: 8px; }
+.wiki-editor[data-in-modal='true'] .we-body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  border-radius: 8px;
+}
+.wiki-editor[data-in-modal='true'] .we-foot {
+  flex: none; border-top: 1px solid var(--line-soft); background: var(--panel);
+}
+
+@keyframes wikiMaskIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wikiModalIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wiki-modal-mask, .wiki-modal { animation: none; }
+}
+
+@media (max-width: 700px) {
+  /* 手机上写作要满屏：弹窗直接铺满，像一页纸 */
+  .wiki-modal-mask { padding: 0; align-items: stretch; background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .wiki-modal {
+    width: 100%; height: 100dvh; max-height: none;
+    border: 0; border-radius: 0; box-shadow: none;
+  }
+  .wiki-modal-head { padding: calc(12px + env(safe-area-inset-top)) 16px 12px; }
+  .wiki-modal-close { width: 34px; height: 34px; }
+  .wiki-editor[data-in-modal='true'] .we-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
 
 .wiki-sent {
   margin-top: 12px; font-size: 12.5px; color: var(--text-2);

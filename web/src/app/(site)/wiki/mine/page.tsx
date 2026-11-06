@@ -5,6 +5,8 @@ import { listMySubmissions } from '@/lib/wiki';
 import { fmtDay, SUBMISSION_STATUS } from '@/lib/wiki-types';
 import { catLabel, listCategories } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
+import { WikiCompose } from '@/components/wiki-compose';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +27,11 @@ export default async function WikiMinePage({
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/wiki/mine');
   const sp = await searchParams;
-  const [items, cats] = await Promise.all([listMySubmissions(), listCategories('wiki')]);
+  const [items, cats, settings] = await Promise.all([
+    listMySubmissions(),
+    listCategories('wiki'),
+    getSettings(),
+  ]);
 
   return (
     <div className="cols">
@@ -37,9 +43,11 @@ export default async function WikiMinePage({
               百科由社区共同编写：提交后进入审核，通过才会公开。
             </p>
           </div>
-          <Link href="/wiki/submit" className="btn btn-primary btn-sm">
-            投稿新词条
-          </Link>
+          <WikiCompose
+            categories={cats}
+            captchaId={settings.geetestId ?? ''}
+            label="投稿新词条"
+          />
         </div>
 
         {sp.sent === '1' && (
