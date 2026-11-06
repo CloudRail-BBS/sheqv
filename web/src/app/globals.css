@@ -172,7 +172,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 @media (min-width: 1440px) {
   .topbar-in { position: relative; }
-  .search {
+  /* 宽屏把顶栏搜索居中；只圈顶栏，否则页面里同样用 .search 的表单
+     会被绝对定位拽到页面中间（开发团队页踩过） */
+  .topbar-in .search {
     position: absolute; left: 50%; transform: translateX(-50%);
     width: 430px; max-width: none; flex: none;
   }
@@ -499,7 +501,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .feed-tabs .sort { margin-left: auto; font-size: 11.5px; color: var(--text-3); padding-right: 8px; }
 
 /* 页面级搜索：不要复用顶栏的移动端隐藏规则 */
-.page-search { flex: 0 0 220px; width: 220px; max-width: 100%; }
+.page-search {
+  flex: 0 0 220px; width: 220px; max-width: 100%;
+  /* 正常排版，不受顶栏那条宽屏绝对定位影响 */
+  position: relative; left: auto; transform: none;
+}
 .page-head { flex-wrap: nowrap; }
 .page-head > div:first-child { min-width: 0; flex: 1 1 auto; }
 @media (max-width: 700px) {

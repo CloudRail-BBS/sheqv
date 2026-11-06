@@ -43,7 +43,7 @@ export default async function DevTeamsPage({
   return (
     <div className="cols">
       <div className="col-main">
-        <div className="between page-head" style={{ alignItems: 'flex-end' }}>
+        <div className="between page-head">
           <div>
             <h1 className="page-title">开发团队</h1>
             <p className="small muted" style={{ marginTop: 4, lineHeight: 1.8 }}>
