@@ -320,7 +320,7 @@
   .compose-fab {
     display: grid; place-items: center;
     position: fixed; right: 16px;
-    bottom: calc(80px + env(safe-area-inset-bottom));
+    bottom: calc(86px + env(safe-area-inset-bottom));
     z-index: 56;
     width: 54px; height: 54px; border-radius: 50%;
     border: 0; background: var(--blue); color: #fff;
@@ -359,7 +359,7 @@
   .site-scroll .col-main > .dt-create-wrap { order: 9; }
 
   /* 底部多留一点：悬浮按钮不会压住最后一张卡 */
-  .site-scroll .content { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+  .site-scroll .content { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
 
   /* ── 说明卡：手机上折成一行 ───────────────── */
   /* 单列之后右侧栏落到正文末尾，几张说明卡拼起来就是一两屏纯文字。
@@ -493,21 +493,18 @@
   .composer-modal-foot .btn { border-radius: 999px; }
 
   /* ── 底部栏：图标 + 胶囊 ──────────────────── */
-  .tabbar {
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    border-top-color: var(--line-soft);
-  }
-  .tabbar a { font-size: 10px; gap: 3px; }
-  .tabbar .tab-pill { width: 46px; height: 28px; border-radius: 10px; }
-  .tabbar a[data-active='true'] .tab-pill { background: var(--blue-soft); }
-  .tabbar .tab-icon { width: 20px; height: 20px; }
+  /* 底栏本体（悬浮毛玻璃胶囊）在 globals.css 里定，这里只微调内部节奏 */
+  .tabbar { padding: 6px; }
+  .tabbar a { font-size: 10.5px; gap: 3px; }
+  .tabbar .tab-pill { width: 46px; height: 28px; border-radius: 12px; }
+  .tabbar .tab-icon { width: 21px; height: 21px; }
 
   /* ── 帖子底部「写回复」悬浮条 ────────────── */
   .reply-dock {
     display: none;
     position: fixed;
     left: 12px; right: 12px;
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    bottom: calc(84px + env(safe-area-inset-bottom));
     z-index: 55;
     align-items: center; gap: 10px;
     padding: 7px 8px 7px 16px;
@@ -558,11 +555,9 @@
   }
 }
 
-/* 平板（700–860）：把内容收成阅读列，底部栏按钮聚在中间，
-   不然一行卡片会横铺 800+，跟手机版看起来像被拉扁了 */
+/* 平板（700–860）：把内容收成阅读列，不然一行卡片会横铺 800+，
+   跟手机版看起来像被拉扁了。底栏是悬浮胶囊，按钮仍然均分整条。 */
 @media (min-width: 700px) and (max-width: 860px) {
   .site-scroll .content,
   .site-scroll .footer { max-width: 720px; margin-inline: auto; }
-  .tabbar { justify-content: center; gap: 20px; }
-  .tabbar[data-fits='true'] a { flex: 0 0 auto; min-width: 78px; }
 }
