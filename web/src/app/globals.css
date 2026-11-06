@@ -13,6 +13,11 @@
   --line-strong: #3a3a40;
   --text: #f4f4f5;
   --text-2: #c4c4c8;
+  /* 无头像时的占位：深色是雾玻璃，浅色是白毛玻璃（见 [data-theme=light]） */
+  --avatar-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.07));
+  --avatar-bd: rgba(255, 255, 255, 0.18);
+  --avatar-ink: var(--text);
+  --avatar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
   --muted: #8a8a90;
   --accent: #f4f4f5;
   --accent-2: #d4d4d8;
@@ -450,8 +455,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .uhc-avatar {
   width: 46px; height: 46px; border-radius: 14px; flex: none;
   display: grid; place-items: center; overflow: hidden;
-  color: #fff; font-size: 17px; font-weight: 650;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
+  color: var(--avatar-ink); font-size: 17px; font-weight: 650;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
 }
 .uhc-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .uhc-name {
@@ -511,9 +517,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .post-avatar {
   width: 33px; height: 33px; border-radius: 10px; display: grid; place-items: center;
-  font-size: 12.5px; font-weight: 600; color: #f4f4f5; overflow: hidden;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05));
-  border: 1px solid rgba(255, 255, 255, 0.22); flex: none;
+  font-size: 12.5px; font-weight: 600; color: var(--avatar-ink); overflow: hidden;
+  background: var(--avatar-bg);
+  border: 1px solid var(--avatar-bd); flex: none;
+  box-shadow: var(--avatar-shadow);
 }
 .post-avatar img, .post-avatar-img {
   width: 100%; height: 100%; object-fit: cover; display: block;
@@ -1051,10 +1058,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .me-ava {
   width: 72px; height: 72px; border-radius: 20px; display: grid; place-items: center;
-  font-size: 24px; font-weight: 650; color: #f4f4f5; flex: none; overflow: hidden;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  border: 2px solid rgba(255, 255, 255, 0.36);
-  box-shadow: 0 12px 28px -16px rgba(20, 30, 60, 0.8);
+  font-size: 24px; font-weight: 650; color: var(--avatar-ink); flex: none; overflow: hidden;
+  background: var(--avatar-bg);
+  border: 2px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow), 0 12px 28px -16px rgba(20, 30, 60, 0.8);
 }
 .me-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .me-avatar-upload {
@@ -3119,6 +3126,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --line-strong: #c3d2e4;
   --text: #151a23;
   --text-2: #3d4757;
+  --avatar-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(241, 246, 253, 0.78));
+  --avatar-bd: rgba(255, 255, 255, 0.95);
+  --avatar-ink: var(--blue);
+  --avatar-shadow:
+    inset 0 1px 0 #fff,
+    0 1px 3px rgba(24, 34, 54, 0.07),
+    0 0 0 1px rgba(20, 30, 50, 0.035);
   --muted: #6b7688;
   --accent: #151a23;
   --accent-2: #3d4757;
@@ -3592,8 +3606,8 @@ body:has(.auth-page) .app {
 .composer-me-avatar {
   width: 26px; height: 26px; border-radius: 50%; overflow: hidden;
   display: grid; place-items: center; flex: none;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 11px;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  color: var(--avatar-ink); font-size: 11px;
   box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--line);
 }
 .composer-me-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -3935,8 +3949,8 @@ body:has(.auth-page) .app {
 .mobile-drawer-avatar {
   width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex: none;
   display: grid; place-items: center;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 14px;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  color: var(--avatar-ink); font-size: 14px;
 }
 .mobile-drawer-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .mobile-drawer-user > div { min-width: 0; flex: 1; }
@@ -4377,8 +4391,8 @@ body:has(.auth-page) .app {
 .console-user {
   width: 28px; height: 28px; border-radius: 50%; flex: none;
   display: grid; place-items: center;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 12px; font-weight: 700;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  color: var(--avatar-ink); font-size: 12px; font-weight: 700;
 }
 
 .console-main {
@@ -4581,8 +4595,9 @@ body:has(.auth-page) .app {
 .dm-avatar {
   width: 34px; height: 34px; border-radius: 10px; flex: none;
   display: grid; place-items: center; overflow: hidden;
-  background: var(--panel-2); border: 1px solid var(--line);
-  font-size: 13px; font-weight: 700; color: var(--text-2);
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
+  font-size: 13px; font-weight: 700; color: var(--avatar-ink);
 }
 .dm-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dm-avatar.sm { width: 26px; height: 26px; border-radius: 8px; font-size: 11px; }
@@ -4735,22 +4750,13 @@ body:has(.auth-page) .app {
 .about-avatar {
   width: 52px; height: 52px; border-radius: 14px; flex: none;
   display: grid; place-items: center; overflow: hidden;
-  /* 没有头像时的默认底：白色毛玻璃，不抢人物的风头 */
-  background: linear-gradient(150deg, rgba(255,255,255,.94), rgba(241,246,253,.78));
-  border: 1px solid rgba(255,255,255,.95);
-  box-shadow:
-    inset 0 1px 0 #fff,
-    0 1px 3px rgba(24,34,54,.07),
-    0 0 0 1px rgba(20,30,50,.035);
+  /* 默认底：与全站头像同一套白色毛玻璃变量 */
+  background: var(--avatar-bg);
+  border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
-  color: var(--blue); font-size: 20px; font-weight: 700;
-}
-[data-theme="dark"] .about-avatar {
-  background: linear-gradient(150deg, rgba(255,255,255,.14), rgba(255,255,255,.07));
-  border-color: rgba(255,255,255,.18);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
-  color: var(--text);
+  color: var(--avatar-ink); font-size: 20px; font-weight: 700;
 }
 .about-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .about-person-main { min-width: 0; }
@@ -4854,8 +4860,10 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff;
+  background: var(--avatar-bg);
+  border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
+  color: var(--avatar-ink);
   font-size: 15px;
   font-weight: 700;
 }
@@ -4944,6 +4952,9 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 
 /* 底部回复框：标题一行、输入框整宽、底部一行计数 + 按钮 */
 .comment-form { scroll-margin-top: 84px; }
+/* 「写回复」悬浮条只在手机上出现：它的定位与样式都在 mobile.css 的窄屏块里。
+   这里必须先关掉，否则桌面端会以浏览器默认样式裸着占一行（按钮还是灰底黑框）。 */
+.reply-dock { display: none; }
 .comment-form .console-h3 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
 .comment-form .textarea {
   margin-top: 10px;
@@ -5812,8 +5823,9 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .fc-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex: none;
   display: grid; place-items: center; overflow: hidden;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 13px; font-weight: 700;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
+  color: var(--avatar-ink); font-size: 13px; font-weight: 700;
 }
 .fc-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fc-head b {
@@ -5954,8 +5966,9 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .up-avatar {
   width: 62px; height: 62px; border-radius: 18px; flex: none; overflow: hidden;
   display: grid; place-items: center;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 22px; font-weight: 700;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
+  color: var(--avatar-ink); font-size: 22px; font-weight: 700;
 }
 .up-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .up-name { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -5998,8 +6011,9 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .pb-avatar {
   width: 34px; height: 34px; border-radius: 9px; flex: none;
   display: grid; place-items: center; overflow: hidden;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 14px; font-weight: 700;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
+  color: var(--avatar-ink); font-size: 14px; font-weight: 700;
 }
 .pb-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pb-who { flex: 1; min-width: 0; }
@@ -7737,8 +7751,9 @@ body::before {
 .ops-member-ava {
   width: 34px; height: 34px; border-radius: 11px; flex: none;
   display: grid; place-items: center;
-  background: linear-gradient(150deg, var(--blue), var(--blue-2));
-  color: #fff; font-size: 13px; font-weight: 650;
+  background: var(--avatar-bg); border: 1px solid var(--avatar-bd);
+  box-shadow: var(--avatar-shadow);
+  color: var(--avatar-ink); font-size: 13px; font-weight: 650;
 }
 .ops-member-main { flex: 1; min-width: 0; }
 .ops-member-name {
@@ -8067,4 +8082,83 @@ body::before {
 .paper-locked p {
   max-width: 420px; margin: 0 0 10px;
   font-size: 13px; line-height: 1.8; color: var(--muted);
+}
+
+/* ── 百科：投稿、我的投稿、后台审核 ───────────── */
+
+.wiki-head-acts { display: flex; align-items: center; gap: 8px; }
+.wiki-submit-btn { height: 34px; padding: 0 16px; border-radius: 999px; }
+
+.wiki-editor { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.wiki-editor-head h1 { margin-bottom: 2px; }
+.wiki-editor .field { display: flex; flex-direction: column; gap: 5px; }
+.wiki-editor .field > span { font-size: 12px; color: var(--muted); }
+.wiki-cat-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wiki-cat-label { font-size: 12px; color: var(--muted); }
+.wiki-editor-body { display: flex; flex-direction: column; gap: 6px; }
+.wiki-editor-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wiki-editor-foot .btn { margin-left: auto; }
+
+.wiki-sent {
+  margin-top: 12px; font-size: 12.5px; color: var(--text-2);
+  border-color: var(--blue-line); background: var(--blue-soft);
+}
+
+.wiki-mine-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.wiki-mine-item { padding: 14px 16px; }
+.wiki-mine-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wiki-mine-head b { font-size: 14.5px; font-weight: 650; }
+.wiki-mine-meta {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+  font-size: 11.5px; color: var(--muted);
+}
+.wiki-mine-meta a { color: var(--blue); }
+.wiki-mine-summary { margin-top: 8px; font-size: 12.5px; color: var(--text-2); line-height: 1.75; }
+.wiki-mine-note { margin-top: 6px; font-size: 12px; color: var(--danger); }
+.wiki-mine-note[data-tone="ok"] { color: var(--ok); }
+
+.admin-wiki-review { margin-top: 12px; }
+.wiki-review-list { margin-top: 10px; border-top: 1px solid var(--line-soft); }
+.wiki-review-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 2px; border-bottom: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+.wiki-review-main { flex: 1; min-width: 0; }
+.wiki-review-title { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wiki-review-title b { font-size: 13.5px; font-weight: 600; }
+.wiki-review-meta {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
+  font-size: 11.5px; color: var(--muted);
+}
+.wiki-review-sum { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
+.wiki-review-acts { display: flex; gap: 4px; flex: none; }
+.wiki-reject-row { flex: 1 1 100%; display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.wiki-reject-row .input { flex: 1; min-width: 0; }
+
+.wiki-review-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; }
+.wiki-review-mask {
+  position: absolute; inset: 0; border: 0; cursor: default;
+  background: rgba(7, 10, 18, 0.62);
+  backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+}
+.wiki-review-sheet {
+  position: relative; z-index: 1;
+  width: min(820px, 94vw); max-height: 86vh; overflow: auto;
+  padding: 18px 20px;
+}
+.wiki-review-lead {
+  margin-top: 10px; padding-left: 10px;
+  border-left: 3px solid var(--blue-line);
+  font-size: 13px; color: var(--text-2); line-height: 1.75;
+}
+.wiki-review-body { margin-top: 12px; }
+.wiki-review-body .md-body { font-size: 13.5px; }
+
+@media (max-width: 700px) {
+  .wiki-head-acts { width: 100%; justify-content: space-between; }
+  .wiki-review-item { flex-direction: column; }
+  .wiki-review-acts { width: 100%; justify-content: flex-end; }
+  .wiki-review-modal { padding: 12px; align-items: end; }
+  .wiki-review-sheet { width: 100%; max-height: 82vh; border-radius: 16px 16px 0 0; }
 }

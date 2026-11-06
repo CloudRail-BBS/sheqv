@@ -68,7 +68,7 @@ fn need_login() -> ApiError {
 }
 
 /// 发帖与评论都要求：已登录取，且已按**当前版本**签署社区公约
-async fn require_community(
+pub(crate) async fn require_community(
     st: &AppState,
     user_id: &str,
     headers: &HeaderMap,

@@ -39,3 +39,37 @@ export function categoryLabel(key: string): string {
 
 
 export const fmtDay = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
+
+/* ── 投稿与审核 ───────────────────────────────
+   任何登录用户都能提交新词条或修改，先进待审队列，
+   管理员通过后才写入词条并生成历史版本。 */
+
+export interface WikiSubmissionBrief {
+  id: string;
+  /** 空 = 新词条；非空 = 修改已有词条 */
+  entryId: string | null;
+  entrySlug: string | null;
+  title: string;
+  summary: string;
+  category: string;
+  status: 'pending' | 'approved' | 'rejected';
+  note: string;
+  author: string;
+  authorId: string;
+  createdAt: number;
+  reviewedAt: number | null;
+}
+
+export interface WikiSubmission extends WikiSubmissionBrief {
+  body: string;
+  tags: string[];
+}
+
+export const SUBMISSION_STATUS: Record<
+  WikiSubmissionBrief['status'],
+  { label: string; tone: 'warn' | 'ok' | 'danger' }
+> = {
+  pending: { label: '待审核', tone: 'warn' },
+  approved: { label: '已通过', tone: 'ok' },
+  rejected: { label: '已驳回', tone: 'danger' },
+};

@@ -206,6 +206,13 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/app/latest", get(apps::latest))
         // 百科：公开只读 + 后台维护
         .route("/api/v1/wiki", get(wiki::list))
+        // 投稿：任何人都能写，审核通过才公开
+        .route("/api/v1/wiki/submissions", post(wiki::submit))
+        .route("/api/v1/wiki/submissions/mine", get(wiki::mine))
+        .route(
+            "/api/v1/wiki/submissions/{id}",
+            get(wiki::mine_one),
+        )
         .route("/api/v1/wiki/{slug}", get(wiki::get))
         .route(
             "/api/v1/admin/wiki",
@@ -219,6 +226,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/wiki/{slug}/revisions/{revId}",
             get(wiki::revision),
+        )
+        .route(
+            "/api/v1/admin/wiki/submissions",
+            get(wiki::admin_submissions),
+        )
+        .route(
+            "/api/v1/admin/wiki/submissions/{id}",
+            get(wiki::admin_submission).patch(wiki::admin_review),
         )
         .route(
             "/api/v1/admin/wiki/{id}/restore",

@@ -5,12 +5,16 @@ use std::collections::HashMap;
 use axum::Json;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
 
 use crate::admin_auth::AdminActor;
+use crate::captcha::{self, CaptchaPayload, CaptchaResult};
+use crate::current_user::MaybeUser;
 use crate::errors::{ApiError, ApiResult};
+use crate::routes::posts::require_community;
+use crate::settings;
 use crate::state::AppState;
 use crate::wiki::{self, CATEGORIES, NewEntry, PatchEntry};
 
@@ -274,6 +278,222 @@ pub async fn admin_restore(
         .map_err(ApiError::internal)?
     {
         Some(entry) => Ok(Json(json!({ "ok": true, "entry": entry })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
+}
+
+/* ── 投稿：任何人都能写，审核后才公开 ───────────────── */
+
+fn tags_of_values(obj: &Value) -> Vec<String> {
+    obj.get("tags")
+        .and_then(|v| v.as_array())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str())
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .take(5)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// POST /api/v1/wiki/submissions
+///
+/// 登录 + 已签社区公约 + 人机验证；正文与新建词条同一套校验。
+pub async fn submit(
+    State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
+    headers: HeaderMap,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let user = maybe.ok_or_else(ApiError::need_login)?;
+    require_community(&st, &user.id, &headers).await?;
+
+    let Ok(obj) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let text = |key: &str| {
+        obj.get(key)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string()
+    };
+
+    let title = text("title");
+    let summary = text("summary");
+    let content = obj.get("body").and_then(|v| v.as_str()).unwrap_or("");
+    let category = {
+        let c = text("category");
+        if c.is_empty() { "intro".to_string() } else { c }
+    };
+    if let Some(msg) = validate(&title, &summary, content, &category) {
+        return Err(ApiError::invalid_input(msg));
+    }
+
+    // 修改已有词条：前端给 slug，这里换成 id（词条必须存在）
+    let entry_slug = text("entrySlug");
+    let entry_id = if entry_slug.is_empty() {
+        None
+    } else {
+        match wiki::id_by_slug(&st.pool, &entry_slug)
+            .await
+            .map_err(ApiError::internal)?
+        {
+            Some(id) => Some(id),
+            None => return Err(ApiError::not_found()),
+        }
+    };
+
+    // 一个人最多挂 3 条待审，防止把队列刷满
+    let pending = wiki::pending_of(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
+    if pending >= 3 {
+        return Err(ApiError::with_message(
+            StatusCode::TOO_MANY_REQUESTS,
+            "too_many_pending",
+            "你还有 3 条百科投稿等待审核，通过或驳回后再提交",
+        ));
+    }
+
+    // 站点配了极验就必须带票
+    let s = settings::load(&st.pool, &st.cfg).await;
+    let captcha_payload: Option<CaptchaPayload> =
+        serde_json::from_value(obj.get("captcha").cloned().unwrap_or(Value::Null)).ok();
+    if let CaptchaResult::Failed(code) =
+        captcha::verify(&st.http, &st.cfg, &s, captcha_payload.as_ref()).await
+    {
+        return Err(ApiError::with_message(
+            StatusCode::BAD_REQUEST,
+            "captcha_failed",
+            if code == "missing_captcha" {
+                "请先完成人机验证"
+            } else {
+                "人机验证未通过，请重试"
+            },
+        ));
+    }
+
+    let created = wiki::create_submission(
+        &st.pool,
+        &wiki::NewSubmission {
+            entry_id: entry_id.as_deref(),
+            title: &title,
+            summary: &summary,
+            body: content,
+            category: &category,
+            tags: tags_of_values(&obj),
+            author_id: &user.id,
+        },
+    )
+    .await
+    .map_err(ApiError::internal)?;
+
+    match created {
+        Some(item) => Ok(Json(json!({ "ok": true, "submission": item })).into_response()),
+        // 唯一索引挡住：该词条已有一条待审修改
+        None => Err(ApiError::with_message(
+            StatusCode::CONFLICT,
+            "already_pending",
+            "这个词条已经有一条待审的修改，等审核完再提交",
+        )),
+    }
+}
+
+/// GET /api/v1/wiki/submissions/mine
+pub async fn mine(
+    State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
+) -> ApiResult<Response> {
+    let user = maybe.ok_or_else(ApiError::need_login)?;
+    let items = wiki::submissions_of(&st.pool, &user.id)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
+}
+
+/// GET /api/v1/wiki/submissions/{id} —— 作者本人或管理员
+pub async fn mine_one(
+    State(st): State<AppState>,
+    MaybeUser(maybe): MaybeUser,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    let user = maybe.ok_or_else(ApiError::need_login)?;
+    let Some(item) = wiki::submission(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(ApiError::not_found());
+    };
+    if item.brief.author_id != user.id && !user.is_admin {
+        return Err(ApiError::forbidden());
+    }
+    Ok(Json(json!({ "ok": true, "submission": item })).into_response())
+}
+
+/* ── 后台审核 ───────────────────────────────────────── */
+
+/// GET /api/v1/admin/wiki/submissions?status=pending
+pub async fn admin_submissions(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Query(q): Query<HashMap<String, String>>,
+) -> ApiResult<Response> {
+    let items = wiki::submission_queue(&st.pool, q.get("status").map(String::as_str))
+        .await
+        .map_err(ApiError::internal)?;
+    let pending = wiki::pending_total(&st.pool)
+        .await
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true, "items": items, "pending": pending })).into_response())
+}
+
+/// GET /api/v1/admin/wiki/submissions/{id}
+pub async fn admin_submission(
+    State(st): State<AppState>,
+    _: AdminActor,
+    Path(id): Path<String>,
+) -> ApiResult<Response> {
+    match wiki::submission(&st.pool, &id)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        Some(item) => Ok(Json(json!({ "ok": true, "submission": item })).into_response()),
+        None => Err(ApiError::not_found()),
+    }
+}
+
+/// PATCH /api/v1/admin/wiki/submissions/{id} —— { status: approved | rejected, note }
+pub async fn admin_review(
+    State(st): State<AppState>,
+    actor: AdminActor,
+    Path(id): Path<String>,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Some(reviewer) = actor.user_id().map(str::to_string) else {
+        return Err(ApiError::forbidden());
+    };
+    let Ok(obj) = serde_json::from_slice::<Value>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    let status = obj
+        .get("status")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if !["approved", "rejected"].contains(&status.as_str()) {
+        return Err(ApiError::invalid_input("审核结果不合法"));
+    }
+    let note = obj.get("note").and_then(|v| v.as_str()).unwrap_or("");
+
+    match wiki::review(&st.pool, &id, &status, note, &reviewer)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        Some(item) => Ok(Json(json!({ "ok": true, "submission": item })).into_response()),
         None => Err(ApiError::not_found()),
     }
 }

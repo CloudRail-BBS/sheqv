@@ -16,8 +16,10 @@ export function ReplyDock() {
     if (!form) return;
     const io = new IntersectionObserver(
       (entries) => setShow(!entries[0].isIntersecting),
-      // 上边留出顶栏高度，下边留出底栏高度
-      { rootMargin: '-96px 0px -140px 0px', threshold: 0 },
+      // 上边让开顶栏，下边不缩：评论框只要露出来一点点，这条就收起。
+      // 之前底部缩了 140px，输入框已经贴在屏幕下沿时它还浮在上面，
+      // 看起来像回复区凭空多了一行。
+      { rootMargin: '-96px 0px 0px 0px', threshold: 0 },
     );
     io.observe(form);
     return () => io.disconnect();

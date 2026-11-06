@@ -2,7 +2,7 @@ import { apiGetOr } from './api-client';
 import { headingAnchor } from './markdown';
 
 /** 百科词条（列表用，不带正文） */
-import type { WikiEntry, WikiSummary } from './wiki-types';
+import type { WikiEntry, WikiSubmissionBrief, WikiSummary } from './wiki-types';
 
 export * from './wiki-types';
 
@@ -80,4 +80,12 @@ export async function getRevision(slug: string, id: string): Promise<Revision | 
     { revision: null },
   );
   return d.revision;
+}
+
+/** 我的百科投稿（含审核状态），未登录返回空 */
+export async function listMySubmissions(): Promise<WikiSubmissionBrief[]> {
+  const d = await apiGetOr<{ items: WikiSubmissionBrief[] }>('/api/v1/wiki/submissions/mine', {
+    items: [],
+  });
+  return d.items ?? [];
 }

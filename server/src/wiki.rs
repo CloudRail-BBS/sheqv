@@ -37,6 +37,8 @@ pub struct WikiEntry {
     pub category: String,
     pub tags: Vec<String>,
     pub views: i64,
+    /// 后台列表用：草稿在前台不可见
+    pub published: bool,
     pub author: String,
     pub author_id: String,
     pub created_at: i64,
@@ -120,6 +122,7 @@ impl Row {
             category: self.category,
             tags: tags_of(&self.tags),
             views: self.views,
+            published: self.published,
             author: self.author,
             author_id: self.author_id,
             created_at: self.created_at.timestamp_millis(),
@@ -485,4 +488,293 @@ pub fn escape_like(raw: &str) -> String {
         }
     }
     out
+}
+
+/* ── 投稿与审核 ─────────────────────────────────────────
+   词条仍是「公开内容」，但写入不再只有管理员：
+   任何登录用户都可以提交新建或修改，先进 wiki_submissions，
+   审核通过后才会写进 wiki_entries（并留下历史版本）。 */
+
+/// 列表用：不带正文，够审核队列扫一眼
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmissionBrief {
+    pub id: String,
+    /// 空 = 新词条，非空 = 修改已有词条
+    pub entry_id: Option<String>,
+    /// 修改稿指向的词条 slug，前端用来跳转
+    pub entry_slug: Option<String>,
+    pub title: String,
+    pub summary: String,
+    pub category: String,
+    pub status: String,
+    /// 审核意见（拒绝原因 / 通过备注）
+    pub note: String,
+    pub author: String,
+    pub author_id: String,
+    pub created_at: i64,
+    pub reviewed_at: Option<i64>,
+}
+
+/// 详情：带正文与标签，审核时看全文
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Submission {
+    #[serde(flatten)]
+    pub brief: SubmissionBrief,
+    pub body: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(sqlx::FromRow)]
+struct SubmissionRow {
+    id: String,
+    entry_id: Option<String>,
+    entry_slug: Option<String>,
+    title: String,
+    summary: String,
+    body: String,
+    category: String,
+    tags: Value,
+    status: String,
+    note: String,
+    author_id: String,
+    author: String,
+    created_at: DateTime<Utc>,
+    reviewed_at: Option<DateTime<Utc>>,
+}
+
+const SUB_SQL: &str = "SELECT s.id, s.entry_id, w.slug AS entry_slug, s.title, s.summary, s.body,
+        s.category, s.tags, s.status, s.note, s.author_id, u.nickname AS author,
+        s.created_at, s.reviewed_at
+   FROM wiki_submissions s
+   JOIN users u ON u.id = s.author_id
+   LEFT JOIN wiki_entries w ON w.id = s.entry_id";
+
+impl SubmissionRow {
+    fn brief(&self) -> SubmissionBrief {
+        SubmissionBrief {
+            id: self.id.clone(),
+            entry_id: self.entry_id.clone(),
+            entry_slug: self.entry_slug.clone(),
+            title: self.title.clone(),
+            summary: self.summary.clone(),
+            category: self.category.clone(),
+            status: self.status.clone(),
+            note: self.note.clone(),
+            author: self.author.clone(),
+            author_id: self.author_id.clone(),
+            created_at: self.created_at.timestamp_millis(),
+            reviewed_at: self.reviewed_at.map(|t| t.timestamp_millis()),
+        }
+    }
+
+    fn detail(self) -> Submission {
+        let brief = self.brief();
+        Submission {
+            brief,
+            body: self.body,
+            tags: tags_of(&self.tags),
+        }
+    }
+}
+
+pub struct NewSubmission<'a> {
+    pub entry_id: Option<&'a str>,
+    pub title: &'a str,
+    pub summary: &'a str,
+    pub body: &'a str,
+    pub category: &'a str,
+    pub tags: Vec<String>,
+    pub author_id: &'a str,
+}
+
+/// 同一个人最多挂 3 条待审，防止有人把队列刷满
+pub async fn pending_of(pool: &PgPool, author_id: &str) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT count(*) FROM wiki_submissions WHERE author_id = $1 AND status = 'pending'",
+    )
+    .bind(author_id)
+    .fetch_one(pool)
+    .await
+}
+
+pub async fn create_submission(
+    pool: &PgPool,
+    input: &NewSubmission<'_>,
+) -> Result<Option<Submission>, sqlx::Error> {
+    let id = crate::ids::next('s');
+    let tags = Value::Array(input.tags.iter().map(|t| Value::String(t.clone())).collect());
+
+    let inserted = sqlx::query(
+        "INSERT INTO wiki_submissions
+             (id, entry_id, title, summary, body, category, tags, author_id, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(&id)
+    .bind(input.entry_id)
+    .bind(input.title.trim())
+    .bind(input.summary.trim())
+    .bind(input.body)
+    .bind(input.category)
+    .bind(&tags)
+    .bind(input.author_id)
+    .execute(pool)
+    .await?;
+
+    if inserted.rows_affected() == 0 {
+        return Ok(None);
+    }
+
+    submission(pool, &id).await
+}
+
+pub async fn submission(pool: &PgPool, id: &str) -> Result<Option<Submission>, sqlx::Error> {
+    let row: Option<SubmissionRow> = sqlx::query_as(&format!("{SUB_SQL} WHERE s.id = $1"))
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+    Ok(row.map(SubmissionRow::detail))
+}
+
+/// 我的投稿（新的在前）
+pub async fn submissions_of(
+    pool: &PgPool,
+    author_id: &str,
+) -> Result<Vec<SubmissionBrief>, sqlx::Error> {
+    let rows: Vec<SubmissionRow> = sqlx::query_as(&format!(
+        "{SUB_SQL} WHERE s.author_id = $1 ORDER BY s.created_at DESC LIMIT 100"
+    ))
+    .bind(author_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.iter().map(SubmissionRow::brief).collect())
+}
+
+/// 后台队列：待审默认在前
+pub async fn submission_queue(
+    pool: &PgPool,
+    status: Option<&str>,
+) -> Result<Vec<SubmissionBrief>, sqlx::Error> {
+    let filter = status.filter(|s| ["pending", "approved", "rejected"].contains(s));
+    let rows: Vec<SubmissionRow> = match filter {
+        Some(s) => {
+            sqlx::query_as(&format!(
+                "{SUB_SQL} WHERE s.status = $1 ORDER BY s.created_at DESC LIMIT 200"
+            ))
+            .bind(s)
+            .fetch_all(pool)
+            .await?
+        }
+        None => {
+            sqlx::query_as(&format!(
+                "{SUB_SQL}
+                  ORDER BY (s.status = 'pending') DESC, s.created_at DESC
+                  LIMIT 200"
+            ))
+            .fetch_all(pool)
+            .await?
+        }
+    };
+    Ok(rows.iter().map(SubmissionRow::brief).collect())
+}
+
+/// 审核：通过则写入词条（新词条 create / 修改走 update），拒绝只标记。
+/// 只有 pending 会被处理，重复点不会覆盖已审结果。
+pub async fn review(
+    pool: &PgPool,
+    id: &str,
+    status: &str,
+    note: &str,
+    reviewer_id: &str,
+) -> Result<Option<Submission>, sqlx::Error> {
+    let current: Option<(String, Option<String>, String, String, String, String, Value)> =
+        sqlx::query_as(
+            "SELECT id, entry_id, title, summary, body, category, tags
+               FROM wiki_submissions WHERE id = $1 AND status = 'pending'",
+        )
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+
+    let Some((_, entry_id, title, summary, body, category, tags)) = current else {
+        return Ok(None);
+    };
+    let tag_list: Vec<String> = tags
+        .as_array()
+        .map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+        .unwrap_or_default();
+
+    if status == "approved" {
+        match entry_id.as_deref() {
+            // 修改已有词条：复用 update（它会先写一条历史版本）
+            Some(entry) => {
+                let patch = PatchEntry {
+                    title: Some(&title),
+                    summary: Some(&summary),
+                    body: Some(&body),
+                    category: Some(&category),
+                    tags: Some(tag_list.clone()),
+                    published: Some(true),
+                };
+                let author: Option<String> =
+                    sqlx::query_scalar("SELECT author_id FROM wiki_submissions WHERE id = $1")
+                        .bind(id)
+                        .fetch_optional(pool)
+                        .await?;
+                let editor = author.unwrap_or_else(|| reviewer_id.to_string());
+                if update(pool, entry, &patch, &editor).await?.is_none() {
+                    return Ok(None);
+                }
+            }
+            // 新词条：直接建，作者记为提交者
+            None => {
+                let author: Option<String> =
+                    sqlx::query_scalar("SELECT author_id FROM wiki_submissions WHERE id = $1")
+                        .bind(id)
+                        .fetch_optional(pool)
+                        .await?;
+                let author = author.unwrap_or_else(|| reviewer_id.to_string());
+                let created = create(
+                    pool,
+                    &NewEntry {
+                        title: &title,
+                        slug: "",
+                        summary: &summary,
+                        body: &body,
+                        category: &category,
+                        tags: tag_list.clone(),
+                        published: true,
+                        author_id: &author,
+                    },
+                )
+                .await?;
+                if created.is_none() {
+                    return Ok(None);
+                }
+            }
+        }
+    }
+
+    sqlx::query(
+        "UPDATE wiki_submissions
+            SET status = $2, note = $3, reviewer_id = $4, reviewed_at = now(), updated_at = now()
+          WHERE id = $1",
+    )
+    .bind(id)
+    .bind(status)
+    .bind(note.trim())
+    .bind(reviewer_id)
+    .execute(pool)
+    .await?;
+
+    submission(pool, id).await
+}
+
+/// 后台徽章：待审数量
+pub async fn pending_total(pool: &PgPool) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar("SELECT count(*) FROM wiki_submissions WHERE status = 'pending'")
+        .fetch_one(pool)
+        .await
 }

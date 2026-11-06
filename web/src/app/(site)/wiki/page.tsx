@@ -59,17 +59,22 @@ export default async function WikiPage({
           <div>
             <h1 className="page-title">百科</h1>
             <p className="small muted" style={{ marginTop: 4 }}>
-              {total} 条词条 · 由站长维护，找不到答案就去工单里问
+              {total} 条词条 · 由社区共同编写，提交后经审核发布
             </p>
           </div>
-          <form action="/wiki" className="wiki-search compact">
-            {active && <input type="hidden" name="category" value={active} />}
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
-              <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            <input name="q" defaultValue={q} placeholder="搜索词条…" />
-          </form>
+          <div className="wiki-head-acts">
+            <form action="/wiki" className="wiki-search compact">
+              {active && <input type="hidden" name="category" value={active} />}
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              <input name="q" defaultValue={q} placeholder="搜索词条…" />
+            </form>
+            <Link href="/wiki/submit" className="btn btn-sm btn-primary wiki-submit-btn">
+              投稿
+            </Link>
+          </div>
         </div>
 
         <div className="wiki-tabs">
@@ -158,10 +163,10 @@ export default async function WikiPage({
         </div>
       </aside>
 
-      {user?.isAdmin && (
-        <Link href="/admin/wiki" className="wiki-fab">
+      {user && (
+        <Link href="/wiki/submit" className="wiki-fab">
           <span aria-hidden="true">+</span>
-          新建条目
+          投稿词条
         </Link>
       )}
     </div>

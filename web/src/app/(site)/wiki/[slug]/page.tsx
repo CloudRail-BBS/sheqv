@@ -48,8 +48,8 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
                 {t}
               </span>
             ))}
-            {user?.isAdmin && (
-              <Link href="/admin/wiki" className="wiki-edit">
+            {user && (
+              <Link href={`/wiki/${encodeURIComponent(entry.slug)}/edit`} className="wiki-edit">
                 编辑词条
               </Link>
             )}
