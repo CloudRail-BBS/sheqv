@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MarkdownEditor } from './markdown-editor';
 import { CaptchaDialog } from './captcha-dialog';
 import type { CaptchaPayload } from './geetest';
-import { WIKI_CATEGORIES } from '@/lib/wiki-types';
+import type { ContentCategory } from '@/lib/category-types';
 
 /**
  * 百科投稿编辑器（新建与修改共用）。
@@ -17,6 +17,7 @@ export function WikiEditor({
   slug,
   initial,
   captchaId = '',
+  categories = [],
 }: {
   /** 修改已有词条时传 slug */
   slug?: string;
@@ -28,11 +29,13 @@ export function WikiEditor({
     tags: string[];
   };
   captchaId?: string;
+  /** 分类由后台维护，服务端取好传进来 */
+  categories?: ContentCategory[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
-  const [category, setCategory] = useState(initial?.category ?? 'intro');
+  const [category, setCategory] = useState(initial?.category ?? categories[0]?.key ?? '');
   const [body, setBody] = useState(initial?.body ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -41,7 +44,8 @@ export function WikiEditor({
 
   const titleLen = title.trim().length;
   const bodyLen = body.trim().length;
-  const ready = titleLen >= 2 && titleLen <= 60 && bodyLen >= 20;
+  const ready =
+    titleLen >= 2 && titleLen <= 60 && bodyLen >= 20 && categories.length > 0;
 
   async function submit(proofArg?: CaptchaPayload | null) {
     if (busy) return;
@@ -56,6 +60,10 @@ export function WikiEditor({
     }
     if (bodyLen < 20) {
       setErr('正文至少 20 字');
+      return;
+    }
+    if (!category) {
+      setErr('还没有可用分类，请联系管理员在后台添加');
       return;
     }
 
@@ -112,18 +120,22 @@ export function WikiEditor({
 
       <div className="wiki-cat-row">
         <span className="wiki-cat-label">分类</span>
-        {WIKI_CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            className="chip"
-            data-on={category === c.key}
-            title={c.desc}
-            onClick={() => setCategory(c.key)}
-          >
-            {c.label}
-          </button>
-        ))}
+        {categories.length === 0 ? (
+          <span className="small muted">后台还没有配置分类，暂时无法投稿。</span>
+        ) : (
+          categories.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className="chip"
+              data-on={category === c.key}
+              title={c.descr || undefined}
+              onClick={() => setCategory(c.key)}
+            >
+              {c.label}
+            </button>
+          ))
+        )}
       </div>
 
       <label className="field">

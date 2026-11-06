@@ -11,6 +11,7 @@ import { DevTeamAvatar } from '@/components/dev-team-avatar';
 import { buildMetadata } from '@/lib/seo';
 import { fmtNum } from '@/lib/resource-types';
 import { FoldCard } from '@/components/fold-card';
+import { listCategories } from '@/lib/category-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function DevTeamDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [team, user, resources] = await Promise.all([
+  const [team, user, resources, categories] = await Promise.all([
     getDevTeam(id),
     getCurrentUser(),
     listTeamResources(id),
+    listCategories('resource'),
   ]);
 
   if (!team) notFound();
@@ -87,7 +89,7 @@ export default async function DevTeamDetail({ params }: { params: Promise<{ id: 
         ) : (
           <div className="res-grid">
             {resources.map((r) => (
-              <ResourceCard key={r.id} item={r} />
+              <ResourceCard key={r.id} item={r} categories={categories} />
             ))}
           </div>
         )}

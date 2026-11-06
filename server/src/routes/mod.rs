@@ -6,6 +6,7 @@ pub mod agreements;
 pub mod apps;
 pub mod audit;
 pub mod auth;
+pub mod categories;
 pub mod email_auth;
 pub mod dev_teams;
 pub mod dm;
@@ -206,6 +207,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/app/latest", get(apps::latest))
         // 百科：公开只读 + 后台维护
         .route("/api/v1/wiki", get(wiki::list))
+        // 分类：百科与资源库共用，前台表单按 scope 取
+        .route("/api/v1/categories", get(categories::list))
         // 投稿：任何人都能写，审核通过才公开
         .route("/api/v1/wiki/submissions", post(wiki::submit))
         .route("/api/v1/wiki/submissions/mine", get(wiki::mine))
@@ -238,6 +241,15 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/admin/wiki/{id}/restore",
             patch(wiki::admin_restore),
+        )
+        // 后台：分类维护（百科 / 资源库）
+        .route(
+            "/api/v1/admin/categories",
+            get(categories::admin_list).post(categories::create),
+        )
+        .route(
+            "/api/v1/admin/categories/{scope}/{key}",
+            patch(categories::patch).delete(categories::remove),
         )
         // 后台版本发布：列表 / 新建
         .route(

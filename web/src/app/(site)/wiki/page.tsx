@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { listWiki, WIKI_CATEGORIES, categoryLabel, fmtDay } from '@/lib/wiki';
+import { listWiki, fmtDay } from '@/lib/wiki';
+import { catLabel, listCategories, type ContentCategory } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
 
@@ -14,11 +15,19 @@ export async function generateMetadata() {
 }
 
 /** 没有配图时用分类色块 + 首字当封面，比一排空图更整齐 */
-function Cover({ title, category }: { title: string; category: string }) {
+function Cover({
+  title,
+  category,
+  cats,
+}: {
+  title: string;
+  category: string;
+  cats: ContentCategory[];
+}) {
   return (
     <span className="wiki-cover" data-cat={category} aria-hidden="true">
       <b>{title.slice(0, 1)}</b>
-      <i>{categoryLabel(category)}</i>
+      <i>{catLabel(cats, category)}</i>
     </span>
   );
 }
@@ -30,7 +39,8 @@ export default async function WikiPage({
 }) {
   const sp = await searchParams;
   const q = (sp.q ?? '').trim();
-  const active = WIKI_CATEGORIES.some((c) => c.key === sp.category) ? sp.category! : '';
+  const cats = await listCategories('wiki');
+  const active = sp.category && cats.some((c) => c.key === sp.category) ? sp.category : '';
 
   const [items, all, user] = await Promise.all([
     listWiki({ q, category: active }),
@@ -82,12 +92,13 @@ export default async function WikiPage({
             全部条目
             <span className="wiki-tab-n">{total}</span>
           </Link>
-          {WIKI_CATEGORIES.map((c) => (
+          {cats.map((c) => (
             <Link
               key={c.key}
               href={href({ category: c.key })}
               className="wiki-tab"
               data-on={active === c.key}
+              title={c.descr || undefined}
             >
               {c.label}
               {(counts.get(c.key) ?? 0) > 0 && (
@@ -117,7 +128,7 @@ export default async function WikiPage({
               <Link key={it.id} href={`/wiki/${it.slug}`} className="wiki-row">
                 <div className="wiki-row-main">
                   <div className="wiki-row-top">
-                    <span className="wiki-tag">{categoryLabel(it.category)}</span>
+                    <span className="wiki-tag">{catLabel(cats, it.category)}</span>
                     {it.tags.slice(0, 2).map((t) => (
                       <span key={t} className="badge badge-ghost">
                         {t}
@@ -132,7 +143,7 @@ export default async function WikiPage({
                     <span>{it.views} 次浏览</span>
                   </div>
                 </div>
-                <Cover title={it.title} category={it.category} />
+                <Cover title={it.title} category={it.category} cats={cats} />
               </Link>
             ))}
           </div>
@@ -143,10 +154,10 @@ export default async function WikiPage({
         <div className="card rail-card">
           <div className="rail-title">分类</div>
           <div className="wiki-rail-list">
-            {WIKI_CATEGORIES.map((c) => (
+            {cats.map((c) => (
               <Link key={c.key} href={href({ category: c.key })} className="wiki-rail-row">
                 <b>{c.label}</b>
-                <span>{c.desc}</span>
+                <span>{c.descr || `${counts.get(c.key) ?? 0} 条词条`}</span>
               </Link>
             ))}
           </div>

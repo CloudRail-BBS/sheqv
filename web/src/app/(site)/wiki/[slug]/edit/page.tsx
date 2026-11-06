@@ -5,6 +5,7 @@ import { isCommunitySigned } from '@/lib/agreement-state';
 import { getSettings } from '@/lib/settings';
 import { getWiki } from '@/lib/wiki';
 import { WikiEditor } from '@/components/wiki-editor';
+import { listCategories } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -24,10 +25,11 @@ export default async function WikiEditPage({ params }: { params: Promise<{ slug:
   const data = await getWiki(slug);
   if (!data) notFound();
 
-  const [user, signed, settings] = await Promise.all([
+  const [user, signed, settings, categories] = await Promise.all([
     getCurrentUser(),
     isCommunitySigned(),
     getSettings(),
+    listCategories('wiki'),
   ]);
   if (!user) redirect(`/login?next=/wiki/${encodeURIComponent(slug)}/edit`);
 
@@ -38,6 +40,7 @@ export default async function WikiEditPage({ params }: { params: Promise<{ slug:
           <WikiEditor
             slug={slug}
             captchaId={settings.geetestId ?? ''}
+            categories={categories}
             initial={{
               title: data.entry.title,
               summary: data.entry.summary,

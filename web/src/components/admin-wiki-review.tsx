@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Markdown } from '@/lib/markdown';
-import { categoryLabel, SUBMISSION_STATUS } from '@/lib/wiki-types';
+import { SUBMISSION_STATUS } from '@/lib/wiki-types';
+import { catLabel, type ContentCategory } from '@/lib/category-types';
 import type { WikiSubmission, WikiSubmissionBrief } from '@/lib/wiki-types';
 
 /**
@@ -12,7 +13,11 @@ import type { WikiSubmission, WikiSubmissionBrief } from '@/lib/wiki-types';
  * 列表只带摘要，点「查看」再拉正文：审核队列可能有几十条，
  * 一次把 20000 字的正文全塞进列表并不划算。
  */
-export function AdminWikiReview() {
+export function AdminWikiReview({
+  categories = [],
+}: {
+  categories?: ContentCategory[];
+}) {
   const [items, setItems] = useState<WikiSubmissionBrief[]>([]);
   const [pending, setPending] = useState(0);
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | ''>('pending');
@@ -119,7 +124,7 @@ export function AdminWikiReview() {
                   <div className="wiki-review-title">
                     <b>{it.title}</b>
                     <span className="badge" data-tone={st.tone}>{st.label}</span>
-                    <span className="badge badge-ghost">{categoryLabel(it.category)}</span>
+                    <span className="badge badge-ghost">{catLabel(categories, it.category)}</span>
                     {it.entrySlug ? <span className="badge badge-ghost">修改词条</span> : <span className="badge badge-ghost">新词条</span>}
                   </div>
                   <div className="wiki-review-meta">
@@ -201,7 +206,7 @@ export function AdminWikiReview() {
               <div>
                 <h3 className="console-h3">{detail.title}</h3>
                 <p className="small muted" style={{ marginTop: 3 }}>
-                  {detail.author} · {categoryLabel(detail.category)} ·{' '}
+                  {detail.author} · {catLabel(categories, detail.category)} ·{' '}
                   {detail.entrySlug ? `修改 /wiki/${detail.entrySlug}` : '新词条'}
                 </p>
               </div>

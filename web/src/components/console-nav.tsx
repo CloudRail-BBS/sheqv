@@ -31,6 +31,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/audit', label: '审核', icon: 'check' },
       { href: '/admin/resources', label: '资源', icon: 'box' },
       { href: '/admin/wiki', label: '百科', icon: 'doc' },
+      { href: '/admin/categories', label: '分类', icon: 'tag' },
       { href: '/admin/files', label: '文件管理', icon: 'folder' },
       { href: '/admin/announcements', label: '公告', icon: 'bell' },
       { href: '/admin/news', label: '新闻', icon: 'doc' },

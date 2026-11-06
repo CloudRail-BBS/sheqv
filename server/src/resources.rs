@@ -9,18 +9,7 @@ use serde::Serialize;
 use serde_json::Value;
 use sqlx::PgPool;
 
-/// 当前支持的分类。新增分类时前后端要一起改（前端是筛选按钮）。
-pub const CATEGORIES: [&str; 8] = [
-    "地图",
-    "整合包",
-    "材质",
-    "光影",
-    "存档",
-    "插件",
-    "工具",
-    "其他",
-];
-
+/// 分类不走代码：存在 `content_categories`（scope = resource），后台可增删改。
 pub const GAMES: [&str; 2] = ["minecraft", "rusted_warfare"];
 
 /// 一个资源最多挂几个文件。再多就应该做版本列表了，不适合塞在一个条目里。
@@ -345,8 +334,8 @@ pub struct NewResource<'a> {
     pub source_url: &'a str,
 }
 
-/// 返回中文错误；合法返回 `None`
-pub fn validate(input: &NewResource<'_>) -> Option<String> {
+/// 返回中文错误；合法返回 `None`。`categories` 是后台维护的分类 key 列表。
+pub fn validate(input: &NewResource<'_>, categories: &[String]) -> Option<String> {
     let len = |s: &str| s.trim().chars().count();
     if len(input.title) < 2 || len(input.title) > 60 {
         return Some("标题需 2–60 字".into());
@@ -360,8 +349,8 @@ pub fn validate(input: &NewResource<'_>) -> Option<String> {
     if !GAMES.contains(&input.game) {
         return Some("游戏类型不正确".into());
     }
-    if !CATEGORIES.contains(&input.category) {
-        return Some("分类不正确".into());
+    if !categories.iter().any(|c| c == input.category) {
+        return Some("分类不存在，刷新页面后重选".into());
     }
     if input.tags.len() > 6 {
         return Some("标签最多 6 个".into());
@@ -584,7 +573,9 @@ pub async fn patch(
         deps,
         source_url,
     };
-    if validate(&check).is_some() {
+    // 模块内的更新只做字段兜底，分类是否合法由接口层对着分类表判；
+    // 这里把「当前分类」当作唯一合法值，等价于跳过分类校验。
+    if validate(&check, std::slice::from_ref(&category.to_string())).is_some() {
         return Ok(None);
     }
 

@@ -8,6 +8,7 @@ import { ResourceActions } from '@/components/resource-actions';
 import { buildMetadata, resourceJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import { fmtNum, fmtSize, gameLabel, gameTone } from '@/lib/resource-types';
+import { catLabel, listCategories } from '@/lib/category-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!item || item.status !== 'published') {
     return buildMetadata({ title: '资源', path: `/resources/${id}`, noIndex: true });
   }
+  const cats = await listCategories('resource');
   return buildMetadata({
     title: item.title,
-    description: item.summary || `${item.author} 分享的 ${gameLabel(item.game)} ${item.category}`,
+    description:
+      item.summary ||
+      `${item.author} 分享的 ${gameLabel(item.game)} ${catLabel(cats, item.category)}`,
     path: `/resources/${id}`,
   });
 }
@@ -28,10 +32,11 @@ const fmtDate = (ts: number) => new Date(ts).toISOString().slice(0, 10);
 
 export default async function ResourceDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [item, user, caps] = await Promise.all([
+  const [item, user, caps, cats] = await Promise.all([
     getResource(id),
     getCurrentUser(),
     getRequestCaps(),
+    listCategories('resource'),
   ]);
 
   if (!item) notFound();
@@ -45,7 +50,7 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
           title: item.title,
           summary: item.summary,
           author: item.author,
-          category: item.category,
+          category: catLabel(cats, item.category),
           gameLabel: gameLabel(item.game),
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
@@ -62,7 +67,7 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
         <div className="crumb">
           <Link href="/resources">资源库</Link>
           <span style={{ margin: '0 7px' }}>/</span>
-          <span>{item.category}</span>
+          <span>{catLabel(cats, item.category)}</span>
         </div>
 
         {item.status !== 'published' && (
@@ -79,7 +84,7 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
         <article className="card card-pad res-detail">
           <div className="row wrap" style={{ gap: 6, marginBottom: 10 }}>
             <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
-            <span className="badge">{item.category}</span>
+            <span className="badge">{catLabel(cats, item.category)}</span>
             {item.version && <span className="badge badge-ghost">v{item.version}</span>}
             {item.status === 'hidden' && <span className="badge badge-danger">已下架</span>}
             {item.status === 'pending' && <span className="badge badge-warn">审核中</span>}

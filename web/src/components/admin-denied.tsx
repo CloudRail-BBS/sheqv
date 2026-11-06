@@ -11,7 +11,7 @@ export function AdminDenied({ loggedIn, nickname }: { loggedIn: boolean; nicknam
           后台需要登录
         </h1>
         <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
-          本站没有默认管理员账号。第一个注册的账号会自动成为管理员，之后注册的都是普通成员。
+          后台只对管理员开放，请使用管理员账号登录。
         </p>
         <div className="row" style={{ gap: 8, marginTop: 16 }}>
           <Link href="/login" className="btn btn-primary" style={{ flex: 1 }}>
@@ -28,13 +28,11 @@ export function AdminDenied({ loggedIn, nickname }: { loggedIn: boolean; nicknam
   return (
     <div className="card card-pad" style={{ maxWidth: 460, margin: '32px auto 0' }}>
       <h1 className="page-title" style={{ fontSize: 19 }}>
-        403 · 当前账号不是管理员
+        没有后台权限
       </h1>
       <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
         你正以 <b>{nickname}</b> 的身份登录，该账号没有后台权限。
-        管理员身份只授予第一个注册的账号；如需移交，请直接编辑服务器上的
-        <code className="mono"> $DATA_DIR/users.json</code>，把目标账号的 <code className="mono">role</code>
-        改成 <code className="mono">admin</code>。
+        需要进入后台的话，请联系站点管理员为这个账号开通。
       </p>
       <Link href="/" className="btn btn-ghost" style={{ width: '100%', marginTop: 16 }}>
         返回社区

@@ -25,18 +25,7 @@ export interface WikiEntry extends WikiSummary {
   createdAt: number;
 }
 
-export const WIKI_CATEGORIES = [
-  { key: 'intro', label: '入门', desc: '第一次来？从这里开始' },
-  { key: 'mechanics', label: '玩法机制', desc: '规则、流程与判定标准' },
-  { key: 'server', label: '服务器', desc: '开服、联机与常见故障' },
-  { key: 'dev', label: '开发', desc: '资源、客户端与接口约定' },
-  { key: 'community', label: '社区', desc: '公约、身份组与治理' },
-] as const;
-
-export function categoryLabel(key: string): string {
-  return WIKI_CATEGORIES.find((c) => c.key === key)?.label ?? '其他';
-}
-
+/* 分类不再写死：存在后台可维护的 content_categories 表里，见 category-types.ts */
 
 export const fmtDay = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
 

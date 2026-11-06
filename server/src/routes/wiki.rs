@@ -16,7 +16,7 @@ use crate::errors::{ApiError, ApiResult};
 use crate::routes::posts::require_community;
 use crate::settings;
 use crate::state::AppState;
-use crate::wiki::{self, CATEGORIES, NewEntry, PatchEntry};
+use crate::wiki::{self, NewEntry, PatchEntry};
 
 /// GET /api/v1/wiki?category=intro&q=
 pub async fn list(
@@ -31,7 +31,7 @@ pub async fn list(
     .await
     .map_err(ApiError::internal)?;
 
-    Ok(Json(json!({ "ok": true, "items": items, "categories": CATEGORIES })).into_response())
+    Ok(Json(json!({ "ok": true, "items": items })).into_response())
 }
 
 /// GET /api/v1/wiki/{slug}
@@ -56,7 +56,13 @@ pub async fn admin_list(State(st): State<AppState>, _: AdminActor) -> ApiResult<
     Ok(Json(json!({ "ok": true, "items": items })).into_response())
 }
 
-fn validate(title: &str, summary: &str, body: &str, category: &str) -> Option<String> {
+fn validate(
+    title: &str,
+    summary: &str,
+    body: &str,
+    category: Option<&str>,
+    allowed: &[String],
+) -> Option<String> {
     let t = title.trim().chars().count();
     if !(2..=60).contains(&t) {
         return Some("标题需为 2–60 字".into());
@@ -71,10 +77,19 @@ fn validate(title: &str, summary: &str, body: &str, category: &str) -> Option<St
     if b > 20000 {
         return Some("正文不超过 20000 字".into());
     }
-    if !CATEGORIES.contains(&category) {
-        return Some("分类不正确".into());
+    if let Some(c) = category {
+        if !allowed.iter().any(|k| k == c) {
+            return Some("分类不存在，刷新页面后重选".into());
+        }
     }
     None
+}
+
+/// 分类由后台维护，校验时现取
+async fn wiki_keys(st: &AppState) -> ApiResult<Vec<String>> {
+    crate::categories::keys(&st.pool, "wiki")
+        .await
+        .map_err(ApiError::internal)
 }
 
 fn slugify(raw: &str) -> String {
@@ -125,11 +140,16 @@ pub async fn admin_create(
     let title = text("title");
     let summary = text("summary");
     let content = text("body");
+    let keys = wiki_keys(&st).await?;
     let category = {
         let c = text("category");
-        if c.is_empty() { "intro".to_string() } else { c }
+        if c.is_empty() {
+            keys.first().cloned().unwrap_or_else(|| "intro".to_string())
+        } else {
+            c
+        }
     };
-    if let Some(msg) = validate(&title, &summary, &content, &category) {
+    if let Some(msg) = validate(&title, &summary, &content, Some(&category), &keys) {
         return Err(ApiError::invalid_input(msg));
     }
 
@@ -179,11 +199,13 @@ pub async fn admin_update(
     let category = text("category");
 
     // 只改一部分时也要能过校验：缺的字段用占位值跳过
+    let keys = wiki_keys(&st).await?;
     if let Some(msg) = validate(
         title.as_deref().unwrap_or("标题"),
         summary.as_deref().unwrap_or(""),
         content.as_deref().unwrap_or(&"x".repeat(20)),
-        category.as_deref().unwrap_or("intro"),
+        category.as_deref(),
+        &keys,
     ) {
         return Err(ApiError::invalid_input(msg));
     }
@@ -324,11 +346,16 @@ pub async fn submit(
     let title = text("title");
     let summary = text("summary");
     let content = obj.get("body").and_then(|v| v.as_str()).unwrap_or("");
+    let keys = wiki_keys(&st).await?;
     let category = {
         let c = text("category");
-        if c.is_empty() { "intro".to_string() } else { c }
+        if c.is_empty() {
+            keys.first().cloned().unwrap_or_else(|| "intro".to_string())
+        } else {
+            c
+        }
     };
-    if let Some(msg) = validate(&title, &summary, content, &category) {
+    if let Some(msg) = validate(&title, &summary, content, Some(&category), &keys) {
         return Err(ApiError::invalid_input(msg));
     }
 

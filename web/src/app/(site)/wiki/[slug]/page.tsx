@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getWiki, tocOf, categoryLabel, fmtDay, listRevisions, WIKI_CATEGORIES } from '@/lib/wiki';
+import { getWiki, tocOf, fmtDay, listRevisions } from '@/lib/wiki';
+import { catLabel, listCategories } from '@/lib/category-store';
 import { Markdown } from '@/lib/markdown';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
@@ -20,15 +21,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function WikiEntryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [data, user, revisions] = await Promise.all([
+  const [data, user, revisions, cats] = await Promise.all([
     getWiki(slug),
     getCurrentUser(),
     listRevisions(slug),
+    listCategories('wiki'),
   ]);
   if (!data) notFound();
 
   const { entry, related } = data;
-  const cat = WIKI_CATEGORIES.find((c) => c.key === entry.category);
   const toc = tocOf(entry.body).filter((h) => h.level === 2).slice(0, 14);
 
   return (
@@ -37,12 +38,12 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
         <div className="crumb">
           <Link href="/wiki">百科</Link>
           <span style={{ margin: '0 7px' }}>/</span>
-          <Link href={`/wiki?category=${entry.category}`}>{categoryLabel(entry.category)}</Link>
+          <Link href={`/wiki?category=${entry.category}`}>{catLabel(cats, entry.category)}</Link>
         </div>
 
         <article className="card card-pad wiki-article">
           <div className="wiki-article-top">
-            <span className="wiki-tag">{categoryLabel(entry.category)}</span>
+            <span className="wiki-tag">{catLabel(cats, entry.category)}</span>
             {entry.tags.map((t) => (
               <span key={t} className="badge badge-ghost">
                 {t}
@@ -80,7 +81,7 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
               {related.map((it) => (
                 <Link key={it.id} href={`/wiki/${it.slug}`} className="card wiki-card">
                   <div className="wiki-card-top">
-                    <span className="wiki-tag">{categoryLabel(it.category)}</span>
+                    <span className="wiki-tag">{catLabel(cats, it.category)}</span>
                   </div>
                   <h2 className="wiki-card-title">{it.title}</h2>
                   <p className="wiki-card-desc">{it.summary || '还没有写摘要。'}</p>
@@ -123,7 +124,7 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
           <div className="rail-title">词条信息</div>
           <div className="wiki-info">
             <span>分类</span>
-            <b>{cat?.label ?? '其他'}</b>
+            <b>{catLabel(cats, entry.category)}</b>
             <span>创建</span>
             <b>{fmtDay(entry.createdAt)}</b>
             <span>最近更新</span>

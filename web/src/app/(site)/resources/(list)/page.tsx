@@ -9,12 +9,12 @@ import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 import {
-  RESOURCE_CATEGORIES,
   RESOURCE_GAMES,
   fmtNum,
   gameLabel,
   type ResourceView,
 } from '@/lib/resource-types';
+import { catLabel, listCategories } from '@/lib/category-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +42,7 @@ export default async function ResourcesPage({
 }) {
   const sp = await searchParams;
   const sort = sp.sort === 'likes' || sp.sort === 'downloads' ? sp.sort : 'new';
-  const [user, items, board, settings] = await Promise.all([
+  const [user, items, board, settings, cats] = await Promise.all([
     getCurrentUser(),
     listResources({
       game: sp.game,
@@ -52,6 +52,7 @@ export default async function ResourcesPage({
     }),
     getDeveloperBoard(),
     getSettings(),
+    listCategories('resource'),
   ]);
   const teams = user ? await listMyDevTeams() : [];
 
@@ -74,6 +75,7 @@ export default async function ResourcesPage({
               teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
               nickname={user.nickname}
               avatar={user.avatar}
+              categories={cats}
             />
           ) : (
             <Link href="/login" className="btn btn-primary btn-sm">
@@ -126,14 +128,14 @@ export default async function ResourcesPage({
           <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
             全部分类
           </Link>
-          {RESOURCE_CATEGORIES.map((c) => (
+          {cats.map((c) => (
             <Link
-              key={c}
-              href={buildQuery(base, { category: c })}
+              key={c.key}
+              href={buildQuery(base, { category: c.key })}
               className="chip"
-              data-on={sp.category === c}
+              data-on={sp.category === c.key}
             >
-              {c}
+              {c.label}
             </Link>
           ))}
         </div>
@@ -161,7 +163,7 @@ export default async function ResourcesPage({
         ) : (
           <div className="res-grid">
             {items.map((r: ResourceView) => (
-              <ResourceCard key={r.id} item={r} />
+              <ResourceCard key={r.id} item={r} categories={cats} />
             ))}
           </div>
         )}
@@ -215,7 +217,7 @@ export default async function ResourcesPage({
               <dt>游戏</dt>
               <dd>{sp.game ? gameLabel(sp.game) : '全部'}</dd>
               <dt>分类</dt>
-              <dd>{sp.category || '全部'}</dd>
+              <dd>{sp.category ? catLabel(cats, sp.category) : '全部'}</dd>
               <dt>排序</dt>
               <dd>{sort === 'likes' ? '点赞' : sort === 'downloads' ? '下载' : '最新'}</dd>
             </dl>

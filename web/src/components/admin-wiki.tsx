@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { WIKI_CATEGORIES, categoryLabel, fmtDay, type WikiEntry } from '@/lib/wiki-types';
+import { fmtDay, type WikiEntry } from '@/lib/wiki-types';
+import { catLabel, type ContentCategory } from '@/lib/category-types';
 
 /**
  * 后台百科维护：列表 + 新建/编辑弹窗。
@@ -20,7 +21,13 @@ const BLANK = {
   published: true,
 };
 
-export function AdminWiki({ items }: { items: WikiEntry[] }) {
+export function AdminWiki({
+  items,
+  categories = [],
+}: {
+  items: WikiEntry[];
+  categories?: ContentCategory[];
+}) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -48,7 +55,7 @@ export function AdminWiki({ items }: { items: WikiEntry[] }) {
 
   function startNew() {
     setEditing(null);
-    setForm({ ...BLANK });
+    setForm({ ...BLANK, category: categories[0]?.key ?? '' });
     setErr(null);
     setOpen(true);
   }
@@ -146,7 +153,7 @@ export function AdminWiki({ items }: { items: WikiEntry[] }) {
               <div style={{ minWidth: 0 }}>
                 <div className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
                   <b>{it.title}</b>
-                  <span className="badge badge-ghost">{categoryLabel(it.category)}</span>
+                  <span className="badge badge-ghost">{catLabel(categories, it.category)}</span>
                   {!it.published && <span className="badge badge-warn">草稿</span>}
                 </div>
                 <p className="small muted" style={{ marginTop: 4 }}>
@@ -200,7 +207,7 @@ export function AdminWiki({ items }: { items: WikiEntry[] }) {
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                   >
-                    {WIKI_CATEGORIES.map((c) => (
+                    {categories.map((c) => (
                       <option key={c.key} value={c.key}>
                         {c.label}
                       </option>

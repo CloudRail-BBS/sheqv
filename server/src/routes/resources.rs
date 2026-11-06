@@ -173,7 +173,10 @@ pub async fn create(
         source_url: &text(&obj, "sourceUrl"),
     };
 
-    if let Some(msg) = resources::validate(&input) {
+    let cats = crate::categories::keys(&st.pool, "resource")
+        .await
+        .map_err(ApiError::internal)?;
+    if let Some(msg) = resources::validate(&input, &cats) {
         return Err(ApiError::invalid_input(msg));
     }
 
@@ -285,7 +288,10 @@ pub async fn patch(
         deps: &deps,
         source_url: &source_url,
     };
-    if let Some(msg) = resources::validate(&check) {
+    let cats = crate::categories::keys(&st.pool, "resource")
+        .await
+        .map_err(ApiError::internal)?;
+    if let Some(msg) = resources::validate(&check, &cats) {
         return Err(ApiError::invalid_input(msg));
     }
 

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { isCommunitySigned } from '@/lib/agreement-state';
 import { getSettings } from '@/lib/settings';
 import { WikiEditor } from '@/components/wiki-editor';
+import { listCategories } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -18,10 +19,11 @@ export async function generateMetadata() {
 }
 
 export default async function WikiSubmitPage() {
-  const [user, signed, settings] = await Promise.all([
+  const [user, signed, settings, categories] = await Promise.all([
     getCurrentUser(),
     isCommunitySigned(),
     getSettings(),
+    listCategories('wiki'),
   ]);
   if (!user) redirect('/login?next=/wiki/submit');
 
@@ -29,7 +31,7 @@ export default async function WikiSubmitPage() {
     <div className="cols">
       <div className="col-main">
         {signed ? (
-          <WikiEditor captchaId={settings.geetestId ?? ''} />
+          <WikiEditor captchaId={settings.geetestId ?? ''} categories={categories} />
         ) : (
           <div className="card card-pad hint-box">
             未签署《社区公约》不能投稿。

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/current-user';
 import { listMyDevTeams } from '@/lib/dev-team-store';
 import { ResourceUpload } from '@/components/resource-upload';
+import { listCategories } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export default async function NewResourcePage() {
     );
   }
 
-  const teams = await listMyDevTeams();
+  const [teams, categories] = await Promise.all([listMyDevTeams(), listCategories('resource')]);
 
   return (
     <div className="col-main">
@@ -38,6 +39,7 @@ export default async function NewResourcePage() {
         teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
         nickname={user.nickname}
         avatar={user.avatar}
+        categories={categories}
       />
     </div>
   );

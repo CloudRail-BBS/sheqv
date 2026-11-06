@@ -1161,6 +1161,18 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .adm-form { grid-template-columns: 1fr 1fr; }
 }
 
+/* 分类管理：名字 + 排序两列，手机收成单列；迁移面板的按钮在窄屏铺满 */
+.cat-form { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 10px; }
+.cat-form .field-wide { grid-column: 1 / -1; }
+
+@media (max-width: 700px) {
+  .cat-form { grid-template-columns: 1fr; }
+  .cat-form .field-wide { grid-column: auto; }
+  .cat-move { flex-direction: column; align-items: stretch; }
+  .cat-move select,
+  .cat-move .btn { width: 100%; max-width: none; }
+}
+
 /* ── 站内信快捷面板 ─────────────────────── */
 
 .notif-wrap { position: relative; }

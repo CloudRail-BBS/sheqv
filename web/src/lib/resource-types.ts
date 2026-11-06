@@ -63,17 +63,6 @@ export const RESOURCE_GAMES = [
   { key: 'rusted_warfare', label: 'Rusted Warfare', short: 'RW' },
 ] as const;
 
-export const RESOURCE_CATEGORIES = [
-  '地图',
-  '整合包',
-  '材质',
-  '光影',
-  '存档',
-  '插件',
-  '工具',
-  '其他',
-] as const;
-
 export const RESOURCE_LICENSES = ['作者保留', 'MIT', 'CC BY-NC', 'GPL-3.0'] as const;
 
 export function gameLabel(key: string): string {

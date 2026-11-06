@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { fmtNum, fmtSize, gameLabel, gameTone, type ResourceView } from '@/lib/resource-types';
+import { catLabel, type ContentCategory } from '@/lib/category-types';
 import { UserHoverCard } from './user-hover-card';
 
 /**
@@ -8,7 +9,13 @@ import { UserHoverCard } from './user-hover-card';
  * 作者名后面最多两个标记：开发者 + 团队简称。两者都不占太多宽度，
  * 卡片里真正要一眼看到的是「什么东西 / 谁做的 / 多少人用过」。
  */
-export function ResourceCard({ item }: { item: ResourceView }) {
+export function ResourceCard({
+  item,
+  categories,
+}: {
+  item: ResourceView;
+  categories?: ContentCategory[];
+}) {
   const tone = gameTone(item.game);
 
   return (
@@ -21,7 +28,7 @@ export function ResourceCard({ item }: { item: ResourceView }) {
       <div className="res-body">
         <div className="res-title">{item.title}</div>
         <div className="res-meta">
-          <span>{item.category}</span>
+          <span>{catLabel(categories, item.category)}</span>
           <span>·</span>
           <span className="res-author">
             <UserHoverCard userId={item.authorId} name={item.author}>

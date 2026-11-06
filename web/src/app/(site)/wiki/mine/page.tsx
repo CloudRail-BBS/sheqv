@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/current-user';
 import { listMySubmissions } from '@/lib/wiki';
-import { categoryLabel, fmtDay, SUBMISSION_STATUS } from '@/lib/wiki-types';
+import { fmtDay, SUBMISSION_STATUS } from '@/lib/wiki-types';
+import { catLabel, listCategories } from '@/lib/category-store';
 import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export default async function WikiMinePage({
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/wiki/mine');
   const sp = await searchParams;
-  const items = await listMySubmissions();
+  const [items, cats] = await Promise.all([listMySubmissions(), listCategories('wiki')]);
 
   return (
     <div className="cols">
@@ -64,7 +65,7 @@ export default async function WikiMinePage({
                     </span>
                   </div>
                   <div className="wiki-mine-meta">
-                    <span>{categoryLabel(it.category)}</span>
+                    <span>{catLabel(cats, it.category)}</span>
                     <span>{fmtDay(it.createdAt)}</span>
                     <span>{it.entrySlug ? '修改已有词条' : '新词条'}</span>
                     {it.entrySlug && it.status === 'approved' && (

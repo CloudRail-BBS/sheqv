@@ -8,8 +8,6 @@ use serde::Serialize;
 use serde_json::Value;
 use sqlx::PgPool;
 
-pub const CATEGORIES: [&str; 5] = ["intro", "mechanics", "server", "dev", "community"];
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WikiSummary {
@@ -141,7 +139,10 @@ pub async fn list(
     category: Option<&str>,
     q: Option<&str>,
 ) -> Result<Vec<WikiSummary>, sqlx::Error> {
-    let cat = category.filter(|c| CATEGORIES.contains(c));
+    // 分类由后台维护，这里不再白名单过滤；只挡明显不合理的超长值
+    let cat = category
+        .map(str::trim)
+        .filter(|c| !c.is_empty() && c.chars().count() <= 32);
     let keyword = q.map(str::trim).filter(|v| !v.is_empty());
     let pattern = keyword.map(|k| format!("%{}%", escape_like(k)));
 

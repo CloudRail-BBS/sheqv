@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { RESOURCE_CATEGORIES, RESOURCE_GAMES, RESOURCE_LICENSES, fmtSize } from '@/lib/resource-types';
+import { RESOURCE_GAMES, RESOURCE_LICENSES, fmtSize } from '@/lib/resource-types';
+import type { ContentCategory } from '@/lib/category-types';
 import { MarkdownEditor } from './markdown-editor';
 
 interface TeamOption {
@@ -41,12 +42,15 @@ export function ResourceUpload({
   teams,
   nickname,
   avatar,
+  categories = [],
   defaultOpen = false,
   triggerLabel = '发布资源',
 }: {
   teams: TeamOption[];
   nickname: string;
   avatar?: string;
+  /** 分类由后台维护，服务端取好传进来 */
+  categories?: ContentCategory[];
   defaultOpen?: boolean;
   triggerLabel?: string;
 }) {
@@ -55,7 +59,7 @@ export function ResourceUpload({
   const [open, setOpen] = useState(defaultOpen);
   const [expanded, setExpanded] = useState(false);
   const [more, setMore] = useState(false);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState(() => ({ ...EMPTY, category: categories[0]?.key ?? '' }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -333,8 +337,9 @@ export function ResourceUpload({
                   value={form.category}
                   onChange={(e) => set('category', e.target.value)}
                 >
-                  {RESOURCE_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {categories.length === 0 && <option value="">未配置分类</option>}
+                  {categories.map((c) => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
                   ))}
                 </select>
               </label>
