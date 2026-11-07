@@ -18,6 +18,7 @@ import { buildMetadata, postJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import { getImageSizes } from '@/lib/media-sizes';
 import { publicCaptchaId } from '@/lib/geetest';
+import { catLabel, listCategories } from '@/lib/category-store';
 import { Markdown, markdownToText } from '@/lib/markdown';
 import { FoldCard } from '@/components/fold-card';
 
@@ -48,13 +49,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const post = await getPost(id);
   if (!post) notFound();
 
-  const [signed, user, badges, achievements, groups, avatars] = await Promise.all([
+  const [signed, user, badges, achievements, groups, avatars, sections] = await Promise.all([
     isCommunitySigned(),
     getCurrentUser(),
     getBadgeMap(),
     getAchievementMap(),
     getGroupMap(),
     getAvatarMap(),
+    listCategories('post_section'),
   ]);
 
   const who = (name: string, userId?: string) => {
@@ -174,6 +176,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     <span title={new Date(post.editedAt).toLocaleString('zh-CN')}>已编辑</span>
                   </>
                 ) : null}
+                {post.section && (
+                  <Link
+                    href={`/?section=${encodeURIComponent(post.section)}`}
+                    className="badge"
+                    title="查看这个版块的其他帖子"
+                  >
+                    {catLabel(sections, post.section)}
+                  </Link>
+                )}
                 {post.tags.length > 0 && (
                   <span className="pb-title-tags">
                     {post.tags.map((t) => (

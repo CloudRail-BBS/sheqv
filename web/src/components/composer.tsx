@@ -7,16 +7,18 @@ import { useRouter } from 'next/navigation';
 import { MarkdownEditor } from './markdown-editor';
 import { CaptchaDialog } from './captcha-dialog';
 import type { CaptchaPayload } from './geetest';
+import type { ContentCategory } from '@/lib/category-types';
 
-const TOPICS = ['地图', '整合包', '材质', '约战', '招募', '提问'];
-const CATEGORIES = [
-  { key: '常规', desc: '日常分享与讨论' },
-  { key: '提问', desc: '求解答、求助' },
-  { key: '招募', desc: '找人组队或加入' },
-  { key: '约战', desc: '发起比赛与约练' },
-  { key: '闲聊', desc: '随便聊聊' },
+/** 后台还没配版块/标签时的兜底，保证弹窗永远能开 */
+const FALLBACK_SECTIONS = [
+  { key: '常规', label: '常规', descr: '日常分享与讨论' },
+  { key: '提问', label: '提问', descr: '求解答、求助' },
+  { key: '招募', label: '招募', descr: '找人组队或加入' },
+  { key: '约战', label: '约战', descr: '发起比赛与约练' },
+  { key: '闲聊', label: '闲聊', descr: '随便聊聊' },
 ];
-const CATEGORY_KEYS = CATEGORIES.map((c) => c.key);
+const FALLBACK_TAGS = ['地图', '整合包', '材质', '约战', '招募', '提问'];
+const TAG_LIMIT = 3;
 
 interface Props {
   /** 当前登录用户昵称；null 表示未登录 */
@@ -32,14 +34,26 @@ export function Composer({
   signed,
   avatar,
   captchaId = '',
-}: Props & { captchaId?: string }) {
+  sections = [],
+  tagOptions = [],
+}: Props & {
+  captchaId?: string;
+  /** 版块列表：后台「分类 → 帖子版块」维护 */
+  sections?: ContentCategory[];
+  /** 标签列表：后台「分类 → 帖子标签」维护 */
+  tagOptions?: ContentCategory[];
+}) {
+  const sectionList = sections.length > 0 ? sections : FALLBACK_SECTIONS;
+  const sectionKeys = sectionList.map((c) => c.key);
+  const tagList = tagOptions.length > 0 ? tagOptions.map((t) => t.key) : FALLBACK_TAGS;
+  const defaultSection = sectionKeys[0] ?? '常规';
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [category, setCategory] = useState('常规');
+  const [category, setCategory] = useState(() => defaultSection);
   const [catOpen, setCatOpen] = useState(false);
   const catRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -78,8 +92,12 @@ export function Composer({
       if (d.body || d.title) {
         setTitle(d.title ?? '');
         setBody(d.body ?? '');
-        setTags(Array.isArray(d.tags) ? d.tags.slice(0, 3) : []);
-        if (typeof d.category === 'string' && CATEGORY_KEYS.includes(d.category)) {
+        setTags(
+          Array.isArray(d.tags)
+            ? d.tags.filter((t): t is string => typeof t === 'string' && tagList.includes(t)).slice(0, TAG_LIMIT)
+            : [],
+        );
+        if (typeof d.category === 'string' && sectionKeys.includes(d.category)) {
           setCategory(d.category);
         }
         setRestored(Boolean(d.body || d.title));
@@ -92,7 +110,7 @@ export function Composer({
   useEffect(() => {
     if (!nickname) return;
     try {
-      if (!title.trim() && !body.trim() && tags.length === 0 && category === '常规') {
+      if (!title.trim() && !body.trim() && tags.length === 0 && category === defaultSection) {
         localStorage.removeItem(`ba-draft-${nickname}`);
       } else {
         localStorage.setItem(
@@ -218,6 +236,7 @@ export function Composer({
         body: JSON.stringify({
           title: finalTitle,
           body: finalBody,
+          section: category,
           tags: allTags,
           captcha: proof ?? undefined,
         }),
@@ -230,7 +249,7 @@ export function Composer({
       setTitle('');
       setBody('');
       setTags([]);
-      setCategory('常规');
+      setCategory(defaultSection);
       setExpanded(false);
       setOpen(false);
       try {
@@ -371,14 +390,14 @@ export function Composer({
                   aria-expanded={catOpen}
                   onClick={() => setCatOpen((v) => !v)}
                 >
-                  <span>{category}</span>
+                  <span>{sectionList.find((c) => c.key === category)?.label ?? category}</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="m7 9 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
                 {catOpen && (
                   <div className="composer-cat-menu" role="listbox">
-                    {CATEGORIES.map((c) => (
+                    {sectionList.map((c) => (
                       <button
                         key={c.key}
                         type="button"
@@ -388,13 +407,12 @@ export function Composer({
                         aria-selected={category === c.key}
                         onClick={() => {
                           setCategory(c.key);
-                          if (c.key !== '常规') setTags((v) => v.slice(0, 2));
                           setCatOpen(false);
                         }}
                       >
                         <span>
-                          <b>{c.key}</b>
-                          <em>{c.desc}</em>
+                          <b>{c.label}</b>
+                          {c.descr && <em>{c.descr}</em>}
                         </span>
                         {category === c.key && (
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -409,11 +427,11 @@ export function Composer({
               <div className="composer-tags-line">
                 <span className="composer-meta-label">
                   标签
-                  <em className="composer-meta-hint">最多 {category === '常规' ? 3 : 2} 个</em>
+                  <em className="composer-meta-hint">最多 {TAG_LIMIT} 个</em>
                 </span>
                 <div className="composer-topic-row">
-                  {TOPICS.map((t) => {
-                    const limit = category === '常规' ? 3 : 2;
+                  {tagList.map((t) => {
+                    const limit = TAG_LIMIT;
                     return (
                       <button
                         key={t}

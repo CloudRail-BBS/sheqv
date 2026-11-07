@@ -107,6 +107,8 @@ export interface FeedItem {
   /** 作者账号 id（老数据没有，回落到昵称匹配） */
   authorId?: string;
   guild: string;
+  /** 版块 key（后台可维护；老的静态数据可能没有） */
+  section?: string;
   time: string;
   title?: string;
   body: string;

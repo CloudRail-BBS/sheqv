@@ -29,8 +29,11 @@ export function PostCard({
   achievements,
   avatar,
   imageSizes,
+  sectionLabel,
 }: {
   item: Item;
+  /** 版块展示名；后台改过名时由页面传进来，没传就用板块 key */
+  sectionLabel?: string;
   badge?: BadgeInfo;
   /** 作者的身份组（名字 + 颜色） */
   group?: UserGroup;
@@ -61,8 +64,8 @@ export function PostCard({
   const coverSrc = mediaId ? `${cover}?w=640` : cover;
 
   const title = item.title?.trim() || text.slice(0, 40) || '无标题';
-  // 分类：优先第一个标签，其次公会名
-  const category = item.tags[0] || guildName || '讨论';
+  // 分类：优先版块，其次第一个标签、公会名
+  const category = sectionLabel || item.section || item.tags[0] || guildName || '讨论';
 
   /** 一人一票：点一下赞，再点一下取消；以服务端返回的计数为准 */
   async function like() {

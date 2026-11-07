@@ -500,6 +500,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .feed-tabs .sort { margin-left: auto; font-size: 11.5px; color: var(--text-3); padding-right: 8px; }
 
+/* 版块筛选：信息流下一行胶囊，版块多了横向滚动，不换行堆两排 */
+.feed-sections {
+  display: flex; gap: 6px; align-items: center;
+  overflow-x: auto; padding: 0 2px;
+  scrollbar-width: none;
+}
+.feed-sections::-webkit-scrollbar { display: none; }
+.feed-sections .chip { flex: none; text-decoration: none; }
+
 /* 页面级搜索：不要复用顶栏的移动端隐藏规则 */
 .page-search {
   flex: 0 0 220px; width: 220px; max-width: 100%;
@@ -2057,6 +2066,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .relay-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 
 .seg { display: flex; gap: 3px; padding: 3px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; }
+/* 页签多了（分类页四个）时窄屏横向滚，不要把字挤成两行 */
+.seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg > button { flex: none; }
 .seg-btn {
   flex: 1; height: 27px; border: 0; border-radius: 6px; cursor: pointer;
   background: transparent; color: var(--muted); font-size: 12px; transition: background 0.14s, color 0.14s;

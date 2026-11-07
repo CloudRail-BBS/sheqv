@@ -30,6 +30,7 @@ import { FeedTabs } from '@/components/feed-tabs';
 import { FeedFade } from '@/components/feed-fade';
 import { ComposeFab } from '@/components/compose-fab';
 import { isFeedTab } from '@/lib/feed-types';
+import { catLabel, listCategories } from '@/lib/category-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,16 +38,29 @@ export async function generateMetadata() {
   return buildMetadata({ path: '/' });
 }
 
-const TAGS = ['地图', '整合包', '材质', '约战', '招募', '红石', 'PvP', '公告'];
+/** 版块筛选也走 URL，和 tab 一样保持可分享 */
+function feedHref(tab: string, section: string): string {
+  const params = new URLSearchParams();
+  if (tab !== 'recommend') params.set('tab', tab);
+  if (section) params.set('section', section);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : '/';
+}
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; section?: string }>;
 }) {
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, section: rawSection } = await searchParams;
   const tab = isFeedTab(rawTab) ? rawTab : 'recommend';
-  const posts = await listPosts(undefined, tab);
+  // 版块与标签都由后台维护：版块做信息流筛选，标签做侧栏热词
+  const [sections, postTags] = await Promise.all([
+    listCategories('post_section'),
+    listCategories('post_tag'),
+  ]);
+  const section = rawSection && sections.some((s) => s.key === rawSection) ? rawSection : '';
+  const posts = await listPosts(undefined, tab, section);
   // 封面按原图比例占位：先批量问一次尺寸（最多 24 张），瀑布流才不会跳
   const imageSizes = await getImageSizes(posts.map((p) => p.body).join('\n')).catch(() => ({}));
   const user = await getCurrentUser();
@@ -91,10 +105,31 @@ export default async function HomePage({
             signed={communitySigned}
             avatar={user?.avatar}
             captchaId={captchaId}
+            sections={sections}
+            tagOptions={postTags}
           />
         </div>
 
         <FeedTabs value={tab} loggedIn={Boolean(user)} />
+
+        {sections.length > 1 && (
+          <div className="feed-sections" aria-label="按版块筛选">
+            <Link href={feedHref(tab, '')} className="chip" data-on={!section}>
+              全部版块
+            </Link>
+            {sections.map((s) => (
+              <Link
+                key={s.key}
+                href={feedHref(tab, s.key)}
+                className="chip"
+                data-on={section === s.key}
+                title={s.descr || undefined}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <FeedFade key={tab}>
         {posts.length === 0 && (
@@ -192,6 +227,7 @@ export default async function HomePage({
         <div className="post-grid">
           {posts.slice(0, 10).map((f) => (
             <PostCard
+              sectionLabel={catLabel(sections, f.section)}
               key={f.id}
               item={f}
               badge={resolveBadge(badges, { id: f.authorId, name: f.author })}
@@ -425,9 +461,14 @@ export default async function HomePage({
         <div className="card rail-card">
           <div className="rail-title">热门标签</div>
           <div className="tag-cloud">
-            {TAGS.map((t) => (
-              <Link key={t} href="/resources" className="tag-pill">
-                #{t}
+            {postTags.length === 0 && <span className="small muted">还没有配置标签</span>}
+            {postTags.map((t) => (
+              <Link
+                key={t.key}
+                href={`/search?q=${encodeURIComponent(t.label)}`}
+                className="tag-pill"
+              >
+                #{t.label}
               </Link>
             ))}
           </div>

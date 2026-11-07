@@ -35,6 +35,8 @@ pub struct PostView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author_id: Option<String>,
     pub guild: String,
+    /// 版块 key（后台可维护，存 content_categories:scope=post_section）
+    pub section: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     pub body: String,
@@ -78,6 +80,7 @@ struct PostRow {
     title: Option<String>,
     body: String,
     guild: String,
+    section: String,
     tags: Value,
     author_id: String,
     author: String,
@@ -106,7 +109,7 @@ struct CommentRow {
     created_at: DateTime<Utc>,
 }
 
-const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.tags, p.author_id,
+const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.section, p.tags, p.author_id,
         u.nickname AS author, u.verify_kind, p.created_at, p.like_count, p.views,
         p.pinned, p.featured, p.admin_note, p.admin_note_at,
         p.edited_at, p.status, p.reject_reason, p.reviewed_at
@@ -129,6 +132,7 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         author: row.author,
         author_id: Some(row.author_id),
         guild: row.guild,
+        section: row.section,
         title: row.title.filter(|t| !t.is_empty()),
         body: row.body,
         tags,
@@ -162,7 +166,7 @@ pub async fn set_notice(
         "UPDATE posts SET admin_note = $2,
                 admin_note_at = CASE WHEN $2 = '' THEN NULL ELSE now() END
           WHERE id = $1
-         RETURNING id, title, body, guild, tags, author_id,
+         RETURNING id, title, body, guild, section, tags, author_id,
                    (SELECT nickname FROM users WHERE id = author_id) AS author,
                    (SELECT verify_kind FROM users WHERE id = author_id) AS verify_kind,
                    created_at, like_count, views, pinned, featured,
@@ -184,6 +188,7 @@ pub async fn list(
     q: Option<&str>,
     tab: &str,
     viewer: Option<&str>,
+    section: Option<&str>,
 ) -> Result<Vec<PostView>, sqlx::Error> {
     let keyword = q.map(str::trim).filter(|v| !v.is_empty());
     let tab = match tab {
@@ -193,6 +198,12 @@ pub async fn list(
 
     let mut sql = format!("{POST_SQL} WHERE p.status = 'published'");
     let mut binds: Vec<String> = Vec::new();
+
+    if let Some(sec) = section.map(str::trim).filter(|v| !v.is_empty()) {
+        binds.push(sec.to_string());
+        let i = binds.len();
+        sql.push_str(&format!(" AND p.section = ${i}"));
+    }
 
     if let Some(word) = keyword {
         binds.push(format!("%{}%", escape_like(word)));
@@ -406,6 +417,8 @@ pub fn validate_post(title: &str, body: &str) -> Option<&'static str> {
 pub struct NewPost<'a> {
     pub title: &'a str,
     pub body: &'a str,
+    /// 版块 key，必须是 content_categories(post_section) 里的值
+    pub section: &'a str,
     pub tags: Vec<String>,
     /// pending / published：由审核策略在写库前决定
     pub status: &'a str,
@@ -416,14 +429,15 @@ pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<Str
     let tags = Value::Array(input.tags.into_iter().take(3).map(Value::String).collect());
 
     sqlx::query(
-        "INSERT INTO posts (id, title, body, guild, tags, author_id, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, now())",
+        "INSERT INTO posts (id, title, body, guild, section, tags, author_id, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())",
     )
     .bind(&id)
     .bind(input.title)
     .bind(input.body)
     // 公会名暂时留空：没有公会体系的真实归属前，别写「个人」这种占位值
     .bind("")
+    .bind(input.section)
     .bind(tags)
     .bind(user_id)
     .bind(input.status)

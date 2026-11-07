@@ -111,7 +111,9 @@ pub async fn list(
     // tab：recommend（默认，互动加权）/ new（最新）/ following（关注的人）/ joined（我赞过或回复过）
     let tab = params.get("tab").map(String::as_str).unwrap_or("recommend");
     let viewer = maybe.as_ref().map(|u| u.id.as_str());
-    let mut items = forum::list(&st.pool, q, tab, viewer)
+    // section：按版块筛选（首页的版块胶囊用）
+    let section = params.get("section").map(String::as_str);
+    let mut items = forum::list(&st.pool, q, tab, viewer, section)
         .await
         .map_err(ApiError::internal)?;
     forum::mark_liked(&st.pool, maybe.as_ref().map(|u| u.id.as_str()), &mut items)
@@ -173,18 +175,49 @@ pub async fn create(
         _ => {}
     }
 
-    let tags = obj
-        .get("tags")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|t| t.as_str())
-                .map(|t| t.trim().to_string())
-                .filter(|t| !t.is_empty())
-                .take(3)
-                .collect()
-        })
-        .unwrap_or_default();
+    // 版块 / 标签都由后台维护，写库前对着 content_categories 校验一遍；
+    // 表里还没配（空表）时不拦，避免后台清空后彻底发不了帖。
+    let section_keys = crate::categories::keys(&st.pool, "post_section")
+        .await
+        .map_err(ApiError::internal)?;
+    let raw_section = text("section");
+    let section = if section_keys.is_empty() {
+        if raw_section.is_empty() {
+            "常规".to_string()
+        } else {
+            raw_section
+        }
+    } else if raw_section.is_empty() {
+        section_keys[0].clone()
+    } else if section_keys.iter().any(|k| k == &raw_section) {
+        raw_section
+    } else {
+        return Err(ApiError::invalid_input("版块不存在，刷新页面后重选"));
+    };
+
+    let mut tags: Vec<String> = Vec::new();
+    if let Some(arr) = obj.get("tags").and_then(|v| v.as_array()) {
+        for t in arr.iter().filter_map(|t| t.as_str()) {
+            let t = t.trim();
+            if t.is_empty() || tags.iter().any(|x| x == t) {
+                continue;
+            }
+            tags.push(t.to_string());
+            if tags.len() == 3 {
+                break;
+            }
+        }
+    }
+    let tag_keys = crate::categories::keys(&st.pool, "post_tag")
+        .await
+        .map_err(ApiError::internal)?;
+    if !tag_keys.is_empty() {
+        if let Some(bad) = tags.iter().find(|t| !tag_keys.iter().any(|k| k == *t)) {
+            return Err(ApiError::invalid_input(format!(
+                "标签「{bad}」已不存在，刷新页面后重选"
+            )));
+        }
+    }
 
     // 审核策略在写库前定状态：off 直接发布、ai 先过模型、all 全部待审
     let s = settings::load(&st.pool, &st.cfg).await;
@@ -196,6 +229,7 @@ pub async fn create(
         forum::NewPost {
             title: &title,
             body: &content,
+            section: &section,
             tags,
             status: pre.status,
         },

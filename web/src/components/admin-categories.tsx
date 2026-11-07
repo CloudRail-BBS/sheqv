@@ -109,14 +109,21 @@ export function AdminCategories() {
     }
   }
 
+  /** 版块/百科/资源：还有内容时要先选迁移目标；标签则是直接从帖子里摘掉 */
   async function remove(key: string, label: string, count: number) {
-    if (count > 0) {
+    if (scope !== 'post_tag' && count > 0) {
       const target = items.find((c) => c.key !== key)?.key ?? '';
       setMove({ key, label, count, target });
       setMsg(null);
       return;
     }
-    if (!window.confirm(`删除分类「${label}」？目前没有内容在用它。`)) return;
+    const text =
+      scope === 'post_tag'
+        ? count > 0
+          ? `删除标签「${label}」？用它的 ${count} 条帖子会一并去掉这个标签。`
+          : `删除标签「${label}」？目前没有帖子在用它。`
+        : `删除分类「${label}」？目前没有内容在用它。`;
+    if (!window.confirm(text)) return;
     await doRemove(key, '');
   }
 
@@ -148,14 +155,20 @@ export function AdminCategories() {
     <>
       <div className="between" style={{ marginBottom: 10 }}>
         <div className="seg">
-          {(['wiki', 'resource'] as CategoryScope[]).map((s) => (
-            <button key={s} type="button" data-on={scope === s} onClick={() => switchScope(s)}>
+          {(['wiki', 'resource', 'post_section', 'post_tag'] as CategoryScope[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="seg-btn"
+              data-on={scope === s}
+              onClick={() => switchScope(s)}
+            >
               {SCOPE_LABEL[s]}
             </button>
           ))}
         </div>
         <button type="button" className="btn btn-sm btn-primary" onClick={startNew}>
-          新建分类
+          {scope === 'post_tag' ? '新建标签' : scope === 'post_section' ? '新建版块' : '新建分类'}
         </button>
       </div>
 
@@ -171,7 +184,10 @@ export function AdminCategories() {
       {draft && (
         <div className="card card-pad" style={{ marginBottom: 12 }}>
           <div className="between" style={{ marginBottom: 10 }}>
-            <b>{editing ? '编辑分类' : '新建分类'}</b>
+            <b>
+              {editing ? '编辑' : '新建'}
+              {scope === 'post_tag' ? '标签' : scope === 'post_section' ? '版块' : '分类'}
+            </b>
             <button
               type="button"
               className="btn btn-sm btn-ghost"
@@ -185,12 +201,20 @@ export function AdminCategories() {
           </div>
           <div className="cat-form">
             <label className="field">
-              <span>分类名（1–12 字）</span>
+              <span>{scope === 'post_tag' ? '标签名（1–12 字）' : '名称（1–12 字）'}</span>
               <input
                 className="input"
                 value={draft.label}
                 maxLength={12}
-                placeholder={scope === 'wiki' ? '例如：红石' : '例如：建筑'}
+                placeholder={
+                  scope === 'post_tag'
+                    ? '例如：红石'
+                    : scope === 'post_section'
+                      ? '例如：建筑'
+                      : scope === 'wiki'
+                        ? '例如：红石'
+                        : '例如：建筑'
+                }
                 onChange={(e) => setDraft({ ...draft, label: e.target.value })}
               />
             </label>
@@ -204,7 +228,10 @@ export function AdminCategories() {
               />
             </label>
             <label className="field field-wide">
-              <span>一句话说明（可空，最多 60 字，用在百科侧栏与按钮提示）</span>
+              <span>
+                一句话说明（可空，最多 60 字
+                {scope === 'post_tag' ? '，作为鼠标悬停提示' : '，用在筛选与按钮提示'}）
+              </span>
               <input
                 className="input"
                 value={draft.descr}
@@ -277,7 +304,11 @@ export function AdminCategories() {
       ) : items.length === 0 ? (
         <div className="card card-pad">
           <p className="small muted">
-            还没有分类。没有分类时前台无法提交内容，先建一个再用。
+            {scope === 'post_tag'
+              ? '还没有标签。标签是发帖时的可选项，不建也不影响发帖。'
+              : scope === 'post_section'
+                ? '还没有版块。版块是发帖时必选的分类，建议至少留一个。'
+                : '还没有分类。没有分类时前台无法提交内容，先建一个再用。'}
           </p>
         </div>
       ) : (

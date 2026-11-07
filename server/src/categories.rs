@@ -12,7 +12,7 @@ use sqlx::PgPool;
 
 use crate::ids;
 
-pub const SCOPES: [&str; 2] = ["wiki", "resource"];
+pub const SCOPES: [&str; 4] = ["wiki", "resource", "post_section", "post_tag"];
 
 pub fn is_scope(s: &str) -> bool {
     SCOPES.contains(&s)
@@ -44,20 +44,33 @@ pub async fn list(pool: &PgPool, scope: &str) -> Result<Vec<Category>, sqlx::Err
 
 /// 后台列表：带上「内容数」，删除前能看清有多少东西要搬
 pub async fn admin_list(pool: &PgPool, scope: &str) -> Result<Vec<Category>, sqlx::Error> {
-    let sql = if scope == "wiki" {
-        "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(w.id)::bigint AS count
+    let sql = match scope {
+        "wiki" => "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(w.id)::bigint AS count
            FROM content_categories c
            LEFT JOIN wiki_entries w ON w.category = c.key
           WHERE c.scope = 'wiki'
           GROUP BY c.id
-          ORDER BY c.sort, c.label"
-    } else {
-        "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(r.id)::bigint AS count
+          ORDER BY c.sort, c.label",
+        // 帖子版块：section 存 key
+        "post_section" => "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(p.id)::bigint AS count
+           FROM content_categories c
+           LEFT JOIN posts p ON p.section = c.key
+          WHERE c.scope = 'post_section'
+          GROUP BY c.id
+          ORDER BY c.sort, c.label",
+        // 帖子标签：tags 是 jsonb 数组，包含就算一条
+        "post_tag" => "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(p.id)::bigint AS count
+           FROM content_categories c
+           LEFT JOIN posts p ON p.tags @> to_jsonb(c.key)
+          WHERE c.scope = 'post_tag'
+          GROUP BY c.id
+          ORDER BY c.sort, c.label",
+        _ => "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(r.id)::bigint AS count
            FROM content_categories c
            LEFT JOIN resources r ON r.category = c.key
           WHERE c.scope = 'resource'
           GROUP BY c.id
-          ORDER BY c.sort, c.label"
+          ORDER BY c.sort, c.label",
     };
     sqlx::query_as::<_, Category>(sql).fetch_all(pool).await
 }
@@ -184,10 +197,11 @@ pub async fn update(
 }
 
 pub async fn usage(pool: &PgPool, scope: &str, key: &str) -> Result<i64, sqlx::Error> {
-    let sql = if scope == "wiki" {
-        "SELECT count(*) FROM wiki_entries WHERE category = $1"
-    } else {
-        "SELECT count(*) FROM resources WHERE category = $1"
+    let sql = match scope {
+        "wiki" => "SELECT count(*) FROM wiki_entries WHERE category = $1",
+        "post_section" => "SELECT count(*) FROM posts WHERE section = $1",
+        "post_tag" => "SELECT count(*) FROM posts WHERE tags @> to_jsonb($1::text)",
+        _ => "SELECT count(*) FROM resources WHERE category = $1",
     };
     sqlx::query_scalar::<_, i64>(sql)
         .bind(key)
@@ -224,6 +238,26 @@ pub async fn remove(
     move_to: Option<&str>,
 ) -> Result<Removed, RemoveError> {
     let used = usage(pool, scope, key).await?;
+
+    // 标签没有「迁移」的概念：删掉就是把它从所有帖子的数组里摘下来
+    if scope == "post_tag" {
+        let mut tx = pool.begin().await?;
+        sqlx::query("UPDATE posts SET tags = tags - $1 WHERE tags @> to_jsonb($1::text)")
+            .bind(key)
+            .execute(&mut *tx)
+            .await?;
+        let out = sqlx::query("DELETE FROM content_categories WHERE scope = $1 AND key = $2")
+            .bind(scope)
+            .bind(key)
+            .execute(&mut *tx)
+            .await?;
+        if out.rows_affected() == 0 {
+            return Err(RemoveError::NotFound);
+        }
+        tx.commit().await?;
+        return Ok(Removed { moved: used });
+    }
+
     let mut moved = 0;
     if used > 0 {
         let Some(target) = move_to.filter(|t| !t.is_empty()) else {
@@ -233,7 +267,13 @@ pub async fn remove(
             return Err(RemoveError::BadTarget);
         }
         let mut tx = pool.begin().await?;
-        if scope == "wiki" {
+        if scope == "post_section" {
+            sqlx::query("UPDATE posts SET section = $2 WHERE section = $1")
+                .bind(key)
+                .bind(target)
+                .execute(&mut *tx)
+                .await?;
+        } else if scope == "wiki" {
             sqlx::query("UPDATE wiki_entries SET category = $2 WHERE category = $1")
                 .bind(key)
                 .bind(target)

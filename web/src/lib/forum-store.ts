@@ -24,6 +24,8 @@ export interface PostView {
   author: string;
   authorId?: string;
   guild: string;
+  /** 版块 key；后台可维护，老数据可能为空 */
+  section: string;
   time: string;
   title?: string;
   body: string;
@@ -73,10 +75,15 @@ function adapt(p: RawPost): PostView {
   return { ...p, time: p.time ?? relTime(p.createdAt) };
 }
 
-export async function listPosts(query?: string, tab?: string): Promise<PostView[]> {
+export async function listPosts(
+  query?: string,
+  tab?: string,
+  section?: string,
+): Promise<PostView[]> {
   const params = new URLSearchParams();
   if (query?.trim()) params.set('q', query.trim());
   if (tab && tab !== 'recommend') params.set('tab', tab);
+  if (section?.trim()) params.set('section', section.trim());
   const qs = params.toString();
   const d = await apiGetOr<{ items: RawPost[] }>(`/api/v1/posts${qs ? `?${qs}` : ''}`, {
     items: [],
