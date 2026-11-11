@@ -1,0 +1,8 @@
+<resources>
+    <color name="app_bg">#F3F5F9</color>
+    <color name="app_bg_dark">#0E1116</color>
+    <color name="brand">#3E7CFF</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="text_main">#1B2230</color>
+    <color name="text_sub">#6B7280</color>
+</resources>

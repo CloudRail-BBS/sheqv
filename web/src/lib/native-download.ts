@@ -2,7 +2,7 @@
  * APK 内的下载出口。
  *
  * WebView 不会自己处理 Content-Disposition，点 `<a download>` 什么也不会发生，
- * 所以装了原生桥（Capacitor 的 FileBridge）时改走系统 DownloadManager：
+ * 所以装了原生桥（App 注入的 `Capacitor.Plugins.FileBridge` 兼容层）时改走系统 DownloadManager：
  * 文件落到「下载」目录，通知栏有进度，会话 Cookie 由原生侧从 WebView 取。
  *
  * 浏览器里没有这个桥，返回 false，调用方继续用原来的 a 标签。

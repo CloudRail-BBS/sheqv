@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">云轨社区</string>
+    <string name="offline_title">网络不太顺</string>
+    <string name="offline_desc">没能连上云轨社区。检查一下网络，或者稍后再试。</string>
+    <string name="offline_retry">重新加载</string>
+    <string name="offline_browser">用浏览器打开</string>
+    <string name="exit_hint">再按一次返回退出</string>
+    <string name="dl_started">已开始下载</string>
+    <string name="dl_failed">下载失败，请稍后再试</string>
+    <string name="saved_image">已保存到相册</string>
+    <string name="save_failed">保存失败</string>
+    <string name="save_image">保存图片</string>
+    <string name="copy_link">复制链接</string>
+    <string name="open_link">打开链接</string>
+    <string name="cancel">取消</string>
+    <string name="copied">链接已复制</string>
+    <string name="chooser_title">选择文件</string>
+</resources>

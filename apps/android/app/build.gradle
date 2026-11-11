@@ -1,0 +1,77 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore/keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// 默认打线上站点；临时联调用 -PappUrl=http://192.168.x.x:8900
+def appUrl = (project.findProperty('appUrl') ?: 'https://crbbsx.com').toString()
+
+android {
+    namespace "com.cloudrail.community"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.cloudrail.community"
+        minSdk 26
+        targetSdk 34
+        versionCode 4
+        versionName "0.2.0"
+        buildConfigField "String", "APP_URL", "\"${appUrl}\""
+        manifestPlaceholders = [usesCleartext: "false"]
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file("keystore/${keystoreProperties['storeFile']}")
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+            // 本地联调可能指向 http://内网IP:8900
+            manifestPlaceholders = [usesCleartext: "true"]
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.activity:activity-ktx:1.8.0'
+    implementation 'androidx.browser:browser:1.8.0'
+    implementation 'androidx.webkit:webkit:1.9.0'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+}
