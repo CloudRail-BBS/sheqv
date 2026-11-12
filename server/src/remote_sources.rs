@@ -12,6 +12,25 @@
 use serde::Serialize;
 use serde_json::Value;
 
+/// Modrinth 官方 API 与国内镜像（MCIM）。镜像就是「换域名」，路径与返回完全一致：
+/// `api.modrinth.com` → `mod.mcimirror.top/modrinth`，`cdn.modrinth.com` → `mod.mcimirror.top`。
+const MODRINTH_API: &str = "https://api.modrinth.com";
+const MCIM_API: &str = "https://mod.mcimirror.top/modrinth";
+const MODRINTH_CDN: &str = "https://cdn.modrinth.com";
+const MCIM_CDN: &str = "https://mod.mcimirror.top";
+
+fn modrinth_base(mirror: bool) -> &'static str {
+    if mirror { MCIM_API } else { MODRINTH_API }
+}
+
+/// 开了镜像就把图床地址也换掉，否则国内浏览器还得再连一次官方 CDN
+pub fn mirror_icon(url: &str, mirror: bool) -> String {
+    if mirror && url.starts_with(MODRINTH_CDN) {
+        return url.replacen(MODRINTH_CDN, MCIM_CDN, 1);
+    }
+    url.to_string()
+}
+
 /// 支持在线拉取的站点
 pub const ONLINE_SOURCES: [&str; 2] = ["modrinth", "curseforge"];
 
@@ -104,14 +123,22 @@ pub async fn search_modrinth(
     kind: Option<&str>,
     limit: i64,
     offset: i64,
+    mirror: bool,
 ) -> Result<Vec<RemoteItem>, String> {
-    // Modrinth 的分页是 offset，不是页码；单次最多 100 条、offset+limit 上限 1000
-    let url = format!(
-        "https://api.modrinth.com/v2/search?query={}&limit={}&index=downloads&offset={}",
+    // Modrinth 的分页是 offset，不是页码；单次最多 100 条、offset+limit 上限 1000。
+    // 类型必须用 facets 让服务端过滤：只按「下载量」取前 N 条再本地筛，
+    // 整合包 / 光影这些会被模组挤掉，永远是空列表。
+    let mut url = format!(
+        "{}/v2/search?query={}&limit={}&index=downloads&offset={}",
+        modrinth_base(mirror),
         urlencode(q),
         limit.clamp(1, 30),
         offset.clamp(0, 900)
     );
+    if let Some(want) = kind.map(str::trim).filter(|v| !v.is_empty()) {
+        let facets = format!("[[\"project_type:{}\"]]", singular_kind(want));
+        url.push_str(&format!("&facets={}", urlencode(&facets)));
+    }
     let resp = http
         .get(&url)
         .header("User-Agent", "CloudRail-Community/1.0 (resource library)")
@@ -144,7 +171,7 @@ pub async fn search_modrinth(
                 title: str_of(h, "title"),
                 summary: str_of(h, "description"),
                 author: str_of(h, "author"),
-                icon: str_of(h, "icon_url"),
+                icon: mirror_icon(&str_of(h, "icon_url"), mirror),
                 downloads: h.get("downloads").and_then(|v| v.as_i64()).unwrap_or(0),
                 url: format!("https://modrinth.com/{}/{slug}", singular_kind(&item_kind)),
                 kind: item_kind,
@@ -255,9 +282,10 @@ pub async fn fetch_detail(
     source_id: &str,
     project_id: i64,
     api_key: &str,
+    mirror: bool,
 ) -> Result<RemoteDetail, String> {
     match source {
-        "modrinth" => modrinth_detail(http, source_id).await,
+        "modrinth" => modrinth_detail(http, source_id, mirror).await,
         "curseforge" => {
             if project_id <= 0 {
                 return Err("缺少 CurseForge 项目编号".into());
@@ -268,8 +296,12 @@ pub async fn fetch_detail(
     }
 }
 
-async fn modrinth_detail(http: &reqwest::Client, slug: &str) -> Result<RemoteDetail, String> {
-    let url = format!("https://api.modrinth.com/v2/project/{slug}");
+async fn modrinth_detail(
+    http: &reqwest::Client,
+    slug: &str,
+    mirror: bool,
+) -> Result<RemoteDetail, String> {
+    let url = format!("{}/v2/project/{slug}", modrinth_base(mirror));
     let resp = http
         .get(&url)
         .header("User-Agent", "CloudRail-Community/1.0 (resource library)")
@@ -312,7 +344,7 @@ async fn modrinth_detail(http: &reqwest::Client, slug: &str) -> Result<RemoteDet
         game_versions: clamp_chars(&join_list_rev(d.get("game_versions"), 12), 120),
         license: clamp_chars(&license, 24),
         tags: tag_list(d.get("categories"), 6, 12),
-        icon: str_of(&d, "icon_url"),
+        icon: mirror_icon(&str_of(&d, "icon_url"), mirror),
     })
 }
 

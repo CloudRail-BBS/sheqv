@@ -34,11 +34,20 @@ const sourceName = (k: string) => SOURCE_NAME[k] ?? k;
 const KIND_LABEL: Record<string, string> = {
   mods: '模组',
   modpacks: '整合包',
-  resourcepacks: '资源包',
+  resourcepacks: '材质',
   shaderpacks: '光影',
   datapacks: '数据包',
 };
 const kindLabel = (k: string) => KIND_LABEL[k] ?? '模组';
+
+/** 本站分类 → Modrinth 的项目类型：分类选了哪个板块，就只拉那一类 */
+const CATEGORY_KIND: Record<string, string> = {
+  模组: 'mods',
+  整合包: 'modpacks',
+  材质: 'resourcepacks',
+  光影: 'shaderpacks',
+  数据包: 'datapacks',
+};
 
 // 下载量动辄上亿，按「亿 / 万」换挡
 const fmt = (n: number) =>
@@ -73,8 +82,10 @@ export function RemoteCells({
   /** 追加要拿「最新的完整列表」，回调里的 state 是旧的 */
   const itemsRef = useRef<RemoteItem[]>([]);
 
-  // 外部模组只在「模组」分类（或不选分类）下出现，和铁锈战争那边规则一致
-  const enabled = (!game || game === 'minecraft') && (!category || category === '模组');
+  // 分类对应 Modrinth 的项目类型：模组 / 整合包 / 材质 / 光影 / 数据包各自只拉自己那一类；
+  // 不选分类时全类型混排。别的分类（地图、存档、工具…）不混入外部条目。
+  const categoryKind = category ? CATEGORY_KIND[category] : undefined;
+  const enabled = (!game || game === 'minecraft') && (!category || Boolean(categoryKind));
 
   const load = useCallback(async (keyword: string, nextOffset: number, append: boolean) => {
     const ticket = ++seq.current;
@@ -84,10 +95,10 @@ export function RemoteCells({
     const pageSize = keyword.trim() ? 12 : 6;
     const params = new URLSearchParams({
       source: 'modrinth',
-      kind: 'mods',
       limit: String(pageSize),
       offset: String(nextOffset),
     });
+    if (categoryKind) params.set('kind', categoryKind);
     if (keyword.trim()) params.set('q', keyword.trim());
     const res = await fetch(`/api/v1/resources/discover?${params}`).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
@@ -116,7 +127,7 @@ export function RemoteCells({
     }
     setOffset(nextOffset);
     setHasMore(fresh.length > 0 && next.length >= pageSize);
-  }, []);
+  }, [categoryKind]);
 
   useEffect(() => {
     if (!enabled) {

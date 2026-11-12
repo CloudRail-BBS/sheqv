@@ -47,6 +47,8 @@ export interface SiteSettings {
   /** 外部数据源：CurseForge 的 key、RELAY-CN 地图站的 Bearer token */
   curseforgeKey: string;
   rwMapsToken: string;
+  /** 中国大陆镜像（MCIM）：Modrinth / CurseForge 走 mod.mcimirror.top */
+  mcimMirror: boolean;
   geetestId: string;
   geetestKey: string;
   afdianUserId: string;
@@ -137,6 +139,7 @@ const DEFAULTS: SiteSettings = {
   publicBaseUrl: '',
   curseforgeKey: '',
   rwMapsToken: '',
+  mcimMirror: false,
   geetestId: '',
   geetestKey: '',
   afdianUserId: '',

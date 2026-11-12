@@ -143,6 +143,7 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         publicBaseUrl: form.publicBaseUrl,
         curseforgeKey: form.curseforgeKey,
         rwMapsToken: form.rwMapsToken,
+        mcimMirror: form.mcimMirror,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
         afdianUserId: form.afdianUserId,
@@ -752,6 +753,19 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         <p className="small muted" style={{ marginTop: 8, lineHeight: 1.7 }}>
           地图站在请求头里校验 <code>Authorization: Bearer &lt;token&gt;</code>；
           rtsbox 的模组接口不需要密钥，但必须带关键词才会返回数据。
+        </p>
+
+        <label className="check" style={{ marginTop: 10 }}>
+          <input
+            type="checkbox"
+            checked={form.mcimMirror}
+            onChange={(e) => setForm({ ...form, mcimMirror: e.target.checked })}
+          />
+          <span>中国大陆加速（MCIM 镜像）</span>
+        </label>
+        <p className="small muted" style={{ marginTop: 4, lineHeight: 1.7 }}>
+          开启后 Modrinth 的接口与图床改走 <code>mod.mcimirror.top</code>（路径与返回完全一致，
+          适合国内服务器）；封面链接也会换成镜像地址。
         </p>
       </div>
 

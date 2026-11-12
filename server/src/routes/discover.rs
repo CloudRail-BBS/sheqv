@@ -51,8 +51,10 @@ pub async fn discover(
         .unwrap_or(0)
         .clamp(0, 900);
 
+    let mirror = settings::flag(&settings::load(&st.pool, &st.cfg).await, "mcimMirror", false);
+
     let items = if source == "modrinth" {
-        remote_sources::search_modrinth(&st.http, keyword, kind, limit, offset).await
+        remote_sources::search_modrinth(&st.http, keyword, kind, limit, offset, mirror).await
     } else {
         let map = settings::load(&st.pool, &st.cfg).await;
         let key = settings::text(&map, "curseforgeKey");
@@ -139,12 +141,14 @@ pub async fn import(
     // 拉进来的条目才和站内自己发布的一样有内容。拉不到就用搜索那行简介兜底，不让导入失败。
     let cfg_map = settings::load(&st.pool, &st.cfg).await;
     let cf_key = settings::text(&cfg_map, "curseforgeKey");
+    let mirror = settings::flag(&cfg_map, "mcimMirror", false);
     let detail = remote_sources::fetch_detail(
         &st.http,
         &source,
         &item.source_id,
         item.project_id,
         &cf_key,
+        mirror,
     )
     .await
     .unwrap_or_default();
