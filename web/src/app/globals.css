@@ -2779,15 +2779,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .res-cells-msg { grid-column: 1 / -1; margin: 0; color: var(--danger); }
 .res-cells-note { grid-column: 1 / -1; margin: 0; }
 /* 外部条目的「加载更多」：横跨整行居中，不参与卡片列宽 */
-/* 外部条目的说明条：横跨整行、蓝底，别用 12px 灰字糊在末尾 */
-.res-cells-hint {
-  grid-column: 1 / -1; margin: 0;
+/* 搜索框下面的说明条：蓝底 + 图标，横跨内容区 */
+.res-hint-bar {
+  margin: 8px 0 0;
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; border-radius: 10px;
+  padding: 9px 12px; border-radius: 10px;
   border: 1px solid var(--blue-line); background: var(--blue-soft);
   color: var(--blue); font-size: 12.5px; line-height: 1.6;
 }
-.res-cells-hint svg { flex: none; }
+.res-hint-bar svg { flex: none; }
 .res-cells-more { grid-column: 1 / -1; display: flex; justify-content: center; padding: 4px 0 2px; }
 .res-more-btn { min-width: 148px; height: 34px; }
 .res-source-badge:hover {

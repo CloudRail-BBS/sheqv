@@ -124,6 +124,25 @@ export default async function ResourcesPage({
           </div>
         </div>
 
+        {/* rtsbox 的模组接口必须带关键词，没搜的时候就在搜索框下面提醒一句 */}
+        {sp.game === 'rusted_warfare' && !sp.q && (!sp.category || sp.category === '模组') && (
+          <p className="res-hint-bar">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path
+                d="m16 16 4 4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span>
+              输入关键词（比如「模组」「战役」），还能搜到 rtsbox 上的铁锈战争模组
+            </span>
+          </p>
+        )}
+
         {/* 分类是资源库的主维度，放第一行；游戏只是它的二级筛选 */}
         <div className="row wrap" style={{ gap: 6 }}>
           <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
