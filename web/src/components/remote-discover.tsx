@@ -51,25 +51,27 @@ const fmt = (n: number) =>
 export function RemoteCells({
   q,
   game,
-  filtered,
+  category,
 }: {
   /** 资源库搜索词：有词就按词搜，没词就取热门 */
   q?: string;
   /** 当前游戏筛选 */
   game?: string;
-  /** 分类筛选生效时为 true —— 此时不混入外部条目 */
-  filtered?: boolean;
+  /** 当前分类筛选：只有「模组」板块收外部模组，别的分类不混进来 */
+  category?: string;
 }) {
   const router = useRouter();
   const [items, setItems] = useState<RemoteItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const enabled = (!game || game === 'minecraft') && !filtered;
+  // 外部模组只在「模组」分类（或不选分类）下出现，和铁锈战争那边规则一致
+  const enabled = (!game || game === 'minecraft') && (!category || category === '模组');
 
   const load = useCallback(async (keyword: string) => {
     const params = new URLSearchParams({
       source: 'modrinth',
+      kind: 'mods',
       limit: keyword.trim() ? '12' : '6',
     });
     if (keyword.trim()) params.set('q', keyword.trim());

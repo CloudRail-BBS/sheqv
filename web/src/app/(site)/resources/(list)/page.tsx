@@ -198,7 +198,7 @@ export default async function ResourcesPage({
             铁锈战争走 rtsbox 模组 + RELAY-CN 地图站（地图是另一套卡型） */}
         {items.length === 0 && (
           <p className="small muted" style={{ margin: '2px 2px 0' }}>
-            本站资源里还没有匹配的，下面是 Modrinth 上找到的条目 —— 点卡片即可收录进资源库。
+            以下是来自外站的资源，点卡片即可收录进资源库。
           </p>
         )}
 
@@ -209,7 +209,7 @@ export default async function ResourcesPage({
           {sp.game === 'rusted_warfare' ? (
             <RwCells q={sp.q} category={sp.category} />
           ) : (
-            <RemoteCells q={sp.q} game={sp.game} filtered={Boolean(sp.category)} />
+            <RemoteCells q={sp.q} game={sp.game} category={sp.category} />
           )}
         </div>
       </div>

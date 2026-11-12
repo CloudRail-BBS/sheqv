@@ -2778,6 +2778,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* 收录失败的提示横跨整个网格 */
 .res-cells-msg { grid-column: 1 / -1; margin: 0; color: var(--danger); }
 .res-cells-note { grid-column: 1 / -1; margin: 0; }
+/* 外部条目的「加载更多」：横跨整行居中，不参与卡片列宽 */
+.res-cells-more { grid-column: 1 / -1; display: flex; justify-content: center; padding: 4px 0 2px; }
+.res-more-btn { min-width: 148px; height: 34px; }
 .res-source-badge:hover {
   color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft);
 }

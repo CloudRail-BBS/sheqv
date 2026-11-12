@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RwMapCard, type RwMapItem } from './rw-map-card';
 import { CoverImage } from './cover-image';
@@ -8,10 +8,12 @@ import { CoverImage } from './cover-image';
 /**
  * 铁锈战争的外部条目：rtsbox 的模组 + RELAY-CN 地图站的地图。
  *
- * 和 Minecraft 那套一样，卡片直接落进资源库的同一个 `.res-grid`，不单独开板块：
- * - 地图用 `RwMapCard`（缩略图 + 赞踩 + 总下载 + 属性标签），「下载地图」走本站转发；
- * - 模组复用普通资源卡，点卡片收录进资源库（rtsbox 的接口必须带关键词，
- *   没关键词时这一栏不出现，只留地图）。
+ * 卡片直接落进资源库的同一个 `.res-grid`，不单独开板块：
+ * - 地图用 `RwMapCard`（缩略图 + 赞踩 + 总下载 + 属性标签），只在「地图」分类下出现；
+ * - 模组复用普通资源卡，只在「模组」分类（或不选分类）下出现，点卡片收录进资源库。
+ *
+ * 分页：底部的「加载更多」按 rtsbox 的 page 往后翻，地图没有关键词时是随机批次，
+ * 靠 id 去重；某一页没带回新条目就收掉按钮。
  */
 
 interface RwMod {
@@ -22,35 +24,75 @@ interface RwMod {
   sourceId: string;
 }
 
+const PAGE_LIMIT = 8;
+/** 最多翻这么多页，避免随机批次一直点下去 */
+const MAX_PAGES = 5;
+
 export function RwCells({ q, category }: { q?: string; category?: string }) {
   const router = useRouter();
   const [mods, setMods] = useState<RwMod[]>([]);
   const [maps, setMaps] = useState<RwMapItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  /** 首次拉取时铺骨架卡，别让这一格空着 */
+  /** 首次拉取铺骨架，别让这一格空着 */
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  /** 用 ref 记「当前是哪次请求」，避免快速切关键词时旧响应盖掉新结果 */
+  const seq = useRef(0);
+  /** 追加时要拿「最新的完整列表」，state 在回调里是旧的，所以另存一份 ref */
+  const modsRef = useRef<RwMod[]>([]);
+  const mapsRef = useRef<RwMapItem[]>([]);
 
-  const load = useCallback(async (keyword: string) => {
-    setLoading(true);
-    const params = new URLSearchParams({ limit: '8' });
+  const load = useCallback(async (keyword: string, nextPage: number, append: boolean) => {
+    const ticket = ++seq.current;
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const params = new URLSearchParams({ limit: String(PAGE_LIMIT), page: String(nextPage) });
     if (keyword.trim()) params.set('q', keyword.trim());
     const res = await fetch(`/api/v1/rw/discover?${params}`).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
       | { ok?: boolean; mods?: RwMod[]; maps?: RwMapItem[] }
       | null;
-    setLoading(false);
-    if (!data?.ok) {
-      setMods([]);
-      setMaps([]);
+    if (ticket !== seq.current) return; // 已经有更新的请求了
+
+    const nextMods = data?.ok ? (data.mods ?? []) : [];
+    const nextMaps = data?.ok ? (data.maps ?? []) : [];
+
+    if (!append) {
+      modsRef.current = nextMods;
+      mapsRef.current = nextMaps;
+      setLoading(false);
+      setMods(nextMods);
+      setMaps(nextMaps);
+      setPage(nextPage);
+      setHasMore(nextPage < MAX_PAGES && (nextMods.length > 0 || nextMaps.length > 0));
       return;
     }
-    setMods(data.mods ?? []);
-    setMaps(data.maps ?? []);
+
+    setLoadingMore(false);
+    // 追加：按 id 去重（随机批次会重复），一条新条目都没有就说明没有下一页了
+    const seenMods = new Set(modsRef.current.map((m) => m.sourceId));
+    const freshMods = nextMods.filter((m) => !seenMods.has(m.sourceId));
+    const seenMaps = new Set(mapsRef.current.map((m) => m.id));
+    const freshMaps = nextMaps.filter((m) => !seenMaps.has(m.id));
+
+    if (freshMods.length > 0) {
+      modsRef.current = [...modsRef.current, ...freshMods];
+      setMods(modsRef.current);
+    }
+    if (freshMaps.length > 0) {
+      mapsRef.current = [...mapsRef.current, ...freshMaps];
+      setMaps(mapsRef.current);
+    }
+    setPage(nextPage);
+    setHasMore(freshMods.length + freshMaps.length > 0 && nextPage < MAX_PAGES);
   }, []);
 
   useEffect(() => {
-    void load(q ?? '');
+    void load(q ?? '', 1, false);
   }, [q, load]);
 
   async function collect(mod: RwMod) {
@@ -69,6 +111,7 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
         downloads: 0,
         url: mod.url,
         sourceUrl: mod.sourceUrl,
+        // 落库时按「模组」分类：远程源的分类由后台那张表决定，这里只决定 kind
         kind: 'mods',
         projectId: 0,
       }),
@@ -85,11 +128,16 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
     router.refresh();
   }
 
-  // 骨架：三张地图卡 + 两张模组卡的量，形状和真卡一致，出来时不跳版
+  // 「地图」板块只要地图，「模组」板块只要模组，不选分类时两样都露
+  const showMaps = !category || category === '地图';
+  const showMods = !category || category === '模组';
+  const visibleMaps = showMaps ? maps : [];
+  const visibleMods = showMods ? mods : [];
+
   if (loading && mods.length === 0 && maps.length === 0) {
     return (
       <>
-        {[0, 1, 2].map((i) => (
+        {showMaps && [0, 1, 2].map((i) => (
           <div key={`sk-map-${i}`} className="card rwmap rwmap-skeleton" aria-hidden="true">
             <span className="rwmap-thumb sk" />
             <div className="rwmap-body">
@@ -100,7 +148,7 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
             </div>
           </div>
         ))}
-        {category !== '地图' && [0, 1].map((i) => (
+        {showMods && [0, 1].map((i) => (
           <div key={`sk-mod-${i}`} className="card res-card rwmap-skeleton" aria-hidden="true">
             <span className="res-cover sk" />
             <span className="res-body">
@@ -111,17 +159,15 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
           </div>
         ))}
         <p className="small muted res-cells-note">
-          {category === '地图' ? '正在从地图站取数据…' : '正在从 rtsbox 与地图站取数据…'}
+          {showMaps && !showMods
+            ? '正在从地图站取数据…'
+            : showMods && !showMaps
+              ? '正在从 rtsbox 取数据…'
+              : '正在从 rtsbox 与地图站取数据…'}
         </p>
       </>
     );
   }
-
-  // 地图只在「地图」板块出现（不选分类时也露出来）；模组反过来，地图板块里不混模组
-  const showMaps = !category || category === '地图';
-  const showMods = !category || category !== '地图';
-  const visibleMaps = showMaps ? maps : [];
-  const visibleMods = showMods ? mods : [];
 
   if (visibleMaps.length === 0 && visibleMods.length === 0) {
     return msg ? <p className="small res-cells-msg">{msg}</p> : null;
@@ -158,6 +204,7 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
             <span className="res-title">{mod.title}</span>
             <span className="res-chips">
               <span className="res-chip res-chip-src">rtsbox</span>
+              <span className="res-chip">模组</span>
             </span>
             <span className="res-foot">
               <span className="res-foot-ver">
@@ -170,10 +217,23 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
       ))}
 
       {/* rtsbox 的接口必须有关键词才返回数据，没搜的时候提醒一句 */}
-      {visibleMods.length === 0 && visibleMaps.length > 0 && !(q ?? '').trim() && showMods && (
+      {showMods && visibleMods.length === 0 && visibleMaps.length > 0 && !(q ?? '').trim() && (
         <p className="small muted res-cells-note">
           输入关键词（比如「模组」「战役」）还能搜到 rtsbox 上的铁锈战争模组
         </p>
+      )}
+
+      {hasMore && (
+        <div className="res-cells-more">
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost res-more-btn"
+            disabled={loadingMore}
+            onClick={() => void load(q ?? '', page + 1, true)}
+          >
+            {loadingMore ? '加载中…' : '加载更多'}
+          </button>
+        </div>
       )}
 
       {msg && <p className="small res-cells-msg">{msg}</p>}
