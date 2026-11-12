@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { organizationJsonLd } from '@/lib/seo';
+import { listAnnouncements } from '@/lib/announcement-store';
+import { AnnouncementBar } from '@/components/announcement-bar';
 import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ScrollReset } from '@/components/scroll-reset';
@@ -35,10 +37,12 @@ function parseFooterLinks(raw: string): { label: string; href: string }[] {
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   // 设置与顶栏数据并行；站内信 + 积分合并成一个接口，登录用户每页少一跳
-  const [settings, chrome, communitySigned] = await Promise.all([
+  const [settings, chrome, communitySigned, announcements] = await Promise.all([
     getSettings(),
     getChrome(user),
     user ? isCommunitySigned() : Promise.resolve(false),
+    // 全站公告条：取最新几条，客户端按本地已读决定展示哪一条
+    listAnnouncements({ publishedOnly: true, limit: 3 }),
   ]);
   const customLinks = parseFooterLinks(settings.footerLinks);
   const notes = flatten({ comments: chrome.items, pending: [], unread: chrome.unread });
@@ -145,6 +149,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             </div>
           </div>
         </header>
+
+        <AnnouncementBar
+          items={announcements.map((a) => ({ id: a.id, title: a.title, kind: a.kind }))}
+        />
 
         <div className="app">
           <Sidebar items={settings.sidebarItems} dmUnread={chrome.dmUnread} />

@@ -145,6 +145,35 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   display: flex; align-items: center; gap: 18px; height: 56px;
   max-width: var(--shell); margin: 0 auto; padding: 0 18px;
 }
+/* 全站公告条：顶栏之下一行，任何页面都能看到最新公告；点 × 记在本地 */
+.ann-bar { border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.ann-bar-in {
+  display: flex; align-items: center; gap: 8px;
+  max-width: var(--shell); margin: 0 auto; padding: 0 18px;
+  height: 38px; font-size: 12.5px;
+}
+.ann-bar-ico { display: inline-flex; flex: none; color: var(--blue); }
+.ann-bar-kind {
+  flex: none; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-line);
+}
+.ann-bar-title {
+  min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  color: var(--text); text-decoration: none; line-height: 1.4;
+}
+.ann-bar-title:hover { color: var(--blue); }
+.ann-bar-more { flex: none; margin-left: auto; color: var(--muted); text-decoration: none; font-size: 12px; }
+.ann-bar-more:hover { color: var(--text-2); }
+.ann-bar-close {
+  flex: none; width: 24px; height: 24px; display: grid; place-items: center;
+  border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.ann-bar-close:hover { background: var(--panel); color: var(--text); }
+@media (max-width: 560px) {
+  .ann-bar-in { height: 36px; gap: 6px; padding: 0 12px; font-size: 12px; }
+  .ann-bar-more { display: none; }
+}
+
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; letter-spacing: -0.02em; font-size: 15px; flex: none; }
 .brand-mark {
   width: 26px; height: 26px; border-radius: 8px;
