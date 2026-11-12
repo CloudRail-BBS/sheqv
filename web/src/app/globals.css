@@ -2050,6 +2050,43 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 
 .srv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* 大厅统计：一条胶囊说清「几台在线 / 几个人 / 共收录多少」 */
+.srv-stats {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 11px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums;
+}
+.srv-stats b { color: var(--text); font-weight: 600; }
+.srv-stats .dot { width: 6px; height: 6px; border-radius: 50%; }
+.srv-stats .dot[data-state="online"] { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.srv-stats .dot[data-state="offline"] { background: var(--muted); opacity: 0.6; }
+.srv-stats-sep { color: var(--text-3); }
+
+/* 新服速递：一条可横滑的小条，点一下直接滚到对应卡片 */
+.srv-new-row { gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
+.srv-new-label { flex: none; font-size: 11.5px; color: var(--muted); }
+.srv-new { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.srv-new::-webkit-scrollbar { display: none; }
+.srv-new-item {
+  flex: none; display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 10px 0 6px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel);
+  color: var(--text-2); font-size: 12px; text-decoration: none; max-width: 240px;
+}
+.srv-new-item:hover { border-color: var(--hover-bd); color: var(--text); }
+.srv-new-ava {
+  width: 20px; height: 20px; border-radius: 6px; flex: none;
+  display: grid; place-items: center;
+  background: var(--avatar-bg); color: var(--avatar-ink); font-size: 10px; font-weight: 700;
+}
+.srv-new-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srv-new-date { flex: none; font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.rail-item .rail-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) {
+  .srv-new-row { flex-wrap: wrap; }
+  .srv-new-label { width: 100%; }
+}
 .srv-card, .room-card {
   padding: 14px 15px; display: flex; flex-direction: column; gap: 9px;
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;

@@ -51,6 +51,16 @@ export default async function ServersPage({
   const onlinePlayers = mc
     .filter((s) => s.probeState === 'online')
     .reduce((sum, s) => sum + s.playersOnline, 0);
+  // 大厅先解决「现在能进哪台」：在线优先 → 人多优先 → 新提交优先
+  const ranked = [...mc].sort((a, b) => {
+    const on = Number(b.probeState === 'online') - Number(a.probeState === 'online');
+    if (on !== 0) return on;
+    if (b.playersOnline !== a.playersOnline) return b.playersOnline - a.playersOnline;
+    return b.createdAt - a.createdAt;
+  });
+  const newest = [...mc].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
+  const hot = ranked.filter((s) => s.probeState === 'online' && s.playersOnline > 0).slice(0, 3);
+  const day = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
   return (
     <div className="cols">
@@ -65,10 +75,14 @@ export default async function ServersPage({
           <div className="row wrap" style={{ gap: 6, alignItems: 'center' }}>
             <ServerUpload loggedIn={Boolean(user)} defaultKind={active} />
             {active === 'minecraft' ? (
-              <>
-                <span className="badge badge-live">{onlineCount} 台在线</span>
-                <span className="badge">{onlinePlayers} 人在线</span>
-              </>
+              <span className="srv-stats" title={`共收录 ${mc.length} 个服务器`}>
+                <i className="dot" data-state={onlineCount > 0 ? 'online' : 'offline'} />
+                <b className="mono">{onlineCount}</b> 台在线
+                <span className="srv-stats-sep">·</span>
+                <b className="mono">{onlinePlayers}</b> 人在线
+                <span className="srv-stats-sep">·</span>
+                共 {mc.length} 个
+              </span>
             ) : (
               <>
                 <span className="badge badge-live">{relay?.totalRooms ?? 0} 个房间</span>
@@ -93,6 +107,21 @@ export default async function ServersPage({
           <MySubmissions items={mine.filter((s) => s.kind === active)} />
         )}
 
+        {active === 'minecraft' && newest.length > 0 && (
+          <div className="row srv-new-row">
+            <span className="srv-new-label">新服速递</span>
+            <div className="srv-new">
+              {newest.map((s) => (
+                <a key={s.id} href={`#srv-${s.id}`} className="srv-new-item" title={s.name}>
+                  <span className="srv-new-ava">{s.name.slice(0, 1)}</span>
+                  <span className="srv-new-name">{s.name}</span>
+                  <span className="srv-new-date">{day(s.createdAt)}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {active === 'minecraft' ? (
           mc.length === 0 ? (
             <EmptyState
@@ -102,7 +131,7 @@ export default async function ServersPage({
             />
           ) : (
             <div className="srv-grid">
-              {mc.map((item) => (
+              {ranked.map((item) => (
                 <ServerCard key={item.id} item={item} />
               ))}
             </div>
@@ -113,6 +142,21 @@ export default async function ServersPage({
       </div>
 
       <aside className="rail">
+        {active === 'minecraft' && hot.length > 0 && (
+          <div className="card rail-card">
+            <div className="rail-title">人气服务器</div>
+            <div className="rail-list">
+              {hot.map((s, i) => (
+                <a key={s.id} href={`#srv-${s.id}`} className="rail-item">
+                  <span className="idx">{i + 1}</span>
+                  <span className="rail-name">{s.name}</span>
+                  <span className="mono small muted">{s.playersOnline} 人</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         <FoldCard title="大厅说明">
           <dl className="kv">
             <dt>审核</dt>

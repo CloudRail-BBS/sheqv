@@ -29,7 +29,7 @@ export function ServerCard({ item }: { item: GameServer }) {
   }
 
   return (
-    <article className="card srv-card">
+    <article className="card srv-card" id={`srv-${item.id}`}>
       <div className="srv-head">
         <span className="srv-ava" data-online={online}>
           {item.name.slice(0, 1)}
