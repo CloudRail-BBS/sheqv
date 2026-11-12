@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CoverImage } from './cover-image';
 
@@ -64,26 +64,58 @@ export function RemoteCells({
   const [items, setItems] = useState<RemoteItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  /** 快速切关键词时，旧响应不能盖掉新结果 */
+  const seq = useRef(0);
+  /** 追加要拿「最新的完整列表」，回调里的 state 是旧的 */
+  const itemsRef = useRef<RemoteItem[]>([]);
 
   // 外部模组只在「模组」分类（或不选分类）下出现，和铁锈战争那边规则一致
   const enabled = (!game || game === 'minecraft') && (!category || category === '模组');
 
-  const load = useCallback(async (keyword: string) => {
+  const load = useCallback(async (keyword: string, nextOffset: number, append: boolean) => {
+    const ticket = ++seq.current;
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const pageSize = keyword.trim() ? 12 : 6;
     const params = new URLSearchParams({
       source: 'modrinth',
       kind: 'mods',
-      limit: keyword.trim() ? '12' : '6',
+      limit: String(pageSize),
+      offset: String(nextOffset),
     });
     if (keyword.trim()) params.set('q', keyword.trim());
     const res = await fetch(`/api/v1/resources/discover?${params}`).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
       | { ok?: boolean; items?: RemoteItem[] }
       | null;
-    if (!data?.ok) {
-      setItems([]);
+    if (ticket !== seq.current) return; // 已经有更新的请求了
+
+    const next = data?.ok ? (data.items ?? []).filter((i) => i.source === 'modrinth') : [];
+
+    if (!append) {
+      itemsRef.current = next;
+      setLoading(false);
+      setItems(next);
+      setOffset(nextOffset);
+      // 返回条数不足一页，说明后面没有了
+      setHasMore(next.length >= pageSize && nextOffset + pageSize < 900);
       return;
     }
-    setItems((data.items ?? []).filter((i) => i.source === 'modrinth'));
+
+    setLoadingMore(false);
+    const seen = new Set(itemsRef.current.map((i) => `${i.source}-${i.sourceId}`));
+    const fresh = next.filter((i) => !seen.has(`${i.source}-${i.sourceId}`));
+    if (fresh.length > 0) {
+      itemsRef.current = [...itemsRef.current, ...fresh];
+      setItems(itemsRef.current);
+    }
+    setOffset(nextOffset);
+    setHasMore(fresh.length > 0 && next.length >= pageSize);
   }, []);
 
   useEffect(() => {
@@ -91,7 +123,7 @@ export function RemoteCells({
       setItems([]);
       return;
     }
-    void load(q ?? '');
+    void load(q ?? '', 0, false);
   }, [enabled, q, load]);
 
   async function collect(item: RemoteItem) {
@@ -115,6 +147,25 @@ export function RemoteCells({
   }
 
   if (!enabled) return null;
+
+  // 首屏骨架：两张卡的量，形状和真卡一致
+  if (loading && items.length === 0) {
+    return (
+      <>
+        {[0, 1].map((i) => (
+          <div key={`sk-src-${i}`} className="card res-card rwmap-skeleton" aria-hidden="true">
+            <span className="res-cover sk" />
+            <span className="res-body">
+              <span className="sk sk-line" style={{ width: '70%' }} />
+              <span className="sk sk-line" style={{ width: '54%' }} />
+              <span className="sk sk-line sk-line--short" style={{ width: '32%' }} />
+            </span>
+          </div>
+        ))}
+        <p className="small muted res-cells-note">正在从 Modrinth 取数据…</p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -160,6 +211,21 @@ export function RemoteCells({
           </span>
         </button>
       ))}
+      {hasMore && (
+        <div className="res-cells-more">
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost res-more-btn"
+            disabled={loadingMore}
+            onClick={() =>
+              void load(q ?? '', offset + ((q ?? '').trim() ? 12 : 6), true)
+            }
+          >
+            {loadingMore ? '加载中…' : '加载更多'}
+          </button>
+        </div>
+      )}
+
       {msg && <p className="small res-cells-msg">{msg}</p>}
     </>
   );

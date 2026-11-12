@@ -103,11 +103,14 @@ pub async fn search_modrinth(
     q: &str,
     kind: Option<&str>,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<RemoteItem>, String> {
+    // Modrinth 的分页是 offset，不是页码；单次最多 100 条、offset+limit 上限 1000
     let url = format!(
-        "https://api.modrinth.com/v2/search?query={}&limit={}&index=downloads",
+        "https://api.modrinth.com/v2/search?query={}&limit={}&index=downloads&offset={}",
         urlencode(q),
-        limit.clamp(1, 30)
+        limit.clamp(1, 30),
+        offset.clamp(0, 900)
     );
     let resp = http
         .get(&url)

@@ -173,8 +173,29 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
     return msg ? <p className="small res-cells-msg">{msg}</p> : null;
   }
 
+  // rtsbox 的接口必须带关键词，没搜的时候在**最前面**说明一句，别藏在末尾
+  const needKeyword = showMods && visibleMods.length === 0 && !(q ?? '').trim();
+
   return (
     <>
+      {needKeyword && (
+        <p className="res-cells-hint">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path
+              d="m16 16 4 4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span>
+            在上方搜索框输入关键词（比如「模组」「战役」），还能搜到 rtsbox 上的铁锈战争模组
+          </span>
+        </p>
+      )}
+
       {visibleMaps.map((m) => (
         <RwMapCard
           key={`map-${m.id}`}
@@ -215,13 +236,6 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
           </span>
         </button>
       ))}
-
-      {/* rtsbox 的接口必须有关键词才返回数据，没搜的时候提醒一句 */}
-      {showMods && visibleMods.length === 0 && visibleMaps.length > 0 && !(q ?? '').trim() && (
-        <p className="small muted res-cells-note">
-          输入关键词（比如「模组」「战役」）还能搜到 rtsbox 上的铁锈战争模组
-        </p>
-      )}
 
       {hasMore && (
         <div className="res-cells-more">

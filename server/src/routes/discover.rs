@@ -44,9 +44,15 @@ pub async fn discover(
         .get("limit")
         .and_then(|v| v.parse::<i64>().ok())
         .unwrap_or(12);
+    // 「加载更多」用 offset 往后翻（Modrinth 是 offset、CurseForge 是页码，这里按条数算）
+    let offset = q
+        .get("offset")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(0)
+        .clamp(0, 900);
 
     let items = if source == "modrinth" {
-        remote_sources::search_modrinth(&st.http, keyword, kind, limit).await
+        remote_sources::search_modrinth(&st.http, keyword, kind, limit, offset).await
     } else {
         let map = settings::load(&st.pool, &st.cfg).await;
         let key = settings::text(&map, "curseforgeKey");
