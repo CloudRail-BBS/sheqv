@@ -11,6 +11,8 @@ export interface ResourceQuery {
   category?: string;
   q?: string;
   sort?: 'new' | 'likes' | 'downloads';
+  /** 来源站筛选：curseforge / modrinth / rtsbox */
+  source?: string;
 }
 
 export const listResources = cache(async (query: ResourceQuery = {}): Promise<ResourceView[]> => {
@@ -19,6 +21,7 @@ export const listResources = cache(async (query: ResourceQuery = {}): Promise<Re
   if (query.category) sp.set('category', query.category);
   if (query.q) sp.set('q', query.q);
   if (query.sort) sp.set('sort', query.sort);
+  if (query.source) sp.set('source', query.source);
   const qs = sp.toString();
   const data = await apiGetOr<{ items: ResourceView[] }>(
     `/api/v1/resources${qs ? `?${qs}` : ''}`,

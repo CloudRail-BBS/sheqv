@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { RESOURCE_GAMES, RESOURCE_LICENSES, fmtSize } from '@/lib/resource-types';
+import {
+  RESOURCE_GAMES,
+  RESOURCE_LICENSES,
+  SOURCE_KINDS,
+  fmtSize,
+  parseSourceRef,
+  sourceUrlFor,
+  sourcesForGame,
+} from '@/lib/resource-types';
 import type { ContentCategory } from '@/lib/category-types';
 import { MarkdownEditor } from './markdown-editor';
 
@@ -29,6 +37,10 @@ const EMPTY = {
   loaders: '',
   deps: '',
   sourceUrl: '',
+  /** 外部来源站：'' = 本站资源 */
+  source: '',
+  sourceId: '',
+  sourceKind: 'mods',
 };
 
 /**
@@ -227,6 +239,9 @@ export function ResourceUpload({
         loaders: form.loaders.trim(),
         deps: form.deps.trim(),
         sourceUrl: form.sourceUrl.trim(),
+        source: form.source,
+        sourceId: parseSourceRef(form.sourceId),
+        sourceKind: form.source === 'rtsbox' ? '' : form.sourceKind,
         fileIds: attachments.map((a) => a.id),
       }),
     }).catch(() => null);
@@ -249,6 +264,12 @@ export function ResourceUpload({
     nickname.slice(0, 1)
   );
 
+  const activeSource = sourcesForGame(form.game).find((src) => src.key === form.source);
+  const parsedSourceUrl = sourceUrlFor(
+    form.source,
+    form.source === 'rtsbox' ? '' : form.sourceKind,
+    parseSourceRef(form.sourceId),
+  );
   const totalBytes = attachments.reduce((n, a) => n + a.size, 0);
   const moreCount = [
     form.tags.trim(),
@@ -256,6 +277,7 @@ export function ResourceUpload({
     form.loaders.trim(),
     form.deps.trim(),
     form.sourceUrl.trim(),
+    form.source,
     form.teamId,
   ].filter(Boolean).length;
 
@@ -323,7 +345,15 @@ export function ResourceUpload({
                 <select
                   className="composer-select"
                   value={form.game}
-                  onChange={(e) => set('game', e.target.value)}
+                  onChange={(e) => {
+                    const game = e.target.value;
+                    set('game', game);
+                    // 换游戏后原来的来源站可能不再适用，先清空，避免提交时被后端挡回来
+                    if (!sourcesForGame(game).some((src) => src.key === form.source)) {
+                      set('source', '');
+                      set('sourceId', '');
+                    }
+                  }}
                 >
                   {RESOURCE_GAMES.map((g) => (
                     <option key={g.key} value={g.key}>{g.label}</option>
@@ -460,7 +490,55 @@ export function ResourceUpload({
                   />
                 </label>
                 <label className="composer-field">
-                  <span>来源 / 原帖（可空）</span>
+                  <span>来源站（可空）</span>
+                  <select
+                    className="composer-input"
+                    value={form.source}
+                    onChange={(e) => set('source', e.target.value)}
+                  >
+                    <option value="">本站 / 自己填下载地址</option>
+                    {sourcesForGame(form.game).map((src) => (
+                      <option key={src.key} value={src.key}>{src.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {form.source && (
+                  <>
+                    {activeSource?.hasKind && (
+                      <label className="composer-field">
+                        <span>来源类型</span>
+                        <select
+                          className="composer-input"
+                          value={form.sourceKind}
+                          onChange={(e) => set('sourceKind', e.target.value)}
+                        >
+                          {SOURCE_KINDS.map((k) => (
+                            <option key={k.key} value={k.key}>{k.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    <label className="composer-field">
+                      <span>项目标识或链接</span>
+                      <input
+                        className="composer-input"
+                        value={form.sourceId}
+                        onChange={(e) => set('sourceId', e.target.value)}
+                        placeholder={activeSource?.example ?? 'https://…'}
+                        maxLength={200}
+                      />
+                      <em className="composer-hint">
+                        {parsedSourceUrl
+                          ? `将保存为 ${parsedSourceUrl}`
+                          : '可以直接粘贴整条链接，也可以只填最后一段'}
+                      </em>
+                    </label>
+                  </>
+                )}
+
+                <label className="composer-field">
+                  <span>原帖 / 说明页（可空）</span>
                   <input
                     className="composer-input"
                     value={form.sourceUrl}

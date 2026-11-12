@@ -42,6 +42,12 @@ export interface ResourceView {
   deps: string;
   /** 原帖或百科链接 */
   sourceUrl: string;
+  /** 外部来源站：curseforge / modrinth / rtsbox；空串表示本站资源 */
+  source: string;
+  /** 来源站里的项目标识 */
+  sourceId: string;
+  /** 来源站的项目类型（mods / modpacks …） */
+  sourceKind: string;
   /** 附件数量；列表与详情都带 */
   fileCount: number;
   /** 附件明细；只有详情有 */
@@ -64,6 +70,88 @@ export const RESOURCE_GAMES = [
 ] as const;
 
 export const RESOURCE_LICENSES = ['作者保留', 'MIT', 'CC BY-NC', 'GPL-3.0'] as const;
+
+/**
+ * 外部来源站。
+ *
+ * 库里只存「站点 + 项目标识 + 类型」，链接由这里拼，服务端 `resources::source_url()`
+ * 是同一套规则 —— 两边必须一致，改这里就要改那里。
+ */
+export interface ResourceSourceDef {
+  key: string;
+  label: string;
+  /** 这个站点支持哪些游戏 */
+  games: string[];
+  /** 是否存在「项目类型」这一段路径 */
+  hasKind: boolean;
+  /** 粘贴框里的示例，直接给用户照着抄 */
+  example: string;
+}
+
+export const RESOURCE_SOURCES: ResourceSourceDef[] = [
+  {
+    key: 'curseforge',
+    label: 'CurseForge',
+    games: ['minecraft'],
+    hasKind: true,
+    example: 'https://www.curseforge.com/minecraft/mc-mods/jei',
+  },
+  {
+    key: 'modrinth',
+    label: 'Modrinth',
+    games: ['minecraft'],
+    hasKind: true,
+    example: 'https://modrinth.com/mod/sodium',
+  },
+  {
+    key: 'rtsbox',
+    label: 'rtsbox',
+    games: ['rusted_warfare'],
+    hasKind: false,
+    example: 'https://www.rtsbox.cn/11149-2',
+  },
+];
+
+/** CurseForge / Modrinth 的路径段；与后端 `SOURCE_KINDS` 对齐 */
+export const SOURCE_KINDS = [
+  { key: 'mods', label: '模组' },
+  { key: 'modpacks', label: '整合包' },
+  { key: 'resourcepacks', label: '资源包' },
+  { key: 'shaderpacks', label: '光影' },
+  { key: 'datapacks', label: '数据包' },
+  { key: 'worlds', label: '地图 / 存档' },
+] as const;
+
+export function sourcesForGame(game: string): ResourceSourceDef[] {
+  return RESOURCE_SOURCES.filter((s) => s.games.includes(game));
+}
+
+export function sourceLabel(key: string): string {
+  return RESOURCE_SOURCES.find((s) => s.key === key)?.label ?? '';
+}
+
+/** 与后端 `resources::source_url()` 同一套拼接规则 */
+export function sourceUrlFor(source: string, kind: string, id: string): string {
+  const sid = (id || '').trim().replace(/^\/+|\/+$/g, '');
+  if (!source || !sid) return '';
+  const k = (kind || '').trim() || 'mods';
+  if (source === 'curseforge') return `https://www.curseforge.com/minecraft/${k}/${sid}`;
+  if (source === 'modrinth') return `https://modrinth.com/${k}/${sid}`;
+  if (source === 'rtsbox') return `https://www.rtsbox.cn/${sid}`;
+  return '';
+}
+
+/** 允许直接粘贴整条链接：取最后一段当项目标识（与后端 normalize_source_id 一致） */
+export function parseSourceRef(raw: string): string {
+  const value = (raw || '').trim();
+  if (!value) return '';
+  const noQuery = value.split(/[?#]/)[0];
+  if (/^https?:\/\//i.test(noQuery)) {
+    const parts = noQuery.replace(/\/+$/, '').split('/');
+    return parts[parts.length - 1] ?? '';
+  }
+  return noQuery.replace(/^\/+|\/+$/g, '');
+}
 
 export function gameLabel(key: string): string {
   return RESOURCE_GAMES.find((g) => g.key === key)?.label ?? key;

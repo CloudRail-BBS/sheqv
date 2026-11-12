@@ -1,4 +1,16 @@
-# Android 客户端交付
+# 1.0.0（2026-11-12）
+
+- 文件：`BlockArena-1.0.0-release.apk`
+- 版本：1.0.0（versionCode 6）
+- 包名：`com.cloudrail.community`（与 0.1.x / 0.2.x 一致，可直接覆盖安装）
+- 签名：项目 keystore（CN=CloudRail Community，SHA-256 `46a76f14…56bba29`）
+- 大小：2,778,409 字节（约 2.6MB）
+- SHA-256：`0af188265f37b96426ec9e56a0414a98c315f273abbeff251d919e5fcc6a0621`
+- 主要变化：原生底栏改成与网页一致的悬浮毛玻璃胶囊；应用内更新（检查 / 下载 / 安装）；
+  下载页新增「检查更新」；版本号统一到 1.0.0
+- 说明：正式包建议直接传到站点后台（「客户端 → 版本发布 → 上传安装包到本站」），
+  地址会写成 `/downloads/CloudRail-1.0.0.apk`，不必再传网盘。
+
 
 ## Release APK（正式版，推荐分发）
 

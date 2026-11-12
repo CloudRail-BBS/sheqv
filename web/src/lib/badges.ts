@@ -17,21 +17,37 @@ export type BadgeStyle =
   | 'gold'
   | 'violet'
   | 'mint'
+  | 'rose'
+  | 'cyan'
   | 'solid'
   | 'outline'
+  | 'glass'
+  | 'stripe'
+  | 'neon'
+  | 'foil'
   | 'holo';
 
 /** 特效键；空串表示无动效 */
-export type BadgeEffect = '' | 'shine' | 'glow' | 'pulse';
+export type BadgeEffect = '' | 'shine' | 'glow' | 'pulse' | 'aurora' | 'ring' | 'spark';
 
+/**
+ * 样式分三组：淡底（好读）→ 实心（抢眼）→ 质感（荣誉位）。
+ * 分组只影响后台下拉里的顺序，不影响渲染。
+ */
 export const BADGE_STYLES: { key: BadgeStyle; label: string }[] = [
   { key: 'plain', label: '中性' },
   { key: 'blue', label: '品牌蓝' },
   { key: 'gold', label: '暖金' },
   { key: 'violet', label: '紫罗兰' },
   { key: 'mint', label: '薄荷绿' },
+  { key: 'rose', label: '玫红' },
+  { key: 'cyan', label: '青蓝' },
   { key: 'solid', label: '实心反色' },
   { key: 'outline', label: '描边' },
+  { key: 'glass', label: '磨砂玻璃' },
+  { key: 'stripe', label: '斜纹' },
+  { key: 'neon', label: '霓虹描边' },
+  { key: 'foil', label: '金箔' },
   { key: 'holo', label: '流光渐变' },
 ];
 
@@ -40,7 +56,15 @@ export const BADGE_EFFECTS: { key: BadgeEffect; label: string }[] = [
   { key: 'shine', label: '扫光' },
   { key: 'glow', label: '光晕' },
   { key: 'pulse', label: '呼吸' },
+  { key: 'aurora', label: '流光' },
+  { key: 'ring', label: '光轮' },
+  { key: 'spark', label: '星点' },
 ];
+
+/** 特效只有配在渐变 / 实心底上才看得出来，后台预览用这条判断要不要垫深色底 */
+export function effectNeedsSurface(style: string): boolean {
+  return style === 'holo' || style === 'foil' || style === 'solid' || style === 'neon';
+}
 
 export function isBadgeStyle(v: unknown): v is BadgeStyle {
   return typeof v === 'string' && BADGE_STYLES.some((s) => s.key === v);

@@ -41,7 +41,11 @@ const nextConfig = {
    */
   async rewrites() {
     const base = (process.env.API_BASE || 'http://127.0.0.1:8080').replace(/\/+$/, '');
-    return [{ source: '/api/:path*', destination: `${base}/api/:path*` }];
+    return [
+      { source: '/api/:path*', destination: `${base}/api/:path*` },
+      // 客户端安装包（APK / EXE）由后端托管，放站内是为了让用户少跳一次网盘
+      { source: '/downloads/:path*', destination: `${base}/downloads/:path*` },
+    ];
   },
 
   // 反代后由 nginx/Caddy 终止 TLS，这里只补基础安全头

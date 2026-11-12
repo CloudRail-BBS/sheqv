@@ -101,12 +101,17 @@ pub async fn list(
     let game = params.get("game").map(String::as_str).filter(|s| !s.is_empty());
     let category = params.get("category").map(String::as_str).filter(|s| !s.is_empty());
     let sort = params.get("sort").map(String::as_str).unwrap_or("new");
+    let source = params.get("source").map(String::as_str).filter(|s| !s.is_empty());
     let limit = params
         .get("limit")
         .and_then(|v| v.parse::<i64>().ok())
         .unwrap_or(30);
+    let offset = params
+        .get("offset")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(0);
 
-    let items = resources::list(&st.pool, &viewer, game, category, q, sort, limit)
+    let items = resources::list(&st.pool, &viewer, game, category, q, sort, source, limit, offset)
         .await
         .map_err(ApiError::internal)?;
     Ok(Json(json!({ "ok": true, "items": items, "total": items.len() })).into_response())
@@ -153,8 +158,19 @@ pub async fn create(
     let team_id = opt_text(&obj, "teamId").filter(|v| !v.is_empty());
     let file_ids = id_list(&obj, "fileIds");
     let raw_url = text(&obj, "url");
-    // 只上传了文件、没填外链时，主地址指向第一个附件
-    let url = resources::effective_url(&raw_url, &file_ids);
+    // 来源站：用户可能直接粘贴整条链接，统一取最后一段当项目标识
+    let source = text(&obj, "source");
+    let source_kind = text(&obj, "sourceKind");
+    let (source_id, explicit_source) = resources::split_source_ref(&text(&obj, "sourceId"));
+    // 地址优先级：手填外链 → 粘贴的来源链接 → 拼出来的来源链接 → 第一个附件
+    let url = resources::canonical_url(
+        &raw_url,
+        &file_ids,
+        &source,
+        &source_kind,
+        &source_id,
+        explicit_source.as_deref(),
+    );
     let input = NewResource {
         title: &text(&obj, "title"),
         summary: &text(&obj, "summary"),
@@ -171,6 +187,9 @@ pub async fn create(
         loaders: &text(&obj, "loaders"),
         deps: &text(&obj, "deps"),
         source_url: &text(&obj, "sourceUrl"),
+        source: &source,
+        source_id: &source_id,
+        source_kind: &source_kind,
     };
 
     let cats = crate::categories::keys(&st.pool, "resource")
@@ -270,6 +289,27 @@ pub async fn patch(
     let loaders = opt_text(&obj, "loaders").unwrap_or(cur.loaders.clone());
     let deps = opt_text(&obj, "deps").unwrap_or(cur.deps.clone());
     let source_url = opt_text(&obj, "sourceUrl").unwrap_or(cur.source_url.clone());
+    let source = opt_text(&obj, "source").unwrap_or(cur.source.clone());
+    let source_kind = opt_text(&obj, "sourceKind").unwrap_or(cur.source_kind.clone());
+    let explicit_source = opt_text(&obj, "sourceId")
+        .and_then(|v| resources::split_source_ref(&v).1);
+    let source_id = match opt_text(&obj, "sourceId") {
+        Some(v) => resources::split_source_ref(&v).0,
+        None => cur.source_id.clone(),
+    };
+    // 来源变了而作者没改下载地址时，主地址跟着来源走，避免留下旧站的链接
+    let url = if obj.contains_key("source") && !obj.contains_key("url") {
+        resources::canonical_url(
+            "",
+            &file_ids.clone().unwrap_or_default(),
+            &source,
+            &source_kind,
+            &source_id,
+            explicit_source.as_deref(),
+        )
+    } else {
+        url
+    };
 
     let check = NewResource {
         title: &title,
@@ -287,6 +327,9 @@ pub async fn patch(
         loaders: &loaders,
         deps: &deps,
         source_url: &source_url,
+        source: &source,
+        source_id: &source_id,
+        source_kind: &source_kind,
     };
     let cats = crate::categories::keys(&st.pool, "resource")
         .await
@@ -326,6 +369,9 @@ pub async fn patch(
             loaders: Some(&loaders),
             deps: Some(&deps),
             source_url: Some(&source_url),
+            source: Some(&source),
+            source_id: Some(&source_id),
+            source_kind: Some(&source_kind),
             file_ids,
         },
     )

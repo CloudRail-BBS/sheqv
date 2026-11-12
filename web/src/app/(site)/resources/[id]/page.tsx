@@ -7,7 +7,14 @@ import { getResource } from '@/lib/resource-store';
 import { ResourceActions } from '@/components/resource-actions';
 import { breadcrumbJsonLd, buildMetadata, resourceJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
-import { fmtNum, fmtSize, gameLabel, gameTone } from '@/lib/resource-types';
+import {
+  fmtNum,
+  fmtSize,
+  gameLabel,
+  gameTone,
+  sourceLabel,
+  sourceUrlFor,
+} from '@/lib/resource-types';
 import { catLabel, listCategories } from '@/lib/category-store';
 
 export const dynamic = 'force-dynamic';
@@ -111,6 +118,17 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
               <div className="row wrap" style={{ gap: 6 }}>
                 <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
                 <span className="badge">{catLabel(cats, item.category)}</span>
+                {item.source && (
+                  <a
+                    className="badge badge-ghost res-source-badge"
+                    href={sourceUrlFor(item.source, item.sourceKind, item.sourceId) || item.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    title={`在 ${sourceLabel(item.source)} 打开原条目`}
+                  >
+                    来自 {sourceLabel(item.source)} ↗
+                  </a>
+                )}
                 {item.version && <span className="badge badge-ghost">v{item.version}</span>}
                 {item.status === 'hidden' && <span className="badge badge-danger">已下架</span>}
                 {item.status === 'pending' && <span className="badge badge-warn">审核中</span>}

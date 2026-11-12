@@ -15,6 +15,130 @@ pub const GAMES: [&str; 2] = ["minecraft", "rusted_warfare"];
 /// 一个资源最多挂几个文件。再多就应该做版本列表了，不适合塞在一个条目里。
 pub const MAX_FILES: usize = 8;
 
+/// 外部来源站。空串 = 本站自己传的文件或作者填的下载地址。
+pub const SOURCES: [&str; 3] = ["curseforge", "modrinth", "rtsbox"];
+
+/// 来源站的项目类型，只对 Minecraft 有意义（CurseForge / Modrinth 的路径段）。
+pub const SOURCE_KINDS: [&str; 6] = [
+    "mods",
+    "modpacks",
+    "resourcepacks",
+    "shaderpacks",
+    "datapacks",
+    "worlds",
+];
+
+/// 每个游戏允许挂哪些来源站：Minecraft 走 CurseForge / Modrinth，
+/// 铁锈战争走 rtsbox（国内社区站，条目就是 `站点/id` 的形式）。
+pub fn sources_for(game: &str) -> &'static [&'static str] {
+    match game {
+        "minecraft" => &["curseforge", "modrinth"],
+        "rusted_warfare" => &["rtsbox"],
+        _ => &[],
+    }
+}
+
+/// 各站点的路径段：CurseForge 用复数且模组是 `mc-mods`、资源包是 `texture-packs`，
+/// Modrinth 一律单数（`/mod/sodium`）。写死一张表，别指望两边规则一样。
+fn kind_path(source: &str, kind: &str) -> &'static str {
+    match (source, kind) {
+        ("curseforge", "mods") => "mc-mods",
+        ("curseforge", "modpacks") => "modpacks",
+        ("curseforge", "resourcepacks") => "texture-packs",
+        ("curseforge", "shaderpacks") => "shaders",
+        ("curseforge", "datapacks") => "data-packs",
+        ("curseforge", "worlds") => "worlds",
+        ("modrinth", "mods") => "mod",
+        ("modrinth", "modpacks") => "modpack",
+        ("modrinth", "resourcepacks") => "resourcepack",
+        ("modrinth", "shaderpacks") => "shader",
+        ("modrinth", "datapacks") => "datapack",
+        ("modrinth", "worlds") => "world",
+        _ => "",
+    }
+}
+
+/// 把「来源站 + 类型 + 项目标识」拼成链接；`source` 为空返回空串。
+pub fn source_url(source: &str, kind: &str, source_id: &str) -> String {
+    let id = source_id.trim().trim_matches('/');
+    if id.is_empty() {
+        return String::new();
+    }
+    let kind = if kind.trim().is_empty() { "mods" } else { kind.trim() };
+    let seg = kind_path(source, kind);
+    match source {
+        "curseforge" => format!(
+            "https://www.curseforge.com/minecraft/{}/{id}",
+            if seg.is_empty() { "mc-mods" } else { seg }
+        ),
+        "modrinth" => format!(
+            "https://modrinth.com/{}/{id}",
+            if seg.is_empty() { "mod" } else { seg }
+        ),
+        "rtsbox" => format!("https://www.rtsbox.cn/{id}"),
+        _ => String::new(),
+    }
+}
+
+/// 允许直接粘贴整条链接：取最后一段当项目标识。
+pub fn normalize_source_id(raw: &str) -> String {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return String::new();
+    }
+    let without_query = raw.split(['?', '#']).next().unwrap_or(raw);
+    if without_query.starts_with("http://") || without_query.starts_with("https://") {
+        return without_query
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .unwrap_or("")
+            .to_string();
+    }
+    without_query.trim_matches('/').to_string()
+}
+
+/// 拆分输入：粘贴整条链接时返回 (末段标识, 原链接)，只填标识时原链接为 None。
+/// 之所以保留原链接：各站点的路径规则并不统一（CurseForge `mc-mods` / Modrinth `mod`），
+/// 用户既然已经把确切地址贴进来了，就别再拿我们那张表去猜。
+pub fn split_source_ref(raw: &str) -> (String, Option<String>) {
+    let raw = raw.trim();
+    if raw.starts_with("http://") || raw.starts_with("https://") {
+        let no_query = raw.split(['?', '#']).next().unwrap_or(raw);
+        let id = no_query
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .unwrap_or("")
+            .to_string();
+        return (id, Some(raw.to_string()));
+    }
+    (normalize_source_id(raw), None)
+}
+
+/// 主下载地址的完整优先级：手填地址 → 粘贴的来源链接 → 拼出来的来源链接 → 第一个附件
+pub fn canonical_url(
+    url: &str,
+    file_ids: &[String],
+    source: &str,
+    kind: &str,
+    source_id: &str,
+    explicit: Option<&str>,
+) -> String {
+    let url = url.trim();
+    if !url.is_empty() {
+        return url.to_string();
+    }
+    if let Some(link) = explicit.map(str::trim).filter(|v| !v.is_empty()) {
+        return link.to_string();
+    }
+    let built = source_url(source, kind, source_id);
+    if !built.is_empty() {
+        return built;
+    }
+    effective_url(url, file_ids)
+}
+
 /// 没有手填下载地址时，用第一个附件当主地址（老客户端的单文件下载仍然可用）
 pub fn effective_url(url: &str, file_ids: &[String]) -> String {
     let url = url.trim();
@@ -57,6 +181,12 @@ pub struct ResourceView {
     pub loaders: String,
     pub deps: String,
     pub source_url: String,
+    /// 外部来源站（curseforge / modrinth / rtsbox）；空串表示本站资源
+    pub source: String,
+    /// 来源站里的项目标识
+    pub source_id: String,
+    /// 来源站的项目类型（mods / modpacks …）
+    pub source_kind: String,
     /// 附件数量（列表与详情都带，卡片上显示「N 个文件」）
     pub file_count: i64,
     /// 附件明细：只有详情接口返回
@@ -138,6 +268,9 @@ struct Row {
     deps: String,
     /// 原帖或百科链接
     source_url: String,
+    source: String,
+    source_id: String,
+    source_kind: String,
     file_count: i64,
     like_count: i32,
     download_count: i32,
@@ -183,6 +316,9 @@ impl Row {
             loaders: self.loaders,
             deps: self.deps,
             source_url: self.source_url,
+            source: self.source,
+            source_id: self.source_id,
+            source_kind: self.source_kind,
             file_count: self.file_count,
             files: Vec::new(),
             like_count: self.like_count as i64,
@@ -203,6 +339,7 @@ const COLUMNS: &str = "r.id, r.title, r.summary, r.body, r.game, r.category, r.t
         r.team_id, t.name AS team_name, t.tag AS team_tag,
         r.url, r.version, r.license, r.size_bytes,
         r.game_versions, r.loaders, r.deps, r.source_url,
+        r.source, r.source_id, r.source_kind,
         (SELECT count(*) FROM resource_attachments a WHERE a.resource_id = r.id) AS file_count,
         r.like_count, r.download_count,
         r.status, r.reject_reason, r.reviewed_at, r.created_at, r.updated_at,
@@ -213,6 +350,19 @@ const FROM: &str = "FROM resources r
         LEFT JOIN dev_teams t ON t.id = r.team_id
         LEFT JOIN resource_likes rl ON rl.resource_id = r.id AND rl.user_id = $1";
 
+const LIST_WHERE: &str = "WHERE r.status = 'published'
+            AND ($2::text IS NULL OR r.game = $2)
+            AND ($3::text IS NULL OR r.category = $3)
+            AND ($5::text IS NULL OR r.source = $5)
+            AND (
+              $4::text IS NULL
+              OR r.title ILIKE '%' || $4 || '%'
+              OR r.summary ILIKE '%' || $4 || '%'
+              OR r.tags::text ILIKE '%' || $4 || '%'
+            )";
+
+/// 列表。`offset` 给对外接口做分页用，站内列表一直传 0。
+#[allow(clippy::too_many_arguments)]
 pub async fn list(
     pool: &PgPool,
     viewer: &str,
@@ -220,37 +370,56 @@ pub async fn list(
     category: Option<&str>,
     q: Option<&str>,
     sort: &str,
+    source: Option<&str>,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<ResourceView>, sqlx::Error> {
     let order = match sort {
         "likes" => "r.like_count DESC, r.created_at DESC",
         "downloads" => "r.download_count DESC, r.created_at DESC",
+        "old" => "r.created_at ASC",
         _ => "r.created_at DESC",
     };
 
     let rows: Vec<Row> = sqlx::query_as(&format!(
-        "SELECT {COLUMNS} {FROM}
-          WHERE r.status = 'published'
-            AND ($2::text IS NULL OR r.game = $2)
-            AND ($3::text IS NULL OR r.category = $3)
-            AND (
-              $4::text IS NULL
-              OR r.title ILIKE '%' || $4 || '%'
-              OR r.summary ILIKE '%' || $4 || '%'
-              OR r.tags::text ILIKE '%' || $4 || '%'
-            )
+        "SELECT {COLUMNS} {FROM} {LIST_WHERE}
           ORDER BY {order}
-          LIMIT $5"
+          LIMIT $6 OFFSET $7"
     ))
     .bind(viewer)
     .bind(game)
     .bind(category)
     .bind(q)
-    .bind(limit.clamp(1, 60))
+    .bind(source)
+    .bind(limit.clamp(1, 100))
+    .bind(offset.max(0))
     .fetch_all(pool)
     .await?;
 
     Ok(rows.into_iter().map(|r| r.into_view(false)).collect())
+}
+
+/// 与 `list` 同条件的总数，对外接口翻页要用。
+pub async fn count(
+    pool: &PgPool,
+    game: Option<&str>,
+    category: Option<&str>,
+    q: Option<&str>,
+    source: Option<&str>,
+) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar(&format!(
+        "SELECT count(*) FROM resources r
+          JOIN users u ON u.id = r.author_id
+          LEFT JOIN dev_teams t ON t.id = r.team_id
+          {LIST_WHERE}"
+    ))
+    .bind("")
+    .bind(game)
+    .bind(category)
+    .bind(q)
+    .bind(source)
+    .fetch_one(pool)
+    .await
 }
 
 /// 后台列表：含 hidden，按创建时间倒序
@@ -332,6 +501,9 @@ pub struct NewResource<'a> {
     pub loaders: &'a str,
     pub deps: &'a str,
     pub source_url: &'a str,
+    pub source: &'a str,
+    pub source_id: &'a str,
+    pub source_kind: &'a str,
 }
 
 /// 返回中文错误；合法返回 `None`。`categories` 是后台维护的分类 key 列表。
@@ -389,6 +561,28 @@ pub fn validate(input: &NewResource<'_>, categories: &[String]) -> Option<String
         && (src.len() > 300 || !(src.starts_with("http://") || src.starts_with("https://")))
     {
         return Some("来源链接必须是 http(s) 地址".into());
+    }
+
+    // 外部来源站：站点要存在、要和游戏匹配、项目标识必填
+    let source = input.source.trim();
+    if !source.is_empty() {
+        if !SOURCES.contains(&source) {
+            return Some("来源站点不正确".into());
+        }
+        if !sources_for(input.game).contains(&source) {
+            return Some("这个游戏暂不支持该来源站点".into());
+        }
+        let sid = input.source_id.trim();
+        if sid.is_empty() || sid.chars().count() > 120 {
+            return Some("填写来源项目的标识或链接（最多 120 字）".into());
+        }
+        if sid.chars().any(char::is_whitespace) {
+            return Some("来源项目标识不能包含空格".into());
+        }
+        let kind = input.source_kind.trim();
+        if source != "rtsbox" && !kind.is_empty() && !SOURCE_KINDS.contains(&kind) {
+            return Some("来源类型不正确".into());
+        }
     }
     None
 }
@@ -461,15 +655,22 @@ pub async fn create(
     status: &str,
 ) -> Result<String, sqlx::Error> {
     let id = crate::ids::next('r');
-    let url = effective_url(input.url, file_ids);
+    let url = canonical_url(
+        input.url,
+        file_ids,
+        input.source,
+        input.source_kind,
+        input.source_id,
+        None,
+    );
     let mut tx = pool.begin().await?;
 
     sqlx::query(
         "INSERT INTO resources
              (id, title, summary, body, game, category, tags, author_id, team_id,
               url, version, license, size_bytes, game_versions, loaders, deps, source_url,
-              status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)",
+              source, source_id, source_kind, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)",
     )
     .bind(&id)
     .bind(input.title.trim())
@@ -488,6 +689,9 @@ pub async fn create(
     .bind(input.loaders.trim())
     .bind(input.deps.trim())
     .bind(input.source_url.trim())
+    .bind(input.source.trim())
+    .bind(input.source_id.trim())
+    .bind(input.source_kind.trim())
     .bind(status)
     .execute(&mut *tx)
     .await?;
@@ -522,6 +726,9 @@ pub struct ResourcePatch<'a> {
     pub loaders: Option<&'a str>,
     pub deps: Option<&'a str>,
     pub source_url: Option<&'a str>,
+    pub source: Option<&'a str>,
+    pub source_id: Option<&'a str>,
+    pub source_kind: Option<&'a str>,
     /// Some 表示「整组替换」；None 表示不动附件
     pub file_ids: Option<Vec<String>>,
 }
@@ -555,6 +762,9 @@ pub async fn patch(
     let loaders = patch.loaders.unwrap_or(&cur.loaders);
     let deps = patch.deps.unwrap_or(&cur.deps);
     let source_url = patch.source_url.unwrap_or(&cur.source_url);
+    let source = patch.source.unwrap_or(&cur.source);
+    let source_id = patch.source_id.unwrap_or(&cur.source_id);
+    let source_kind = patch.source_kind.unwrap_or(&cur.source_kind);
 
     let check = NewResource {
         title,
@@ -572,6 +782,9 @@ pub async fn patch(
         loaders,
         deps,
         source_url,
+        source,
+        source_id,
+        source_kind,
     };
     // 模块内的更新只做字段兜底，分类是否合法由接口层对着分类表判；
     // 这里把「当前分类」当作唯一合法值，等价于跳过分类校验。
@@ -583,7 +796,8 @@ pub async fn patch(
     sqlx::query(
         "UPDATE resources SET title=$2, summary=$3, body=$4, game=$5, category=$6, tags=$7,
                 team_id=$8, url=$9, version=$10, license=$11, size_bytes=$12,
-                game_versions=$13, loaders=$14, deps=$15, source_url=$16, updated_at=now()
+                game_versions=$13, loaders=$14, deps=$15, source_url=$16,
+                source=$17, source_id=$18, source_kind=$19, updated_at=now()
           WHERE id=$1",
     )
     .bind(id)
@@ -602,6 +816,9 @@ pub async fn patch(
     .bind(loaders.trim())
     .bind(deps.trim())
     .bind(source_url.trim())
+    .bind(source.trim())
+    .bind(source_id.trim())
+    .bind(source_kind.trim())
     .execute(&mut *tx)
     .await?;
 

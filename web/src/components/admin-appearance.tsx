@@ -85,14 +85,21 @@ export function AdminAppearance() {
         </p>
         <div className="row wrap" style={{ gap: 8 }}>
           {BADGE_STYLES.map((s) => (
-            <span key={s.key} className="ut" data-kind="custom" data-bs={s.key} data-be={s.key === 'holo' ? 'shine' : undefined}>
+            <span
+              key={s.key}
+              className="ut"
+              data-kind="custom"
+              data-bs={s.key}
+              data-be={s.key === 'holo' ? 'aurora' : undefined}
+            >
               {s.label}
             </span>
           ))}
         </div>
         <div className="row wrap" style={{ gap: 8, marginTop: 10 }}>
+          {/* 特效预览统一垫渐变底：纯色淡底上「流光 / 星点」看不出来 */}
           {BADGE_EFFECTS.filter((e) => e.key).map((e) => (
-            <span key={e.key} className="ut" data-kind="custom" data-bs="blue" data-be={e.key}>
+            <span key={e.key} className="ut" data-kind="custom" data-bs="holo" data-be={e.key}>
               {e.label}
             </span>
           ))}

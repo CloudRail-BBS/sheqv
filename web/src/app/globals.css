@@ -38,6 +38,21 @@
   --violet: #b9a2ff;
   --violet-soft: rgba(185, 162, 255, 0.13);
   --violet-line: rgba(185, 162, 255, 0.30);
+  --rose: #ff9aae;
+  --rose-soft: rgba(255, 154, 174, 0.13);
+  --rose-line: rgba(255, 154, 174, 0.32);
+  --cyan: #6fd8e8;
+  --cyan-soft: rgba(111, 216, 232, 0.13);
+  --cyan-line: rgba(111, 216, 232, 0.30);
+  /* 磨砂头衔：玻璃面在深色下是雾白，浅色下是白瓷 */
+  --glass-tint: rgba(255, 255, 255, 0.10);
+  --glass-tint-brd: rgba(255, 255, 255, 0.22);
+  --glass-tint-ink: var(--text);
+  /* 金箔是金属面，两种主题用同一组色（字固定深色，才读得清） */
+  --foil-1: #f8e5b0;
+  --foil-2: #e2b768;
+  --foil-3: #bf8f3f;
+  --foil-ink: #33260c;
   /* 红标认证：品牌红，不参与「错误 / 删除」的语义色 */
   --seal-red: #f0736f;
   --seal-red-soft: rgba(240, 115, 111, 0.14);
@@ -739,7 +754,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .badge[data-dot="pulse"]::before,
   :is(.badge, .ut, .gtag, .bz)[data-shine]::after,
   :is(.ut, .gtag, .bz)[data-be="shine"]::after,
-  :is(.ut, .gtag, .bz)[data-be="pulse"] { animation: none; }
+  :is(.ut, .gtag, .bz)[data-be="pulse"],
+  :is(.ut, .gtag, .bz)[data-be="aurora"],
+  :is(.ut, .gtag, .bz)[data-be="ring"]::before,
+  :is(.ut, .gtag, .bz)[data-be="spark"]::after { animation: none; }
   .badge[data-glow],
   .badge[data-glow]:hover { transition: none; transform: none; }
 }
@@ -2337,6 +2355,26 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --bs-bg: linear-gradient(100deg, var(--blue), var(--violet));
   --bs-bd: transparent;
 }
+[data-bs="rose"] { --bs-fg: var(--rose); --bs-bg: var(--rose-soft); --bs-bd: var(--rose-line); }
+[data-bs="cyan"] { --bs-fg: var(--cyan); --bs-bg: var(--cyan-soft); --bs-bd: var(--cyan-line); }
+
+/* 质感档：磨砂 / 斜纹 / 霓虹 / 金箔。荣誉位用，列表里不要成片出现 */
+[data-bs="glass"] {
+  --bs-fg: var(--glass-tint-ink);
+  --bs-bg: var(--glass-tint);
+  --bs-bd: var(--glass-tint-brd);
+}
+[data-bs="stripe"] {
+  --bs-fg: var(--text-2);
+  --bs-bg: repeating-linear-gradient(135deg, var(--accent-soft2) 0 3px, transparent 3px 6px);
+  --bs-bd: var(--line-strong);
+}
+[data-bs="neon"] { --bs-fg: var(--blue); --bs-bg: transparent; --bs-bd: var(--blue); }
+[data-bs="foil"] {
+  --bs-fg: var(--foil-ink);
+  --bs-bg: linear-gradient(140deg, var(--foil-1), var(--foil-2) 44%, var(--foil-3) 78%, var(--foil-1));
+  --bs-bd: transparent;
+}
 
 .ut[data-bs],
 .bz[data-bs] {
@@ -2345,10 +2383,65 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   border: 1px solid var(--bs-bd);
 }
 
+/* 质感的额外光影：磨砂走模糊、霓虹走内外发光、金箔走内高光 */
+.ut[data-bs="glass"],
+.bz[data-bs="glass"] {
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  backdrop-filter: blur(6px) saturate(140%);
+}
+.ut[data-bs="neon"] { box-shadow: 0 0 9px -4px var(--blue), inset 0 0 6px -5px var(--blue); }
+.ut[data-bs="foil"],
+.bz[data-bs="foil"] {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 10px -9px rgba(120, 88, 20, 0.95);
+}
+
 :is(.ut, .gtag, .bz)[data-be="glow"] {
   box-shadow: 0 0 0 1px var(--bs-bd, transparent), 0 6px 16px -9px currentColor;
 }
 :is(.ut, .gtag, .bz)[data-be="pulse"] { animation: badgeBreathe 3.2s var(--ease) infinite; }
+
+/* 流光：渐变缓慢平移，只对渐变 / 实心底有意义，纯色底看不出变化（不报错、不干扰） */
+:is(.ut, .gtag, .bz)[data-be="aurora"] {
+  background-size: 220% 100%;
+  animation: badgeAurora 7s linear infinite;
+}
+
+/* 光轮：外圈同色光环向外扩散，比整块呼吸更「贵」，适合周年 / 冠军头衔 */
+:is(.ut, .gtag, .bz)[data-be="ring"] { position: relative; }
+:is(.ut, .gtag, .bz)[data-be="ring"]::before {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit;
+  pointer-events: none; box-shadow: 0 0 0 0 currentColor;
+  animation: badgeRing 2.6s var(--ease) infinite;
+}
+
+/* 星点：两粒高光先后闪一下，节奏比扫光慢，放在深色渐变上最好看 */
+:is(.ut, .gtag, .bz)[data-be="spark"] { position: relative; overflow: hidden; }
+:is(.ut, .gtag, .bz)[data-be="spark"]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  /* 用 currentColor：深色渐变上是白点，浅色淡底上是同色点，都不至于消失 */
+  background-image:
+    radial-gradient(circle, currentColor 0 1px, transparent 1.6px),
+    radial-gradient(circle, currentColor 0 1px, transparent 1.6px);
+  background-repeat: no-repeat;
+  background-position: 24% 34%, 72% 66%;
+  opacity: 0;
+  animation: badgeSpark 4.2s var(--ease) infinite;
+}
+
+@keyframes badgeAurora {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+@keyframes badgeRing {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.55; }
+  65%, 100% { box-shadow: 0 0 0 7px currentColor; opacity: 0; }
+}
+@keyframes badgeSpark {
+  0%, 62%, 100% { opacity: 0; }
+  70% { opacity: 0.9; }
+  80% { opacity: 0.12; }
+  88% { opacity: 0.7; }
+}
 
 @keyframes badgeBreathe {
   0%, 100% { opacity: 1; }
@@ -2478,6 +2571,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .res-head-main { min-width: 0; flex: 1; }
 .res-head-title { margin: 8px 0 6px; }
 .res-head-summary { margin: 0; font-size: 13.5px; line-height: 1.85; color: var(--text-2); }
+/* 来源站徽章：可点回原站，悬停时给一点反馈，别做成按钮的样子 */
+.res-source-badge { text-decoration: none; cursor: pointer; }
+.res-source-badge:hover {
+  color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft);
+}
 @media (max-width: 560px) {
   .res-head { gap: 10px; }
   .res-head-mark { width: 54px; height: 54px; border-radius: 13px; font-size: 21px; }
@@ -3335,6 +3433,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --violet: #6d4fd0;
   --violet-soft: rgba(109, 79, 208, 0.10);
   --violet-line: rgba(109, 79, 208, 0.24);
+  --rose: #c2304f;
+  --rose-soft: rgba(194, 48, 79, 0.09);
+  --rose-line: rgba(194, 48, 79, 0.24);
+  --cyan: #0f7b8e;
+  --cyan-soft: rgba(15, 123, 142, 0.09);
+  --cyan-line: rgba(15, 123, 142, 0.24);
+  --glass-tint: rgba(255, 255, 255, 0.86);
+  --glass-tint-brd: rgba(20, 30, 50, 0.10);
+  --glass-tint-ink: var(--text);
   --seal-red: #d92d20;
   --seal-red-soft: rgba(217, 45, 32, 0.10);
   --seal-red-line: rgba(217, 45, 32, 0.26);
@@ -4044,6 +4151,10 @@ body:has(.auth-page) .app {
 .settings-save { margin-top: 14px; }
 
 /* 客户端下载页 */
+/* 下载页：标题行右侧的「检查更新」（只在原生壳里出现） */
+.download-head-row { align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.download-update { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+
 .download-group { margin-top: 18px; }
 .download-group h2 {
   font-size: 12px; color: var(--muted); letter-spacing: 0.08em;

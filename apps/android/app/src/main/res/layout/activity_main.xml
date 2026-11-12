@@ -5,24 +5,45 @@
     android:layout_height="match_parent"
     android:background="@color/app_bg">
 
-    <WebView
-        android:id="@+id/web"
+    <com.cloudrail.community.PullToRefresh
+        android:id="@+id/refresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
 
-    <ProgressBar
-        android:id="@+id/progress"
-        style="?android:attr/progressBarStyleHorizontal"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <WebView
+                    android:id="@+id/web"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <ProgressBar
+                    android:id="@+id/progress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_gravity="top"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/brand"
+                    android:visibility="gone" />
+
+                <include layout="@layout/view_offline" />
+            </FrameLayout>
+    </com.cloudrail.community.PullToRefresh>
+
+    <!-- 原生底栏：与网页 tabbar 同一套几何（左右 10 / 底部 10 / 高 62 / 圆角 26），浮在内容之上 -->
+    <com.cloudrail.community.BottomNav
+        android:id="@+id/nav"
         android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:layout_gravity="top"
-        android:indeterminate="false"
-        android:max="100"
-        android:progress="0"
-        android:progressTint="@color/brand"
-        android:visibility="gone" />
-
-    <include layout="@layout/view_offline" />
+        android:layout_height="62dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp" />
 
     <FrameLayout
         android:id="@+id/splash"

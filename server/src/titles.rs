@@ -13,11 +13,12 @@ use sqlx::PgPool;
 use crate::users;
 
 /// 可选样式。键与 CSS 里的 `[data-bs="…"]` 对应。
-pub const STYLES: [&str; 8] = [
-    "plain", "blue", "gold", "violet", "mint", "solid", "outline", "holo",
+pub const STYLES: [&str; 14] = [
+    "plain", "blue", "gold", "violet", "mint", "rose", "cyan", "solid", "outline", "glass",
+    "stripe", "neon", "foil", "holo",
 ];
 /// 可选特效；空串 = 无
-pub const EFFECTS: [&str; 4] = ["", "shine", "glow", "pulse"];
+pub const EFFECTS: [&str; 7] = ["", "shine", "glow", "pulse", "aurora", "ring", "spark"];
 
 pub const STATUSES: [&str; 3] = ["pending", "approved", "rejected"];
 

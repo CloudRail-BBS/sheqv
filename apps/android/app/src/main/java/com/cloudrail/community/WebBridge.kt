@@ -53,6 +53,18 @@ class WebBridge(private val activity: MainActivity) {
         activity.runOnUiThread { activity.vibrate(ms.coerceIn(10, 400)) }
     }
 
+    /** 网页滚动位置（只存数值，下拉刷新判断是否到顶用） */
+    @JavascriptInterface
+    fun setScrollTop(top: Int) {
+        activity.onPageScroll(top)
+    }
+
+    /** 手动检查更新（下载页的「检查更新」按钮会调它） */
+    @JavascriptInterface
+    fun checkUpdate() {
+        activity.runOnUiThread { activity.checkForUpdate(manual = true) }
+    }
+
     @JavascriptInterface
     fun version(): String = BuildConfig.VERSION_NAME
 

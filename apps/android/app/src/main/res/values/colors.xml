@@ -5,4 +5,26 @@
     <color name="ic_launcher_background">#FFFFFF</color>
     <color name="text_main">#1B2230</color>
     <color name="text_sub">#6B7280</color>
+
+    <!-- 原生底栏：浅色跟站内浅色主题一套色，深色同名覆盖（applyTheme 里按站内主题切） -->
+    <color name="nav_bg_light">#FFFFFF</color>
+    <color name="nav_bg_dark">#12161D</color>
+    <color name="nav_line_light">#E3E8F0</color>
+    <color name="nav_line_dark">#232A35</color>
+    <color name="nav_off_light">#6B7688</color>
+    <color name="nav_off_dark">#8B93A1</color>
+    <color name="nav_pill_light">#1A3E7CFF</color>
+    <!-- 悬浮胶囊：与网页 tabbar 的玻璃底色、描边、蓝底蓝边对齐。
+         原生拿不到 backdrop-filter，透明度略提高一档，保证文字压得住内容 -->
+    <color name="nav_glass_light">#FCFFFFFF</color>
+    <color name="nav_glass_dark">#F20C0D10</color>
+    <color name="nav_glass_line_light">#0D151A23</color>
+    <color name="nav_glass_line_dark">#17FFFFFF</color>
+    <color name="nav_glider_light">#1A3E7CFF</color>
+    <color name="nav_glider_dark">#247FB0FF</color>
+    <color name="nav_glider_line_light">#423E7CFF</color>
+    <color name="nav_glider_line_dark">#577FB0FF</color>
+    <color name="nav_pill_dark">#297FB0FF</color>
+    <color name="panel_light">#FFFFFF</color>
+    <color name="panel_dark">#12161D</color>
 </resources>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { latestRelease } from '@/lib/app-store';
+import { CheckUpdateButton } from '@/components/check-update-button';
 import { APP_PLATFORMS, fmtBytes } from '@/lib/app-release-types';
 import { buildMetadata } from '@/lib/seo';
 
@@ -22,10 +23,15 @@ export default async function DownloadPage() {
   return (
     <div className="cols">
       <div className="col-main">
-        <h1 className="page-title">客户端下载</h1>
-        <p className="small muted" style={{ marginTop: 4 }}>
-          桌面端与 Android 端都连接同一个社区；选择你的平台下载安装包。
-        </p>
+        <div className="between download-head-row">
+          <div>
+            <h1 className="page-title">客户端下载</h1>
+            <p className="small muted" style={{ marginTop: 4 }}>
+              桌面端与 Android 端都连接同一个社区；选择你的平台下载安装包。
+            </p>
+          </div>
+          <CheckUpdateButton />
+        </div>
 
         {groups.map((group) => {
           const items = releases.filter((x) => x.meta.group === group);

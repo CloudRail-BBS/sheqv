@@ -50,6 +50,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var offline: View
     private lateinit var splash: View
+    private lateinit var refresh: PullToRefresh
+    private lateinit var nav: BottomNav
+
+    /** 网页正文（`.site-scroll`）的滚动位置，注入脚本持续上报；下拉刷新靠它判断是否到顶 */
+    private var pageScrollTop = 0
+    /** 每次冷启动只自动查一次更新，避免来回切页反复弹窗 */
+    private var updateChecked = false
 
     private var fileCallback: android.webkit.ValueCallback<Array<Uri>>? = null
     private var lastBackAt = 0L
@@ -88,6 +95,9 @@ class MainActivity : AppCompatActivity() {
         progress = findViewById(R.id.progress)
         offline = findViewById(R.id.offline)
         splash = findViewById(R.id.splash)
+        refresh = findViewById(R.id.refresh)
+        nav = findViewById(R.id.nav)
+        setupShell()
 
         findViewById<View>(R.id.offlineRetry).setOnClickListener {
             offline.visibility = View.GONE
@@ -200,12 +210,22 @@ class MainActivity : AppCompatActivity() {
                 offline.visibility = View.GONE
                 progress.visibility = View.VISIBLE
                 progress.progress = 0
+                pageScrollTop = 0
+            }
+
+            // 站内是 App Router 的客户端跳转：前进/后退与 pushState 不会触发 onPageFinished，
+            // 底栏高亮得靠这个回调跟上
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                nav.sync(url)
             }
 
             override fun onPageFinished(view: WebView, url: String?) {
                 progress.visibility = View.GONE
+                refresh.isRefreshing = false
                 hideSplash()
+                nav.sync(url)
                 view.evaluateJavascript(BRIDGE_SHIM, null)
+                maybeAutoCheckUpdate()
             }
 
             override fun onReceivedError(
@@ -215,6 +235,7 @@ class MainActivity : AppCompatActivity() {
             ) {
                 if (!request.isForMainFrame) return
                 progress.visibility = View.GONE
+                refresh.isRefreshing = false
                 hideSplash()
                 offline.visibility = View.VISIBLE
             }
@@ -392,6 +413,56 @@ class MainActivity : AppCompatActivity() {
             isAppearanceLightNavigationBars = !dark
         }
         web.setBackgroundColor(bg)
+
+        if (::nav.isInitialized) nav.applyTheme(dark)
+        if (::refresh.isInitialized) refresh.applyTheme(dark)
+    }
+
+    // ── 应用内更新 ────────────────────────────────────────────────
+
+    /** 首屏加载完成后静默查一次；有新版才弹窗，没有就什么都不做 */
+    private fun maybeAutoCheckUpdate() {
+        if (updateChecked) return
+        updateChecked = true
+        web.postDelayed({ if (!isFinishing) Updater.check(this, manual = false) }, 2200)
+    }
+
+    fun checkForUpdate(manual: Boolean = true) {
+        Updater.check(this, manual)
+    }
+
+    // ── 原生外壳（底栏 / 下拉刷新） ────────────────────────────────
+
+    private fun setupShell() {
+        refresh.pageScrollTop = { pageScrollTop }
+        refresh.applyTheme(currentDark)
+        refresh.onRefresh = { web.reload() }
+
+        nav.onSelect = { item ->
+            val base = BuildConfig.APP_URL.trimEnd('/')
+            web.loadUrl(if (item.path == "/") "$base/" else base + item.path)
+        }
+        // 再点当前项：回到顶部，不重新加载（安卓上的肌肉记忆）
+        nav.onReselect = { scrollSiteToTop() }
+        nav.sync(web.url)
+    }
+
+    /**
+     * 回到顶部。站点的滚动容器是 `.site-scroll` 而不是 document，
+     * 两个都试一遍，换布局了也不会失效。
+     */
+    private fun scrollSiteToTop() {
+        web.evaluateJavascript(
+            "(function(){var s=document.querySelector('.site-scroll');" +
+                "if(s&&s.scrollTo){s.scrollTo({top:0,behavior:'smooth'});}" +
+                "else{window.scrollTo({top:0,behavior:'smooth'});}})();",
+            null,
+        )
+    }
+
+    /** 注入脚本在滚动时上报，只存数值，不碰 UI */
+    internal fun onPageScroll(top: Int) {
+        pageScrollTop = top
     }
 
     // ── 杂项 ──────────────────────────────────────────────────────
@@ -472,6 +543,33 @@ class MainActivity : AppCompatActivity() {
                     }
                   }
                 };
+                // 原生底栏接管导航：只把网页那条隐藏。页脚仍保留为底栏预留的 96px，
+                // 因为原生那条用的是同一套几何（悬浮、左右 10、底部 10），位置完全重合
+                (function applyShell() {
+                  try {
+                    if (document.getElementById('native-shell')) return;
+                    var css = document.createElement('style');
+                    css.id = 'native-shell';
+                    css.textContent = '.tabbar{display:none!important}';
+                    (document.head || document.documentElement).appendChild(css);
+                  } catch (e) {}
+                })();
+
+                // 滚动位置上报（按帧合并）：下拉刷新靠它判断「是否真的在顶部」
+                (function watchScroll() {
+                  var ticking = false;
+                  document.addEventListener('scroll', function (e) {
+                    var t = e.target;
+                    if (!t || !t.classList || !t.classList.contains('site-scroll')) return;
+                    if (ticking) return;
+                    ticking = true;
+                    requestAnimationFrame(function () {
+                      ticking = false;
+                      call('setScrollTop', [Math.round(t.scrollTop) || 0]);
+                    });
+                  }, true);
+                })();
+
                 function syncTheme() {
                   var dark = document.documentElement.getAttribute('data-theme') === 'dark';
                   call('setTheme', [dark]);

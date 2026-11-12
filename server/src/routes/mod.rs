@@ -3,6 +3,7 @@ pub mod achievements;
 pub mod admin;
 pub mod admin_todos;
 pub mod agreements;
+pub mod app_files;
 pub mod apps;
 pub mod audit;
 pub mod auth;
@@ -28,6 +29,7 @@ pub mod oauth;
 pub mod posts;
 pub mod public;
 pub mod push;
+pub mod public_resources;
 pub mod resources;
 pub mod rewards;
 pub mod servers;
@@ -205,6 +207,13 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agreements/signatures", get(agreements::signatures))
         .route("/api/v1/agreements/sign", post(agreements::sign))
         .route("/api/v1/app/latest", get(apps::latest))
+        // 安装包站内托管：后台传包 + 公开下载（支持 Range）
+        .route("/downloads/{name}", get(app_files::download))
+        .route(
+            "/api/v1/admin/apps/upload",
+            post(app_files::upload)
+                .layer(axum::extract::DefaultBodyLimit::max(app_files::MAX_BYTES + 1024 * 1024)),
+        )
         // 百科：公开只读 + 后台维护
         .route("/api/v1/wiki", get(wiki::list))
         // 分类：百科与资源库共用，前台表单按 scope 取
@@ -444,6 +453,19 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/resources",
             get(resources::list).post(resources::create),
+        )
+        .route(
+            // 资源库开放接口：免登录、带 CORS，给外部站点与工具用
+            "/api/v1/public/resources",
+            get(public_resources::list).options(public_resources::preflight),
+        )
+        .route(
+            "/api/v1/public/resources/{id}",
+            get(public_resources::detail).options(public_resources::preflight),
+        )
+        .route(
+            "/api/v1/public/meta",
+            get(public_resources::meta).options(public_resources::preflight),
         )
         .route(
             "/api/v1/resources/{id}",

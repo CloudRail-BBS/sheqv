@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   APP_CHANNELS,
   APP_PLATFORMS,
@@ -38,6 +38,9 @@ export function AdminApps({
   /** 读列表失败时的原因；成功为 null */
   listError?: string | null;
 }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [rows, setRows] = useState(releases);
   const [form, setForm] = useState<AppRelease>(BLANK);
   const [creating, setCreating] = useState(false);
@@ -168,6 +171,40 @@ export function AdminApps({
     setPushMsg({ kind: 'ok', text: '已保存，服务端发送推送时会读取' });
   }
 
+
+  /** 安装包直传站内：文件本体 POST 上去，成功后自动回填地址、大小与 SHA-256 */
+  async function uploadPackage(file: File) {
+    setUploading(true);
+    setUploadMsg(null);
+    try {
+      const res = await fetch(
+        `/api/v1/admin/apps/upload?name=${encodeURIComponent(file.name)}`,
+        { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file },
+      );
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; url?: string; size?: number; message?: string }
+        | null;
+      if (!res.ok || !data?.url) {
+        setUploadMsg(data?.message ?? '上传失败');
+        return;
+      }
+      let sha = form.sha256;
+      try {
+        const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+        sha = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+      } catch {
+        // 浏览器不支持时留空，后台仍可手动填
+      }
+      setForm((f) => ({ ...f, downloadUrl: data.url!, fileSize: data.size ?? file.size, sha256: sha }));
+      setUploadMsg(`已上传：${file.name}（${fmtBytes(data.size ?? file.size)}）`);
+    } catch {
+      setUploadMsg('上传失败，请检查网络或文件大小');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
   return (
     <div className="admin-apps">
       {listError && (
@@ -261,6 +298,28 @@ export function AdminApps({
               <label className="field" style={{ gridColumn: '1 / -1' }}>
                 <span>下载地址</span>
                 <input className="input mono" value={form.downloadUrl} onChange={(e) => setForm({ ...form, downloadUrl: e.target.value })} placeholder="https://…/BlockArena-1.0.0.exe 或 /downloads/…" />
+                <small className="small muted" style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    disabled={uploading}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    {uploading ? '上传中…' : '上传安装包到本站'}
+                  </button>
+                  <span>或直接填上面的外链</span>
+                  {uploadMsg && <em style={{ fontStyle: 'normal', color: 'var(--ok)' }}>{uploadMsg}</em>}
+                </small>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".apk,.exe,.msi,.dmg,.zip"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void uploadPackage(file);
+                  }}
+                />
               </label>
               <label className="field">
                 <span>文件大小（MB）</span>
