@@ -37,6 +37,7 @@ export const CONSOLE_GROUPS: { label: string; items: ConsoleItem[] }[] = [
       { href: '/admin/news', label: '新闻', icon: 'doc' },
       { href: '/admin/slides', label: '轮播', icon: 'image' },
       { href: '/admin/settings/content', label: '文案与页脚', icon: 'quote' },
+      { href: '/admin/settings/sources', label: '外部数据源', icon: 'link' },
       { href: '/admin/settings/pagehints', label: '页面提示', icon: 'hint' },
     ],
   },

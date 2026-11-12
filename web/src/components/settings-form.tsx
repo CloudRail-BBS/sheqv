@@ -749,7 +749,7 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         </label>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="sources">
         <h3 style={{ fontSize: 13 }}>外部数据源</h3>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
           资源库会去这几个站拉条目。没配的项只影响对应的来源，不影响站内资源。

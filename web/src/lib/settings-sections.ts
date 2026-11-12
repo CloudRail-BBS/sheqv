@@ -17,6 +17,7 @@ export type SettingsSection =
   | 'moderation'
   | 'integrations'
   | 'content'
+  | 'sources'
   | 'pagehints'
   | 'system';
 
@@ -40,6 +41,11 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = [
   { key: 'moderation', label: '内容审核', desc: '帖子审核策略与 AI 预审配置。' },
   { key: 'integrations', label: '赞助对接', desc: '爱发电名单同步与公开赞助页。' },
   { key: 'content', label: '文案与页脚', desc: '登录提示、页脚文案、备案号与自定义链接。' },
+  {
+    key: 'sources',
+    label: '外部数据源',
+    desc: '资源库从 Modrinth / CurseForge / rtsbox / 地图站拉条目时用的密钥与镜像开关。',
+  },
   { key: 'pagehints', label: '页面提示', desc: '公会、战队、约战、资源等页面标题下的说明文案。' },
   { key: 'system', label: '系统信息', desc: '必须留在环境变量里的进程参数与密钥。' },
 ];
