@@ -4,6 +4,7 @@ import { getDeveloperBoard, listResources } from '@/lib/resource-store';
 import { ResourceCard } from '@/components/resource-card';
 import { ResourceUpload } from '@/components/resource-upload';
 import { RemoteCells } from '@/components/remote-discover';
+import { RwCells } from '@/components/rw-discover';
 import { listMyDevTeams } from '@/lib/dev-team-store';
 import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
@@ -193,7 +194,8 @@ export default async function ResourcesPage({
           </section>
         )}
 
-        {/* 本站资源与外部站点条目混在同一个网格里：外部的排在后面，点卡片才收录 */}
+        {/* 本站资源与外部站点条目混在同一个网格里：外部的排在后面，点卡片才收录。
+            铁锈战争走 rtsbox 模组 + RELAY-CN 地图站（地图是另一套卡型） */}
         {items.length === 0 && (
           <p className="small muted" style={{ margin: '2px 2px 0' }}>
             本站资源里还没有匹配的，下面是 Modrinth 上找到的条目 —— 点卡片即可收录进资源库。
@@ -204,7 +206,11 @@ export default async function ResourcesPage({
           {items.map((r: ResourceView) => (
             <ResourceCard key={r.id} item={r} categories={cats} />
           ))}
-          <RemoteCells q={sp.q} game={sp.game} filtered={Boolean(sp.category)} />
+          {sp.game === 'rusted_warfare' ? (
+            <RwCells q={sp.q} />
+          ) : (
+            <RemoteCells q={sp.q} game={sp.game} filtered={Boolean(sp.category)} />
+          )}
         </div>
       </div>
 

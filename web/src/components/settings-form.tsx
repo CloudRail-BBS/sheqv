@@ -141,6 +141,8 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         announcementsHint: form.announcementsHint,
         policiesHint: form.policiesHint,
         publicBaseUrl: form.publicBaseUrl,
+        curseforgeKey: form.curseforgeKey,
+        rwMapsToken: form.rwMapsToken,
         geetestId: form.geetestId,
         geetestKey: form.geetestKey,
         afdianUserId: form.afdianUserId,
@@ -710,6 +712,47 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
             style={{ height: 'auto', padding: '8px 10px', resize: 'vertical' }}
           />
         </label>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
+        <h3 style={{ fontSize: 13 }}>外部数据源</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          资源库会去这几个站拉条目。没配的项只影响对应的来源，不影响站内资源。
+        </p>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            CurseForge API Key
+            {isOverride('curseforgeKey') && <em className="ovr">已覆盖</em>}
+          </span>
+          <input
+            className="input"
+            value={form.curseforgeKey}
+            onChange={(e) => setForm({ ...form, curseforgeKey: e.target.value })}
+            placeholder="留空则只搜 Modrinth"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            RELAY-CN 地图站 Token
+            {isOverride('rwMapsToken') && <em className="ovr">已覆盖</em>}
+          </span>
+          <input
+            className="input"
+            value={form.rwMapsToken}
+            onChange={(e) => setForm({ ...form, rwMapsToken: e.target.value })}
+            placeholder="铁锈战争地图的 Bearer token，留空则不拉地图"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 8, lineHeight: 1.7 }}>
+          地图站在请求头里校验 <code>Authorization: Bearer &lt;token&gt;</code>；
+          rtsbox 的模组接口不需要密钥，但必须带关键词才会返回数据。
+        </p>
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }} data-section="pagehints">

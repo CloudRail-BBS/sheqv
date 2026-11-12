@@ -44,6 +44,9 @@ export interface SiteSettings {
   getuiAppSecret: string;
   getuiMasterSecret: string;
   publicBaseUrl: string;
+  /** 外部数据源：CurseForge 的 key、RELAY-CN 地图站的 Bearer token */
+  curseforgeKey: string;
+  rwMapsToken: string;
   geetestId: string;
   geetestKey: string;
   afdianUserId: string;
@@ -132,6 +135,8 @@ const DEFAULTS: SiteSettings = {
   getuiAppSecret: '',
   getuiMasterSecret: '',
   publicBaseUrl: '',
+  curseforgeKey: '',
+  rwMapsToken: '',
   geetestId: '',
   geetestKey: '',
   afdianUserId: '',

@@ -73,7 +73,9 @@ pub async fn import(
     };
 
     let source = text(&obj, "source");
-    if !remote_sources::ONLINE_SOURCES.contains(&source.as_str()) {
+    // rtsbox 不支持在线「搜索」（接口要关键词，且没有详情），但搜索结果能直接收录
+    let known = remote_sources::ONLINE_SOURCES.contains(&source.as_str()) || source == "rtsbox";
+    if !known {
         return Err(ApiError::invalid_input("来源站不正确"));
     }
     let item = RemoteItem {
@@ -100,6 +102,8 @@ pub async fn import(
         "modrinth" => item.url.starts_with("https://modrinth.com/"),
         "curseforge" => item.url.starts_with("https://www.curseforge.com/")
             || item.url.starts_with("https://curseforge.com/"),
+        // rtsbox 的下载直链在 cdn 子域，原帖在 www
+        "rtsbox" => item.url.contains("rtsbox.cn"),
         _ => false,
     };
     if !host_ok {
@@ -154,6 +158,9 @@ pub async fn import(
     } else {
         detail.license.trim()
     };
+    // 原帖地址（rtsbox 的搜索结果会带；Minecraft 站留空，详情页用来源徽章跳转）
+    let src_page = text(&obj, "sourceUrl");
+
     // 原站标题偶尔超长（>60 字会被本站校验拒掉），截断总比整条导入失败好
     let title: String = item.title.trim().chars().take(60).collect();
 
@@ -164,11 +171,14 @@ pub async fn import(
         item.icon.trim()
     };
 
+    // rtsbox 是铁锈战争的模组站，其余两个站都是 Minecraft
+    let game = if source == "rtsbox" { "rusted_warfare" } else { item.game() };
+
     let input = NewResource {
         title: &title,
         summary: &summary,
         body: &detail.body,
-        game: item.game(),
+        game,
         category: &category,
         tags: detail.tags.clone(),
         team_id: None,
@@ -179,7 +189,7 @@ pub async fn import(
         game_versions: &detail.game_versions,
         loaders: &detail.loaders,
         deps: "",
-        source_url: "",
+        source_url: &src_page,
         cover,
         source: &source,
         source_id: &item.source_id,

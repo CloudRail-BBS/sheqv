@@ -43,6 +43,8 @@ reqwest = { version = "0.13", default-features = false, features = [
     "webpki-roots",
     "form",
     "json",
+    # 地图下载要边下边转给用户，不能整个读进内存
+    "stream",
 ] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 scrypt = "0.12"
