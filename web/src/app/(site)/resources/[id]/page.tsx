@@ -5,7 +5,7 @@ import { getRequestCaps } from '@/lib/request-caps';
 import { getCurrentUser } from '@/lib/current-user';
 import { getResource } from '@/lib/resource-store';
 import { ResourceActions } from '@/components/resource-actions';
-import { buildMetadata, resourceJsonLd } from '@/lib/seo';
+import { breadcrumbJsonLd, buildMetadata, resourceJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import { fmtNum, fmtSize, gameLabel, gameTone } from '@/lib/resource-types';
 import { catLabel, listCategories } from '@/lib/category-store';
@@ -57,11 +57,22 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
         }).catch(() => '')
       : '';
   const { directDownload, externalBrowserHint } = caps.capabilities.resource;
+  const crumbs = item.status === 'published'
+    ? await breadcrumbJsonLd([
+        { name: '首页', path: '/' },
+        { name: '资源库', path: '/resources' },
+        { name: catLabel(cats, item.category), path: `/resources?category=${encodeURIComponent(item.category)}` },
+        { name: item.title, path: `/resources/${encodeURIComponent(item.id)}` },
+      ]).catch(() => '')
+    : '';
 
   return (
     <div className="cols">
       {jsonLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      )}
+      {crumbs && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: crumbs }} />
       )}
       <div className="col-main">
         <div className="crumb">

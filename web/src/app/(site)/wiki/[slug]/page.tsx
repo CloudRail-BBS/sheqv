@@ -5,7 +5,7 @@ import { catLabel, listCategories } from '@/lib/category-store';
 import { getSettings } from '@/lib/settings';
 import { WikiCompose } from '@/components/wiki-compose';
 import { Markdown } from '@/lib/markdown';
-import { buildMetadata } from '@/lib/seo';
+import { breadcrumbJsonLd, buildMetadata, wikiTermJsonLd } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: data.entry.title,
     description: data.entry.summary || undefined,
     path: `/wiki/${data.entry.slug}`,
+    type: 'article',
+    publishedTime: data.entry.createdAt,
+    modifiedTime: data.entry.updatedAt,
+    authors: data.entry.author ? [data.entry.author] : undefined,
   });
 }
 
@@ -34,9 +38,34 @@ export default async function WikiEntryPage({ params }: { params: Promise<{ slug
 
   const { entry, related } = data;
   const toc = tocOf(entry.body).filter((h) => h.level === 2).slice(0, 14);
+  const categoryLabel = catLabel(cats, entry.category);
+  const jsonLd = await wikiTermJsonLd({
+    slug: entry.slug,
+    title: entry.title,
+    summary: entry.summary,
+    body: entry.body,
+    category: entry.category,
+    categoryLabel,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  });
+  const crumbs = await breadcrumbJsonLd([
+    { name: '首页', path: '/' },
+    { name: '百科', path: '/wiki' },
+    { name: categoryLabel, path: `/wiki?category=${encodeURIComponent(entry.category)}` },
+    { name: entry.title, path: `/wiki/${encodeURIComponent(entry.slug)}` },
+  ]);
 
   return (
     <div className="cols">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: crumbs }}
+      />
       <div className="col-main wiki-main">
         <div className="crumb">
           <Link href="/wiki">百科</Link>

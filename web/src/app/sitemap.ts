@@ -7,6 +7,8 @@ import { listResources } from '@/lib/resource-store';
 import { listDevTeams } from '@/lib/dev-team-store';
 import { listPolicies } from '@/lib/policy-store';
 import { listTournaments } from '@/lib/tournament-store';
+import { listNews } from '@/lib/news-store';
+import { listWiki } from '@/lib/wiki';
 
 /**
  * 动态 sitemap：静态入口 + 帖子 + 公会 / 战队 + 公告 + 资源 / 团队。
@@ -45,18 +47,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/tasks'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/about'), lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: url('/changelog'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: url('/news'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    { url: url('/wiki'), lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: url('/events'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: url('/rewards'), lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: url('/shop'), lastModified: now, changeFrequency: 'weekly', priority: 0.4 },
   ];
 
-  const [posts, guilds, teams, news, resources, devTeams, policies, tournaments] = await Promise.all([
-    listPosts(),
-    listOrgs('guild'),
-    listOrgs('team'),
-    listAnnouncements({ publishedOnly: true }),
-    listResources(),
-    listDevTeams(),
-    listPolicies(),
-    listTournaments(),
-  ]);
+  const [posts, guilds, teams, news, resources, devTeams, policies, tournaments, articles, wiki] =
+    await Promise.all([
+      listPosts(),
+      listOrgs('guild'),
+      listOrgs('team'),
+      listAnnouncements({ publishedOnly: true }),
+      listResources(),
+      listDevTeams(),
+      listPolicies(),
+      listTournaments(),
+      // 新闻与百科是内容型页面，收录价值最高，别漏
+      listNews({ limit: LIMIT }),
+      listWiki({}),
+    ]);
 
   for (const p of posts) {
     if (p.status && p.status !== 'published') continue;
@@ -106,6 +117,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(t.createdAt),
       changeFrequency: 'weekly',
       priority: 0.6,
+    });
+  }
+  for (const a of articles.slice(0, LIMIT)) {
+    entries.push({
+      url: url(`/news/${a.id}`),
+      lastModified: new Date(a.publishedAt),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    });
+  }
+  for (const w of wiki.slice(0, LIMIT)) {
+    if (!w.published) continue;
+    entries.push({
+      url: url(`/wiki/${w.slug}`),
+      lastModified: new Date(w.updatedAt),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     });
   }
   for (const t of devTeams.slice(0, LIMIT)) {

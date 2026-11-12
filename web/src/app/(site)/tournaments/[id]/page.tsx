@@ -8,7 +8,7 @@ import { TournamentStatusBadge } from '@/components/tournament-status';
 import { getCurrentUser } from '@/lib/current-user';
 import { TournamentSignup } from '@/components/tournament-signup';
 import { Markdown, markdownToText } from '@/lib/markdown';
-import { buildMetadata } from '@/lib/seo';
+import { breadcrumbJsonLd, buildMetadata, tournamentJsonLd } from '@/lib/seo';
 import { gameLabel } from '@/lib/resource-types';
 import { TOURNAMENT_STATUS_LABEL, fmtDay } from '@/lib/task-types';
 import { MEDIA_W, mediaUrl } from '@/lib/media';
@@ -42,9 +42,37 @@ export default async function TournamentDetail({ params }: { params: Promise<{ i
   const hostLabel = item.hostName || brand;
   const isHost = Boolean(user && item.hostUserId && item.hostUserId === user.id);
   const canEntryCert = myEntry?.status === 'approved';
+  const jsonLd = item.status === 'draft'
+    ? ''
+    : await tournamentJsonLd({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        game: item.game,
+        status: item.status,
+        startAt: item.startAt,
+        endAt: item.endAt,
+        signupEnd: item.signupEnd,
+        hostName: item.hostName,
+        cover: item.cover,
+        entryCount: item.entryCount,
+      }).catch(() => '');
+  const crumbs = item.status === 'draft'
+    ? ''
+    : await breadcrumbJsonLd([
+        { name: '首页', path: '/' },
+        { name: '赛事', path: '/tournaments' },
+        { name: item.title, path: `/tournaments/${encodeURIComponent(item.id)}` },
+      ]).catch(() => '');
 
   return (
     <div className="cols">
+      {jsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      )}
+      {crumbs && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: crumbs }} />
+      )}
       <div className="col-main">
         <div className="crumb">
           <Link href="/tournaments">赛事</Link>

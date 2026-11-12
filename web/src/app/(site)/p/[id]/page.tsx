@@ -14,7 +14,7 @@ import { NameBadges } from '@/components/name-badges';
 import { getAchievementMap, findBadges } from '@/lib/achievements';
 import { AchievementChips } from '@/components/achievement-chips';
 import { UserHoverCard } from '@/components/user-hover-card';
-import { buildMetadata, postJsonLd } from '@/lib/seo';
+import { breadcrumbJsonLd, buildMetadata, postJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import { getImageSizes } from '@/lib/media-sizes';
 import { publicCaptchaId } from '@/lib/geetest';
@@ -35,6 +35,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: markdownToText(post.body).slice(0, 120),
     path: `/p/${id}`,
     type: 'article',
+    publishedTime: post.createdAt,
+    modifiedTime: post.editedAt,
+    authors: [post.author],
   });
 }
 
@@ -88,11 +91,23 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const pending = post.status === 'pending';
   const rejected = post.status === 'rejected';
   const unpublished = pending || rejected;
+  const crumbs = post.status === 'published'
+    ? await breadcrumbJsonLd([
+        { name: '首页', path: '/' },
+        ...(post.section
+          ? [{ name: catLabel(sections, post.section), path: `/?section=${encodeURIComponent(post.section)}` }]
+          : []),
+        { name: post.title?.trim() || '帖子', path: `/p/${encodeURIComponent(post.id)}` },
+      ]).catch(() => '')
+    : '';
 
   return (
     <div className="cols">
       {jsonLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      )}
+      {crumbs && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: crumbs }} />
       )}
       <div className="col-main">
         <div className="crumb">

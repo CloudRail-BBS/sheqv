@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { organizationJsonLd } from '@/lib/seo';
 import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ScrollReset } from '@/components/scroll-reset';
@@ -45,6 +46,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: await organizationJsonLd() }}
+      />
       <div className="site-scroll">
         <header className="topbar">
           <div className="topbar-in">

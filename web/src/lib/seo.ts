@@ -104,6 +104,11 @@ export interface PageMetaInput {
   /** 只在根 layout 传 true：标题用 default + template，子页面只给字符串 */
   root?: boolean;
   type?: 'website' | 'article';
+  /** 文章类页面：发布时间 / 修改时间（毫秒或 ISO 字符串都行） */
+  publishedTime?: number | string;
+  modifiedTime?: number | string;
+  /** 文章作者，进 meta author 与 og:article 的署名 */
+  authors?: string[];
 }
 
 export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata> {
@@ -114,6 +119,13 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
   const headline = title ? `${title} · ${site.name}` : defaultTitle;
   const shareImage = absolute(input.image || site.ogImage, site.baseUrl);
   const indexable = site.index && !input.noIndex;
+  const iso = (v?: number | string): string | undefined => {
+    if (v === undefined || v === null || v === '') return undefined;
+    const d = typeof v === 'number' ? new Date(v) : new Date(v);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  };
+  const publishedTime = iso(input.publishedTime);
+  const modifiedTime = iso(input.modifiedTime);
   const canonical = input.path
     ? site.baseUrl
       ? absolute(input.path, site.baseUrl)
@@ -133,6 +145,9 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
     applicationName: site.name,
     creator: site.name,
     publisher: site.name,
+    ...(input.authors?.length
+      ? { authors: input.authors.filter(Boolean).map((name) => ({ name })) }
+      : {}),
     alternates: canonical ? { canonical } : undefined,
     openGraph: {
       type: input.type ?? 'website',
@@ -141,7 +156,10 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
       description,
       locale: 'zh_CN',
       url: canonical,
-      images: [{ url: shareImage, width: 1200, height: 630, alt: site.name }],
+      ...(publishedTime ? { publishedTime } : {}),
+      ...(modifiedTime ? { modifiedTime } : {}),
+      ...(input.authors?.length ? { authors: input.authors.filter(Boolean) } : {}),
+      images: [{ url: shareImage, width: 1200, height: 630, alt: title || site.name }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -158,6 +176,162 @@ export async function buildMetadata(input: PageMetaInput = {}): Promise<Metadata
         }
       : { index: false, follow: false },
   };
+}
+
+/** 组织：站点级 JSON-LD 里的 publisher，给搜索结果补品牌信息 */
+export async function organizationJsonLd(): Promise<string> {
+  const site = await getSiteMeta();
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: site.name,
+    alternateName: 'CloudRail Community',
+    ...(site.baseUrl ? { url: site.baseUrl } : {}),
+    logo: site.logo,
+    description: site.description,
+  });
+}
+
+/** 面包屑：详情页在搜索结果里显示层级，比一条光秃秃的链接更可信 */
+export async function breadcrumbJsonLd(
+  crumbs: Array<{ name: string; path?: string }>,
+): Promise<string> {
+  const site = await getSiteMeta();
+  const base = (site.baseUrl || '').replace(/\/+$/, '');
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((crumb, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: crumb.name,
+      ...(crumb.path ? { item: base ? `${base}${crumb.path}` : crumb.path } : {}),
+    })),
+  });
+}
+
+/** 新闻：NewsArticle，带栏目、封面与发布者 */
+export async function newsArticleJsonLd(item: {
+  id: string;
+  title: string;
+  summary: string;
+  body: string;
+  author: string;
+  cover?: string;
+  columnName?: string | null;
+  publishedAt: number;
+}): Promise<string> {
+  const site = await getSiteMeta();
+  const base = (site.baseUrl || '').replace(/\/+$/, '');
+  const url = base ? `${base}/news/${item.id}` : `/news/${item.id}`;
+  const image = item.cover ? absolute(item.cover, base) : '';
+  const description =
+    item.summary.trim() || item.body.replace(/[#>*_`\[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: item.title,
+    description,
+    url,
+    mainEntityOfPage: url,
+    datePublished: new Date(item.publishedAt).toISOString(),
+    dateModified: new Date(item.publishedAt).toISOString(),
+    inLanguage: 'zh-CN',
+    ...(image ? { image: [image] } : {}),
+    ...(item.columnName ? { articleSection: item.columnName } : {}),
+    author: { '@type': 'Person', name: item.author || site.name },
+    publisher: {
+      '@type': 'Organization',
+      name: site.name,
+      ...(site.logo
+        ? { logo: { '@type': 'ImageObject', url: site.logo } }
+        : {}),
+    },
+  });
+}
+
+/** 百科词条：DefinedTerm，按分类挂在 DefinedTermSet 下 */
+export async function wikiTermJsonLd(entry: {
+  slug: string;
+  title: string;
+  summary: string;
+  body: string;
+  category: string;
+  categoryLabel?: string;
+  createdAt: number;
+  updatedAt: number;
+}): Promise<string> {
+  const site = await getSiteMeta();
+  const base = (site.baseUrl || '').replace(/\/+$/, '');
+  const url = base ? `${base}/wiki/${entry.slug}` : `/wiki/${entry.slug}`;
+  const description =
+    entry.summary.trim() || entry.body.replace(/[#>*_`\[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTerm',
+    name: entry.title,
+    description,
+    url,
+    inLanguage: 'zh-CN',
+    ...(entry.category
+      ? {
+          inDefinedTermSet: {
+            '@type': 'DefinedTermSet',
+            name: entry.categoryLabel || entry.category,
+            ...(base ? { url: `${base}/wiki?category=${encodeURIComponent(entry.category)}` } : {}),
+          },
+        }
+      : {}),
+    datePublished: new Date(entry.createdAt).toISOString(),
+    dateModified: new Date(entry.updatedAt).toISOString(),
+  });
+}
+
+/** 赛事：Event，草稿不输出；线上赛事按 VirtualLocation 处理 */
+export async function tournamentJsonLd(item: {
+  id: string;
+  title: string;
+  summary: string;
+  game: string;
+  status: 'draft' | 'signup' | 'running' | 'ended';
+  startAt?: number;
+  endAt?: number;
+  signupEnd?: number;
+  hostName?: string;
+  cover?: string;
+  entryCount: number;
+}): Promise<string> {
+  const site = await getSiteMeta();
+  const base = (site.baseUrl || '').replace(/\/+$/, '');
+  const url = base ? `${base}/tournaments/${item.id}` : `/tournaments/${item.id}`;
+  const start = item.startAt ?? item.signupEnd;
+
+  return jsonLdString({
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: item.title,
+    description: item.summary || `${item.game} 社区赛事`,
+    url,
+    ...(start ? { startDate: new Date(start).toISOString() } : {}),
+    ...(item.endAt ? { endDate: new Date(item.endAt).toISOString() } : {}),
+    // 已结束的赛事仍然是「如期举办过的活动」，不改状态
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+    inLanguage: 'zh-CN',
+    ...(item.cover ? { image: [absolute(item.cover, base)] } : {}),
+    location: {
+      '@type': 'VirtualLocation',
+      ...(url ? { url } : {}),
+    },
+    organizer: {
+      '@type': 'Organization',
+      name: item.hostName || site.name,
+      ...(site.baseUrl ? { url: site.baseUrl } : {}),
+    },
+    ...(item.entryCount > 0 ? { attendeeCount: item.entryCount } : {}),
+  });
 }
 
 /** 首页专用：站点级 JSON-LD（WebSite + 站内搜索） */

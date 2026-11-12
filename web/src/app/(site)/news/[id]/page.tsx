@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { canExportPaper, getNews, newsDay } from '@/lib/news-store';
 import { getCurrentUser } from '@/lib/current-user';
-import { buildMetadata } from '@/lib/seo';
+import { breadcrumbJsonLd, buildMetadata, newsArticleJsonLd } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +15,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: item.summary || item.body.replace(/\s+/g, ' ').slice(0, 120),
     path: `/news/${id}`,
     type: 'article',
+    publishedTime: item.publishedAt,
+    authors: item.author ? [item.author] : undefined,
   });
 }
 
@@ -25,9 +27,35 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
   const canExport = canExportPaper(user);
 
   const paragraphs = item.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const jsonLd = await newsArticleJsonLd({
+    id: item.id,
+    title: item.title,
+    summary: item.summary,
+    body: item.body,
+    author: item.author,
+    cover: item.cover,
+    columnName: item.columnName,
+    publishedAt: item.publishedAt,
+  });
+  const crumbs = await breadcrumbJsonLd([
+    { name: '首页', path: '/' },
+    { name: '新闻', path: '/news' },
+    ...(item.columnName
+      ? [{ name: item.columnName, path: `/news?column=${encodeURIComponent(item.columnSlug || '')}` }]
+      : []),
+    { name: item.title, path: `/news/${encodeURIComponent(item.id)}` },
+  ]);
 
   return (
     <div className="cols">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: crumbs }}
+      />
       <div className="col-main">
         <div className="crumb">
           <Link href="/news">新闻</Link>
@@ -51,7 +79,7 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
 
           {item.cover && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="news-detail-cover" src={item.cover} alt="" decoding="async" />
+            <img className="news-detail-cover" src={item.cover} alt={item.title} decoding="async" />
           )}
 
           <div className="news-detail-body">
