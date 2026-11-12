@@ -10,6 +10,7 @@ import type { UserGroup } from '@/lib/users';
 import { UserHoverCard } from './user-hover-card';
 import { SmartImage } from './smart-image';
 import { VerifyMark } from './verify-mark';
+import { UserBadge } from './user-badge';
 
 type Item = FeedItem & { href?: string };
 
@@ -119,8 +120,7 @@ export function PostCard({
 
       <div className="fc-body">
         <div className="fc-head">
-          {/* 头衔 / 身份组 / 成就不在这行堆着（窄卡片会挤成两行），
-              鼠标停在头像或昵称上时由悬浮卡展示 */}
+          {/* 列表里只挂头衔：身份组与成就放在悬浮卡，窄卡片不至于挤成两行 */}
           <span
             className="fc-avatar"
             title={
@@ -145,6 +145,7 @@ export function PostCard({
           >
             <b>{item.author}</b>
           </UserHoverCard>
+          <UserBadge badge={badge} size="sm" />
           <VerifyMark kind={item.authorVerify} />
           {item.pinned && (
             <span className="fc-flag" data-flag="pinned">

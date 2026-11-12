@@ -236,6 +236,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   <AchievementChips
                     badges={findBadges(achievements, { id: post.authorId, name: post.author }, 3)}
                     size="sm"
+                    skip={[op.badge?.label, op.group?.name, '楼主']}
                   />
                   <span className="pb-op">楼主</span>
                 </div>
