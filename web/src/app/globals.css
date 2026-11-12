@@ -2573,6 +2573,80 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .res-head-summary { margin: 0; font-size: 13.5px; line-height: 1.85; color: var(--text-2); }
 /* 来源站徽章：可点回原站，悬停时给一点反馈，别做成按钮的样子 */
 .res-source-badge { text-decoration: none; cursor: pointer; }
+
+/* ── 公告弹窗 ───────────────────────────── */
+
+.ann-modal-mask {
+  position: fixed; inset: 0; z-index: 200;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(8, 12, 20, 0.46);
+  animation: annFade 0.18s var(--ease);
+}
+.ann-modal {
+  width: min(460px, 100%);
+  padding: 18px 18px 14px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px -28px rgba(6, 10, 20, 0.6);
+  animation: annRise 0.2s var(--ease);
+}
+.ann-modal-head { display: flex; align-items: center; gap: 8px; }
+.ann-modal-kind {
+  flex: none; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-line);
+}
+.ann-modal-head b { font-size: 15px; line-height: 1.45; }
+.ann-modal-body {
+  margin: 12px 0 16px; font-size: 13px; line-height: 1.85; color: var(--text-2);
+  max-height: 42vh; overflow-y: auto;
+}
+.ann-modal-foot { display: flex; justify-content: flex-end; gap: 8px; }
+@keyframes annFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes annRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 560px) {
+  .ann-modal { padding: 16px 14px 12px; border-radius: 14px; }
+  .ann-modal-head b { font-size: 14px; }
+}
+
+/* ── 资源库：外部站点拉取 ───────────────── */
+
+.res-discover {
+  margin: 0 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  overflow: hidden;
+}
+/* 标题行不是按钮：这一块常驻展开，不做单独折叠 */
+.res-discover-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 11px 14px; color: var(--text);
+}
+.res-discover-title { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 600; }
+.res-discover-title em { font-style: normal; font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.res-discover-body {
+  padding: 0 14px 14px; border-top: 1px solid var(--line-soft);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.res-discover-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 10px; }
+.res-discover-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
+/* 这一行是列向 flex 的子项：写 flex-grow 会把它纵向拉长，必须锁高 */
+.res-discover-search { flex: 0 0 auto; width: 100%; height: 34px; }
+.res-discover-msg { margin: 0; }
+/* 外部结果直接复用站内资源卡（.res-grid + .res-card），只把标题改成链接 */
+.res-discover .res-grid { margin-top: 2px; }
+.res-discover .res-title {
+  display: block; text-decoration: none; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.res-discover .res-title:hover { color: var(--blue); }
+.res-discover .res-cover { text-decoration: none; }
+.res-discover .res-foot { align-items: center; }
+@media (max-width: 700px) {
+  .res-discover-title em { display: none; }
+}
 .res-source-badge:hover {
   color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft);
 }

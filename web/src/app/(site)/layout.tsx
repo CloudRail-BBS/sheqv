@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { organizationJsonLd } from '@/lib/seo';
 import { listAnnouncements } from '@/lib/announcement-store';
 import { AnnouncementBar } from '@/components/announcement-bar';
+import { AnnouncementModal } from '@/components/announcement-modal';
 import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ScrollReset } from '@/components/scroll-reset';
@@ -153,6 +154,18 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         <AnnouncementBar
           items={announcements.map((a) => ({ id: a.id, title: a.title, kind: a.kind }))}
         />
+
+        {/* 最新一条公告进站弹一次；同一条只弹一次，关掉后顶栏那条还在 */}
+        {announcements[0] && (
+          <AnnouncementModal
+            item={{
+              id: announcements[0].id,
+              title: announcements[0].title,
+              body: announcements[0].body,
+              kind: announcements[0].kind,
+            }}
+          />
+        )}
 
         <div className="app">
           <Sidebar items={settings.sidebarItems} dmUnread={chrome.dmUnread} />

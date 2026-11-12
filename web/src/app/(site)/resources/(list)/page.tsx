@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getDeveloperBoard, listResources } from '@/lib/resource-store';
 import { ResourceCard } from '@/components/resource-card';
 import { ResourceUpload } from '@/components/resource-upload';
+import { RemoteDiscover } from '@/components/remote-discover';
 import { listMyDevTeams } from '@/lib/dev-team-store';
 import { EmptyState } from '@/components/empty-state';
 import { FoldCard } from '@/components/fold-card';
@@ -171,6 +172,9 @@ export default async function ResourcesPage({
             </Link>
           )}
         </div>
+
+        {/* 外部站点：搜索 + 一键导入（Modrinth 免 key；CurseForge 需后台配 key） */}
+        <RemoteDiscover />
 
         {recent.length > 0 && (
           <section className="res-recent">

@@ -55,6 +55,7 @@ pub mod orgs;
 pub mod points;
 pub mod policies;
 pub mod push;
+pub mod remote_sources;
 pub mod resources;
 pub mod rewards;
 pub mod oauth;

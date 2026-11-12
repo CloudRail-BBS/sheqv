@@ -29,6 +29,7 @@ pub mod oauth;
 pub mod posts;
 pub mod public;
 pub mod push;
+pub mod discover;
 pub mod public_resources;
 pub mod resources;
 pub mod rewards;
@@ -473,6 +474,9 @@ pub fn router(state: AppState) -> Router {
                 .patch(resources::patch)
                 .delete(resources::remove),
         )
+        // 从 Modrinth / CurseForge 拉取（搜索不落库，导入才落库）
+        .route("/api/v1/resources/discover", get(discover::discover))
+        .route("/api/v1/resources/import", post(discover::import))
         .route("/api/v1/resources/{id}/like", post(resources::like))
         .route("/api/v1/resources/{id}/download", post(resources::download))
         .route(
