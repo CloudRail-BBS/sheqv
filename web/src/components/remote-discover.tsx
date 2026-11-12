@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CoverImage } from './cover-image';
 
 /**
  * 外部站点条目（Modrinth）。
@@ -125,10 +126,7 @@ export function RemoteCells({
           onClick={() => void collect(item)}
         >
           <span className={'res-cover cover-mc' + (item.icon ? ' has-img' : '')}>
-            {item.icon && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="res-cover-img" src={item.icon} alt="" loading="lazy" decoding="async" />
-            )}
+            <CoverImage src={item.icon} />
             <span className="badge badge-mc res-cover-tag">Minecraft</span>
             <span className="ver">{kindLabel(item.kind)}</span>
           </span>

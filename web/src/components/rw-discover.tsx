@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RwMapCard, type RwMapItem } from './rw-map-card';
+import { CoverImage } from './cover-image';
 
 /**
  * 铁锈战争的外部条目：rtsbox 的模组 + RELAY-CN 地图站的地图。
@@ -107,10 +108,7 @@ export function RwCells({ q }: { q?: string }) {
           onClick={() => void collect(mod)}
         >
           <span className={'res-cover cover-rw' + (mod.icon ? ' has-img' : '')}>
-            {mod.icon && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="res-cover-img" src={mod.icon} alt="" loading="lazy" decoding="async" />
-            )}
+            <CoverImage src={mod.icon} />
             <span className="badge badge-rw res-cover-tag">Rusted Warfare</span>
             <span className="ver">模组</span>
           </span>

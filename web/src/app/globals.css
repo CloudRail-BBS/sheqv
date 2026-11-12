@@ -2609,6 +2609,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   border: 1px solid var(--line);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
+/* 方标里的首字跟着主题换色：深色背景给白字，浅色背景（浅色主题的 cover-*）
+   换成同色系的深色，否则白字压在淡底上等于没有 */
+[data-theme="light"] .res-head-mark.cover-mc { color: #047857; }
+[data-theme="light"] .res-head-mark.cover-rw { color: #1d4ed8; }
 .res-head-main { min-width: 0; flex: 1; }
 /* 方标上贴封面 / logo；作者悬停时把「换封面」露出来，手机上常显 */
 .res-head-mark { position: relative; overflow: hidden; }
@@ -2703,10 +2707,17 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   transition: transform 0.32s var(--ease);
 }
 .rwmap:hover .rwmap-thumb img { transform: scale(1.03); }
+/* 没有缩略图 / 图挂了时的占位：图标 + 一行说明，别只留一块空白 */
 .rwmap-thumb-empty {
-  display: grid; place-items: center; height: 100%;
-  font-size: 12px; letter-spacing: 0.08em; color: var(--text-3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; height: 100%;
+  color: var(--text-3);
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
+.rwmap-thumb-empty em { font-style: normal; font-size: 11.5px; letter-spacing: 0.02em; }
 .rwmap-body { padding: 12px 13px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .rwmap-name {
   font-size: 14.5px; font-weight: 650; line-height: 1.45; color: var(--text);

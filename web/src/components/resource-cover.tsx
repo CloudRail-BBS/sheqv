@@ -86,7 +86,12 @@ export function ResourceCover({
     <div className={'res-head-mark cover-' + tone + (current ? ' has-img' : '')}>
       {current ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={current} alt={`${title} 的封面`} decoding="async" />
+        <img
+          src={current}
+          alt={`${title} 的封面`}
+          decoding="async"
+          onError={() => setCurrent('')}
+        />
       ) : (
         <span aria-hidden="true">{title.trim().slice(0, 1)}</span>
       )}

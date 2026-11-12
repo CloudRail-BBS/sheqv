@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 /**
  * 铁锈战争地图卡（参考 RELAY-CN 地图库的卡型）。
  *
@@ -52,6 +54,9 @@ export function RwMapCard({
   busy?: boolean;
 }) {
   const thumb = item.thumb || item.image;
+  // 地图站的图偶尔 404 或被防盗链挡掉：破了就退回占位，别留一个碎图标
+  const [thumbBroken, setThumbBroken] = useState(false);
+  const showThumb = Boolean(thumb) && !thumbBroken;
 
   return (
     <article className="card rwmap">
@@ -62,11 +67,29 @@ export function RwMapCard({
         rel="noreferrer noopener"
         aria-label={`查看 ${item.name} 大图`}
       >
-        {thumb ? (
+        {showThumb ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumb} alt={`${item.name} 缩略图`} loading="lazy" decoding="async" />
+          <img
+            src={thumb}
+            alt={`${item.name} 缩略图`}
+            loading="lazy"
+            decoding="async"
+            onError={() => setThumbBroken(true)}
+          />
         ) : (
-          <span className="rwmap-thumb-empty" aria-hidden="true">RW</span>
+          <span className="rwmap-thumb-empty" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26">
+              <path
+                d="M3 17.5 8.4 9l3.6 5.4 2.6-3.6L21 17.5M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <em>暂无预览图</em>
+          </span>
         )}
       </a>
 

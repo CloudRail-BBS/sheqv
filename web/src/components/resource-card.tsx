@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { fmtNum, gameLabel, gameTone, type ResourceView } from '@/lib/resource-types';
 import { catLabel, type ContentCategory } from '@/lib/category-types';
+import { CoverImage } from './cover-image';
 
 /**
  * 资源卡（参考资源广场的竖版卡）：
@@ -31,16 +32,7 @@ export function ResourceCard({
   return (
     <Link href={`/resources/${item.id}`} className="card res-card">
       <div className={'res-cover cover-' + tone + (item.cover ? ' has-img' : '')}>
-        {item.cover && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            className="res-cover-img"
-            src={item.cover}
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-        )}
+        <CoverImage src={item.cover} />
         <span className={'badge badge-' + tone + ' res-cover-tag'}>{gameLabel(item.game)}</span>
       </div>
 
