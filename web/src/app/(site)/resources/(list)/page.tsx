@@ -12,6 +12,7 @@ import {
   RESOURCE_GAMES,
   fmtNum,
   gameLabel,
+  gameTone,
   type ResourceView,
 } from '@/lib/resource-types';
 import { catLabel, listCategories } from '@/lib/category-store';
@@ -52,11 +53,15 @@ export default async function ResourcesPage({
     }),
     getDeveloperBoard(),
     getSettings(),
-    listCategories('resource'),
+    listCategories('resource', { counts: true }),
   ]);
   const teams = user ? await listMyDevTeams() : [];
 
   const totalLikes = items.reduce((n, r) => n + r.likeCount, 0);
+  const totalCats = cats.reduce((n, c) => n + (c.count || 0), 0);
+  // 第一页（无任何筛选）才铺「最近更新」，否则会和下面的筛选结果重复
+  const firstPage = !sp.q && !sp.game && !sp.category && sort === 'new';
+  const recent = firstPage ? items.slice(0, 6) : [];
   const totalDownloads = items.reduce((n, r) => n + r.downloadCount, 0);
   const base = { game: sp.game, category: sp.category, sort: sp.sort, q: sp.q };
 
@@ -85,11 +90,21 @@ export default async function ResourcesPage({
         </div>
 
         <div className="res-toolbar">
-          <div className="res-stats">
-            <span><b className="mono">{items.length}</b> 个资源</span>
-            <span><b className="mono">{fmtNum(totalLikes)}</b> 次点赞</span>
-            <span><b className="mono">{fmtNum(totalDownloads)}</b> 次下载</span>
-          </div>
+          <form action="/resources" className="res-search" role="search">
+            {sp.game && <input type="hidden" name="game" value={sp.game} />}
+            {sp.category && <input type="hidden" name="category" value={sp.category} />}
+            {sort !== 'new' && <input type="hidden" name="sort" value={sort} />}
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            <input
+              name="q"
+              defaultValue={sp.q ?? ''}
+              placeholder="搜索资源名称…"
+              aria-label="搜索资源"
+            />
+          </form>
           <div className="row res-sort" style={{ gap: 6 }}>
             {[
               { key: 'new', label: '最新' },
@@ -108,9 +123,29 @@ export default async function ResourcesPage({
           </div>
         </div>
 
-        <div className="row wrap" style={{ gap: 6, marginTop: 4 }}>
+        {/* 分类是资源库的主维度，放第一行；游戏只是它的二级筛选 */}
+        <div className="row wrap" style={{ gap: 6 }}>
+          <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
+            全部分类
+            {totalCats > 0 && <em className="chip-n">{totalCats}</em>}
+          </Link>
+          {cats.map((c) => (
+            <Link
+              key={c.key}
+              href={buildQuery(base, { category: c.key })}
+              className="chip"
+              data-on={sp.category === c.key}
+            >
+              {c.label}
+              {c.count > 0 && <em className="chip-n">{c.count}</em>}
+            </Link>
+          ))}
+        </div>
+
+        <div className="row wrap" style={{ gap: 6, marginTop: 8, alignItems: 'center' }}>
+          <span className="small muted" style={{ marginRight: 2 }}>游戏</span>
           <Link href={buildQuery(base, { game: undefined })} className="chip" data-on={!sp.game}>
-            全部游戏
+            全部
           </Link>
           {RESOURCE_GAMES.map((g) => (
             <Link
@@ -124,26 +159,33 @@ export default async function ResourcesPage({
           ))}
         </div>
 
-        <div className="row wrap" style={{ gap: 6, marginTop: 8 }}>
-          <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
-            全部分类
-          </Link>
-          {cats.map((c) => (
-            <Link
-              key={c.key}
-              href={buildQuery(base, { category: c.key })}
-              className="chip"
-              data-on={sp.category === c.key}
-            >
-              {c.label}
+        <div className="between res-summary">
+          <span className="small muted">
+            共 <b className="mono">{items.length}</b> 个资源 · 赞{' '}
+            <b className="mono">{fmtNum(totalLikes)}</b> · 下载{' '}
+            <b className="mono">{fmtNum(totalDownloads)}</b>
+          </span>
+          {sp.q && (
+            <Link href={buildQuery(base, { q: undefined })} className="small">
+              清除搜索「{sp.q}」
             </Link>
-          ))}
+          )}
         </div>
 
-        {sp.q && (
-          <p className="small muted" style={{ marginBottom: 10 }}>
-            搜索「{sp.q}」· <Link href={buildQuery(base, { q: undefined })}>清除</Link>
-          </p>
+        {recent.length > 0 && (
+          <section className="res-recent">
+            <div className="res-recent-head">最近更新</div>
+            <div className="res-recent-row">
+              {recent.map((r) => (
+                <Link key={r.id} href={`/resources/${r.id}`} className="res-recent-card">
+                  <span className={'res-recent-cover cover-' + gameTone(r.game)} />
+                  <span className="res-recent-title" title={r.title}>
+                    {r.title}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
         {items.length === 0 ? (

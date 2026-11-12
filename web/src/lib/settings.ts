@@ -23,6 +23,8 @@ export interface SiteSettings {
   seoOgImage: string;
   /** 是否允许搜索引擎收录（false = 全站 noindex + robots 全禁） */
   seoIndex: boolean;
+  /** 个人主页只展示这些徽章 id（逗号分隔），其余成就不显示 */
+  profileBadges: string;
   /** Google Search Console 验证码 */
   seoVerification: string;
   /** Twitter 分享卡片账号，如 @cloudrail */
@@ -114,6 +116,7 @@ const DEFAULTS: SiteSettings = {
   seoKeywords: '',
   seoOgImage: '',
   seoIndex: true,
+  profileBadges: 'founder,admin,sponsor',
   seoVerification: '',
   seoTwitter: '',
   storageDriver: 'db',

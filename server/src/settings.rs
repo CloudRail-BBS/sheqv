@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 73] = [
+pub const KEYS: [&str; 74] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -24,6 +24,8 @@ pub const KEYS: [&str; 73] = [
     "seoIndex",
     "seoVerification",
     "seoTwitter",
+    // 个人主页：只展示这些「特殊徽章」，其余成就不露头
+    "profileBadges",
     // 对象存储（S3 兼容：阿里云 OSS / 雨云 ROS）
     "storageDriver",
     "storageEndpoint",
@@ -120,6 +122,7 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("seoIndex", json!(true));
     put("seoVerification", json!(""));
     put("seoTwitter", json!(""));
+    put("profileBadges", json!("founder,admin,sponsor"));
     put(
         "publicBaseUrl",
         json!(cfg.public_base_url.clone().unwrap_or_default()),

@@ -10,7 +10,8 @@ import type { BadgeInfo } from '@/lib/badges';
 export function UserBadge({ badge, size }: { badge?: BadgeInfo | null; size?: 'sm' }) {
   // 只有认证没有头衔时 badge.label 为空：这里不出空胶囊，认证印记由 VerifyMark 负责
   if (!badge || !badge.label) return null;
-  const style = badge.style || (badge.admin ? 'solid' : 'blue');
+  // 管理员默认走品牌蓝实心（`admin`），后台给头衔配了样式就以配置为准
+  const style = badge.style || (badge.admin ? 'admin' : 'blue');
   const effect = badge.effect || (badge.admin ? 'shine' : '');
   return (
     <span

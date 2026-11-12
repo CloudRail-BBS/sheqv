@@ -57,6 +57,15 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
         }).catch(() => '')
       : '';
   const { directDownload, externalBrowserHint } = caps.capabilities.resource;
+  /** 「1.20.1, Fabric、1.20.4」这类自由文本拆成胶囊 */
+  const splitList = (raw: string) =>
+    raw
+      .split(/[,，、\s]+/)
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+  const versions = splitList(item.gameVersions);
+  const loaders = splitList(item.loaders);
   const crumbs = item.status === 'published'
     ? await breadcrumbJsonLd([
         { name: '首页', path: '/' },
@@ -93,26 +102,32 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
         )}
 
         <article className="card card-pad res-detail">
-          <div className="row wrap" style={{ gap: 6, marginBottom: 10 }}>
-            <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
-            <span className="badge">{catLabel(cats, item.category)}</span>
-            {item.version && <span className="badge badge-ghost">v{item.version}</span>}
-            {item.status === 'hidden' && <span className="badge badge-danger">已下架</span>}
-            {item.status === 'pending' && <span className="badge badge-warn">审核中</span>}
-            {item.status === 'rejected' && <span className="badge badge-danger">未通过</span>}
-          </div>
+          {/* 参考资源广场：左边一块方标，右边标题与简介；下载动作紧跟其后 */}
+          <div className="res-head">
+            <span className={'res-head-mark cover-' + tone} aria-hidden="true">
+              {item.title.trim().slice(0, 1)}
+            </span>
+            <div className="res-head-main">
+              <div className="row wrap" style={{ gap: 6 }}>
+                <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
+                <span className="badge">{catLabel(cats, item.category)}</span>
+                {item.version && <span className="badge badge-ghost">v{item.version}</span>}
+                {item.status === 'hidden' && <span className="badge badge-danger">已下架</span>}
+                {item.status === 'pending' && <span className="badge badge-warn">审核中</span>}
+                {item.status === 'rejected' && <span className="badge badge-danger">未通过</span>}
+              </div>
 
-          <h1 className="page-title" style={{ marginBottom: 8 }}>{item.title}</h1>
-          {item.summary && (
-            <p style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: 1.85, marginBottom: 4 }}>
-              {item.summary}
-            </p>
-          )}
+              <h1 className="page-title res-head-title">{item.title}</h1>
+              {item.summary && <p className="res-head-summary">{item.summary}</p>}
 
-          <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
-            {item.tags.map((t) => (
-              <span key={t} className="badge badge-ghost">#{t}</span>
-            ))}
+              {item.tags.length > 0 && (
+                <div className="row wrap" style={{ gap: 6, marginTop: 8 }}>
+                  {item.tags.map((t) => (
+                    <span key={t} className="badge badge-ghost">#{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="res-detail-actions">
@@ -182,9 +197,21 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
       <aside className="rail">
         <div className="card rail-card">
           <div className="rail-title">资源信息</div>
+
+          <div className="res-dl-hero">
+            <b className="mono">{fmtNum(item.downloadCount)}</b>
+            <span>次下载</span>
+          </div>
+
+          <div className="row wrap res-pills">
+            <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
+            <span className="badge">{catLabel(cats, item.category)}</span>
+            {loaders.map((v) => (
+              <span key={v} className="badge badge-ghost">{v}</span>
+            ))}
+          </div>
+
           <dl className="kv">
-            <dt>下载</dt>
-            <dd className="mono">{fmtNum(item.downloadCount)}</dd>
             <dt>点赞</dt>
             <dd className="mono">{fmtNum(item.likeCount)}</dd>
             <dt>文件大小</dt>
@@ -199,31 +226,31 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
             <dd className="mono">{item.version || '—'}</dd>
             <dt>授权</dt>
             <dd>{item.license || '作者保留'}</dd>
-            {item.gameVersions && (
-              <>
-                <dt>支持版本</dt>
-                <dd>{item.gameVersions}</dd>
-              </>
-            )}
-            {item.loaders && (
-              <>
-                <dt>加载器</dt>
-                <dd>{item.loaders}</dd>
-              </>
-            )}
-            {item.sourceUrl && (
-              <>
-                <dt>来源</dt>
-                <dd>
-                  <a href={item.sourceUrl} target="_blank" rel="noreferrer noopener">
-                    原帖 / 百科
-                  </a>
-                </dd>
-              </>
-            )}
             <dt>发布</dt>
             <dd className="mono">{fmtDate(item.createdAt)}</dd>
           </dl>
+
+          {versions.length > 0 && (
+            <div className="res-versions">
+              <div className="res-versions-label">支持版本</div>
+              <div className="row wrap" style={{ gap: 4 }}>
+                {versions.map((v) => (
+                  <span key={v} className="badge badge-ghost mono res-ver">{v}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {item.sourceUrl && (
+            <a
+              className="res-source"
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              打开原帖 ↗
+            </a>
+          )}
 
           {item.deps && (
             <div className="res-deps">

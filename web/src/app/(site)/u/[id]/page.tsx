@@ -12,6 +12,7 @@ import { LevelPill, RepPill } from '@/components/rank-badges';
 import { UidBadge } from '@/components/uid-badge';
 import { NameBadges } from '@/components/name-badges';
 import { AchievementChips } from '@/components/achievement-chips';
+import { getSettings } from '@/lib/settings';
 import { buildMetadata } from '@/lib/seo';
 import { getCurrentUser } from '@/lib/current-user';
 import { FollowButton } from '@/components/follow-button';
@@ -38,13 +39,14 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   const user = await findById(id);
   if (!user) notFound();
 
-  const [viewer, posts, badges, groups, avatars, achievements] = await Promise.all([
+  const [viewer, posts, badges, groups, avatars, achievements, settings] = await Promise.all([
     getCurrentUser(),
     listPosts(),
     getBadgeMap(),
     getGroupMap(),
     getAvatarMap(),
     getAchievementMap(),
+    getSettings(),
   ]);
 
   const key = { id: user.id, name: user.nickname };
@@ -52,7 +54,14 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   const badge = resolveBadge(badges, key);
   const group = resolveGroup(groups, key);
   const mine = posts.filter((p) => p.authorId === user.id);
-  const earned = findBadges(achievements, key, 6);
+  // 只留后台点名的「特殊徽章」；其余成就不在主页堆着
+  const allowedBadges = new Set(
+    (settings.profileBadges || '')
+      .split(/[,，\s]+/)
+      .map((v) => v.trim())
+      .filter(Boolean),
+  );
+  const earned = findBadges(achievements, key, 6).filter((b) => allowedBadges.has(b.id));
 
   return (
     <div className="cols">
@@ -83,7 +92,6 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
               @{user.username} · 加入于 {fmtDay(user.createdAt)}
               {typeof user.followers === 'number' ? ` · ${user.followers} 粉丝` : ''}
               {typeof user.followingCount === 'number' ? ` · 关注 ${user.followingCount}` : ''}
-              {user.group ? ` · ${user.group.name}` : ''}
             </div>
             {user.uid ? (
               <div className="up-uid">
@@ -100,7 +108,11 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
             <div className="up-meta">
               {/* 头衔已经由上面的 NameBadges 画在名字后面（带申请时选的样式），
                   这里不要再摆一个灰色副本；开发者标记挪到 UID 那一行 */}
-              <AchievementChips badges={earned} size="sm" />
+              <AchievementChips
+                badges={earned}
+                size="sm"
+                skip={[badge?.label, group?.name]}
+              />
             </div>
           </div>
           <div className="up-stats">

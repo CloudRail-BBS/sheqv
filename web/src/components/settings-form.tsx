@@ -109,6 +109,7 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         seoIndex: form.seoIndex,
         seoVerification: form.seoVerification,
         seoTwitter: form.seoTwitter,
+        profileBadges: form.profileBadges,
         storageDriver: form.storageDriver,
         storageEndpoint: form.storageEndpoint,
         storageRegion: form.storageRegion,
@@ -605,6 +606,32 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
           />
           <span>首页右栏显示「最新公告」</span>
         </label>
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 12 }} data-section="profile">
+        <h3 style={{ fontSize: 13 }}>个人主页徽章</h3>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.75 }}>
+          个人主页只在作者名旁展示这里列出的「特殊徽章」，其余自动达成的成就（初次发声、笔耕不辍等）
+          不再堆在页面上。留空则一个都不显示；头衔与身份组不受影响。
+        </p>
+        <label className="field" style={{ marginTop: 10 }}>
+          <span>展示的徽章 id（逗号分隔）</span>
+          <input
+            className="input mono"
+            value={form.profileBadges}
+            onChange={(e) => setForm({ ...form, profileBadges: e.target.value })}
+            placeholder="founder,admin,sponsor"
+            maxLength={200}
+          />
+        </label>
+        <p className="small muted" style={{ marginTop: 6, lineHeight: 1.8 }}>
+          可选：
+          <span className="mono">founder</span> 创始成员 ·
+          <span className="mono"> admin</span> 管理员 ·
+          <span className="mono"> sponsor</span> 赞助者 ·
+          <span className="mono"> veteran</span> 元老 ·
+          <span className="mono"> first-post / writer / talker / liked</span>
+        </p>
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }} data-section="content">
