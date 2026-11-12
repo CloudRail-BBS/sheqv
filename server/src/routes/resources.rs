@@ -187,6 +187,7 @@ pub async fn create(
         loaders: &text(&obj, "loaders"),
         deps: &text(&obj, "deps"),
         source_url: &text(&obj, "sourceUrl"),
+        cover: &text(&obj, "cover"),
         source: &source,
         source_id: &source_id,
         source_kind: &source_kind,
@@ -289,6 +290,7 @@ pub async fn patch(
     let loaders = opt_text(&obj, "loaders").unwrap_or(cur.loaders.clone());
     let deps = opt_text(&obj, "deps").unwrap_or(cur.deps.clone());
     let source_url = opt_text(&obj, "sourceUrl").unwrap_or(cur.source_url.clone());
+    let cover = opt_text(&obj, "cover").unwrap_or(cur.cover.clone());
     let source = opt_text(&obj, "source").unwrap_or(cur.source.clone());
     let source_kind = opt_text(&obj, "sourceKind").unwrap_or(cur.source_kind.clone());
     let explicit_source = opt_text(&obj, "sourceId")
@@ -327,6 +329,7 @@ pub async fn patch(
         loaders: &loaders,
         deps: &deps,
         source_url: &source_url,
+        cover: &cover,
         source: &source,
         source_id: &source_id,
         source_kind: &source_kind,
@@ -369,6 +372,7 @@ pub async fn patch(
             loaders: Some(&loaders),
             deps: Some(&deps),
             source_url: Some(&source_url),
+            cover: Some(&cover),
             source: Some(&source),
             source_id: Some(&source_id),
             source_kind: Some(&source_kind),

@@ -3,9 +3,8 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getDeveloperBoard, listResources } from '@/lib/resource-store';
 import { ResourceCard } from '@/components/resource-card';
 import { ResourceUpload } from '@/components/resource-upload';
-import { RemoteDiscover } from '@/components/remote-discover';
+import { RemoteCells } from '@/components/remote-discover';
 import { listMyDevTeams } from '@/lib/dev-team-store';
-import { EmptyState } from '@/components/empty-state';
 import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
@@ -102,7 +101,7 @@ export default async function ResourcesPage({
             <input
               name="q"
               defaultValue={sp.q ?? ''}
-              placeholder="搜索资源名称…"
+              placeholder="搜索资源名称，或 Modrinth 上的模组…"
               aria-label="搜索资源"
             />
           </form>
@@ -173,16 +172,18 @@ export default async function ResourcesPage({
           )}
         </div>
 
-        {/* 外部站点：搜索 + 一键导入（Modrinth 免 key；CurseForge 需后台配 key） */}
-        <RemoteDiscover />
-
         {recent.length > 0 && (
           <section className="res-recent">
             <div className="res-recent-head">最近更新</div>
             <div className="res-recent-row">
               {recent.map((r) => (
                 <Link key={r.id} href={`/resources/${r.id}`} className="res-recent-card">
-                  <span className={'res-recent-cover cover-' + gameTone(r.game)} />
+                  <span className={'res-recent-cover cover-' + gameTone(r.game)}>
+                    {r.cover && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r.cover} alt="" loading="lazy" decoding="async" />
+                    )}
+                  </span>
                   <span className="res-recent-title" title={r.title}>
                     {r.title}
                   </span>
@@ -192,27 +193,19 @@ export default async function ResourcesPage({
           </section>
         )}
 
-        {items.length === 0 ? (
-          <div className="card" style={{ padding: 8 }}>
-            <EmptyState
-              title={sp.q || sp.game || sp.category ? '这个筛选下没有资源' : '资源库还是空的'}
-              desc={
-                sp.q || sp.game || sp.category
-                  ? '换个分类或游戏看看，也可以自己发布第一个。'
-                  : '发布第一个资源，顺手点亮开发者身份。'
-              }
-              actionHref={user ? '/resources/new' : '/login'}
-              actionLabel={user ? '发布资源' : '登录后发布'}
-              icon="box"
-            />
-          </div>
-        ) : (
-          <div className="res-grid">
-            {items.map((r: ResourceView) => (
-              <ResourceCard key={r.id} item={r} categories={cats} />
-            ))}
-          </div>
+        {/* 本站资源与外部站点条目混在同一个网格里：外部的排在后面，点卡片才收录 */}
+        {items.length === 0 && (
+          <p className="small muted" style={{ margin: '2px 2px 0' }}>
+            本站资源里还没有匹配的，下面是 Modrinth 上找到的条目 —— 点卡片即可收录进资源库。
+          </p>
         )}
+
+        <div className="res-grid">
+          {items.map((r: ResourceView) => (
+            <ResourceCard key={r.id} item={r} categories={cats} />
+          ))}
+          <RemoteCells q={sp.q} game={sp.game} filtered={Boolean(sp.category)} />
+        </div>
       </div>
 
       <aside className="rail">

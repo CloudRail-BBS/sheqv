@@ -181,6 +181,8 @@ pub struct ResourceView {
     pub loaders: String,
     pub deps: String,
     pub source_url: String,
+    /// 封面图：站内上传是 `/api/v1/media/<id>`，外部拉取是原站 logo 地址；空串表示没有
+    pub cover: String,
     /// 外部来源站（curseforge / modrinth / rtsbox）；空串表示本站资源
     pub source: String,
     /// 来源站里的项目标识
@@ -268,6 +270,7 @@ struct Row {
     deps: String,
     /// 原帖或百科链接
     source_url: String,
+    cover: String,
     source: String,
     source_id: String,
     source_kind: String,
@@ -316,6 +319,7 @@ impl Row {
             loaders: self.loaders,
             deps: self.deps,
             source_url: self.source_url,
+            cover: self.cover,
             source: self.source,
             source_id: self.source_id,
             source_kind: self.source_kind,
@@ -338,7 +342,7 @@ const COLUMNS: &str = "r.id, r.title, r.summary, r.body, r.game, r.category, r.t
         r.author_id, u.nickname AS author, (u.developer_at IS NOT NULL) AS author_developer,
         r.team_id, t.name AS team_name, t.tag AS team_tag,
         r.url, r.version, r.license, r.size_bytes,
-        r.game_versions, r.loaders, r.deps, r.source_url,
+        r.game_versions, r.loaders, r.deps, r.source_url, r.cover,
         r.source, r.source_id, r.source_kind,
         (SELECT count(*) FROM resource_attachments a WHERE a.resource_id = r.id) AS file_count,
         r.like_count, r.download_count,
@@ -501,6 +505,7 @@ pub struct NewResource<'a> {
     pub loaders: &'a str,
     pub deps: &'a str,
     pub source_url: &'a str,
+    pub cover: &'a str,
     pub source: &'a str,
     pub source_id: &'a str,
     pub source_kind: &'a str,
@@ -561,6 +566,17 @@ pub fn validate(input: &NewResource<'_>, categories: &[String]) -> Option<String
         && (src.len() > 300 || !(src.starts_with("http://") || src.starts_with("https://")))
     {
         return Some("来源链接必须是 http(s) 地址".into());
+    }
+
+    // 封面：本站上传的走 /api/v1/media/，外部拉取的是原站图床地址
+    let cover = input.cover.trim();
+    if !cover.is_empty()
+        && (cover.chars().count() > 300
+            || !(cover.starts_with("https://")
+                || cover.starts_with("http://")
+                || cover.starts_with("/api/v1/media/")))
+    {
+        return Some("封面图地址不正确".into());
     }
 
     // 外部来源站：站点要存在、要和游戏匹配、项目标识必填
@@ -669,8 +685,8 @@ pub async fn create(
         "INSERT INTO resources
              (id, title, summary, body, game, category, tags, author_id, team_id,
               url, version, license, size_bytes, game_versions, loaders, deps, source_url,
-              source, source_id, source_kind, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)",
+              cover, source, source_id, source_kind, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)",
     )
     .bind(&id)
     .bind(input.title.trim())
@@ -689,6 +705,7 @@ pub async fn create(
     .bind(input.loaders.trim())
     .bind(input.deps.trim())
     .bind(input.source_url.trim())
+    .bind(input.cover.trim())
     .bind(input.source.trim())
     .bind(input.source_id.trim())
     .bind(input.source_kind.trim())
@@ -726,6 +743,7 @@ pub struct ResourcePatch<'a> {
     pub loaders: Option<&'a str>,
     pub deps: Option<&'a str>,
     pub source_url: Option<&'a str>,
+    pub cover: Option<&'a str>,
     pub source: Option<&'a str>,
     pub source_id: Option<&'a str>,
     pub source_kind: Option<&'a str>,
@@ -762,6 +780,7 @@ pub async fn patch(
     let loaders = patch.loaders.unwrap_or(&cur.loaders);
     let deps = patch.deps.unwrap_or(&cur.deps);
     let source_url = patch.source_url.unwrap_or(&cur.source_url);
+    let cover = patch.cover.unwrap_or(&cur.cover);
     let source = patch.source.unwrap_or(&cur.source);
     let source_id = patch.source_id.unwrap_or(&cur.source_id);
     let source_kind = patch.source_kind.unwrap_or(&cur.source_kind);
@@ -782,6 +801,7 @@ pub async fn patch(
         loaders,
         deps,
         source_url,
+        cover,
         source,
         source_id,
         source_kind,
@@ -796,8 +816,8 @@ pub async fn patch(
     sqlx::query(
         "UPDATE resources SET title=$2, summary=$3, body=$4, game=$5, category=$6, tags=$7,
                 team_id=$8, url=$9, version=$10, license=$11, size_bytes=$12,
-                game_versions=$13, loaders=$14, deps=$15, source_url=$16,
-                source=$17, source_id=$18, source_kind=$19, updated_at=now()
+                game_versions=$13, loaders=$14, deps=$15, source_url=$16, cover=$17,
+                source=$18, source_id=$19, source_kind=$20, updated_at=now()
           WHERE id=$1",
     )
     .bind(id)
@@ -816,6 +836,7 @@ pub async fn patch(
     .bind(loaders.trim())
     .bind(deps.trim())
     .bind(source_url.trim())
+    .bind(cover.trim())
     .bind(source.trim())
     .bind(source_id.trim())
     .bind(source_kind.trim())
@@ -1235,6 +1256,11 @@ pub async fn dev_team_board(pool: &PgPool, limit: i64) -> Result<Vec<DevTeamRow>
 mod tests {
     use super::*;
 
+    /// 校验分类必须来自后台那张表，测试里给一个最小集合
+    fn cats() -> Vec<String> {
+        vec!["工具".to_string(), "地图".to_string()]
+    }
+
     fn base() -> NewResource<'static> {
         NewResource {
             title: "云轨红石工具箱",
@@ -1248,45 +1274,63 @@ mod tests {
             version: "1.0.0",
             license: "MIT",
             size_bytes: 1024,
-            // 0022 之后新增的元信息：老测试没跟上字段，编译会直接报 missing
             game_versions: "",
             loaders: "",
             deps: "",
             source_url: "",
+            cover: "",
+            source: "",
+            source_id: "",
+            source_kind: "",
         }
     }
 
     #[test]
     fn accepts_valid_resource() {
-        assert!(validate(&base()).is_none());
+        assert!(validate(&base(), &cats()).is_none());
     }
 
     #[test]
     fn rejects_non_http_url() {
         let mut r = base();
         r.url = "javascript:alert(1)";
-        assert!(validate(&r).is_some());
+        assert!(validate(&r, &cats()).is_some());
     }
 
     #[test]
     fn rejects_unknown_game_and_category() {
         let mut r = base();
         r.game = "starcraft";
-        assert!(validate(&r).is_some());
+        assert!(validate(&r, &cats()).is_some());
 
         let mut r = base();
         r.category = "外挂";
-        assert!(validate(&r).is_some());
+        assert!(validate(&r, &cats()).is_some());
     }
 
     #[test]
     fn caps_tags_and_title() {
         let mut r = base();
         r.tags = (0..7).map(|i| format!("t{i}")).collect();
-        assert!(validate(&r).is_some());
+        assert!(validate(&r, &cats()).is_some());
 
         let mut r = base();
         r.title = "x";
-        assert!(validate(&r).is_some());
+        assert!(validate(&r, &cats()).is_some());
+    }
+
+    #[test]
+    fn accepts_local_cover_only() {
+        let mut r = base();
+        r.cover = "/api/v1/media/abc123";
+        assert!(validate(&r, &cats()).is_none());
+
+        let mut r = base();
+        r.cover = "https://cdn.modrinth.com/data/x/icon.png";
+        assert!(validate(&r, &cats()).is_none());
+
+        let mut r = base();
+        r.cover = "javascript:alert(1)";
+        assert!(validate(&r, &cats()).is_some());
     }
 }

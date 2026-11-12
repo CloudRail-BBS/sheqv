@@ -13,6 +13,7 @@ import {
   sourcesForGame,
 } from '@/lib/resource-types';
 import type { ContentCategory } from '@/lib/category-types';
+import { compressImage, formatBytes, imageTypeError, uploadWithProgress } from '@/lib/upload';
 import { MarkdownEditor } from './markdown-editor';
 
 interface TeamOption {
@@ -37,6 +38,8 @@ const EMPTY = {
   loaders: '',
   deps: '',
   sourceUrl: '',
+  /** 封面图地址：本站上传 /api/v1/media/*，也可手贴外链；空串 = 用渐变占位 */
+  cover: '',
   /** 外部来源站：'' = 本站资源 */
   source: '',
   sourceId: '',
@@ -82,6 +85,9 @@ export function ResourceUpload({
   const [uploadLabel, setUploadLabel] = useState('');
   /** 已上传的附件（fileId + 名称 + 大小），提交时只传 id，服务端按上传记录取名字 */
   const [attachments, setAttachments] = useState<{ id: string; name: string; size: number }[]>([]);
+  /** 封面图上传中（与附件上传并行会互相抢网，所以单独标一个忙状态） */
+  const [coverBusy, setCoverBusy] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -176,6 +182,39 @@ export function ResourceUpload({
     }
   }
 
+  /** 封面：选图 → 压到 1200px → 传媒体库（kind=resource）→ 把地址填进表单 */
+  async function uploadCover(file: File) {
+    const typeErr = imageTypeError(file);
+    if (typeErr) {
+      setErr(typeErr);
+      return;
+    }
+    setErr(null);
+    setCoverBusy(true);
+    const limit = 2 * 1024 * 1024;
+    const { file: prepared } = await compressImage(file, { maxEdge: 1200, maxBytes: limit * 0.8 });
+    if (prepared.size > limit) {
+      setCoverBusy(false);
+      setErr(`封面压缩后仍有 ${formatBytes(prepared.size)}，请换一张小一点的`);
+      return;
+    }
+    const up = await uploadWithProgress('/api/v1/me/media?kind=resource', prepared, {
+      headers: { 'content-type': prepared.type || 'application/octet-stream' },
+      timeoutMs: 60_000,
+    });
+    setCoverBusy(false);
+    if (!up.ok) {
+      setErr(up.message ?? '封面上传失败');
+      return;
+    }
+    const url = (up.data as { url?: string } | null)?.url;
+    if (!url) {
+      setErr('封面上传失败');
+      return;
+    }
+    set('cover', url);
+  }
+
   function close() {
     if (defaultOpen) {
       router.push('/resources');
@@ -239,6 +278,7 @@ export function ResourceUpload({
         loaders: form.loaders.trim(),
         deps: form.deps.trim(),
         sourceUrl: form.sourceUrl.trim(),
+        cover: form.cover.trim(),
         source: form.source,
         sourceId: parseSourceRef(form.sourceId),
         sourceKind: form.source === 'rtsbox' ? '' : form.sourceKind,
@@ -595,6 +635,47 @@ export function ResourceUpload({
                       if (list && list.length > 0) void uploadFiles(list);
                     }}
                   />
+                  <div className="res-cover-row">
+                    <span className="composer-meta-label">封面</span>
+                    <span className={'res-cover-pick' + (form.cover ? ' has-img' : '')}>
+                      {form.cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={form.cover} alt="" decoding="async" />
+                      ) : (
+                        <em>无</em>
+                      )}
+                    </span>
+                    <input
+                      ref={coverRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = '';
+                        if (f) void uploadCover(f);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="res-add"
+                      onClick={() => coverRef.current?.click()}
+                      disabled={coverBusy || busy}
+                    >
+                      {coverBusy ? '上传中…' : form.cover ? '换一张' : '上传封面'}
+                    </button>
+                    {form.cover && (
+                      <button
+                        type="button"
+                        className="res-file-del"
+                        onClick={() => set('cover', '')}
+                      >
+                        移除
+                      </button>
+                    )}
+                    <span className="res-drop-hint">方形 logo 或 16:9 截图都行 · ≤2MB</span>
+                  </div>
+
                   <div className="res-drop-head">
                     <span className="composer-meta-label">文件</span>
                     <button

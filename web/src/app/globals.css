@@ -817,13 +817,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 .res-card:hover { border-color: var(--hover-bd); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
-/* 资源卡封面。
-   原来是「巨大水印字母 + 平铺网格」，看起来像占位图没做完。
-   改成：柔和色晕 + 单向淡出的细网格 + 版本号胶囊，安静但有质感。 */
+/* 资源卡封面：参考资源广场的竖版卡，16:10 大图。没有封面时回落到「游戏配色 + 细网格」。 */
 .res-cover {
-  height: 62px; position: relative;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 11px; border-bottom: 1px solid var(--line); overflow: hidden;
+  position: relative; aspect-ratio: 16 / 10;
+  border-bottom: 1px solid var(--line); overflow: hidden;
   --cover-line: rgba(255, 255, 255, 0.07);
   --cover-glow: rgba(255, 255, 255, 0.16);
 }
@@ -851,20 +848,60 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   --cover-line: rgba(255, 255, 255, 0.07); --cover-glow: rgba(62, 124, 255, 0.42);
 }
 .res-cover > * { position: relative; z-index: 1; }
+/* 有封面图：图片铺满，底部压一点暗色，左上角的游戏徽章才读得清 */
+.res-cover-img {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.32s var(--ease);
+}
+.res-card:hover .res-cover-img { transform: scale(1.03); }
+.res-cover.has-img::before { display: none; }
+.res-cover.has-img::after {
+  background-image: linear-gradient(180deg, rgba(8, 14, 22, 0.4) 0%, rgba(8, 14, 22, 0) 46%);
+  -webkit-mask-image: none; mask-image: none;
+}
+/* 游戏徽章钉在封面左上角 */
+.res-cover .res-cover-tag {
+  position: absolute; left: 10px; top: 10px;
+  box-shadow: 0 2px 8px rgba(8, 14, 22, 0.28);
+}
 .res-cover .ver {
+  position: absolute; right: 10px; top: 10px;
   font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(0, 0, 0, 0.32); border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(8, 14, 22, 0.42); border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: var(--r-pill); padding: 1px 7px;
 }
-.res-body { padding: 12px 14px 13px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
-.res-title { font-size: 14px; font-weight: 600; line-height: 1.5; letter-spacing: -0.01em; }
+.res-body { padding: 13px 14px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.res-title { font-size: 15px; font-weight: 650; line-height: 1.45; letter-spacing: -0.01em; }
+/* 简介固定两行，卡片高度才整齐 */
+.res-desc {
+  margin: 0; font-size: 12.5px; line-height: 1.65; color: var(--muted);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; overflow: hidden;
+  word-break: break-word;
+}
+/* 版本 / 加载器 / 分类：胶囊行，最多两行，超出裁掉 */
+.res-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  max-height: 62px; overflow: hidden;
+}
+.res-chip {
+  height: 24px; padding: 0 9px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center;
+  border: 1px solid var(--line); background: var(--panel-2);
+  font-size: 11.5px; color: var(--text-2); white-space: nowrap;
+}
 .res-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
 .res-meta .score { display: inline-flex; align-items: center; gap: 3px; color: var(--warn); font-family: inherit; font-size: 11px; }
+/* 页脚：左边版本号、右边下载量 */
 .res-foot {
-  margin-top: auto; padding-top: 9px; display: flex; align-items: center; gap: 8px;
+  margin-top: auto; padding-top: 10px; display: flex; align-items: center; gap: 8px;
   border-top: 1px solid var(--line-soft);
+  font-size: 12px; color: var(--muted);
 }
+.res-foot-ver { font-size: 11.5px; }
+.res-foot-dl { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
 .res-foot .how { margin-left: auto; font-size: 11px; color: var(--text-3); }
 
 /* ── detail ──────────────────────────────── */
@@ -2537,7 +2574,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .res-recent-row::-webkit-scrollbar { display: none; }
 .res-recent-card { display: block; min-width: 0; text-decoration: none; }
-.res-recent-cover { display: block; height: 74px; border-radius: 10px; border: 1px solid var(--line); }
+.res-recent-cover {
+  display: block; height: 74px; border-radius: 10px;
+  border: 1px solid var(--line); overflow: hidden;
+}
+.res-recent-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .res-recent-title {
   display: block; margin-top: 6px; font-size: 12px; color: var(--text-2);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2569,6 +2610,27 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .res-head-main { min-width: 0; flex: 1; }
+/* 方标上贴封面 / logo；作者悬停时把「换封面」露出来，手机上常显 */
+.res-head-mark { position: relative; overflow: hidden; }
+.res-head-mark.has-img { background: var(--panel-2); }
+.res-head-mark > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.res-cover-edit {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 24px;
+  border: 0; padding: 0;
+  background: rgba(8, 14, 22, 0.66); color: #fff;
+  font-family: inherit; font-size: 11px; font-weight: 600;
+  cursor: pointer; opacity: 0; transition: opacity 0.18s var(--ease);
+}
+.res-cover-edit:hover { background: rgba(8, 14, 22, 0.8); }
+.res-head-mark:hover .res-cover-edit,
+.res-cover-edit:focus-visible { opacity: 1; }
+@media (hover: none) { .res-cover-edit { opacity: 1; } }
+.res-cover-err {
+  position: absolute; inset: 0;
+  display: grid; place-items: center; padding: 5px;
+  background: color-mix(in srgb, var(--danger) 88%, transparent);
+  color: #fff; font-size: 10.5px; font-style: normal; line-height: 1.35; text-align: center;
+}
 .res-head-title { margin: 8px 0 6px; }
 .res-head-summary { margin: 0; font-size: 13.5px; line-height: 1.85; color: var(--text-2); }
 /* 来源站徽章：可点回原站，悬停时给一点反馈，别做成按钮的样子 */
@@ -2610,43 +2672,22 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .ann-modal-head b { font-size: 14px; }
 }
 
-/* ── 资源库：外部站点拉取 ───────────────── */
+/* ── 资源库：外部条目混排 ───────────────── */
 
-.res-discover {
-  margin: 0 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  overflow: hidden;
+/* 外部条目就是普通的资源卡，只是整张卡是按钮（点一下收录进库） */
+.res-card-btn {
+  width: 100%; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-align: left;
+  background: var(--panel); appearance: none; cursor: pointer;
 }
-/* 标题行不是按钮：这一块常驻展开，不做单独折叠 */
-.res-discover-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding: 11px 14px; color: var(--text);
+.res-card-btn:disabled { cursor: progress; }
+.res-card-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* 来源胶囊：让人一眼看出这条还没进站，点一下才收录 */
+.res-chip-src {
+  background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue);
 }
-.res-discover-title { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 600; }
-.res-discover-title em { font-style: normal; font-weight: 400; font-size: 11.5px; color: var(--muted); }
-.res-discover-body {
-  padding: 0 14px 14px; border-top: 1px solid var(--line-soft);
-  display: flex; flex-direction: column; gap: 10px;
-}
-.res-discover-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 10px; }
-.res-discover-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
-/* 这一行是列向 flex 的子项：写 flex-grow 会把它纵向拉长，必须锁高 */
-.res-discover-search { flex: 0 0 auto; width: 100%; height: 34px; }
-.res-discover-msg { margin: 0; }
-/* 外部结果直接复用站内资源卡（.res-grid + .res-card），只把标题改成链接 */
-.res-discover .res-grid { margin-top: 2px; }
-.res-discover .res-title {
-  display: block; text-decoration: none; color: var(--text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.res-discover .res-title:hover { color: var(--blue); }
-.res-discover .res-cover { text-decoration: none; }
-.res-discover .res-foot { align-items: center; }
-@media (max-width: 700px) {
-  .res-discover-title em { display: none; }
-}
+/* 收录失败的提示横跨整个网格 */
+.res-cells-msg { grid-column: 1 / -1; margin: 0; color: var(--danger); }
 .res-source-badge:hover {
   color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft);
 }
@@ -2672,6 +2713,17 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   margin-top: 12px; font-size: 12px; color: var(--blue); text-decoration: none;
 }
 .res-source:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* 侧栏的「来源」块：外部收录的条目必须让人一眼看出不是本站原创 */
+.res-origin {
+  margin-top: 12px; padding: 9px 10px;
+  border: 1px solid var(--blue-line); border-radius: 10px;
+  background: var(--blue-soft);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.res-origin-label { font-size: 11px; color: var(--muted); }
+.res-origin a { font-size: 12.5px; font-weight: 600; color: var(--blue); text-decoration: none; }
+.res-origin a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.res-origin em { font-style: normal; font-size: 11px; line-height: 1.6; color: var(--text-3); }
 
 .res-body-text {
   margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft);
@@ -4170,6 +4222,19 @@ body:has(.auth-page) .app {
   background: var(--panel-2);
 }
 .res-drop-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 封面行：左边 34px 预览，右边按钮与提示 */
+.res-cover-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed var(--line-soft);
+}
+.res-cover-pick {
+  width: 34px; height: 34px; flex: none; border-radius: 8px;
+  display: grid; place-items: center; overflow: hidden;
+  border: 1px solid var(--line); background: var(--panel);
+  color: var(--text-3); font-size: 11px; font-style: normal;
+}
+.res-cover-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.res-cover-pick.has-img { border-color: var(--blue-line); }
 .res-add {
   height: 26px; padding: 0 10px;
   border: 1px solid var(--line); border-radius: 7px;

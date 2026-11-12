@@ -5,6 +5,7 @@ import { getRequestCaps } from '@/lib/request-caps';
 import { getCurrentUser } from '@/lib/current-user';
 import { getResource } from '@/lib/resource-store';
 import { ResourceActions } from '@/components/resource-actions';
+import { ResourceCover } from '@/components/resource-cover';
 import { breadcrumbJsonLd, buildMetadata, resourceJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import {
@@ -111,9 +112,13 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
         <article className="card card-pad res-detail">
           {/* 参考资源广场：左边一块方标，右边标题与简介；下载动作紧跟其后 */}
           <div className="res-head">
-            <span className={'res-head-mark cover-' + tone} aria-hidden="true">
-              {item.title.trim().slice(0, 1)}
-            </span>
+            <ResourceCover
+              id={item.id}
+              cover={item.cover}
+              title={item.title}
+              tone={tone}
+              canEdit={canDelete}
+            />
             <div className="res-head-main">
               <div className="row wrap" style={{ gap: 6 }}>
                 <span className={'badge badge-' + tone}>{gameLabel(item.game)}</span>
@@ -259,7 +264,22 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
             </div>
           )}
 
-          {item.sourceUrl && (
+          {/* 来源要写清楚：外部收录的条目不是本站原创，介绍与封面都来自原站 */}
+          {item.source && (
+            <div className="res-origin">
+              <span className="res-origin-label">来源</span>
+              <a
+                href={sourceUrlFor(item.source, item.sourceKind, item.sourceId) || item.sourceUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {sourceLabel(item.source)} ↗
+              </a>
+              <em>介绍、封面与版本信息来自原站，本站只做收录与索引</em>
+            </div>
+          )}
+
+          {item.sourceUrl && !item.source && (
             <a
               className="res-source"
               href={item.sourceUrl}

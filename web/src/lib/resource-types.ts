@@ -42,6 +42,8 @@ export interface ResourceView {
   deps: string;
   /** 原帖或百科链接 */
   sourceUrl: string;
+  /** 封面图：站内上传是 /api/v1/media/<id>，外部拉取是原站 logo 地址；空串表示没有 */
+  cover: string;
   /** 外部来源站：curseforge / modrinth / rtsbox；空串表示本站资源 */
   source: string;
   /** 来源站里的项目标识 */

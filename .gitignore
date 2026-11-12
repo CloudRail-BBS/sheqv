@@ -20,6 +20,7 @@ web/.*/
 
 # 运行时数据（含账号、帖子、赞助快照、会话密钥）
 web/.data
+server/.data
 web/backups
 
 # 机密：真正的 .env 永不入库，只提交模板

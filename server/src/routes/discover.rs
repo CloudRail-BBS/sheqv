@@ -87,6 +87,7 @@ pub async fn import(
         url: text(&obj, "url"),
         kind: text(&obj, "kind"),
         updated: 0,
+        project_id: obj.get("projectId").and_then(|v| v.as_i64()).unwrap_or(0),
     };
     if item.title.is_empty() || item.source_id.is_empty() {
         return Err(ApiError::invalid_input("缺少标题或项目标识"));
@@ -105,54 +106,102 @@ pub async fn import(
         return Err(ApiError::invalid_input("来源链接与站点不匹配"));
     }
 
-    // 分类：优先用前端选的，没选就按类型给个建议值，再不行取第一个可用分类
+    // 分类：优先用前端选的，没选就按类型给个建议值 → 「其他」→ 第一个可用分类
     let cats = crate::categories::keys(&st.pool, "resource")
         .await
         .map_err(ApiError::internal)?;
     let wanted = text(&obj, "category");
+    let suggest = remote_sources::suggest_category(&item.kind).to_string();
     let category = if !wanted.is_empty() && cats.iter().any(|c| c == &wanted) {
         wanted
+    } else if cats.iter().any(|c| c == &suggest) {
+        suggest
+    } else if cats.iter().any(|c| c == "其他") {
+        "其他".to_string()
     } else {
-        let suggest = remote_sources::suggest_category(&item.kind).to_string();
-        if cats.iter().any(|c| c == &suggest) {
-            suggest
-        } else {
-            cats.first().cloned().unwrap_or_default()
-        }
+        cats.first().cloned().unwrap_or_default()
     };
     if category.is_empty() {
         return Err(ApiError::invalid_input("后台还没有配置资源分类"));
     }
 
-    // 作者名放进简介尾部，备注来源，别让读者以为是本站原创
-    let summary = if item.summary.is_empty() {
-        format!("来自 {} 的条目", item.source)
-    } else {
+    // 拉详情：把「介绍正文 / 加载器 / 支持版本 / 授权 / 标签」一起取回来，
+    // 拉进来的条目才和站内自己发布的一样有内容。拉不到就用搜索那行简介兜底，不让导入失败。
+    let cfg_map = settings::load(&st.pool, &st.cfg).await;
+    let cf_key = settings::text(&cfg_map, "curseforgeKey");
+    let detail = remote_sources::fetch_detail(
+        &st.http,
+        &source,
+        &item.source_id,
+        item.project_id,
+        &cf_key,
+    )
+    .await
+    .unwrap_or_default();
+
+    // 简介：详情优先，其次搜索结果的描述，最后兜底一句来源说明（上限 200 字）
+    let raw_summary = if !detail.summary.is_empty() {
+        detail.summary.clone()
+    } else if !item.summary.is_empty() {
         item.summary.clone()
+    } else {
+        format!("来自 {} 的条目，详情见原站", item.source)
+    };
+    let summary: String = raw_summary.trim().chars().take(200).collect();
+
+    let license = if detail.license.trim().is_empty() {
+        "作者保留"
+    } else {
+        detail.license.trim()
+    };
+    // 原站标题偶尔超长（>60 字会被本站校验拒掉），截断总比整条导入失败好
+    let title: String = item.title.trim().chars().take(60).collect();
+
+    // 封面：详情里的 icon/logo 优先，搜索结果的 icon 兜底（都是原站图床地址）
+    let cover = if !detail.icon.trim().is_empty() {
+        detail.icon.trim()
+    } else {
+        item.icon.trim()
     };
 
     let input = NewResource {
-        title: &item.title,
+        title: &title,
         summary: &summary,
-        body: "",
+        body: &detail.body,
         game: item.game(),
         category: &category,
-        tags: Vec::new(),
+        tags: detail.tags.clone(),
         team_id: None,
         url: &item.url,
         version: "",
-        license: "作者保留",
+        license,
         size_bytes: 0,
-        game_versions: "",
-        loaders: "",
+        game_versions: &detail.game_versions,
+        loaders: &detail.loaders,
         deps: "",
         source_url: "",
+        cover,
         source: &source,
         source_id: &item.source_id,
         source_kind: &item.kind,
     };
     if let Some(msg) = resources::validate(&input, &cats) {
         return Err(ApiError::invalid_input(msg));
+    }
+
+    // 同一个项目只收一次：卡片是「点一下就进库」的，重复点不能每次都多一份
+    let existing: Option<String> = sqlx::query_scalar(
+        "SELECT id FROM resources
+          WHERE source = $1 AND source_id = $2
+          ORDER BY created_at LIMIT 1",
+    )
+    .bind(&source)
+    .bind(&item.source_id)
+    .fetch_optional(&st.pool)
+    .await
+    .map_err(ApiError::internal)?;
+    if let Some(id) = existing {
+        return Ok(Json(json!({ "ok": true, "id": id, "existing": true })).into_response());
     }
 
     let id = resources::create(&st.pool, &user.id, &input, &[], "published")
