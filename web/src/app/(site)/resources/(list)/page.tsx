@@ -54,12 +54,13 @@ export default async function ResourcesPage({
     }),
     getDeveloperBoard(),
     getSettings(),
-    listCategories('resource', { counts: true }),
+    listCategories('resource'),
   ]);
   const teams = user ? await listMyDevTeams() : [];
+  // 外部站点的条目要「收录」才会进站，等于代站方建资源，只给管理员
+  const canImport = Boolean(user?.isAdmin);
 
   const totalLikes = items.reduce((n, r) => n + r.likeCount, 0);
-  const totalCats = cats.reduce((n, c) => n + (c.count || 0), 0);
   // 第一页（无任何筛选）才铺「最近更新」，否则会和下面的筛选结果重复
   const firstPage = !sp.q && !sp.game && !sp.category && sort === 'new';
   const recent = firstPage ? items.slice(0, 6) : [];
@@ -147,7 +148,6 @@ export default async function ResourcesPage({
         <div className="row wrap" style={{ gap: 6 }}>
           <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
             全部分类
-            {totalCats > 0 && <em className="chip-n">{totalCats}</em>}
           </Link>
           {cats.map((c) => (
             <Link
@@ -157,7 +157,6 @@ export default async function ResourcesPage({
               data-on={sp.category === c.key}
             >
               {c.label}
-              {c.count > 0 && <em className="chip-n">{c.count}</em>}
             </Link>
           ))}
         </div>
@@ -215,20 +214,14 @@ export default async function ResourcesPage({
 
         {/* 本站资源与外部站点条目混在同一个网格里：外部的排在后面，点卡片才收录。
             铁锈战争走 rtsbox 模组 + RELAY-CN 地图站（地图是另一套卡型） */}
-        {items.length === 0 && (
-          <p className="small muted" style={{ margin: '2px 2px 0' }}>
-            以下是来自外站的资源，点卡片即可收录进资源库。
-          </p>
-        )}
-
         <div className="res-grid">
           {items.map((r: ResourceView) => (
             <ResourceCard key={r.id} item={r} categories={cats} />
           ))}
           {sp.game === 'rusted_warfare' ? (
-            <RwCells q={sp.q} category={sp.category} />
+            <RwCells q={sp.q} category={sp.category} canImport={canImport} />
           ) : (
-            <RemoteCells q={sp.q} game={sp.game} category={sp.category} />
+            <RemoteCells q={sp.q} game={sp.game} category={sp.category} canImport={canImport} />
           )}
         </div>
       </div>

@@ -57,8 +57,10 @@ pub struct RemoteItem {
 
 /// 项目详情：导入时补齐「介绍正文 / 加载器 / 支持版本 / 授权 / 标签」，
 /// 让拉进来的条目和站内自己发布的资源长得一样，而不是只有一行简介的空壳。
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RemoteDetail {
+    pub title: String,
     pub summary: String,
     pub body: String,
     pub loaders: String,
@@ -66,6 +68,12 @@ pub struct RemoteDetail {
     pub license: String,
     pub tags: Vec<String>,
     pub icon: String,
+    /// 原站下载量
+    pub downloads: i64,
+    /// 项目类型（复数键：mods / modpacks / resourcepacks / shaderpacks / datapacks）
+    pub kind: String,
+    /// 原站条目地址
+    pub url: String,
 }
 
 impl RemoteItem {
@@ -73,6 +81,19 @@ impl RemoteItem {
     pub fn game(&self) -> &'static str {
         "minecraft"
     }
+}
+
+/// Modrinth 的 `project_type` 是单数（mod / modpack），本站的 kind 一律用复数键
+fn plural_kind(one: &str) -> String {
+    match one {
+        "mod" => "mods",
+        "modpack" => "modpacks",
+        "resourcepack" => "resourcepacks",
+        "shader" => "shaderpacks",
+        "datapack" => "datapacks",
+        other => other,
+    }
+    .to_string()
 }
 
 fn kind_zh(kind: &str) -> &'static str {
@@ -298,10 +319,10 @@ pub async fn fetch_detail(
 
 async fn modrinth_detail(
     http: &reqwest::Client,
-    slug: &str,
+    source_slug: &str,
     mirror: bool,
 ) -> Result<RemoteDetail, String> {
-    let url = format!("{}/v2/project/{slug}", modrinth_base(mirror));
+    let url = format!("{}/v2/project/{source_slug}", modrinth_base(mirror));
     let resp = http
         .get(&url)
         .header("User-Agent", "CloudRail-Community/1.0 (resource library)")
@@ -336,7 +357,25 @@ async fn modrinth_detail(
         }
     };
 
+    let project_type = str_of(&d, "project_type");
+    let slug = {
+        let s = str_of(&d, "slug");
+        if s.is_empty() {
+            source_slug.to_string()
+        } else {
+            s
+        }
+    };
+
     Ok(RemoteDetail {
+        title: clamp_chars(&str_of(&d, "title"), 60),
+        downloads: d.get("downloads").and_then(|v| v.as_i64()).unwrap_or(0),
+        kind: plural_kind(&project_type),
+        url: if project_type.is_empty() {
+            String::new()
+        } else {
+            format!("https://modrinth.com/{project_type}/{slug}")
+        },
         summary: clamp_chars(&str_of(&d, "description"), 200),
         body: md_to_text(&str_of(&d, "body")),
         loaders: clamp_chars(&join_list(d.get("loaders"), 6), 60),
@@ -411,7 +450,24 @@ async fn curseforge_detail(
         }
     }
 
+    let class_id = d.get("classId").and_then(|v| v.as_i64()).unwrap_or(0);
+    let kind = match class_id {
+        4471 => "modpacks",
+        12 => "resourcepacks",
+        6552 => "shaderpacks",
+        6945 => "datapacks",
+        _ => "mods",
+    };
+
     Ok(RemoteDetail {
+        title: clamp_chars(&str_of(&d, "name"), 60),
+        downloads: d.get("downloadCount").and_then(|v| v.as_i64()).unwrap_or(0),
+        kind: kind.to_string(),
+        url: d
+            .pointer("/links/websiteUrl")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
         summary: clamp_chars(&str_of(&d, "summary"), 200),
         body,
         loaders: clamp_chars(&loaders.join(", "), 60),

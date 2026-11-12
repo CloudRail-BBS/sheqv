@@ -28,7 +28,16 @@ const PAGE_LIMIT = 8;
 /** 最多翻这么多页，避免随机批次一直点下去 */
 const MAX_PAGES = 5;
 
-export function RwCells({ q, category }: { q?: string; category?: string }) {
+export function RwCells({
+  q,
+  category,
+  canImport,
+}: {
+  q?: string;
+  category?: string;
+  /** 能不能收录进资源库：只有管理员可以，其他人点卡片去原站 */
+  canImport?: boolean;
+}) {
   const router = useRouter();
   const [mods, setMods] = useState<RwMod[]>([]);
   const [maps, setMaps] = useState<RwMapItem[]>([]);
@@ -124,7 +133,7 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
       | null;
     setBusy(null);
     if (!res?.ok || !data?.id) {
-      setMsg(data?.message ?? '收录失败，请先登录或稍后再试');
+      setMsg(data?.message ?? '收录失败，稍后再试');
       return;
     }
     router.push(`/resources/${data.id}`);
@@ -197,35 +206,65 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
         />
       ))}
 
-      {visibleMods.map((mod) => (
-        <button
-          key={`mod-${mod.sourceId}`}
-          type="button"
-          className="card res-card res-card-btn"
-          disabled={busy === mod.sourceId}
-          title={`点一下把「${mod.title}」收入资源库`}
-          onClick={() => void collect(mod)}
-        >
-          <span className={'res-cover cover-rw' + (mod.icon ? ' has-img' : '')}>
-            <CoverImage src={mod.icon} />
-            <span className="badge badge-rw res-cover-tag">Rusted Warfare</span>
-            <span className="ver">模组</span>
-          </span>
-          <span className="res-body">
-            <span className="res-title">{mod.title}</span>
-            <span className="res-chips">
-              <span className="res-chip res-chip-src">rtsbox</span>
-              <span className="res-chip">模组</span>
-            </span>
-            <span className="res-foot">
-              <span className="res-foot-ver">
-                {busy === mod.sourceId ? '正在收录…' : '点卡片收录'}
+      {visibleMods.map((mod) => {
+        const body = (
+          <>
+            <span className={'res-cover cover-rw' + (mod.icon ? ' has-img' : '')}>
+              <CoverImage src={mod.icon} />
+              <span className="badge badge-rw res-cover-tag">Rusted Warfare</span>
+              <span className="res-cover-side">
+                <span className="ver">模组</span>
               </span>
-              <span className="res-foot-dl mono">rtsbox</span>
             </span>
-          </span>
-        </button>
-      ))}
+            <span className="res-body">
+              <span className="res-title">{mod.title}</span>
+              <span className="res-chips">
+                <span className="res-chip res-chip-src">rtsbox</span>
+                <span className="res-chip">模组</span>
+              </span>
+              <span className="res-foot">
+                <span className="res-foot-ver">
+                  {canImport
+                    ? busy === mod.sourceId
+                      ? '正在收录…'
+                      : '点卡片收录'
+                    : '在 rtsbox 打开'}
+                </span>
+                <span className="res-foot-dl mono">rtsbox</span>
+              </span>
+            </span>
+          </>
+        );
+
+        // 不能收录的人：整张卡变成去原帖的外链
+        if (!canImport) {
+          return (
+            <a
+              key={`mod-${mod.sourceId}`}
+              className="card res-card res-card-btn"
+              href={mod.sourceUrl || mod.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              title={`在 rtsbox 打开「${mod.title}」`}
+            >
+              {body}
+            </a>
+          );
+        }
+
+        return (
+          <button
+            key={`mod-${mod.sourceId}`}
+            type="button"
+            className="card res-card res-card-btn"
+            disabled={busy === mod.sourceId}
+            title={`点一下把「${mod.title}」收入资源库`}
+            onClick={() => void collect(mod)}
+          >
+            {body}
+          </button>
+        );
+      })}
 
       {hasMore && (
         <div className="res-cells-more">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CoverImage } from './cover-image';
 
@@ -61,6 +62,7 @@ export function RemoteCells({
   q,
   game,
   category,
+  canImport,
 }: {
   /** 资源库搜索词：有词就按词搜，没词就取热门 */
   q?: string;
@@ -68,6 +70,8 @@ export function RemoteCells({
   game?: string;
   /** 当前分类筛选：只有「模组」板块收外部模组，别的分类不混进来 */
   category?: string;
+  /** 能不能收录进资源库：只有管理员可以，其他人点卡片去原站 */
+  canImport?: boolean;
 }) {
   const router = useRouter();
   const [items, setItems] = useState<RemoteItem[]>([]);
@@ -183,48 +187,78 @@ export function RemoteCells({
 
   return (
     <>
-      {items.map((item) => (
-        <button
-          key={`${item.source}-${item.sourceId}`}
-          type="button"
-          className="card res-card res-card-btn"
-          disabled={busy === item.sourceId}
-          title={`点一下把「${item.title}」收入资源库`}
-          onClick={() => void collect(item)}
-        >
-          <span className={'res-cover cover-mc' + (item.icon ? ' has-img' : '')}>
-            <CoverImage src={item.icon} />
-            <span className="badge badge-mc res-cover-tag">Minecraft</span>
-            <span className="ver">{kindLabel(item.kind)}</span>
-          </span>
-          <span className="res-body">
-            <span className="res-title">{item.title}</span>
-            {item.summary && <span className="res-desc">{item.summary}</span>}
-            <span className="res-chips">
-              <span className="res-chip res-chip-src">{sourceName(item.source)}</span>
-              {item.author && <span className="res-chip">{item.author}</span>}
-            </span>
-            <span className="res-foot">
-              <span className="res-foot-ver">
-                {busy === item.sourceId ? '正在收录…' : '点卡片收录'}
-              </span>
-              <span className="res-foot-dl mono">
-                <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-                  <path
-                    d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {fmt(item.downloads)}
+      {items.map((item) => {
+        const key = `${item.source}-${item.sourceId}`;
+        const body = (
+          <>
+            <span className={'res-cover cover-mc' + (item.icon ? ' has-img' : '')}>
+              <CoverImage src={item.icon} />
+              <span className="badge badge-mc res-cover-tag">Minecraft</span>
+              <span className="res-cover-side">
+                <span className="ver">{kindLabel(item.kind)}</span>
               </span>
             </span>
-          </span>
-        </button>
-      ))}
+            <span className="res-body">
+              <span className="res-title">{item.title}</span>
+              {item.summary && <span className="res-desc">{item.summary}</span>}
+              <span className="res-chips">
+                <span className="res-chip res-chip-src">{sourceName(item.source)}</span>
+                {item.author && <span className="res-chip">{item.author}</span>}
+              </span>
+              <span className="res-foot">
+                <span className="res-foot-ver">
+                  {canImport
+                    ? busy === item.sourceId
+                      ? '正在收录…'
+                      : '点卡片收录'
+                    : '查看详情'}
+                </span>
+                <span className="res-foot-dl mono">
+                  <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                    <path
+                      d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  {fmt(item.downloads)}
+                </span>
+              </span>
+            </span>
+          </>
+        );
+
+        // 不能收录的人：点卡片进站内的预览详情页（介绍、版本、来源都在那儿），不是直接跳外站
+        if (!canImport) {
+          const pid = item.projectId ? `?pid=${item.projectId}` : '';
+          return (
+            <Link
+              key={key}
+              className="card res-card res-card-btn"
+              href={`/resources/remote/${item.source}/${encodeURIComponent(item.sourceId)}${pid}`}
+              title={`查看「${item.title}」详情`}
+            >
+              {body}
+            </Link>
+          );
+        }
+
+        return (
+          <button
+            key={key}
+            type="button"
+            className="card res-card res-card-btn"
+            disabled={busy === item.sourceId}
+            title={`点一下把「${item.title}」收入资源库`}
+            onClick={() => void collect(item)}
+          >
+            {body}
+          </button>
+        );
+      })}
       {hasMore && (
         <div className="res-cells-more">
           <button

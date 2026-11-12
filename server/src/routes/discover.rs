@@ -1,13 +1,14 @@
 //! 资源库的“从外部站点拉取”。
 //!
 //! - `GET  /api/v1/resources/discover`：搜 Modrinth / CurseForge，返回标准化条目（不落库）
-//! - `POST /api/v1/resources/import`：把其中一条导入成本站资源（登录可用）
+//! - `POST /api/v1/resources/import`：把其中一条导入成本站资源（**仅管理员**）
 //!
 //! 导入不做二次确认：用户点「导入」就是把这条挂到自己名下，之后能像普通资源一样编辑/下架。
 
 use axum::Json;
 use axum::body::Bytes;
-use axum::extract::{Query, State};
+use axum::http::StatusCode;
+use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -62,11 +63,79 @@ pub async fn discover(
     };
 
     match items {
-        Ok(items) => Ok(Json(json!({ "ok": true, "source": source, "items": items })).into_response()),
+        Ok(items) => {
+            // 已经收进资源库的条目不再出现在外站列表里：收录完原卡就该消失，
+            // 让位给资源库里那张正式的站内卡
+            let items = drop_imported(&st.pool, source, items).await;
+            Ok(Json(json!({ "ok": true, "source": source, "items": items })).into_response())
+        }
         // 站点配置/网络问题不算 500：前端要拿到可读原因去引导用户
         Err(message) => Ok(Json(json!({ "ok": false, "source": source, "message": message }))
             .into_response()),
     }
+}
+
+/// 去掉已经收录过的条目（按 `(source, source_id)` 判断）
+async fn drop_imported(
+    pool: &sqlx::PgPool,
+    source: &str,
+    items: Vec<RemoteItem>,
+) -> Vec<RemoteItem> {
+    if items.is_empty() {
+        return items;
+    }
+    let ids: Vec<String> = items.iter().map(|i| i.source_id.clone()).collect();
+    let done: Vec<String> = sqlx::query_scalar(
+        "SELECT source_id FROM resources
+          WHERE source = $1 AND source_id = ANY($2) AND source_id <> ''",
+    )
+    .bind(source)
+    .bind(&ids)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    if done.is_empty() {
+        return items;
+    }
+    let set: std::collections::HashSet<String> = done.into_iter().collect();
+    items
+        .into_iter()
+        .filter(|i| !set.contains(&i.source_id))
+        .collect()
+}
+
+/// GET /api/v1/resources/remote/{source}/{id}
+///
+/// 外部条目在站内的「预览详情」：拉原站的项目详情（介绍正文 / 加载器 / 版本 / 授权 / 标签），
+/// 让没收录权限的人也能在站内看完再决定去哪里下载。
+pub async fn remote_detail(
+    State(st): State<AppState>,
+    Path((source, id)): Path<(String, String)>,
+) -> ApiResult<Response> {
+    if !remote_sources::ONLINE_SOURCES.contains(&source.as_str()) {
+        return Err(ApiError::invalid_input("来源站不正确"));
+    }
+
+    // 已经收进资源库的，直接把站内 id 给前端，省得再拉一次详情
+    let imported: Option<String> = sqlx::query_scalar(
+        "SELECT id FROM resources
+          WHERE source = $1 AND source_id = $2
+          ORDER BY created_at LIMIT 1",
+    )
+    .bind(&source)
+    .bind(&id)
+    .fetch_optional(&st.pool)
+    .await
+    .map_err(ApiError::internal)?;
+
+    let map = settings::load(&st.pool, &st.cfg).await;
+    let mirror = settings::flag(&map, "mcimMirror", false);
+    let cf_key = settings::text(&map, "curseforgeKey");
+    let detail = remote_sources::fetch_detail(&st.http, &source, &id, 0, &cf_key, mirror)
+        .await
+        .map_err(|e| ApiError::with_message(StatusCode::BAD_GATEWAY, "upstream_error", e))?;
+
+    Ok(Json(json!({ "ok": true, "detail": detail, "importedId": imported })).into_response())
 }
 
 /// POST /api/v1/resources/import
@@ -76,6 +145,16 @@ pub async fn import(
     CurrentUser(user): CurrentUser,
     body: Bytes,
 ) -> ApiResult<Response> {
+    // 收录是以调用者的名义往资源库里建条目（作者=自己），等同于代站方发布，
+    // 所以只对管理员开放；普通成员仍然可以自己「发布资源」。
+    if !user.is_admin {
+        return Err(ApiError::with_message(
+            StatusCode::FORBIDDEN,
+            "forbidden",
+            "外部资源收录只对管理员开放",
+        ));
+    }
+
     let Some(obj) = parse_body(&body) else {
         return Err(ApiError::invalid_input("请求体不是合法 JSON"));
     };

@@ -53,15 +53,39 @@ pub async fn discover(
         limit
     );
     if let Some(hit) = st.cache.get(&cache_key).await {
-        if let Ok(v) = serde_json::from_str::<Value>(&hit) {
+        if let Ok(mut v) = serde_json::from_str::<Value>(&hit) {
+            // 缓存存的是外站原始结果；「哪些已经收录」会变，所以每次都要按当前库状态滤一遍
+            if let Some(arr) = v.get("mods").and_then(|m| m.as_array()) {
+                let ids: Vec<String> = arr
+                    .iter()
+                    .filter_map(|x| x.get("sourceId").and_then(|v| v.as_str()).map(str::to_string))
+                    .collect();
+                let done = imported_mod_ids(&st.pool, &ids).await;
+                if !done.is_empty() {
+                    if let Some(list) = v.get_mut("mods").and_then(|m| m.as_array_mut()) {
+                        list.retain(|x| {
+                            let id = x.get("sourceId").and_then(|v| v.as_str()).unwrap_or("");
+                            !done.contains(id)
+                        });
+                    }
+                }
+            }
             return Ok(Json(v).into_response());
         }
     }
 
-    let (mods, mod_error) = match rw_sources::search_rtsbox(&st.http, &keyword, page).await {
+    let (mut mods, mod_error) = match rw_sources::search_rtsbox(&st.http, &keyword, page).await {
         Ok(v) => (v, None),
         Err(e) => (Vec::new(), Some(e)),
     };
+    // 已经收进资源库的模组不再出现（收录完原卡就该消失）
+    if !mods.is_empty() {
+        let ids: Vec<String> = mods.iter().map(|m| m.source_id.clone()).collect();
+        let done = imported_mod_ids(&st.pool, &ids).await;
+        if !done.is_empty() {
+            mods.retain(|m| !done.contains(&m.source_id));
+        }
+    }
     let (maps, map_error) = if token.trim().is_empty() {
         (
             Vec::new(),
@@ -94,6 +118,25 @@ pub async fn discover(
     }
 
     Ok(Json(payload).into_response())
+}
+
+/// 这些 rtsbox 模组 id 里，哪些已经收进资源库了
+async fn imported_mod_ids(
+    pool: &sqlx::PgPool,
+    ids: &[String],
+) -> std::collections::HashSet<String> {
+    if ids.is_empty() {
+        return Default::default();
+    }
+    let done: Vec<String> = sqlx::query_scalar(
+        "SELECT source_id FROM resources
+          WHERE source = 'rtsbox' AND source_id = ANY($1) AND source_id <> ''",
+    )
+    .bind(ids)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    done.into_iter().collect()
 }
 
 /// GET /api/v1/admin/rw/check —— 后台「测试连接」用

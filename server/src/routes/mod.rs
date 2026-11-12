@@ -478,6 +478,7 @@ pub fn router(state: AppState) -> Router {
         // 从 Modrinth / CurseForge 拉取（搜索不落库，导入才落库）
         .route("/api/v1/resources/discover", get(discover::discover))
         .route("/api/v1/resources/import", post(discover::import))
+        .route("/api/v1/resources/remote/{source}/{id}", get(discover::remote_detail))
         // 铁锈战争：rtsbox 模组 + RELAY-CN 地图站
         .route("/api/v1/rw/discover", get(rw::discover))
         .route("/api/v1/rw/maps/{id}/download", get(rw::map_download))

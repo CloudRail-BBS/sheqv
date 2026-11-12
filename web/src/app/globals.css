@@ -2683,7 +2683,33 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   width: 100%; padding: 0; margin: 0;
   font: inherit; color: inherit; text-align: left;
   background: var(--panel); appearance: none; cursor: pointer;
+  /* 非管理员看到的是 <a>（点卡片去原站），别带下划线 */
+  text-decoration: none;
 }
+.res-card-btn:hover { color: inherit; }
+/* 封面右上角：官方收录 + 类型，竖排；原来单放的 .ver 改成随容器走 */
+.res-cover-side {
+  position: absolute; right: 10px; top: 10px; z-index: 2;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+}
+.res-cover-side .ver { position: static; right: auto; top: auto; }
+/* 「官方收录」：蓝底白字的小标，表示这条由站方从外站整理收录 */
+.res-official {
+  display: inline-flex; align-items: center;
+  height: 19px; padding: 0 7px; border-radius: var(--r-pill);
+  background: var(--blue); color: #fff;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(8, 14, 22, 0.28);
+}
+/* 详情页与地图卡上的同一枚徽章，字号大一号 */
+.res-detail .res-official, .rwmap .res-official { height: 21px; padding: 0 9px; font-size: 11px; }
+/* 外部条目预览页的正文：原站是纯文本，保留换行但不铺满整行 */
+.res-body-text {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft);
+  font-size: 13.5px; line-height: 1.9; color: var(--text-2);
+  white-space: pre-line; word-break: break-word;
+}
+.res-collect { display: inline-flex; flex-direction: column; gap: 6px; }
 .res-card-btn:disabled { cursor: progress; }
 .res-card-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 /* 来源胶囊：让人一眼看出这条还没进站，点一下才收录 */
@@ -2694,7 +2720,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
    地图要「先看再下」：缩略图 16:9 铺满上半，下面是地图名 / 作者 / 赞踩与总下载 /
    属性标签（PVP、尺寸、矿点），底部「查看大图」+「下载地图｜收录到资源库」。 */
 .rwmap {
-  overflow: hidden; display: flex; flex-direction: column;
+  position: relative; overflow: hidden; display: flex; flex-direction: column;
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 .rwmap:hover { border-color: var(--hover-bd); transform: translateY(-2px); box-shadow: var(--shadow-lift); }

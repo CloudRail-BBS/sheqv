@@ -34,6 +34,12 @@ export function ResourceCard({
       <div className={'res-cover cover-' + tone + (item.cover ? ' has-img' : '')}>
         <CoverImage src={item.cover} />
         <span className={'badge badge-' + tone + ' res-cover-tag'}>{gameLabel(item.game)}</span>
+        {/* 「官方收录」只给从外站收进来的条目：本站原创的卡不挂这个标 */}
+        {item.source && (
+          <span className="res-cover-side">
+            <span className="res-official">官方收录</span>
+          </span>
+        )}
       </div>
 
       <div className="res-body">
