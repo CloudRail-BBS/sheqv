@@ -54,14 +54,14 @@ pub async fn admin_list(pool: &PgPool, scope: &str) -> Result<Vec<Category>, sql
         // 帖子版块：section 存 key
         "post_section" => "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(p.id)::bigint AS count
            FROM content_categories c
-           LEFT JOIN posts p ON p.section = c.key
+           LEFT JOIN posts p ON p.section = c.key AND p.status = 'published'
           WHERE c.scope = 'post_section'
           GROUP BY c.id
           ORDER BY c.sort, c.label",
         // 帖子标签：tags 是 jsonb 数组，包含就算一条
         "post_tag" => "SELECT c.id, c.scope, c.key, c.label, c.descr, c.sort, count(p.id)::bigint AS count
            FROM content_categories c
-           LEFT JOIN posts p ON p.tags @> to_jsonb(c.key)
+           LEFT JOIN posts p ON p.tags @> to_jsonb(c.key) AND p.status = 'published'
           WHERE c.scope = 'post_tag'
           GROUP BY c.id
           ORDER BY c.sort, c.label",

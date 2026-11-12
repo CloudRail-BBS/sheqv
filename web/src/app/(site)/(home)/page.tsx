@@ -56,9 +56,11 @@ export default async function HomePage({
   const tab = isFeedTab(rawTab) ? rawTab : 'recommend';
   // 版块与标签都由后台维护：版块做信息流筛选，标签做侧栏热词
   const [sections, postTags] = await Promise.all([
-    listCategories('post_section'),
+    // 版块带已发布帖子数：胶囊上直接看活跃度
+    listCategories('post_section', { counts: true }),
     listCategories('post_tag'),
   ]);
+  const totalPosts = sections.reduce((sum, s) => sum + (s.count || 0), 0);
   const section = rawSection && sections.some((s) => s.key === rawSection) ? rawSection : '';
   const posts = await listPosts(undefined, tab, section);
   // 封面按原图比例占位：先批量问一次尺寸（最多 24 张），瀑布流才不会跳
@@ -116,6 +118,7 @@ export default async function HomePage({
           <div className="feed-sections" aria-label="按版块筛选">
             <Link href={feedHref(tab, '')} className="chip" data-on={!section}>
               全部版块
+              {totalPosts > 0 && <em className="chip-n">{totalPosts}</em>}
             </Link>
             {sections.map((s) => (
               <Link
@@ -126,6 +129,7 @@ export default async function HomePage({
                 title={s.descr || undefined}
               >
                 {s.label}
+                {s.count > 0 && <em className="chip-n">{s.count}</em>}
               </Link>
             ))}
           </div>

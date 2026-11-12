@@ -44,9 +44,14 @@ pub async fn list(
     Query(q): Query<HashMap<String, String>>,
 ) -> ApiResult<Response> {
     let scope = scope_arg(q.get("scope").map(String::as_str))?;
-    let items = categories::list(&st.pool, &scope)
-        .await
-        .map_err(ApiError::internal)?;
+    // counts=1：带上「有多少条已发布内容」，首页版块胶囊用来显示活跃度
+    let counts = matches!(q.get("counts").map(String::as_str), Some("1") | Some("true"));
+    let items = if counts {
+        categories::admin_list(&st.pool, &scope).await
+    } else {
+        categories::list(&st.pool, &scope).await
+    }
+    .map_err(ApiError::internal)?;
     Ok(Json(json!({ "ok": true, "items": items })).into_response())
 }
 

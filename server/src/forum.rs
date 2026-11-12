@@ -192,12 +192,16 @@ pub async fn list(
 ) -> Result<Vec<PostView>, sqlx::Error> {
     let keyword = q.map(str::trim).filter(|v| !v.is_empty());
     let tab = match tab {
-        "new" | "following" | "joined" | "recommend" => tab,
+        "new" | "following" | "joined" | "recommend" | "featured" => tab,
         _ => "recommend",
     };
 
     let mut sql = format!("{POST_SQL} WHERE p.status = 'published'");
     let mut binds: Vec<String> = Vec::new();
+
+    if tab == "featured" {
+        sql.push_str(" AND p.featured = true");
+    }
 
     if let Some(sec) = section.map(str::trim).filter(|v| !v.is_empty()) {
         binds.push(sec.to_string());

@@ -755,6 +755,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   border-color: var(--blue-line); font-weight: 600;
 }
 .chip[data-on="true"]:hover { color: var(--blue); border-color: var(--blue-line); background: var(--blue-soft); }
+/* 胶囊里的数量：次要信息，选中时跟着变蓝 */
+.chip-n {
+  margin-left: 5px; font-style: normal; font-size: 11px;
+  color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.chip[data-on="true"] .chip-n { color: var(--blue); opacity: 0.75; }
 
 .notice {
   display: flex; align-items: center; gap: 10px;
