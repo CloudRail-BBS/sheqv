@@ -73,6 +73,8 @@ export function RemoteCells({
   const [items, setItems] = useState<RemoteItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  /** 拉取失败的原因（网络、限流、镜像挂了），别静默清空 */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -102,11 +104,12 @@ export function RemoteCells({
     if (keyword.trim()) params.set('q', keyword.trim());
     const res = await fetch(`/api/v1/resources/discover?${params}`).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
-      | { ok?: boolean; items?: RemoteItem[] }
+      | { ok?: boolean; items?: RemoteItem[]; message?: string }
       | null;
     if (ticket !== seq.current) return; // 已经有更新的请求了
 
     const next = data?.ok ? (data.items ?? []).filter((i) => i.source === 'modrinth') : [];
+    setLoadError(data?.ok ? null : (data?.message ?? '拉取失败，稍后再试'));
 
     if (!append) {
       itemsRef.current = next;
@@ -238,6 +241,9 @@ export function RemoteCells({
       )}
 
       {msg && <p className="small res-cells-msg">{msg}</p>}
+      {!msg && items.length === 0 && loadError && (
+        <p className="small res-cells-msg">Modrinth：{loadError}</p>
+      )}
     </>
   );
 }

@@ -34,6 +34,8 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
   const [maps, setMaps] = useState<RwMapItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  /** 地图站那边的失败原因（没配 token / 认证失败 / 网络不通），要能看见 */
+  const [mapError, setMapError] = useState<string | null>(null);
   /** 首次拉取铺骨架，别让这一格空着 */
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -54,12 +56,13 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
     if (keyword.trim()) params.set('q', keyword.trim());
     const res = await fetch(`/api/v1/rw/discover?${params}`).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
-      | { ok?: boolean; mods?: RwMod[]; maps?: RwMapItem[] }
+      | { ok?: boolean; mods?: RwMod[]; maps?: RwMapItem[]; mapError?: string | null }
       | null;
     if (ticket !== seq.current) return; // 已经有更新的请求了
 
     const nextMods = data?.ok ? (data.mods ?? []) : [];
     const nextMaps = data?.ok ? (data.maps ?? []) : [];
+    setMapError(data?.mapError ?? null);
 
     if (!append) {
       modsRef.current = nextMods;
@@ -170,7 +173,15 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
   }
 
   if (visibleMaps.length === 0 && visibleMods.length === 0) {
-    return msg ? <p className="small res-cells-msg">{msg}</p> : null;
+    // 地图拉不到时把原因写出来，否则这一块直接消失，只能靠猜
+    const reason = showMaps ? mapError : null;
+    if (!msg && !reason) return null;
+    return (
+      <>
+        {msg && <p className="small res-cells-msg">{msg}</p>}
+        {reason && <p className="small res-cells-msg">地图站：{reason}</p>}
+      </>
+    );
   }
 
   return (
@@ -230,6 +241,9 @@ export function RwCells({ q, category }: { q?: string; category?: string }) {
       )}
 
       {msg && <p className="small res-cells-msg">{msg}</p>}
+      {showMaps && visibleMaps.length === 0 && mapError && (
+        <p className="small res-cells-msg">地图站：{mapError}</p>
+      )}
     </>
   );
 }

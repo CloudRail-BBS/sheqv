@@ -481,6 +481,7 @@ pub fn router(state: AppState) -> Router {
         // 铁锈战争：rtsbox 模组 + RELAY-CN 地图站
         .route("/api/v1/rw/discover", get(rw::discover))
         .route("/api/v1/rw/maps/{id}/download", get(rw::map_download))
+        .route("/api/v1/admin/rw/check", get(rw::check))
         .route("/api/v1/resources/{id}/like", post(resources::like))
         .route("/api/v1/resources/{id}/download", post(resources::download))
         .route(

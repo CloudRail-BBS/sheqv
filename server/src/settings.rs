@@ -129,8 +129,19 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("seoVerification", json!(""));
     put("seoTwitter", json!(""));
     put("curseforgeKey", json!(""));
-    put("rwMapsToken", json!(""));
-    put("mcimMirror", json!(false));
+    // 这两个也能用环境变量给：后台没配 / 不想把 token 存库时，
+    // docker-compose 里设 RW_MAPS_TOKEN、MCIM_MIRROR=1 即可（settings 表优先）
+    put(
+        "rwMapsToken",
+        json!(std::env::var("RW_MAPS_TOKEN").unwrap_or_default()),
+    );
+    put(
+        "mcimMirror",
+        json!(matches!(
+            std::env::var("MCIM_MIRROR").unwrap_or_default().trim(),
+            "1" | "true" | "TRUE" | "yes"
+        )),
+    );
     put("profileBadges", json!("founder,admin,sponsor"));
     put(
         "publicBaseUrl",

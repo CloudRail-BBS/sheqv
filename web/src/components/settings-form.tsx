@@ -41,6 +41,8 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
   const [busy, setBusy] = useState<Key | 'all' | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [storageBusy, setStorageBusy] = useState(false);
+  /** 地图站连通性检测的结果（后台「测试」按钮） */
+  const [rwCheck, setRwCheck] = useState<{ ok: boolean; text: string } | null>(null);
   const [storageMsg, setStorageMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   function applyStoragePreset(preset: 'aliyun' | 'rainyun') {
@@ -175,6 +177,38 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
     }
     setMsg({ kind: 'ok', text: '已保存，立即生效' });
     router.refresh();
+  }
+
+  /** 现查一次地图站：token 有没有配、镜像开没开、现在能不能取到数据 */
+  async function checkRw() {
+    setRwCheck(null);
+    const res = await fetch('/api/v1/admin/rw/check').catch(() => null);
+    const d = (await res?.json().catch(() => null)) as
+      | {
+          tokenConfigured?: boolean;
+          tokenMasked?: string;
+          mirror?: boolean;
+          mapsOk?: boolean;
+          error?: string | null;
+        }
+      | null;
+    if (!res?.ok || !d) {
+      setRwCheck({ ok: false, text: '检测请求失败（可能接口还没部署）' });
+      return;
+    }
+    if (d.mapsOk) {
+      setRwCheck({
+        ok: true,
+        text: `地图站正常 · token ${d.tokenMasked || '已配置'}${d.mirror ? ' · 镜像已开' : ''}`,
+      });
+      return;
+    }
+    setRwCheck({
+      ok: false,
+      text: d.tokenConfigured
+        ? `地图站报错：${d.error ?? '未知原因'}`
+        : '还没配置 token（填上面那一栏再保存，然后重新检测）',
+    });
   }
 
   async function resetKey(k: Key) {
@@ -758,7 +792,7 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         <label className="check" style={{ marginTop: 10 }}>
           <input
             type="checkbox"
-            checked={form.mcimMirror}
+            checked={Boolean(form.mcimMirror)}
             onChange={(e) => setForm({ ...form, mcimMirror: e.target.checked })}
           />
           <span>中国大陆加速（MCIM 镜像）</span>
@@ -767,6 +801,20 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
           开启后 Modrinth 的接口与图床改走 <code>mod.mcimirror.top</code>（路径与返回完全一致，
           适合国内服务器）；封面链接也会换成镜像地址。
         </p>
+
+        <div className="row" style={{ gap: 10, marginTop: 10, alignItems: 'center' }}>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => void checkRw()}>
+            测试地图站连接
+          </button>
+          {rwCheck && (
+            <span
+              className="small"
+              style={{ color: rwCheck.ok ? 'var(--ok)' : 'var(--danger)', lineHeight: 1.6 }}
+            >
+              {rwCheck.text}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 12 }} data-section="pagehints">

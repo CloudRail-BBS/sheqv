@@ -17,6 +17,7 @@ use serde_json::json;
 
 use serde_json::Value;
 
+use crate::admin_auth::AdminActor;
 use crate::errors::{ApiError, ApiResult};
 use crate::rw_sources;
 use crate::settings;
@@ -43,8 +44,10 @@ pub async fn discover(
     // 地图站的 search 时灵时不灵、random 每次都换一批，模组接口也慢；
     // 同一个关键词的整份结果缓存 3 分钟，翻页与刷新都直接吃缓存。
     // 缓存里有 token 变化的风险（换 token 后最多脏 3 分钟），可以接受。
+    // 缓存键带上 token 长度与镜像开关：改了配置立刻生效，不用等 3 分钟过期
+    let sig = format!("{}:{}", token.trim().len(), if settings::flag(&map, "mcimMirror", false) { "m" } else { "o" });
     let cache_key = format!(
-        "rw:discover:{}:{}:{}",
+        "rw:discover:{sig}:{}:{}:{}",
         if keyword.trim().is_empty() { "-" } else { keyword.trim() },
         page,
         limit
@@ -59,11 +62,20 @@ pub async fn discover(
         Ok(v) => (v, None),
         Err(e) => (Vec::new(), Some(e)),
     };
-    let (maps, map_error) =
+    let (maps, map_error) = if token.trim().is_empty() {
+        (
+            Vec::new(),
+            Some(
+                "还没配置地图站 Token：后台「内容 → 外部数据源」里填，或给服务端设 RW_MAPS_TOKEN"
+                    .to_string(),
+            ),
+        )
+    } else {
         match rw_sources::search_rw_maps(&st.http, &token, &keyword, page, limit).await {
             Ok(v) => (v, None),
             Err(e) => (Vec::new(), Some(e)),
-        };
+        }
+    };
 
     let payload = json!({
         "ok": true,
@@ -82,6 +94,42 @@ pub async fn discover(
     }
 
     Ok(Json(payload).into_response())
+}
+
+/// GET /api/v1/admin/rw/check —— 后台「测试连接」用
+///
+/// 只回诊断信息：token 有没有配（只露头尾）、镜像开没开、地图站现在能不能取到数据。
+/// token 本身绝不回传。
+pub async fn check(State(st): State<AppState>, _: AdminActor) -> ApiResult<Response> {
+    let map = settings::load(&st.pool, &st.cfg).await;
+    let token = settings::text(&map, "rwMapsToken");
+    let mirror = settings::flag(&map, "mcimMirror", false);
+    let masked = if token.trim().is_empty() {
+        String::new()
+    } else {
+        let t = token.trim();
+        format!("{}…{}", &t[..t.len().min(6)], &t[t.len().saturating_sub(4)..])
+    };
+
+    let (ok, count, error) = if token.trim().is_empty() {
+        (false, 0, Some("没配置 token".to_string()))
+    } else {
+        match rw_sources::search_rw_maps(&st.http, &token, "", 1, 1).await {
+            Ok(v) => (true, v.len(), None),
+            Err(e) => (false, 0, Some(e)),
+        }
+    };
+
+    Ok(Json(json!({
+        "ok": true,
+        "tokenConfigured": !token.trim().is_empty(),
+        "tokenMasked": masked,
+        "mirror": mirror,
+        "mapsOk": ok,
+        "sampleCount": count,
+        "error": error,
+    }))
+    .into_response())
 }
 
 /// GET /api/v1/rw/maps/{id}/download
