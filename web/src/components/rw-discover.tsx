@@ -22,20 +22,24 @@ interface RwMod {
   sourceId: string;
 }
 
-export function RwCells({ q }: { q?: string }) {
+export function RwCells({ q, category }: { q?: string; category?: string }) {
   const router = useRouter();
   const [mods, setMods] = useState<RwMod[]>([]);
   const [maps, setMaps] = useState<RwMapItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  /** 首次拉取时铺骨架卡，别让这一格空着 */
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async (keyword: string) => {
+    setLoading(true);
     const params = new URLSearchParams({ limit: '8' });
     if (keyword.trim()) params.set('q', keyword.trim());
     const res = await fetch(`/api/v1/rw/discover?${params}`).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
       | { ok?: boolean; mods?: RwMod[]; maps?: RwMapItem[] }
       | null;
+    setLoading(false);
     if (!data?.ok) {
       setMods([]);
       setMaps([]);
@@ -81,13 +85,51 @@ export function RwCells({ q }: { q?: string }) {
     router.refresh();
   }
 
-  if (mods.length === 0 && maps.length === 0) {
+  // 骨架：三张地图卡 + 两张模组卡的量，形状和真卡一致，出来时不跳版
+  if (loading && mods.length === 0 && maps.length === 0) {
+    return (
+      <>
+        {[0, 1, 2].map((i) => (
+          <div key={`sk-map-${i}`} className="card rwmap rwmap-skeleton" aria-hidden="true">
+            <span className="rwmap-thumb sk" />
+            <div className="rwmap-body">
+              <span className="sk sk-line" style={{ width: '76%' }} />
+              <span className="sk sk-line" style={{ width: '44%' }} />
+              <span className="sk sk-line" style={{ width: '58%' }} />
+              <span className="sk sk-line sk-line--short" style={{ width: '36%' }} />
+            </div>
+          </div>
+        ))}
+        {category !== '地图' && [0, 1].map((i) => (
+          <div key={`sk-mod-${i}`} className="card res-card rwmap-skeleton" aria-hidden="true">
+            <span className="res-cover sk" />
+            <span className="res-body">
+              <span className="sk sk-line" style={{ width: '68%' }} />
+              <span className="sk sk-line" style={{ width: '52%' }} />
+              <span className="sk sk-line sk-line--short" style={{ width: '30%' }} />
+            </span>
+          </div>
+        ))}
+        <p className="small muted res-cells-note">
+          {category === '地图' ? '正在从地图站取数据…' : '正在从 rtsbox 与地图站取数据…'}
+        </p>
+      </>
+    );
+  }
+
+  // 地图只在「地图」板块出现（不选分类时也露出来）；模组反过来，地图板块里不混模组
+  const showMaps = !category || category === '地图';
+  const showMods = !category || category !== '地图';
+  const visibleMaps = showMaps ? maps : [];
+  const visibleMods = showMods ? mods : [];
+
+  if (visibleMaps.length === 0 && visibleMods.length === 0) {
     return msg ? <p className="small res-cells-msg">{msg}</p> : null;
   }
 
   return (
     <>
-      {maps.map((m) => (
+      {visibleMaps.map((m) => (
         <RwMapCard
           key={`map-${m.id}`}
           item={{
@@ -98,7 +140,7 @@ export function RwCells({ q }: { q?: string }) {
         />
       ))}
 
-      {mods.map((mod) => (
+      {visibleMods.map((mod) => (
         <button
           key={`mod-${mod.sourceId}`}
           type="button"
@@ -128,7 +170,7 @@ export function RwCells({ q }: { q?: string }) {
       ))}
 
       {/* rtsbox 的接口必须有关键词才返回数据，没搜的时候提醒一句 */}
-      {mods.length === 0 && !(q ?? '').trim() && maps.length > 0 && (
+      {visibleMods.length === 0 && visibleMaps.length > 0 && !(q ?? '').trim() && showMods && (
         <p className="small muted res-cells-note">
           输入关键词（比如「模组」「战役」）还能搜到 rtsbox 上的铁锈战争模组
         </p>

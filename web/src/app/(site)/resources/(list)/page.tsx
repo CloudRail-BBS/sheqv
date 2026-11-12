@@ -207,7 +207,7 @@ export default async function ResourcesPage({
             <ResourceCard key={r.id} item={r} categories={cats} />
           ))}
           {sp.game === 'rusted_warfare' ? (
-            <RwCells q={sp.q} />
+            <RwCells q={sp.q} category={sp.category} />
           ) : (
             <RemoteCells q={sp.q} game={sp.game} filtered={Boolean(sp.category)} />
           )}
