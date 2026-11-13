@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/current-user';
 import { getDeveloperBoard, listResources } from '@/lib/resource-store';
@@ -17,6 +18,7 @@ import {
   type ResourceView,
 } from '@/lib/resource-types';
 import { catLabel, listCategories } from '@/lib/category-store';
+import { CategoryIcon, catHue } from '@/components/category-icon';
 
 export const dynamic = 'force-dynamic';
 
@@ -146,19 +148,31 @@ export default async function ResourcesPage({
 
         {/* 分类是资源库的主维度，放第一行；游戏只是它的二级筛选 */}
         <div className="row wrap" style={{ gap: 6 }}>
-          <Link href={buildQuery(base, { category: undefined })} className="chip" data-on={!sp.category}>
+          <Link
+            href={buildQuery(base, { category: undefined })}
+            className="chip"
+            data-cat="全部"
+            data-on={!sp.category}
+          >
+            <CategoryIcon name="全部" />
             全部分类
           </Link>
-          {cats.map((c) => (
-            <Link
-              key={c.key}
-              href={buildQuery(base, { category: c.key })}
-              className="chip"
-              data-on={sp.category === c.key}
-            >
-              {c.label}
-            </Link>
-          ))}
+          {cats.map((c) => {
+            const hue = catHue(c.key);
+            return (
+              <Link
+                key={c.key}
+                href={buildQuery(base, { category: c.key })}
+                className="chip"
+                data-cat={hue ? c.key : '其它'}
+                data-on={sp.category === c.key}
+                style={hue ? ({ ['--cat-h']: hue } as CSSProperties) : undefined}
+              >
+                <CategoryIcon name={c.key} />
+                {c.label}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="row wrap" style={{ gap: 6, marginTop: 8, alignItems: 'center' }}>

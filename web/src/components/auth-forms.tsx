@@ -261,7 +261,17 @@ export function RegisterForm(props: CommonProps & { isFirst: boolean }) {
         </p>
       )}
 
-      <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%', marginTop: 16 }}>
+      <button
+        className="btn btn-primary btn-lg"
+        type="submit"
+        disabled={busy}
+        style={{ width: '100%', marginTop: 16 }}
+      >
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 20v-1.8a3.6 3.6 0 0 0-3.6-3.6H6.6A3.6 3.6 0 0 0 3 18.2V20" />
+          <circle cx="9" cy="8" r="3.2" />
+          <path d="M18 8v6M21 11h-6" />
+        </svg>
         {busy ? '创建中…' : '注册并登录'}
       </button>
 
@@ -502,7 +512,15 @@ export function LoginForm(props: CommonProps) {
         </p>
       )}
 
-      <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%', marginTop: 16 }}>
+      <button
+        className="btn btn-primary btn-lg"
+        type="submit"
+        disabled={busy}
+        style={{ width: '100%', marginTop: 16 }}
+      >
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l4 4-4 4M14 12H4" />
+        </svg>
         {busy ? (mode === 'password' ? '登录中…' : '验证中…') : '登录'}
       </button>
 

@@ -18,6 +18,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import android.view.View
+import android.view.animation.PathInterpolator
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -62,6 +63,10 @@ class MainActivity : AppCompatActivity() {
     private var lastBackAt = 0L
     private var splashHidden = false
     private var currentDark = false
+    /** 底栏现在该不该露出来（加载中为 false） */
+    private var navShown = false
+    /** 正在整页加载：加载期间底栏一律不显示 */
+    private var pageLoading = false
 
     private val filePicker =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -211,19 +216,26 @@ class MainActivity : AppCompatActivity() {
                 progress.visibility = View.VISIBLE
                 progress.progress = 0
                 pageScrollTop = 0
+                // 整页加载期间先收起底栏：页面还是空的时候不该先冒出一条导航
+                pageLoading = true
+                hideNav()
             }
 
             // 站内是 App Router 的客户端跳转：前进/后退与 pushState 不会触发 onPageFinished，
             // 底栏高亮得靠这个回调跟上
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
                 nav.sync(url)
+                // App Router 的客户端跳转不触发 onPageStarted：详情页要在这里收底栏
+                syncNav(url)
             }
 
             override fun onPageFinished(view: WebView, url: String?) {
                 progress.visibility = View.GONE
                 refresh.isRefreshing = false
+                pageLoading = false
                 hideSplash()
                 nav.sync(url)
+                syncNav(url)
                 view.evaluateJavascript(BRIDGE_SHIM, null)
                 maybeAutoCheckUpdate()
             }
@@ -236,7 +248,9 @@ class MainActivity : AppCompatActivity() {
                 if (!request.isForMainFrame) return
                 progress.visibility = View.GONE
                 refresh.isRefreshing = false
+                pageLoading = false
                 hideSplash()
+                syncNav(request.url?.toString())
                 offline.visibility = View.VISIBLE
             }
         }
@@ -445,6 +459,7 @@ class MainActivity : AppCompatActivity() {
         // 再点当前项：回到顶部，不重新加载（安卓上的肌肉记忆）
         nav.onReselect = { scrollSiteToTop() }
         nav.sync(web.url)
+        syncNav(web.url)
     }
 
     /**
@@ -467,12 +482,56 @@ class MainActivity : AppCompatActivity() {
 
     // ── 杂项 ──────────────────────────────────────────────────────
 
+    /**
+     * 底栏的显隐。
+     *
+     * 首屏与整页加载时：splash / 空白页上不出现导航（隐藏，alpha 0 → INVISIBLE）；
+     * 页面就绪后淡入 200ms。站内是 App Router 的客户端跳转，不会触发 onPageStarted，
+     * 所以翻页时底栏是常驻的，只有真正换页才收起。
+     */
+    private fun showNav(animate: Boolean = true) {
+        if (!::nav.isInitialized) return
+        nav.animate().cancel()
+        nav.visibility = View.VISIBLE
+        if (animate && !navShown) {
+            nav.alpha = 0f
+            nav.animate()
+                .alpha(1f)
+                .setDuration(200)
+                .setInterpolator(PathInterpolator(0.2f, 0f, 0f, 1f))
+                .start()
+        } else {
+            nav.alpha = 1f
+        }
+        navShown = true
+    }
+
+    private fun hideNav() {
+        if (!::nav.isInitialized) return
+        navShown = false
+        nav.animate().cancel()
+        nav.animate()
+            .alpha(0f)
+            .setDuration(120)
+            .withEndAction { if (!navShown) nav.visibility = View.INVISIBLE }
+            .start()
+    }
+
     private fun hideSplash() {
         if (splashHidden) return
         splashHidden = true
         splash.animate().alpha(0f).setDuration(160).withEndAction {
             splash.visibility = View.GONE
         }.start()
+    }
+
+    /**
+     * 底栏常驻：整页加载期间收起，页面就绪就淡入；
+     * 站内客户端跳转不会触发 onPageStarted，所以翻页时它一直在。
+     */
+    @Suppress("UNUSED_PARAMETER")
+    private fun syncNav(url: String?) {
+        if (pageLoading) hideNav() else showNav()
     }
 
     private fun showImageMenu(url: String) {

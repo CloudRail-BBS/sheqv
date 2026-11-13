@@ -8889,3 +8889,315 @@ body::before {
   .wiki-review-modal { padding: 12px; align-items: end; }
   .wiki-review-sheet { width: 100%; max-height: 82vh; border-radius: 16px 16px 0 0; }
 }
+
+/* ══ Material 3 外观层 ══════════════════════════════════════
+   参考 MUI v7（Material 3）：表面靠「层级色」分层，不靠重阴影；
+   圆角固定 4 / 8 / 12 / 16 / 28；动效统一 cubic-bezier(.2,0,0,1)。
+   同时把模板味重的装饰去掉：背景光斑、渐变按钮、封面辉光。 */
+
+:root {
+  --m3-surface: #0d0d0f;
+  --m3-surface-low: #121214;
+  --m3-surface-container: #161618;
+  --m3-surface-high: #1c1c20;
+  --m3-on-surface: #ececed;
+  --m3-on-surface-variant: #a4a4ac;
+  --m3-primary: #9dc0ff;
+  --m3-on-primary: #05203f;
+  --m3-primary-container: #1b3352;
+  --m3-on-primary-container: #d6e6ff;
+  --m3-secondary-container: #26344c;
+  --m3-on-secondary-container: #d8e6ff;
+  --m3-outline: #35353b;
+  --m3-outline-variant: #232327;
+  --m3-elev-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --m3-elev-2: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --m3-elev-3: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --m3-shape-xs: 4px;
+  --m3-shape-sm: 8px;
+  --m3-shape-md: 12px;
+  --m3-shape-lg: 16px;
+  --m3-shape-xl: 28px;
+  --m3-ease: cubic-bezier(0.2, 0, 0, 1);
+  --m3-dur: 200ms;
+
+  /* 主按钮改 M3 Filled Button：品牌色实底，不再用白色渐变 */
+  --btn-bg: var(--blue);
+  --btn-bg-hover: color-mix(in srgb, var(--blue) 86%, #ffffff);
+  --btn-bd: transparent;
+  --btn-glow: none;
+}
+
+[data-theme="light"] {
+  --m3-surface: #ffffff;
+  --m3-surface-low: #fafbfd;
+  --m3-surface-container: #f3f5f9;
+  --m3-surface-high: #eaeef5;
+  --m3-on-surface: #151a23;
+  --m3-on-surface-variant: #5a6577;
+  --m3-primary: #3e7cff;
+  --m3-on-primary: #ffffff;
+  --m3-primary-container: #dbe7ff;
+  --m3-on-primary-container: #0b2d6b;
+  --m3-secondary-container: #e2eaff;
+  --m3-on-secondary-container: #1a3a7a;
+  --m3-outline: #c3ccdb;
+  --m3-outline-variant: #e5eaf2;
+  --m3-elev-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --m3-elev-2: 0 2px 6px rgba(16, 24, 40, 0.07);
+  --m3-elev-3: 0 6px 18px rgba(16, 24, 40, 0.08);
+  --btn-bg: var(--blue);
+  --btn-bg-hover: #2f6ef5;
+}
+
+/* 背景只留纯表面色：原来那两团径向光斑是「AI 模板味」最重的地方 */
+body { background: var(--bg); }
+.btn-primary { box-shadow: none; }
+/* M3 的按压反馈是状态层（变暗一点），不是整颗按钮位移 */
+.btn:active:not(:disabled) { transform: none; filter: brightness(0.95); }
+.btn-primary:active:not(:disabled) { transform: none; }
+.res-cover::before { display: none; }
+
+/* ── 移动端：M3 App Bar + Navigation Bar ───────────────── */
+@media (max-width: 860px) {
+  .topbar {
+    background: var(--m3-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-bottom: 1px solid var(--m3-outline-variant);
+    box-shadow: none;
+  }
+  .topbar-in { height: 56px; padding: 0 14px; gap: 8px; }
+
+  /* 底栏：贴底整条（M3 Navigation Bar），选中项是指示器胶囊 + 实心图标 */
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid var(--m3-outline-variant);
+    background: var(--m3-surface-container);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+  }
+  .tabbar[data-fits="false"] { overflow-x: auto; }
+  .tabbar a {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 0 2px;
+    gap: 3px;
+    border-radius: var(--m3-shape-lg);
+    color: var(--m3-on-surface-variant);
+    font-size: 10.5px;
+    font-weight: 500;
+  }
+  .tabbar .tab-pill {
+    width: 56px;
+    height: 28px;
+    border-radius: 14px;
+    background: transparent;
+    transition: background var(--m3-dur) var(--m3-ease);
+  }
+  .tabbar a[data-active="true"] { color: var(--m3-on-surface); font-weight: 600; }
+  .tabbar a[data-active="true"] .tab-pill { background: var(--m3-secondary-container); }
+  .tabbar a[data-active="true"] .tab-icon { color: var(--m3-on-secondary-container); }
+  .tabbar a:active .tab-pill { background: var(--m3-surface-high); }
+
+  /* 内容区：外边距 12；底部要给 64 高的贴底导航 + 安全区留位置 */
+  .app { padding: 12px 12px calc(78px + env(safe-area-inset-bottom)); --app-pad: 12px; }
+  .cols { gap: 12px; }
+  .card { border-radius: var(--m3-shape-md); box-shadow: none; }
+  .feed-card { border-radius: var(--m3-shape-md); box-shadow: none; }
+  .feed-card:hover { border-color: var(--line); box-shadow: none; }
+  .post-grid { column-count: 1; }
+
+  /* 胶囊改 M3 Filter Chip：32 高、8 圆角、描边 */
+  .chip {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--r-pill);
+    border-color: var(--m3-outline-variant);
+    background: var(--m3-surface);
+    font-size: 12.5px;
+  }
+  .chip[data-on="true"] {
+    background: var(--m3-secondary-container);
+    border-color: transparent;
+    color: var(--m3-on-secondary-container);
+  }
+  .chip[data-on="true"]:hover {
+    background: var(--m3-secondary-container);
+    border-color: transparent;
+  }
+
+  /* 按钮：40 高（M3 的舒适点击区），圆角 20 */
+  .btn { height: 40px; border-radius: var(--r-pill); font-size: 13.5px; padding: 0 16px; }
+  .btn-sm { height: 32px; padding: 0 12px; font-size: 12.5px; }
+}
+/* 顶栏与侧栏改实色表面：M3 不用毛玻璃，玻璃在深色下还会把正文透出来 */
+.topbar {
+  background: var(--m3-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  box-shadow: none;
+}
+.sidebar { background: var(--m3-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+@media (max-width: 860px) {
+  /* M3 的指示器画在每一项自己的胶囊上，不再用滑动的高亮块 */
+  .tabbar .tab-glider { display: none; }
+  /* 卡片的呼吸感收一点：手机上寸土寸金 */
+  .fc-body { padding: 11px 13px 12px; gap: 8px; }
+  .fc-title { font-size: 15.5px; }
+  .post-grid > .feed-card { margin-bottom: 10px; }
+  .page-title { font-size: 20px; letter-spacing: -0.02em; }
+}
+/* ── 信息流标签：胶囊选中 ───────────────────
+   选中项整颗做成 secondary-container 胶囊（不是下划线），切换时滑过去。
+   容器只留一条底分隔线，去掉原来的白底盒子与内描边。 */
+.feed-tabs {
+  gap: 6px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  --tabs-pad-y: 6px;
+}
+.feed-tab {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m3-on-surface-variant);
+  background: transparent;
+}
+.feed-tab:hover { color: var(--m3-on-surface); background: transparent; }
+.feed-tab[data-on="true"] {
+  color: var(--m3-on-secondary-container);
+  font-weight: 600;
+}
+.feed-tab-pill {
+  border-radius: var(--r-pill);
+  background: var(--m3-secondary-container);
+  box-shadow: none;
+}
+.feed-tabs[data-pill="true"] .feed-tab[data-on="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+.feed-tabs .sort { font-size: 11.5px; color: var(--m3-on-surface-variant); padding-right: 4px; }
+
+@media (max-width: 860px) {
+  .feed-tab { height: 30px; padding: 0 13px; font-size: 12.5px; }
+  .feed-tabs .sort { display: none; }
+}
+/* body::before 那层蓝紫绿光斑是全站「AI 模板味」的源头，直接关掉 */
+body::before { display: none; }
+/* 浅色主题原来给底栏写了一套白玻璃，这里按 M3 表面色盖掉（同样两段选择器，后写生效） */
+[data-theme="light"] .tabbar {
+  background: var(--m3-surface-container);
+  border-color: var(--m3-outline-variant);
+  box-shadow: none;
+}
+/* M3 的导航不做「图标上浮放大」，选中靠指示器表达 */
+.tabbar a[data-active="true"] .tab-icon { transform: none; }
+
+/* 浅色主题的 body 还留着一层蓝光斑（特异性高于 body，单独盖掉） */
+[data-theme="light"] body { background: var(--bg); }
+/* 登录 / 注册的浮层背景同样改纯表面色 */
+.auth-modal-page { background: var(--bg); }
+/* 百科那层蓝紫绿粉的「玻璃背后背景」是模板味的重灾区：
+   改成普通表面色，卡片按 M3 的 surface-container 分层即可 */
+.wiki-main::before { display: none; }
+.wiki-list,
+.wiki-article,
+.wiki-version { background: var(--m3-surface-low); }
+/* ── 彩色分类胶囊 ───────────────────────────
+   参考社区广场的分类条：每个分类一个色相，未选中是浅底同色字 + 图标，
+   选中切成实色深底白字。色相由页面内联 `--cat-h` 给（见 category-icon.tsx）。 */
+.chip[data-cat] {
+  --cat-h: 220;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px 0 10px;
+  font-weight: 550;
+  background: hsl(var(--cat-h) 34% 15%);
+  border-color: hsl(var(--cat-h) 26% 26%);
+  color: hsl(var(--cat-h) 70% 78%);
+}
+.chip[data-cat] .chip-ico { flex: none; }
+.chip[data-cat]:hover {
+  background: hsl(var(--cat-h) 36% 19%);
+  border-color: hsl(var(--cat-h) 30% 34%);
+  color: hsl(var(--cat-h) 76% 84%);
+}
+.chip[data-cat][data-on="true"] {
+  background: hsl(var(--cat-h) 46% 43%);
+  border-color: transparent;
+  color: #fff;
+}
+.chip[data-cat][data-on="true"]:hover {
+  background: hsl(var(--cat-h) 46% 47%);
+  border-color: transparent;
+  color: #fff;
+}
+[data-theme="light"] .chip[data-cat] {
+  background: hsl(var(--cat-h) 72% 96.5%);
+  border-color: hsl(var(--cat-h) 46% 88%);
+  color: hsl(var(--cat-h) 52% 38%);
+}
+[data-theme="light"] .chip[data-cat]:hover {
+  background: hsl(var(--cat-h) 70% 94%);
+  border-color: hsl(var(--cat-h) 46% 82%);
+}
+[data-theme="light"] .chip[data-cat][data-on="true"] {
+  background: hsl(var(--cat-h) 54% 42%);
+  border-color: transparent;
+  color: #fff;
+}
+@media (max-width: 860px) {
+  /* 手机上加图标后要留够高度，手指才好按 */
+  .chip[data-cat] { height: 36px; padding: 0 15px 0 11px; }
+}
+/* ── 按钮：实体感（参考登录/注册那版：实心 + 同色底影，白底描边并排） ── */
+.btn-primary {
+  box-shadow: 0 4px 0 0 color-mix(in srgb, var(--blue) 45%, #08122a);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 0 color-mix(in srgb, var(--blue) 45%, #08122a);
+}
+.btn-primary:disabled { box-shadow: none; }
+
+/* 表单里的大按钮：48 高、图标 + 粗体，撑得起「登录 / 注册」这种单动作 */
+.btn-lg {
+  height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 650;
+  gap: 8px;
+}
+.btn-lg svg { flex: none; }
+/* 白底描边的次要大按钮（注册那种），和实心并排时高度一致 */
+.btn-outline {
+  height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  gap: 8px;
+  background: var(--m3-surface);
+  border: 1px solid var(--m3-outline);
+}
+.btn-outline:hover { background: var(--m3-surface-high); border-color: var(--m3-outline); }

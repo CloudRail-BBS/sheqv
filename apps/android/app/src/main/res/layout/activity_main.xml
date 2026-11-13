@@ -35,15 +35,15 @@
             </FrameLayout>
     </com.cloudrail.community.PullToRefresh>
 
-    <!-- 原生底栏：与网页 tabbar 同一套几何（左右 10 / 底部 10 / 高 62 / 圆角 26），浮在内容之上 -->
+    <!-- 原生底栏：Material 3 Navigation Bar，贴底整条。
+         加载页（splash）与整页加载期间由 MainActivity 淡出，加载完成再淡入，
+         避免「页面还是空白就先冒出一条导航」。 -->
     <com.cloudrail.community.BottomNav
         android:id="@+id/nav"
         android:layout_width="match_parent"
-        android:layout_height="62dp"
+        android:layout_height="64dp"
         android:layout_gravity="bottom"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginBottom="10dp" />
+        android:visibility="gone" />
 
     <FrameLayout
         android:id="@+id/splash"

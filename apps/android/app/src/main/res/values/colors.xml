@@ -25,6 +25,20 @@
     <color name="nav_glider_line_light">#423E7CFF</color>
     <color name="nav_glider_line_dark">#577FB0FF</color>
     <color name="nav_pill_dark">#297FB0FF</color>
+    <!-- Material 3 底部导航：surface-container 底 + secondary-container 指示器 -->
+    <color name="m3_nav_light">#F3F5F9</color>
+    <color name="m3_nav_dark">#161618</color>
+    <color name="m3_indicator_light">#E2EAFF</color>
+    <color name="m3_indicator_dark">#26344C</color>
+    <color name="m3_on_indicator_light">#1A3A7A</color>
+    <color name="m3_on_indicator_dark">#D8E6FF</color>
+    <color name="m3_on_surface_light">#151A23</color>
+    <color name="m3_on_surface_dark">#ECECED</color>
+    <color name="m3_on_variant_light">#5A6577</color>
+    <color name="m3_on_variant_dark">#A4A4AC</color>
+    <color name="m3_outline_light">#E5EAF2</color>
+    <color name="m3_outline_dark">#232327</color>
+
     <color name="panel_light">#FFFFFF</color>
     <color name="panel_dark">#12161D</color>
 </resources>

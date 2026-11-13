@@ -69,12 +69,14 @@ export default async function LoginPage({
       desc="登录后可发帖、评论、签署公约与进入后台。"
       footer={
         settings.allowRegister ? (
-          <span>
-            还没有账号？{' '}
-            <Link href="/register" className="auth-link">
-              注册一个
-            </Link>
-          </span>
+          <Link href="/register" className="btn btn-outline" style={{ width: '100%' }}>
+            <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 20v-1.8a3.6 3.6 0 0 0-3.6-3.6H6.6A3.6 3.6 0 0 0 3 18.2V20" />
+              <circle cx="9" cy="8" r="3.2" />
+              <path d="M18 8v6M21 11h-6" />
+            </svg>
+            注册新账号
+          </Link>
         ) : (
           <span>站点暂时关闭了新账号注册。</span>
         )
