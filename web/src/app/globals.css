@@ -358,6 +358,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* ── two-column content ──────────────────── */
 
 .cols { display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: 20px; align-items: start; }
+/* 侧栏没内容时别留一条 292px 的空列 */
+.cols-single { grid-template-columns: minmax(0, 1fr); }
 .col-main { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .rail { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 12px; }
 
@@ -9237,16 +9239,3 @@ body::before { display: none; }
 .auth-note { color: var(--ok); line-height: 1.7; }
 .auth-done { padding: 6px 0 0; }
 .auth-done-title { font-size: 15px; font-weight: 650; color: var(--ok); }
-/* 资源库：轮播下面的一行「说明 + 发布」；轮播本身有下边距，这里收紧 */
-.res-head-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 12px 0 10px;
-}
-.res-head-bar p { margin: 0; min-width: 0; }
-.res-head-bar .btn,
-.res-head-bar .res-publish { flex: none; }
-@media (max-width: 560px) {
-  .res-head-bar { flex-wrap: wrap; gap: 8px; }
-}

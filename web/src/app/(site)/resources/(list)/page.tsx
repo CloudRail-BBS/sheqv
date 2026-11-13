@@ -1,17 +1,15 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/current-user';
-import { getDeveloperBoard, listResources } from '@/lib/resource-store';
+import { listResources } from '@/lib/resource-store';
 import { ResourceCard } from '@/components/resource-card';
 import { ResourceUpload } from '@/components/resource-upload';
 import { RemoteCells } from '@/components/remote-discover';
 import { RwCells } from '@/components/rw-discover';
 import { listMyDevTeams } from '@/lib/dev-team-store';
-import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
 import { Carousel } from '@/components/carousel';
 import { listSlides } from '@/lib/slide-store';
-import { getSettings } from '@/lib/settings';
 import {
   RESOURCE_GAMES,
   fmtNum,
@@ -48,7 +46,7 @@ export default async function ResourcesPage({
 }) {
   const sp = await searchParams;
   const sort = sp.sort === 'likes' || sp.sort === 'downloads' ? sp.sort : 'new';
-  const [user, items, board, settings, cats, slides] = await Promise.all([
+  const [user, items, cats, slides] = await Promise.all([
     getCurrentUser(),
     listResources({
       game: sp.game,
@@ -56,8 +54,6 @@ export default async function ResourcesPage({
       q: sp.q,
       sort: sort as 'new' | 'likes' | 'downloads',
     }),
-    getDeveloperBoard(),
-    getSettings(),
     listCategories('resource'),
     // 资源库自己的轮播位（后台「轮播」里把展示位置选成「资源库」）
     listSlides({ activeOnly: true, placement: 'resources' }),
@@ -72,9 +68,11 @@ export default async function ResourcesPage({
   const recent = firstPage ? items.slice(0, 6) : [];
   const totalDownloads = items.reduce((n, r) => n + r.downloadCount, 0);
   const base = { game: sp.game, category: sp.category, sort: sp.sort, q: sp.q };
+  // 侧栏只剩「当前筛选」这一张，没筛选时整列不占位
+  const hasRail = Boolean(sp.game || sp.category || sp.q || sort !== 'new');
 
   return (
-    <div className="cols">
+    <div className={hasRail ? 'cols' : 'cols cols-single'}>
       <div className="col-main">
         {/* 顶部是资源库自己的轮播（后台配位）；没配就退回标题 */}
         {slides.length > 0 ? (
@@ -82,24 +80,6 @@ export default async function ResourcesPage({
         ) : (
           <h1 className="page-title">资源库</h1>
         )}
-
-        <div className="between res-head-bar">
-          <p className="small muted">
-            {settings.resourcesHint || '地图、整合包、材质与工具 · 开发者与团队的作品都在这里'}
-          </p>
-          {user ? (
-            <ResourceUpload
-              teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
-              nickname={user.nickname}
-              avatar={user.avatar}
-              categories={cats}
-            />
-          ) : (
-            <Link href="/login" className="btn btn-primary btn-sm">
-              登录后发布
-            </Link>
-          )}
-        </div>
 
         <div className="res-toolbar">
           <form action="/resources" className="res-search" role="search">
@@ -132,6 +112,14 @@ export default async function ResourcesPage({
                 {s.label}
               </Link>
             ))}
+            {user && (
+              <ResourceUpload
+                teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
+                nickname={user.nickname}
+                avatar={user.avatar}
+                categories={cats}
+              />
+            )}
           </div>
         </div>
 
@@ -260,48 +248,9 @@ export default async function ResourcesPage({
         </div>
       </div>
 
-      <aside className="rail">
-        <div className="card rail-card">
-          <div className="rail-title">开发者榜</div>
-          {board.developers.length === 0 ? (
-            <p className="small muted" style={{ lineHeight: 1.75 }}>
-              还没有人发布资源。第一个资源会自动点亮开发者身份。
-            </p>
-          ) : (
-            <div className="rail-list">
-              {board.developers.slice(0, 4).map((d) => (
-                <div key={d.userId} className="rail-item">
-                  <span className="idx">{d.rank}</span>
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {d.nickname}
-                  </span>
-                  <span className="mono small muted" style={{ marginLeft: 'auto' }}>
-                    {fmtNum(d.downloads)} ↓
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          <Link href="/leaderboard#developers" className="btn btn-sm btn-ghost" style={{ marginTop: 10, width: '100%' }}>
-            完整开发者榜
-          </Link>
-        </div>
-
-        <FoldCard title="发布说明">
-          <p className="small muted" style={{ lineHeight: 1.8 }}>
-            资源发布后立即可见，不做人工预审；违规内容由后台下架。
-            下载按「同一账号同一天」计一次，点赞每个账号只能点一次。
-          </p>
-          <p className="small muted" style={{ marginTop: 8, lineHeight: 1.8 }}>
-            以团队名义发布前，需要先创建或加入一个开发团队。
-          </p>
-          <Link href="/dev-teams" className="btn btn-sm btn-ghost" style={{ marginTop: 10 }}>
-            看看开发团队
-          </Link>
-        </FoldCard>
-
-        {/* 只有真的筛过才显示，否则这张卡只是把上面的选项再抄一遍 */}
-        {(sp.game || sp.category || sp.q || sort !== 'new') && (
+      {hasRail && (
+        <aside className="rail">
+          {/* 只有真的筛过才显示，否则这张卡只是把上面的选项再抄一遍 */}
           <div className="card rail-card">
             <div className="rail-title">当前筛选</div>
             <dl className="kv">
@@ -313,8 +262,8 @@ export default async function ResourcesPage({
               <dd>{sort === 'likes' ? '点赞' : sort === 'downloads' ? '下载' : '最新'}</dd>
             </dl>
           </div>
-        )}
-      </aside>
+        </aside>
+      )}
     </div>
   );
 }
