@@ -5538,7 +5538,7 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   padding: 1px 5px; border-radius: 5px;
   border: 1px solid var(--line); background: var(--panel-3); color: var(--text-2);
 }
-.comment-form-foot .btn { margin-left: auto; height: 34px; border-radius: 999px; padding: 0 18px; }
+.comment-form-foot .btn { margin-left: auto; height: 36px; border-radius: var(--mui-radius); padding: 0 18px; }
 @media (max-width: 700px) {
   .comment-form .textarea { min-height: 92px; font-size: 14px; }
   .comment-form-foot .kbd-hint { display: none; }
@@ -8014,7 +8014,7 @@ body::before {
 .me-name { font-size: 22px; font-weight: 650; letter-spacing: -0.025em; }
 .me-info > .row { row-gap: 6px; }
 .me-sub { margin-top: 8px; font-size: 12.5px; }
-.me-hero .btn { border-radius: 999px; height: 36px; padding: 0 16px; }
+.me-hero .btn { border-radius: var(--mui-radius); height: 36px; padding: 0 16px; }
 .me-hero .me-cover-actions .btn { height: 32px; padding: 0 14px; font-size: 12px; }
 .me-hero > .row:last-child { align-self: center; }
 
@@ -8098,7 +8098,7 @@ body::before {
 /* 关注按钮：和 UID 行同一列，不加边框盒子，保持头部干净 */
 .up-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .follow-wrap { display: inline-flex; align-items: center; gap: 8px; }
-.up-actions .btn { border-radius: 999px; height: 32px; padding: 0 16px; }
+.up-actions .btn { border-radius: var(--mui-radius-sm); height: 32px; padding: 0 16px; }
 
 /* ── 切换标签 / 列表入场 ─────────────────── */
 .feed-fade { animation: feedIn 0.32s cubic-bezier(0.22, 0.8, 0.3, 1); }
@@ -8265,7 +8265,7 @@ body::before {
   max-height: 3.4em; overflow: hidden;
 }
 .ext-foot { display: flex; gap: 8px; justify-content: flex-end; }
-.ext-foot .btn { height: 36px; border-radius: 999px; padding: 0 18px; }
+.ext-foot .btn { height: 36px; border-radius: var(--mui-radius); padding: 0 18px; }
 
 /* 正文里的外链：结尾一个很小的 ↗，提示「会跳出去」 */
 .md-body a[target="_blank"]:not([href^="/"]):not([href^="#"])::after {
@@ -9593,8 +9593,12 @@ summary:focus-visible {
 }
 
 /* ── Button ───────────────────────────────────────────────
-   Material Button：高 36 / 内边距 16 / 圆角取 shape / 字重 600；
-   contained 默认 elevation 2，悬停 4，按下 8；disabled 用 12% 底 + 38% 字。 */
+   Material Button：高 36 / 内边距 16 / 圆角取 shape / 字重 600。
+
+   状态一律用「状态层」表达：悬停叠 6%、按下叠 10%，**不替换底色**。
+   早先的写法是 `background: var(--panel-3)`，它会把主色按钮直接涂成浅灰，
+   但文字仍是白的 —— 一悬停就成了「白字压浅灰」的看不见状态。
+   叠层的写法对任何自定义底色的按钮（已领取的蓝底、任务按钮…）都成立。 */
 .btn {
   height: 36px;
   padding: 0 var(--mui-2);
@@ -9603,40 +9607,67 @@ summary:focus-visible {
   font-weight: 600;
   letter-spacing: 0.01em;
   gap: var(--mui-1);
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease),
+  transition: background-color 0.16s var(--ease), border-color 0.16s var(--ease),
     box-shadow 0.16s var(--ease), color 0.16s var(--ease);
 }
 .btn:active { transform: none; }
-.btn:hover { background: var(--panel-3); }
+.btn:hover { background-image: linear-gradient(var(--mui-hover), var(--mui-hover)); }
+.btn:active { background-image: linear-gradient(var(--mui-selected), var(--mui-selected)); }
 .btn-sm { height: 30px; padding: 0 12px; font-size: 12.5px; border-radius: var(--mui-radius-sm); }
 .btn-lg { height: 48px; font-size: 15px; border-radius: var(--mui-radius); }
 
+/* 实心（contained）：主色底 + 反色字；悬停/按下换成深一档的主色，字色保持反色 */
 .btn-primary {
-  background: var(--btn-bg);
+  background-color: var(--btn-bg);
+  background-image: none;
   color: var(--accent-ink);
   border-color: transparent;
   box-shadow: var(--mui-shadow-2);
 }
+.btn-primary:hover,
+.btn-primary:active {
+  background-color: var(--btn-bg-hover);
+  background-image: none;
+  color: var(--accent-ink);
+  border-color: transparent;
+}
 .btn-primary:hover { box-shadow: var(--mui-shadow-4); }
 .btn-primary:active:not(:disabled) { box-shadow: var(--mui-shadow-8); }
+
+/* 描边（outlined）：透明底 + 主色字，悬停只加状态层与主色边框 */
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--blue);
+  box-shadow: none;
+}
+.btn-outline:hover {
+  background-color: transparent;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* 文字（text）：无底无边，悬停靠状态层 */
+.btn-ghost { background-color: transparent; }
+.btn-ghost:hover { background-color: transparent; color: var(--text); }
+.btn-quiet { background-color: transparent; border-color: transparent; color: var(--text-2); }
+.btn-quiet:hover { background-color: transparent; color: var(--text); }
+
+/* 禁用：12% 底 + 38% 字，任何变体、任何状态都一样，不会出现白字 */
 .btn:disabled,
-.btn:disabled:hover {
-  background: var(--mui-disabled-bg);
+.btn:disabled:hover,
+.btn:disabled:active {
+  background-color: var(--mui-disabled-bg);
+  background-image: none;
   border-color: transparent;
   color: var(--mui-disabled-ink);
   box-shadow: none;
   opacity: 1;
 }
-/* 描边按钮：MUI OutlinedButton，悬停只加 6% 状态层，不换底色 */
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--blue);
-  box-shadow: none;
-}
-.btn-outline:hover { background: var(--blue-soft); border-color: var(--blue-line); }
-.btn-ghost:hover { background: var(--mui-hover); }
-.btn-quiet:hover { background: var(--mui-hover); }
+
+/* 自定义底色的按钮（如任务「已领取」的蓝底）：保留原底色，只让文字保持反色 */
+.btn[data-on="true"]:hover,
+.btn[data-on="true"]:active { color: #fff; }
 
 /* ── TextField / Select ───────────────────────────────────
    OutlinedInput：高 38 / 圆角 shape / 1px 分隔线；聚焦换成主色描边 + 3px 柔光。 */
@@ -9766,4 +9797,90 @@ h3 {
   .input { height: 40px; font-size: 14px; }
   .chip { height: 34px; }
   .page-title { font-size: var(--mui-text-h5); }
+}
+
+/* ── 信息流标签条：吸顶、实色、不透视 ─────────────────────
+   之前这条是透明的，滚到轮播/大图上面时字直接压在图里读不清。
+   现在按 Material 的 AppBar 处理：实色表面 + 底部 1px 分隔线 + 吸顶，
+   选中项仍是胶囊（Chip 语义），列表在窄屏可横向滚动。 */
+.feed-tabs {
+  position: sticky;
+  top: 66px;
+  z-index: 20;
+  gap: 4px;
+  padding: 6px 4px;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.feed-tabs::-webkit-scrollbar { display: none; }
+
+.feed-tabs { --tabs-pad-y: 6px; }
+.feed-tab {
+  flex: none;
+  position: relative;
+  z-index: 1;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--mui-radius-pill);
+  font-size: var(--mui-text-body2);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--m3-on-surface-variant);
+  background: transparent;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+.feed-tab:hover { background: var(--mui-hover); color: var(--text); }
+.feed-tab[data-on="true"] { color: var(--m3-on-secondary-container); font-weight: 600; }
+/* 滑块还没量出来（首帧）时，选中项自己先画一层底，避免闪白 */
+.feed-tabs:not([data-pill="true"]) .feed-tab[data-on="true"] {
+  background: var(--m3-secondary-container);
+}
+
+/* 滑动块与标签同高、同圆角 */
+.feed-tab-pill {
+  top: var(--tabs-pad-y);
+  height: calc(100% - var(--tabs-pad-y) * 2);
+  border-radius: var(--mui-radius-pill);
+  background: var(--m3-secondary-container);
+  box-shadow: none;
+}
+
+/* 右侧排序说明：图标 + 文字，用竖线和标签隔开 */
+.feed-tabs .sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 0 8px 0 12px;
+  border-left: 1px solid var(--line);
+  font-size: var(--mui-text-caption);
+  line-height: 1;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.feed-tabs .sort svg { flex: none; opacity: 0.8; }
+
+/* 切标签时只压暗文字，不要把整条（含底色）变半透明：
+   否则背景一透，滚到底下的图片又会冒出来 */
+.feed-tabs[data-pending] { opacity: 1; }
+.feed-tabs[data-pending] .feed-tab { opacity: 0.55; }
+.feed-tabs[data-pending] .sort { opacity: 0.4; }
+
+@media (max-width: 860px) {
+  .feed-tabs {
+    top: calc(56px + env(safe-area-inset-top));
+    padding: 6px 2px;
+    --tabs-pad-y: 6px;
+  }
+  .feed-tab { height: 34px; padding: 0 13px; }
+  .feed-tabs .sort { display: none; }
+  .feed-tabs .feed-tab-pill { border-radius: var(--mui-radius-pill); }
 }

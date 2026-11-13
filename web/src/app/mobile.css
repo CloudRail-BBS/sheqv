@@ -113,12 +113,14 @@
     position: sticky;
     top: calc(52px + env(safe-area-inset-top));
     z-index: 30;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
-    padding: 6px 0 8px;
+    padding: 6px 2px;
     border: 0;
+    border-bottom: 1px solid var(--line);
     border-radius: 0;
-    background: var(--bg);
+    /* 实色：滚到轮播/大图上面时不能透出图片，否则字读不清 */
+    background: var(--panel);
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -129,19 +131,22 @@
   .site-scroll .feed-tabs::-webkit-scrollbar { display: none; }
   .site-scroll .feed-tab {
     flex: 0 0 auto;
-    padding: 7px 15px;
-    border-radius: 999px;
-    font-size: 14px;
-    color: var(--text-2);
+    height: 34px;
+    padding: 0 13px;
+    border-radius: var(--mui-radius-pill);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--m3-on-surface-variant);
   }
-  .site-scroll .feed-tab[data-on='true'] { color: var(--text); font-weight: 600; }
-  /* 选中块 = 白色胶囊，压在灰色页面上（iOS 分段控件） */
+  .site-scroll .feed-tab[data-on='true'] {
+    color: var(--m3-on-secondary-container);
+    font-weight: 600;
+  }
+  /* 选中块与桌面一致：secondary-container 胶囊，靠底色表达选中 */
   .site-scroll .feed-tab-pill {
-    border-radius: 999px;
-    background: var(--panel);
-    box-shadow:
-      0 1px 2px rgba(15, 23, 42, 0.10),
-      0 0 0 1px var(--line-soft);
+    border-radius: var(--mui-radius-pill);
+    background: var(--m3-secondary-container);
+    box-shadow: none;
   }
   .site-scroll .feed-tabs .sort { display: none; }
 
@@ -159,7 +164,7 @@
     display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .site-scroll .composer-trigger .btn {
-    height: 34px; border-radius: 999px; padding: 0 15px; font-size: 13px;
+    height: 34px; border-radius: var(--mui-radius); padding: 0 14px; font-size: 13px;
   }
 
   .site-scroll .composer-guest {
@@ -168,7 +173,7 @@
   }
   .site-scroll .composer-guest .composer-top { gap: 10px; }
   .site-scroll .composer-guest .post-avatar { width: 34px; height: 34px; border-radius: 11px; }
-  .site-scroll .composer-guest .btn { height: 34px; border-radius: 999px; padding: 0 15px; }
+  .site-scroll .composer-guest .btn { height: 36px; border-radius: var(--mui-radius); padding: 0 15px; }
 
   /* ── 信息流卡片：单列、大标题、三行摘要 ───── */
   .site-scroll .post-grid { column-count: 1; column-gap: 0; }
@@ -240,7 +245,9 @@
   .site-scroll .me-hero > .row:last-child {
     width: 100%; justify-content: flex-end; gap: 8px; margin-left: 0 !important;
   }
-  .site-scroll .me-hero > .row:last-child .btn { flex: 0 0 auto; height: 34px; border-radius: 999px; }
+  .site-scroll .me-hero > .row:last-child .btn {
+    flex: 0 0 auto; height: 36px; border-radius: var(--mui-radius);
+  }
 
   /* 四个数字并成一张卡：中间用细线分隔，像系统设置里的分组 */
   .site-scroll .me-stats {
@@ -290,7 +297,7 @@
 
   /* 触控目标：手机上的胶囊、分组标签不低于 34 */
   .site-scroll .chip { height: 34px; display: inline-flex; align-items: center; }
-  .site-scroll .btn-sm { height: 34px; }
+  .site-scroll .btn-sm { height: 32px; }
   .site-scroll .seg,
   .site-scroll .seg a,
   .site-scroll .seg button { min-height: 36px; }
@@ -490,7 +497,7 @@
     padding-bottom: 2px;
     border-top: 1px solid var(--line-soft);
   }
-  .composer-modal-foot .btn { border-radius: 999px; }
+  .composer-modal-foot .btn { border-radius: var(--mui-radius); }
 
   /* ── 底部栏：图标 + 胶囊 ──────────────────── */
   /* 底栏本体（悬浮毛玻璃胶囊）在 globals.css 里定，这里只微调内部节奏 */
@@ -527,12 +534,6 @@
     border: 0; border-radius: 999px;
     background: var(--blue); color: #fff;
     font-size: 13.5px; font-weight: 600;
-  }
-
-  /* 深色下白色胶囊不够分明，换成面板色 + 一圈细边 */
-  [data-theme='dark'] .site-scroll .feed-tab-pill {
-    background: var(--panel-2);
-    box-shadow: 0 0 0 1px var(--line);
   }
 
   @keyframes mSheetIn {

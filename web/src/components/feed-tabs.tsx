@@ -90,7 +90,13 @@ export function FeedTabs({ value, loggedIn }: { value: FeedTab; loggedIn: boolea
           {t.label}
         </button>
       ))}
-      <span className="sort">{current.hint}</span>
+      <span className="sort">
+        {/* 排序说明配一枚图标，别让它像句无关的灰字 */}
+        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7 5v14m0 0-3-3m3 3 3-3M17 19V5m0 0-3 3m3-3 3 3" />
+        </svg>
+        {current.hint}
+      </span>
     </div>
   );
 }
