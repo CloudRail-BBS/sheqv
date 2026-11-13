@@ -83,15 +83,12 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 | | `API_HOST_PORT` | 默认 8860 |
 | | `SESSION_SECRET` | 留空自动生成到数据卷；多实例必须显式配同一个值 |
 | | `ADMIN_TOKEN` / `PUBLIC_BASE_URL` | 可选 |
-| | `REGISTRY` | 可选。基础镜像前缀，国内填 `docker.m.daocloud.io/library/` |
-| | `APT_MIRROR` | 可选。Debian 包源域名，如 `mirrors.aliyun.com` |
 | `web/.env` | `API_BASE` | 默认 `http://api:8080`（走 compose 网络别名） |
 | | `WEB_HOST_PORT` | 默认 8900 |
-| | `REGISTRY` / `NPM_REGISTRY` / `APK_MIRROR` | 可选。镜像站前缀、npm 源、Alpine 源 |
 
 `server/.env` 同时被 `cargo run`（dotenvy）读取，所以裸机调试也用这一份。
 
-## 常见问题
+## 三个最常见的问题
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
@@ -99,58 +96,7 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 | `-bash: ./up.sh: Permission denied` | 脚本没有执行位 | 用 `bash up.sh`；或 `chmod +x deploy/*.sh server/*.sh server/scripts/*.sh` |
 | `network blockarena-net declared as external, but could not be found` | 先起了 web | 先 `cd server && docker compose up -d` |
 | `! Network blockarena-net Resource is still in use`（`down` 时） | web 是独立 project，容器还连着这个网络 | 用 `./down.sh`（先前端后后端）；或先 `cd web && docker compose down` |
-| 构建报 `failed to resolve source metadata for docker.io/...` / `DeadlineExceeded` | 服务器连不上 Docker Hub（国内常见） | 见下方「拉不到镜像 / 构建超时」 |
 | 浏览器里注册/登录返回 500，api 日志里没有该请求 | web 的 rewrites 固化了构建时的地址；没传 `API_BASE` 就会写死 `127.0.0.1:8080`（容器里是 web 自己） | `cd web && docker compose build`（`web/compose.yml` 的 `build.args` 已传 `http://api:8080`） |
-
-## 拉不到镜像 / 构建超时（国内服务器）
-
-典型报错：
-
-```
-failed to solve: DeadlineExceeded: debian:bookworm-slim: failed to resolve source metadata
-for docker.io/library/debian:bookworm-slim: ... timeout awaiting response headers
-```
-
-**方案 A：给 Docker 配镜像加速（一次性，影响整台机器，推荐）**
-
-```bash
-sudo tee /etc/docker/daemon.json >/dev/null <<'JSON'
-{ "registry-mirrors": ["https://docker.m.daocloud.io"] }
-JSON
-sudo systemctl daemon-reload && sudo systemctl restart docker
-```
-
-之后 `./up.sh` 不需要改任何东西。可用镜像地址会变，失效了就换一个
-（`docker.m.daocloud.io` / `docker.1panel.live` 等）。
-
-**方案 B：只给本栈换源（不想动 daemon，或没有 root）**
-
-在 `server/.env` 与 `web/.env` 里放开这几行（`.env.example` 已写好注释）：
-
-```ini
-REGISTRY=docker.m.daocloud.io/library/
-APT_MIRROR=mirrors.aliyun.com      # 后端 apt
-NPM_REGISTRY=https://registry.npmmirror.com   # 前端 npm
-APK_MIRROR=mirrors.aliyun.com      # 前端 apk
-```
-
-然后照常 `./up.sh`。`compose.yml` 会把 `REGISTRY` 当构建参数传给两个 Dockerfile，
-`postgres` / `redis` 的镜像名也一起前缀化；`APT_MIRROR` / `NPM_REGISTRY` /
-`APK_MIRROR` 是**只换域名**的替换（路径不变），留空就走官方源。
-
-只要临时试一次，也可以直接传参：
-
-```bash
-cd server && docker compose build \
-  --build-arg REGISTRY=docker.m.daocloud.io/library/ \
-  --build-arg APT_MIRROR=mirrors.aliyun.com api
-```
-
-> 前缀末尾的 `/library/` 不能省：`rust`、`debian`、`node`、`postgres`、`redis`
-> 都在 Docker Hub 的官方 `library` 命名空间下；镜像站要求路径一致。
->
-> 只换镜像站、没换 npm 源时，`npm ci` 仍可能卡在 `registry.npmjs.org`——
-> 前端构建卡住的话把 `NPM_REGISTRY` 一起设上。
 
 ## 备份 / 恢复
 

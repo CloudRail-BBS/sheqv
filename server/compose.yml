@@ -21,9 +21,7 @@ services:
   db:
     # 固定 17：18 把默认 PGDATA 改成了 /var/lib/postgresql/18/docker，
     # 与常见挂载点不一致，首次启动容易直接退出。
-    # 国内服务器拉不到 docker.io 时，在 server/.env 里设
-    # REGISTRY=docker.m.daocloud.io/library/ （见 deploy/README.md）
-    image: ${REGISTRY:-}postgres:17-alpine
+    image: postgres:17-alpine
     container_name: blockarena-db
     restart: unless-stopped
     environment:
@@ -56,10 +54,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # 基础镜像前缀（rust / debian）；apt 源可选
-        REGISTRY: ${REGISTRY:-}
-        APT_MIRROR: ${APT_MIRROR:-}
     image: blockarena/api:2026.10.24
     container_name: blockarena-api
     restart: unless-stopped
@@ -108,7 +102,7 @@ services:
   # 缓存与限流。默认随栈启动（不配也能跑：API 连不上会降级为进程内）。
   # 不想用 Redis 就 `docker compose up -d db api`，或把 REDIS_URL 设成空字符串。
   redis:
-    image: ${REGISTRY:-}redis:7-alpine
+    image: redis:7-alpine
     container_name: blockarena-redis
     restart: unless-stopped
     command:

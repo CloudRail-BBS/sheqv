@@ -1,18 +1,11 @@
-# 基础镜像前缀：默认 Docker Hub；国内服务器拉不到时传镜像站，
-# 例如 `--build-arg REGISTRY=docker.m.daocloud.io/library/`（末尾带 /library/）。
-ARG REGISTRY=
-
 # 依赖层：只装生产 + 构建依赖，利用 layer 缓存
-FROM ${REGISTRY}node:22-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-# npm 源（可选）：国内直连 registry.npmjs.org 经常卡住，传 npmmirror 走国内源
-ARG NPM_REGISTRY=
-RUN if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi \
- && npm ci
+RUN npm ci
 
 # 构建层
-FROM ${REGISTRY}node:22-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_DIST_DIR=.next \
@@ -33,11 +26,8 @@ RUN printf '%s' "$API_BASE" > .build-api-base \
  && npm run build
 
 # 运行层：只带 standalone 产物
-FROM ${REGISTRY}node:22-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
-
-# apk 源（可选）：换掉 dl-cdn.alpinelinux.org，国内装 tini 会快很多
-ARG APK_MIRROR=
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -46,8 +36,7 @@ ENV NODE_ENV=production \
     DATA_DIR=/data \
     TZ=Asia/Shanghai
 
-RUN if [ -n "$APK_MIRROR" ]; then sed -i "s|dl-cdn.alpinelinux.org|$APK_MIRROR|g" /etc/apk/repositories; fi \
- && apk add --no-cache tini \
+RUN apk add --no-cache tini \
  && test -x /sbin/tini \
  && addgroup -g 1001 -S nodejs \
  && adduser -S nextjs -u 1001 \
