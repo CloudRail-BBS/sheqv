@@ -46,6 +46,16 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     listAnnouncements({ publishedOnly: true, limit: 3 }),
   ]);
   const customLinks = parseFooterLinks(settings.footerLinks);
+  const year = new Date().getFullYear();
+  // 后台的页脚文案常常写成「站名 · 一句话」，页脚已经把站名单独列出来了，这里只留后半句
+  let tagline = (settings.footerText || '').trim() || '玩家社区与赛事确权';
+  if (settings.siteName && tagline.startsWith(settings.siteName)) {
+    tagline =
+      tagline
+        .slice(settings.siteName.length)
+        .replace(/^[\s·•|\-]+/, '')
+        .trim() || '玩家社区与赛事确权';
+  }
   const notes = flatten({ comments: chrome.items, pending: [], unread: chrome.unread });
   const pointsChip = user ? { points: chrome.points, todayDone: chrome.todayDone } : null;
 
@@ -174,7 +184,43 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
         <footer className="footer">
           <div className="footer-in">
-            <span>{settings.footerText || `${settings.siteName} · 玩家社区与赛事确权`}</span>
+            <Link href="/" className="footer-brand">
+              <BrandMark settings={settings} />
+              <span className="footer-brand-text">
+                <b>{settings.siteName}</b>
+                <span>{tagline}</span>
+              </span>
+            </Link>
+
+            <nav className="footer-links" aria-label="页脚链接">
+              {customLinks.length > 0 ? (
+                customLinks.map((l) => (
+                  <a
+                    key={l.href + l.label}
+                    href={l.href}
+                    {...(l.href.startsWith('http')
+                      ? { target: '_blank', rel: 'noreferrer noopener' }
+                      : {})}
+                  >
+                    {l.label}
+                  </a>
+                ))
+              ) : (
+                <>
+                  <Link href="/sponsors">赞助者</Link>
+                  <Link href="/agreements">公约</Link>
+                  <Link href="/policies">政策</Link>
+                  <Link href="/download">客户端</Link>
+                  <Link href={user ? '/me' : '/login'}>{user ? '我的' : '登录'}</Link>
+                </>
+              )}
+            </nav>
+          </div>
+
+          <div className="footer-in footer-meta">
+            <span>
+              © {year} {settings.siteName}
+            </span>
             {settings.footerIcp && (
               <a
                 className="mono"
@@ -185,36 +231,6 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
                 {settings.footerIcp}
               </a>
             )}
-            <span style={{ marginLeft: 'auto' }} className="row">
-              {customLinks.length > 0
-                ? customLinks.map((l, i) => (
-                    <a
-                      key={l.href + l.label}
-                      href={l.href}
-                      style={{ marginLeft: i === 0 ? 0 : 12 }}
-                      {...(l.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
-                    >
-                      {l.label}
-                    </a>
-                  ))
-                : (
-                  <>
-                    <Link href="/sponsors">赞助者</Link>
-                    <Link href="/agreements" style={{ marginLeft: 12 }}>
-                      公约
-                    </Link>
-                    <Link href="/policies" style={{ marginLeft: 12 }}>
-                      政策
-                    </Link>
-                    <Link href="/download" style={{ marginLeft: 12 }}>
-                      客户端
-                    </Link>
-                    <Link href="/login" style={{ marginLeft: 12 }}>
-                      登录
-                    </Link>
-                  </>
-                )}
-            </span>
           </div>
         </footer>
       </div>

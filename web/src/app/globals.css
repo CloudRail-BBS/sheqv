@@ -9239,3 +9239,103 @@ body::before { display: none; }
 .auth-note { color: var(--ok); line-height: 1.7; }
 .auth-done { padding: 6px 0 0; }
 .auth-done-title { font-size: 15px; font-weight: 650; color: var(--ok); }
+/* ── 页脚：两行结构（品牌 + 链接 / 版权 + 备案） ─────
+   原来是「站名 · 说明 + ICP + 一排链接」全挤在一行，换行后间距全靠 inline style，
+   现在按 M3 的 surface + outline 分层，链接做成可点的胶囊。 */
+.footer {
+  margin-top: 24px;
+  border-top: 1px solid var(--m3-outline-variant);
+  background: var(--m3-surface);
+  padding: 22px 0 28px;
+  color: var(--m3-on-surface-variant);
+  font-size: 12px;
+}
+.footer-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 0 18px;
+}
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-decoration: none;
+}
+.footer-brand .brand-mark {
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  border-radius: 9px;
+}
+.footer-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.footer-brand-text b {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.footer-brand-text span {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.footer-links a {
+  padding: 6px 10px;
+  border-radius: var(--r-pill);
+  color: var(--m3-on-surface-variant);
+  text-decoration: none;
+  font-size: 12.5px;
+  transition: background 0.15s, color 0.15s;
+}
+.footer-links a:hover {
+  background: var(--m3-surface-container);
+  color: var(--text);
+}
+.footer-meta {
+  justify-content: flex-start;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--m3-outline-variant);
+  font-size: 11px;
+  color: var(--text-3);
+  gap: 12px;
+}
+.footer-meta a {
+  color: var(--text-3);
+  text-decoration: none;
+}
+.footer-meta a:hover {
+  color: var(--text-2);
+}
+@media (max-width: 860px) {
+  .footer {
+    padding: 18px 0 22px;
+  }
+  .footer-in {
+    gap: 10px;
+    padding: 0 12px;
+  }
+  .footer-links {
+    gap: 0;
+  }
+  .footer-links a {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
