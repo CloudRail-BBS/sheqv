@@ -29,6 +29,10 @@ services:
       # /api/* 全部 500 —— 表现就是「注册/登录失败」。
       args:
         API_BASE: ${API_BASE:-http://api:8080}
+        # 基础镜像前缀（node）；npm / apk 源可选，见 deploy/README.md
+        REGISTRY: ${REGISTRY:-}
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+        APK_MIRROR: ${APK_MIRROR:-}
     image: blockarena/web:2026.10.24
     container_name: blockarena-web
     restart: unless-stopped
