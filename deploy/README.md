@@ -84,11 +84,10 @@ cd server && docker compose exec api /usr/local/bin/arena-api create-admin \
 | | `SESSION_SECRET` | 留空自动生成到数据卷；多实例必须显式配同一个值 |
 | | `ADMIN_TOKEN` / `PUBLIC_BASE_URL` | 可选 |
 | | `REGISTRY` | 可选。基础镜像前缀，国内填 `docker.m.daocloud.io/library/` |
-| | `APT_MIRROR` | 默认 `mirrors.aliyun.com`；写空值用官方源 |
+| | `APT_MIRROR` | 可选。Debian 包源域名，如 `mirrors.aliyun.com` |
 | `web/.env` | `API_BASE` | 默认 `http://api:8080`（走 compose 网络别名） |
 | | `WEB_HOST_PORT` | 默认 8900 |
-| | `REGISTRY` | 可选。基础镜像前缀 |
-| | `NPM_REGISTRY` / `APK_MIRROR` | 默认 npmmirror / aliyun；写空值用官方源 |
+| | `REGISTRY` / `NPM_REGISTRY` / `APK_MIRROR` | 可选。镜像站前缀、npm 源、Alpine 源 |
 
 `server/.env` 同时被 `cargo run`（dotenvy）读取，所以裸机调试也用这一份。
 
@@ -126,19 +125,18 @@ sudo systemctl daemon-reload && sudo systemctl restart docker
 
 **方案 B：只给本栈换源（不想动 daemon，或没有 root）**
 
-在 `server/.env` 里加一行：
+在 `server/.env` 与 `web/.env` 里放开这几行（`.env.example` 已写好注释）：
 
 ```ini
 REGISTRY=docker.m.daocloud.io/library/
+APT_MIRROR=mirrors.aliyun.com      # 后端 apt
+NPM_REGISTRY=https://registry.npmmirror.com   # 前端 npm
+APK_MIRROR=mirrors.aliyun.com      # 前端 apk
 ```
 
 然后照常 `./up.sh`。`compose.yml` 会把 `REGISTRY` 当构建参数传给两个 Dockerfile，
-`postgres` / `redis` 的镜像名也一起前缀化。
-
-> **apt / npm / apk 源已经是国内默认值**，不用配：后端 `APT_MIRROR=mirrors.aliyun.com`、
-> 前端 `NPM_REGISTRY=https://registry.npmmirror.com`、`APK_MIRROR=mirrors.aliyun.com`
-> （Dockerfile 与 compose 里各有一份同样的默认值，直接 `docker build` 也生效）。
-> 想改回官方源，在 `.env` 里写**空值**即可，例如 `NPM_REGISTRY=`。
+`postgres` / `redis` 的镜像名也一起前缀化；`APT_MIRROR` / `NPM_REGISTRY` /
+`APK_MIRROR` 是**只换域名**的替换（路径不变），留空就走官方源。
 
 只要临时试一次，也可以直接传参：
 

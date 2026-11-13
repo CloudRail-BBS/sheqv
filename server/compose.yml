@@ -59,8 +59,7 @@ services:
       args:
         # 基础镜像前缀（rust / debian）；apt 源可选
         REGISTRY: ${REGISTRY:-}
-        # 默认 aliyun；想用官方源就在 .env 里写空值：APT_MIRROR=
-        APT_MIRROR: ${APT_MIRROR-mirrors.aliyun.com}
+        APT_MIRROR: ${APT_MIRROR:-}
     image: blockarena/api:2026.10.24
     container_name: blockarena-api
     restart: unless-stopped

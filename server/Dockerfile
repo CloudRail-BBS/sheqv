@@ -7,10 +7,9 @@ ARG REGISTRY=
 FROM ${REGISTRY}rust:1-slim AS build
 WORKDIR /app
 
-# apt 源：默认 aliyun（只换域名，路径不变）；想用官方源就传空 `--build-arg APT_MIRROR=`
-ARG APT_MIRROR=mirrors.aliyun.com
-RUN echo "apt mirror: ${APT_MIRROR:-官方}" \
- && if [ -n "$APT_MIRROR" ]; then \
+# apt 源（可选）：Debian 官方源在国内常常卡到超时，传 mirror.aliyun.com 之类即可
+ARG APT_MIRROR=
+RUN if [ -n "$APT_MIRROR" ]; then \
       sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources 2>/dev/null \
       || sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list; \
     fi \
@@ -28,9 +27,8 @@ RUN cargo build --release --locked
 # 运行层：只要二进制，不装 curl（healthcheck 走 `arena-api healthcheck`）
 FROM ${REGISTRY}debian:bookworm-slim
 
-ARG APT_MIRROR=mirrors.aliyun.com
-RUN echo "apt mirror: ${APT_MIRROR:-官方}" \
- && if [ -n "$APT_MIRROR" ]; then \
+ARG APT_MIRROR=
+RUN if [ -n "$APT_MIRROR" ]; then \
       sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources 2>/dev/null \
       || sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list; \
     fi \
