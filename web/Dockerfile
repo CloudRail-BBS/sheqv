@@ -6,10 +6,13 @@ ARG REGISTRY=
 FROM ${REGISTRY}node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-# npm 源（可选）：国内直连 registry.npmjs.org 经常卡住，传 npmmirror 走国内源
-ARG NPM_REGISTRY=
-RUN if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi \
- && npm ci
+# npm 源：默认走 npmmirror（国内直连 registry.npmjs.org 会一直卡住）；
+# 想用官方源就显式传空：`docker compose build --build-arg NPM_REGISTRY=`
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+# 重试次数与超时收小：连不上时尽快报错，别挂满 5 分钟
+RUN echo "npm registry: ${NPM_REGISTRY:-官方}" \
+ && if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi \
+ && npm ci --no-audit --no-fund --fetch-retries=3 --fetch-timeout=60000
 
 # 构建层
 FROM ${REGISTRY}node:22-alpine AS build
@@ -36,8 +39,8 @@ RUN printf '%s' "$API_BASE" > .build-api-base \
 FROM ${REGISTRY}node:22-alpine AS runner
 WORKDIR /app
 
-# apk 源（可选）：换掉 dl-cdn.alpinelinux.org，国内装 tini 会快很多
-ARG APK_MIRROR=
+# apk 源：默认 aliyun（只换域名，路径不变）；传空即用官方 dl-cdn.alpinelinux.org
+ARG APK_MIRROR=mirrors.aliyun.com
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

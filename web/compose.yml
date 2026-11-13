@@ -31,8 +31,10 @@ services:
         API_BASE: ${API_BASE:-http://api:8080}
         # 基础镜像前缀（node）；npm / apk 源可选，见 deploy/README.md
         REGISTRY: ${REGISTRY:-}
-        NPM_REGISTRY: ${NPM_REGISTRY:-}
-        APK_MIRROR: ${APK_MIRROR:-}
+        # 包源默认走国内镜像（Dockerfile 里也有一份同样的默认值）；
+        # 想用官方源就在 .env 里写空值：NPM_REGISTRY=
+        NPM_REGISTRY: ${NPM_REGISTRY-https://registry.npmmirror.com}
+        APK_MIRROR: ${APK_MIRROR-mirrors.aliyun.com}
     image: blockarena/web:2026.10.24
     container_name: blockarena-web
     restart: unless-stopped
