@@ -16,6 +16,7 @@ const EMPTY = {
   bgImage: '',
   textTone: 'light' as 'light' | 'dark',
   active: true,
+  placement: 'home',
   order: 1,
 };
 
@@ -38,6 +39,7 @@ export function SlideAdmin({ items }: { items: Slide[] }) {
       bgImage: s.bgImage,
       textTone: s.textTone,
       active: s.active,
+      placement: s.placement || 'home',
       order: s.order,
     });
     setMsg(null);
@@ -169,6 +171,19 @@ export function SlideAdmin({ items }: { items: Slide[] }) {
             />
           </label>
         </div>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 260 }}>
+          <span>展示位置</span>
+          <select
+            className="input"
+            value={form.placement}
+            onChange={(e) => setForm({ ...form, placement: e.target.value })}
+          >
+            <option value="home">首页</option>
+            <option value="resources">资源库</option>
+            <option value="both">两处都显示</option>
+          </select>
+        </label>
 
         <div className="adm-form" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
           <label className="field">

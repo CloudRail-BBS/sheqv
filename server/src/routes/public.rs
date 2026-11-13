@@ -3,8 +3,10 @@
 //! 站点设置必须**白名单投影**：`geetestKey` / `afdianToken` / OAuth secret
 //! 这些一旦下发到浏览器就等于泄漏，所以不能直接把 `settings` 表整份返回。
 
+use std::collections::HashMap;
+
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use serde_json::{Map, Value, json};
@@ -95,9 +97,18 @@ pub async fn announcements(State(st): State<AppState>) -> ApiResult<Response> {
     Ok(res)
 }
 
-/// GET /api/v1/slides —— 只看启用中的
-pub async fn slides(State(st): State<AppState>) -> ApiResult<Response> {
-    let items = slides::list(&st.pool, true)
+/// GET /api/v1/slides?placement=home|resources —— 只看启用中的；
+/// 没带 placement 就返回全部启用项（老调用方行为不变）
+pub async fn slides(
+    State(st): State<AppState>,
+    Query(q): Query<HashMap<String, String>>,
+) -> ApiResult<Response> {
+    let placement = q
+        .get("placement")
+        .map(String::as_str)
+        .map(str::trim)
+        .filter(|v| !v.is_empty());
+    let items = slides::list(&st.pool, true, placement)
         .await
         .map_err(ApiError::internal)?;
     let mut res = Json(json!({ "ok": true, "items": items })).into_response();

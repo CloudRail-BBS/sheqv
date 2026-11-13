@@ -613,7 +613,7 @@ pub async fn delete_announcement(
 /* ── 轮播 ───────────────────────────────── */
 
 pub async fn list_slides(State(st): State<AppState>, _: AdminActor) -> ApiResult<Response> {
-    let items = slides::list(&st.pool, false)
+    let items = slides::list(&st.pool, false, None)
         .await
         .map_err(ApiError::internal)?;
     Ok(Json(json!({ "ok": true, "items": items })).into_response())
@@ -645,6 +645,7 @@ pub async fn create_slide(
             bg_image: &s("bgImage"),
             text_tone: &s("textTone"),
             active: p.get("active").and_then(|v| v.as_bool()).unwrap_or(true),
+            placement: &s("placement"),
             order: p.get("order").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
         },
     )
@@ -689,6 +690,7 @@ pub async fn patch_slide(
             bg_image: s("bgImage"),
             text_tone: s("textTone"),
             active: p.get("active").and_then(|v| v.as_bool()),
+            placement: s("placement"),
             order: p.get("order").and_then(|v| v.as_i64()).map(|v| v as i32),
         },
     )

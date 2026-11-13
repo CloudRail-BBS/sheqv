@@ -9,6 +9,8 @@ import { RwCells } from '@/components/rw-discover';
 import { listMyDevTeams } from '@/lib/dev-team-store';
 import { FoldCard } from '@/components/fold-card';
 import { buildMetadata } from '@/lib/seo';
+import { Carousel } from '@/components/carousel';
+import { listSlides } from '@/lib/slide-store';
 import { getSettings } from '@/lib/settings';
 import {
   RESOURCE_GAMES,
@@ -18,7 +20,7 @@ import {
   type ResourceView,
 } from '@/lib/resource-types';
 import { catLabel, listCategories } from '@/lib/category-store';
-import { CategoryIcon, catHue } from '@/components/category-icon';
+import { CategoryIcon, catHue, gameHue } from '@/components/category-icon';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +48,7 @@ export default async function ResourcesPage({
 }) {
   const sp = await searchParams;
   const sort = sp.sort === 'likes' || sp.sort === 'downloads' ? sp.sort : 'new';
-  const [user, items, board, settings, cats] = await Promise.all([
+  const [user, items, board, settings, cats, slides] = await Promise.all([
     getCurrentUser(),
     listResources({
       game: sp.game,
@@ -57,6 +59,8 @@ export default async function ResourcesPage({
     getDeveloperBoard(),
     getSettings(),
     listCategories('resource'),
+    // 资源库自己的轮播位（后台「轮播」里把展示位置选成「资源库」）
+    listSlides({ activeOnly: true, placement: 'resources' }),
   ]);
   const teams = user ? await listMyDevTeams() : [];
   // 外部站点的条目要「收录」才会进站，等于代站方建资源，只给管理员
@@ -72,13 +76,17 @@ export default async function ResourcesPage({
   return (
     <div className="cols">
       <div className="col-main">
-        <div className="between" style={{ alignItems: 'flex-end' }}>
-          <div>
-            <h1 className="page-title">资源库</h1>
-            <p className="small muted" style={{ marginTop: 4 }}>
-              {settings.resourcesHint || '地图、整合包、材质与工具 · 开发者与团队的作品都在这里'}
-            </p>
-          </div>
+        {/* 顶部是资源库自己的轮播（后台配位）；没配就退回标题 */}
+        {slides.length > 0 ? (
+          <Carousel slides={slides} />
+        ) : (
+          <h1 className="page-title">资源库</h1>
+        )}
+
+        <div className="between res-head-bar">
+          <p className="small muted">
+            {settings.resourcesHint || '地图、整合包、材质与工具 · 开发者与团队的作品都在这里'}
+          </p>
           {user ? (
             <ResourceUpload
               teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
@@ -177,19 +185,31 @@ export default async function ResourcesPage({
 
         <div className="row wrap" style={{ gap: 6, marginTop: 8, alignItems: 'center' }}>
           <span className="small muted" style={{ marginRight: 2 }}>游戏</span>
-          <Link href={buildQuery(base, { game: undefined })} className="chip" data-on={!sp.game}>
+          <Link
+            href={buildQuery(base, { game: undefined })}
+            className="chip"
+            data-cat="全部"
+            data-on={!sp.game}
+          >
+            <CategoryIcon name="全部" />
             全部
           </Link>
-          {RESOURCE_GAMES.map((g) => (
-            <Link
-              key={g.key}
-              href={buildQuery(base, { game: g.key })}
-              className="chip"
-              data-on={sp.game === g.key}
-            >
-              {g.label}
-            </Link>
-          ))}
+          {RESOURCE_GAMES.map((g) => {
+            const hue = gameHue(g.key);
+            return (
+              <Link
+                key={g.key}
+                href={buildQuery(base, { game: g.key })}
+                className="chip"
+                data-cat={g.key}
+                data-on={sp.game === g.key}
+                style={hue ? ({ ['--cat-h']: hue } as CSSProperties) : undefined}
+              >
+                <CategoryIcon name={g.key} />
+                {g.label}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="between res-summary">

@@ -9201,3 +9201,52 @@ body::before { display: none; }
   border: 1px solid var(--m3-outline);
 }
 .btn-outline:hover { background: var(--m3-surface-high); border-color: var(--m3-outline); }
+/* ── 登录 / 找回密码：分段控件胶囊化 + 辅助行 ───────── */
+.auth-seg {
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--m3-surface-container);
+  border: 1px solid var(--m3-outline-variant);
+}
+.auth-seg-btn {
+  height: 36px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 550;
+}
+.auth-seg-btn[data-on="true"] {
+  background: var(--m3-surface);
+  border-color: var(--blue-line);
+  color: var(--blue);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+[data-theme="dark"] .auth-seg-btn[data-on="true"] {
+  background: var(--m3-surface-high);
+  border-color: var(--blue-line);
+  color: var(--blue);
+  box-shadow: none;
+}
+/* 「忘记密码？」贴着密码框右对齐，别做成一颗按钮抢视线 */
+.auth-aside {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -2px;
+}
+.auth-aside .auth-link { font-size: 12.5px; }
+.auth-note { color: var(--ok); line-height: 1.7; }
+.auth-done { padding: 6px 0 0; }
+.auth-done-title { font-size: 15px; font-weight: 650; color: var(--ok); }
+/* 资源库：轮播下面的一行「说明 + 发布」；轮播本身有下边距，这里收紧 */
+.res-head-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 10px;
+}
+.res-head-bar p { margin: 0; min-width: 0; }
+.res-head-bar .btn,
+.res-head-bar .res-publish { flex: none; }
+@media (max-width: 560px) {
+  .res-head-bar { flex-wrap: wrap; gap: 8px; }
+}

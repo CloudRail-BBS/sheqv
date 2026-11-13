@@ -25,6 +25,16 @@ export function catHue(key: string): number | undefined {
   return HUE[key];
 }
 
+/** 游戏的色相与图标：和分类胶囊同一套视觉，Minecraft 绿、Rusted Warfare 蓝 */
+const GAME_HUE_MAP: Record<string, number> = {
+  minecraft: 145,
+  rusted_warfare: 205,
+};
+
+export function gameHue(key: string): number | undefined {
+  return GAME_HUE_MAP[key];
+}
+
 const ICONS: Record<string, ReactNode> = {
   地图: (
     <>
@@ -81,6 +91,19 @@ const ICONS: Record<string, ReactNode> = {
   全部: (
     <>
       <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+    </>
+  ),
+  minecraft: (
+    <>
+      <path d="m12 3 8 4.2v9.6L12 21l-8-4.2V7.2z" />
+      <path d="m4 7.2 8 4.2 8-4.2M12 11.4V21" />
+      <path d="M8 6.1v4.2M16 6.1v4.2" />
+    </>
+  ),
+  rusted_warfare: (
+    <>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7" />
     </>
   ),
 };

@@ -48,20 +48,17 @@ fn client_ip(headers: &HeaderMap) -> Option<String> {
     None
 }
 
-/// POST /api/v1/auth/email-code  body: `{ email }`
+/// 发验证码的共用实现：登录与找回密码只差「要不要检查邮箱登录开关」。
 ///
 /// 无论邮箱是否存在都返回相同的成功文案（防枚举）；真正没注册的只是不发信。
-pub async fn send_code(
-    State(st): State<AppState>,
+async fn issue_code(
+    st: AppState,
     headers: HeaderMap,
-    body: Bytes,
+    raw_email: String,
+    require_email_login: bool,
 ) -> ApiResult<Response> {
-    let Ok(payload) = serde_json::from_slice::<EmailBody>(&body) else {
-        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
-    };
-
     let s = settings::load(&st.pool, &st.cfg).await;
-    if !settings::flag(&s, "emailLoginEnabled", false) {
+    if require_email_login && !settings::flag(&s, "emailLoginEnabled", false) {
         return Err(ApiError::with_message(
             StatusCode::FORBIDDEN,
             "email_login_disabled",
@@ -78,8 +75,7 @@ pub async fn send_code(
         ));
     };
 
-    let raw = payload.email.unwrap_or_default();
-    let Some(email) = users::normalize_email(&raw) else {
+    let Some(email) = users::normalize_email(&raw_email) else {
         return Err(ApiError::invalid_input("邮箱格式不正确"));
     };
 
@@ -171,6 +167,105 @@ pub async fn send_code(
     }
 
     Ok(ok_body())
+}
+
+/// POST /api/v1/auth/email-code  body: `{ email }`
+pub async fn send_code(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<EmailBody>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    issue_code(st, headers, payload.email.unwrap_or_default(), true).await
+}
+
+/// POST /api/v1/auth/password/forgot  body: `{ email }`
+///
+/// 找回密码不依赖「邮箱验证码登录」开关：那是登录方式，这是账号安全功能；
+/// 只要 SMTP 配好就能用，同样不暴露邮箱是否注册过。
+pub async fn forgot_password(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<EmailBody>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+    issue_code(st, headers, payload.email.unwrap_or_default(), false).await
+}
+
+#[derive(Deserialize)]
+struct ResetBody {
+    #[serde(default)]
+    email: Option<String>,
+    #[serde(default)]
+    code: Option<String>,
+    #[serde(default)]
+    password: Option<String>,
+}
+
+/// POST /api/v1/auth/password/reset  body: `{ email, code, password }`
+///
+/// 用邮箱验证码重置密码。验证码一次性消费；成功即覆盖密码（纯第三方账号也能借此设密码）。
+pub async fn reset_password(State(st): State<AppState>, body: Bytes) -> ApiResult<Response> {
+    let Ok(payload) = serde_json::from_slice::<ResetBody>(&body) else {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_json"));
+    };
+
+    let Some(email) = users::normalize_email(&payload.email.unwrap_or_default()) else {
+        return Err(ApiError::invalid_input("邮箱格式不正确"));
+    };
+    let code = payload.code.unwrap_or_default().trim().to_string();
+    if code.len() != 6 || !code.chars().all(|c| c.is_ascii_digit()) {
+        return Err(ApiError::invalid_input("验证码为 6 位数字"));
+    }
+    let password = payload.password.unwrap_or_default();
+    if let Some(msg) = users::validate_password(&password) {
+        return Err(ApiError::invalid_input(msg));
+    }
+
+    // 验证码错误统一一个错误码，不区分「过期 / 输错 / 已用过」
+    let invalid = || {
+        ApiError::with_message(
+            StatusCode::UNAUTHORIZED,
+            "invalid_code",
+            "验证码不正确或已过期，请重新获取",
+        )
+    };
+
+    match email_login::verify(&st.pool, st.session_secret.as_slice(), &email, &code)
+        .await
+        .map_err(ApiError::internal)?
+    {
+        Verify::Ok => {}
+        Verify::NoCode | Verify::Wrong | Verify::TooManyAttempts => return Err(invalid()),
+    }
+
+    let Some(user) = users::find_by_email(&st.pool, &email)
+        .await
+        .map_err(ApiError::internal)?
+    else {
+        return Err(invalid());
+    };
+    if user.banned {
+        return Err(ApiError::with_message(
+            StatusCode::FORBIDDEN,
+            "account_banned",
+            "该账号已被封禁，请联系管理员",
+        ));
+    }
+
+    users::set_password(&st.pool, &user.id, &password)
+        .await
+        .map_err(ApiError::internal)?;
+
+    Ok(Json(json!({
+        "ok": true,
+        "message": "密码已重置，请用新密码登录",
+    }))
+    .into_response())
 }
 
 /// POST /api/v1/auth/email-login  body: `{ email, code }`

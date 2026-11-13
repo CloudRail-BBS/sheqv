@@ -77,7 +77,7 @@ export default async function HomePage({
     forumStats(),
     getSettings(),
     listAnnouncements({ publishedOnly: true, limit: 3 }),
-    listSlides({ activeOnly: true }),
+    listSlides({ activeOnly: true, placement: 'home' }),
     getBadgeMap(),
     getAchievementMap(),
     getGroupMap(),

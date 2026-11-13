@@ -345,13 +345,21 @@ pub fn validate_register(input: &RegisterInput) -> Option<&'static str> {
     if !(2..=16).contains(&nick_len) {
         return Some("昵称需 2–16 字");
     }
-    let pw_len = password.chars().count();
-    if !(8..=64).contains(&pw_len) {
-        return Some("密码需 8–64 位");
+    if let Some(msg) = validate_password(password) {
+        return Some(msg);
     }
     let email = input.email.trim();
     if !email.is_empty() && !is_email(email) {
         return Some("邮箱格式不正确");
+    }
+    None
+}
+
+/// 密码规则：8–64 位，且字母与数字都要有。注册与重置密码共用。
+pub fn validate_password(password: &str) -> Option<&'static str> {
+    let len = password.chars().count();
+    if !(8..=64).contains(&len) {
+        return Some("密码需 8–64 位");
     }
     if !password.chars().any(|c| c.is_ascii_alphabetic())
         || !password.chars().any(|c| c.is_ascii_digit())
@@ -633,6 +641,22 @@ pub async fn authenticate(pool: &PgPool, identifier: &str, password: &str) -> Op
     touch_login(pool, &row.id).await;
 
     Some(row.to_public())
+}
+
+/// 设置或重置密码。scrypt 在阻塞线程里算，别占 async 线程。
+pub async fn set_password(pool: &PgPool, user_id: &str, plain: &str) -> Result<(), sqlx::Error> {
+    let pw = plain.to_string();
+    let hash = tokio::task::spawn_blocking(move || password::hash_password(&pw))
+        .await
+        .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
+        .map_err(|e| sqlx::Error::Protocol(e.to_string()))?;
+
+    sqlx::query("UPDATE users SET password_hash = $2 WHERE id = $1")
+        .bind(user_id)
+        .bind(hash)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 /// 记录一次成功登录。失败只影响 last_login_at，绝不影响登录本身。

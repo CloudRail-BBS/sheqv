@@ -19,6 +19,8 @@ pub struct Slide {
     pub bg_image: String,
     pub text_tone: String,
     pub active: bool,
+    /// 展示位置：home / resources / both
+    pub placement: String,
     pub order: i32,
 }
 
@@ -34,6 +36,7 @@ struct Row {
     bg_image: String,
     text_tone: String,
     active: bool,
+    placement: String,
     ord: i32,
 }
 
@@ -50,13 +53,13 @@ impl Row {
             bg_image: self.bg_image,
             text_tone: self.text_tone,
             active: self.active,
+            placement: self.placement,
             order: self.ord,
         }
     }
 }
 
-const COLS: &str =
-    "id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord";
+const COLS: &str = "id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, placement, ord";
 
 /// 只放行站内路径与 http(s)，其余一律回落到 `/`
 pub fn safe_href(raw: &str) -> String {
@@ -111,6 +114,15 @@ pub fn validate(title: &str, desc: &str, cta: &str) -> Option<&'static str> {
     None
 }
 
+/// 只认三个值；空或未知一律当首页，避免脏数据
+pub fn safe_placement(v: &str) -> &'static str {
+    match v.trim() {
+        "resources" => "resources",
+        "both" => "both",
+        _ => "home",
+    }
+}
+
 pub struct Input<'a> {
     pub kicker: &'a str,
     pub title: &'a str,
@@ -121,24 +133,45 @@ pub struct Input<'a> {
     pub bg_image: &'a str,
     pub text_tone: &'a str,
     pub active: bool,
+    pub placement: &'a str,
     pub order: i32,
 }
 
-pub async fn list(pool: &PgPool, only_active: bool) -> Result<Vec<Slide>, sqlx::Error> {
-    let sql = if only_active {
-        format!("SELECT {COLS} FROM slides WHERE active ORDER BY ord ASC, id ASC")
-    } else {
+/// `placement` 为 Some 时只取该位置的轮播（both 两边都算）。
+pub async fn list(
+    pool: &PgPool,
+    only_active: bool,
+    placement: Option<&str>,
+) -> Result<Vec<Slide>, sqlx::Error> {
+    let mut where_parts: Vec<&str> = Vec::new();
+    if only_active {
+        where_parts.push("active");
+    }
+    if placement.is_some() {
+        where_parts.push("(placement = $1 OR placement = 'both')");
+    }
+    let sql = if where_parts.is_empty() {
         format!("SELECT {COLS} FROM slides ORDER BY ord ASC, id ASC")
+    } else {
+        format!(
+            "SELECT {COLS} FROM slides WHERE {} ORDER BY ord ASC, id ASC",
+            where_parts.join(" AND ")
+        )
     };
-    let rows: Vec<Row> = sqlx::query_as(&sql).fetch_all(pool).await?;
+
+    let mut q = sqlx::query_as::<_, Row>(&sql);
+    if let Some(p) = placement {
+        q = q.bind(safe_placement(p));
+    }
+    let rows = q.fetch_all(pool).await?;
     Ok(rows.into_iter().map(Row::view).collect())
 }
 
 pub async fn create(pool: &PgPool, input: Input<'_>) -> Result<Slide, sqlx::Error> {
     let id = crate::ids::next('s');
     sqlx::query(
-        "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+        "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, placement, ord)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
     )
     .bind(&id)
     .bind(input.kicker.trim())
@@ -153,6 +186,7 @@ pub async fn create(pool: &PgPool, input: Input<'_>) -> Result<Slide, sqlx::Erro
         _ => "light",
     })
     .bind(input.active)
+    .bind(safe_placement(input.placement))
     .bind(input.order)
     .execute(pool)
     .await?;
@@ -178,6 +212,7 @@ pub struct Patch<'a> {
     pub bg_image: Option<&'a str>,
     pub text_tone: Option<&'a str>,
     pub active: Option<bool>,
+    pub placement: Option<&'a str>,
     pub order: Option<i32>,
 }
 
@@ -194,7 +229,8 @@ pub async fn update(pool: &PgPool, id: &str, p: Patch<'_>) -> Result<Option<Slid
             \"desc\" = COALESCE($4, \"desc\"), cta = COALESCE($5, cta),
             href = COALESCE($6, href), bg_color = COALESCE($7, bg_color),
             bg_image = COALESCE($8, bg_image), text_tone = COALESCE($9, text_tone),
-            active = COALESCE($10, active), ord = COALESCE($11, ord)
+            active = COALESCE($10, active), placement = COALESCE($12, placement),
+            ord = COALESCE($11, ord)
          WHERE id = $1 RETURNING {COLS}"
     ))
     .bind(id)
@@ -208,6 +244,7 @@ pub async fn update(pool: &PgPool, id: &str, p: Patch<'_>) -> Result<Option<Slid
     .bind(tone)
     .bind(p.active)
     .bind(p.order)
+    .bind(p.placement.map(safe_placement))
     .fetch_optional(pool)
     .await?;
 
@@ -234,10 +271,10 @@ pub async fn ensure_default(pool: &PgPool) -> Result<(), sqlx::Error> {
     }
 
     sqlx::query(
-        "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, ord)
+        "INSERT INTO slides (id, kicker, title, \"desc\", cta, href, bg_color, bg_image, text_tone, active, placement, ord)
          VALUES ('s-welcome', '欢迎', '欢迎来到云轨社区',
                  '玩家社区、开发团队与赛事确权都在这里。先逛逛资源库，或者发第一条帖子。',
-                 '去资源库', '/resources', '#e8f0ff', '', 'dark', true, 1)
+                 '去资源库', '/resources', '#e8f0ff', '', 'dark', true, 'home', 1)
          ON CONFLICT (id) DO NOTHING",
     )
     .execute(pool)

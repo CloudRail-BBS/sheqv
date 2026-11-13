@@ -17,14 +17,28 @@ export interface Slide {
   bgImage: string;
   textTone: 'light' | 'dark';
   active: boolean;
+  /** 展示位置：home / resources / both */
+  placement: string;
   order: number;
 }
 
-export async function listSlides(opts?: { activeOnly?: boolean }): Promise<Slide[]> {
+export async function listSlides(opts?: {
+  activeOnly?: boolean;
+  /** 只取某个位置（both 两边都会出现）；不传就是全部 */
+  placement?: 'home' | 'resources';
+}): Promise<Slide[]> {
   const user = await getCurrentUser();
-  const path = user?.isAdmin ? '/api/v1/admin/slides' : '/api/v1/slides';
+  const admin = Boolean(user?.isAdmin);
+  const qs = !admin && opts?.placement ? `?placement=${opts.placement}` : '';
+  const path = admin ? '/api/v1/admin/slides' : `/api/v1/slides${qs}`;
   const d = await apiGetOr<{ items: Slide[] }>(path, { items: [] });
-  return opts?.activeOnly ? d.items.filter((s) => s.active) : d.items;
+  let items = d.items;
+  if (opts?.activeOnly) items = items.filter((s) => s.active);
+  // 管理员拿到的是全量（含停用的），位置要在这里自己筛
+  if (opts?.placement) {
+    items = items.filter((s) => s.placement === opts.placement || s.placement === 'both');
+  }
+  return items;
 }
 
 /** 只放行站内路径与 http(s) */

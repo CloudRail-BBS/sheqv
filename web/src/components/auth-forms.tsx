@@ -453,6 +453,12 @@ export function LoginForm(props: CommonProps) {
             />
           </label>
 
+          <div className="auth-aside">
+            <Link href="/reset" className="auth-link">
+              忘记密码？
+            </Link>
+          </div>
+
           {needCaptcha && (
             <div style={{ marginTop: 12 }}>
               <Geetest captchaId={captchaId} onChange={setCaptcha} resetKey={resetKey} />

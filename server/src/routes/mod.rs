@@ -60,6 +60,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/auth/logout", post(auth::logout))
         .route("/api/v1/auth/email-code", post(email_auth::send_code))
         .route("/api/v1/auth/email-login", post(email_auth::login))
+        .route("/api/v1/auth/password/forgot", post(email_auth::forgot_password))
+        .route("/api/v1/auth/password/reset", post(email_auth::reset_password))
         .route("/api/v1/auth/state", get(auth::state))
         .route("/api/v1/me", patch(me::patch_me))
         .route("/api/v1/me/chrome", get(me::chrome))
