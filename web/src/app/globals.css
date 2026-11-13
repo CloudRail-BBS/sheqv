@@ -995,12 +995,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .cap-hero { display: flex; align-items: center; gap: 18px; padding: 18px 20px; flex-wrap: wrap; }
 .cap-rt { font-size: 30px; font-weight: 650; letter-spacing: -0.04em; }
 
-/* ── footer ──────────────────────────────── */
-
-.footer { border-top: 1px solid var(--line-soft); padding: 20px 0 40px; color: var(--text-3); font-size: 11.5px; }
-.footer-in { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; max-width: var(--shell); margin: 0 auto; padding: 0 18px; }
-.footer a { color: var(--text-2); }
-.footer a:hover { color: var(--accent); }
+/* ── footer（样式见文件末尾的四列版本） ── */
 
 /* ── form / modal ────────────────────────── */
 
@@ -9239,103 +9234,238 @@ body::before { display: none; }
 .auth-note { color: var(--ok); line-height: 1.7; }
 .auth-done { padding: 6px 0 0; }
 .auth-done-title { font-size: 15px; font-weight: 650; color: var(--ok); }
-/* ── 页脚：两行结构（品牌 + 链接 / 版权 + 备案） ─────
-   原来是「站名 · 说明 + ICP + 一排链接」全挤在一行，换行后间距全靠 inline style，
-   现在按 M3 的 surface + outline 分层，链接做成可点的胶囊。 */
+/* ── 页脚：四列（品牌 / 社区 / 帮助 / 联系） ─────────────
+   参考常见社区站的页脚版式：左边一列品牌与介绍，右边三列带图标的导航与联系方式，
+   最底部一条细线放版权与备案。列名用「图标 + 短下划线」标出层级，不靠大字号。 */
 .footer {
-  margin-top: 24px;
+  margin-top: 32px;
   border-top: 1px solid var(--m3-outline-variant);
   background: var(--m3-surface);
-  padding: 22px 0 28px;
   color: var(--m3-on-surface-variant);
-  font-size: 12px;
+  font-size: 12.5px;
 }
-.footer-in {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) repeat(3, minmax(0, 1fr));
+  gap: 32px;
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 0 18px;
+  padding: 34px 18px 26px;
 }
+.footer-col { min-width: 0; }
+
+/* 品牌列 */
 .footer-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   min-width: 0;
   text-decoration: none;
 }
 .footer-brand .brand-mark {
-  width: 30px;
-  height: 30px;
-  font-size: 14px;
-  border-radius: 9px;
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+  border-radius: 11px;
 }
 .footer-brand-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 .footer-brand-text b {
-  font-size: 13.5px;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 一句话用状态绿点出来，和站名区分开 */
+.footer-tagline {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ok);
+  letter-spacing: 0.01em;
+}
+.footer-desc {
+  margin: 12px 0 0;
+  max-width: 300px;
+  font-size: 12px;
+  line-height: 1.85;
+  /* 用 on-surface-variant 而不是最浅的 text-3：这段是正文，得读得清 */
+  color: var(--m3-on-surface-variant);
+  white-space: pre-line;
+}
+.footer-follow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.footer-follow > span { font-size: 12px; color: var(--text-3); }
+.footer-follow a {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--m3-outline-variant);
+  background: var(--m3-surface-container);
+  color: var(--text-2);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.footer-follow a:hover {
+  color: var(--text);
+  border-color: var(--hover-bd);
+  background: var(--m3-surface-high);
+}
+
+/* 列标题：图标 + 文字，下面压一条短横线 */
+.footer-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  font-size: 12.5px;
   font-weight: 650;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
-.footer-brand-text span {
+.footer-head svg { color: var(--m3-primary); flex: none; }
+.footer-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--m3-primary);
+}
+
+/* 链接列 */
+.footer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.footer-list a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  margin-inline: -8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--m3-on-surface-variant);
+  text-decoration: none;
+  transition: background 0.14s, color 0.14s;
+}
+.footer-list a svg { flex: none; color: var(--text-3); transition: color 0.14s; }
+.footer-list a:hover { background: var(--m3-surface-container); color: var(--text); }
+.footer-list a:hover svg { color: var(--m3-primary); }
+
+/* 联系方式：一行「标签 —— 值」，值右对齐等宽 */
+.footer-contacts {
+  list-style: none;
+  margin: 0 0 2px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.footer-contacts li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  min-width: 0;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--line-soft);
+  font-size: 12px;
+}
+.footer-contacts li:last-child { border-bottom: 0; }
+.footer-contacts svg { flex: none; color: var(--m3-primary); }
+.footer-contact-label { color: var(--text-3); flex: none; }
+/* 值右对齐；窄列时宁可折行也不要「hi@crbbsx.c…」这种半截 */
+.footer-contacts b,
+.footer-contacts a {
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-decoration: none;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.footer-contacts a:hover { color: var(--blue); }
+
+/* 行动按钮：整列宽，和上一段留够距离 */
+.footer-cta {
+  margin-top: 14px;
+  width: 100%;
+  height: 42px;
+  gap: 7px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: none;
+}
+.footer-cta:active:not(:disabled) { transform: none; }
+
+/* 底部：版权 + 备案 + 更新日志 */
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--m3-outline-variant);
   font-size: 11.5px;
   color: var(--text-3);
 }
-.footer-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-wrap: wrap;
-}
-.footer-links a {
-  padding: 6px 10px;
-  border-radius: var(--r-pill);
-  color: var(--m3-on-surface-variant);
-  text-decoration: none;
-  font-size: 12.5px;
-  transition: background 0.15s, color 0.15s;
-}
-.footer-links a:hover {
-  background: var(--m3-surface-container);
-  color: var(--text);
-}
-.footer-meta {
-  justify-content: flex-start;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--m3-outline-variant);
-  font-size: 11px;
-  color: var(--text-3);
-  gap: 12px;
-}
-.footer-meta a {
+.footer-bottom a {
   color: var(--text-3);
   text-decoration: none;
 }
-.footer-meta a:hover {
-  color: var(--text-2);
+.footer-bottom a:hover { color: var(--text-2); }
+.footer-bottom-link { margin-left: auto; }
+
+@media (max-width: 1024px) {
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 24px;
+    padding: 26px 16px 22px;
+  }
+  .footer-brand-col { grid-column: 1 / -1; }
+  .footer-desc { max-width: none; }
 }
-@media (max-width: 860px) {
-  .footer {
-    padding: 18px 0 22px;
+
+@media (max-width: 640px) {
+  .footer { margin-top: 20px; }
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 22px 14px 18px;
   }
-  .footer-in {
-    gap: 10px;
-    padding: 0 12px;
-  }
-  .footer-links {
-    gap: 0;
-  }
-  .footer-links a {
-    padding: 6px 8px;
-    font-size: 12px;
-  }
+  .footer-brand .brand-mark { width: 36px; height: 36px; font-size: 15px; }
+  .footer-desc { font-size: 12px; margin-top: 10px; }
+  .footer-head { margin-bottom: 8px; padding-bottom: 8px; }
+  .footer-cta { height: 44px; }
+  .footer-bottom { padding: 12px 14px; gap: 10px; }
+  .footer-bottom-link { margin-left: 0; }
 }

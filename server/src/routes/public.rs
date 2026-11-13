@@ -17,7 +17,7 @@ use crate::state::AppState;
 use crate::{announcements, settings, slides};
 
 /// 可以给浏览器看的键
-const PUBLIC_KEYS: [&str; 26] = [
+const PUBLIC_KEYS: [&str; 29] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -34,6 +34,9 @@ const PUBLIC_KEYS: [&str; 26] = [
     "footerText",
     "footerIcp",
     "footerLinks",
+    "footerCopyright",
+    "footerDesc",
+    "footerContacts",
     "meGuestText",
     "loginHint",
     "registerHint",

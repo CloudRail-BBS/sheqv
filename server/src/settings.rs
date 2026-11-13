@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use crate::config::Config;
 
 /// 允许被后台覆盖的键。不在这个名单里的键会被静默丢弃。
-pub const KEYS: [&str; 77] = [
+pub const KEYS: [&str; 80] = [
     "siteName",
     "logoText",
     "logoImage",
@@ -59,6 +59,12 @@ pub const KEYS: [&str; 77] = [
     "footerText",
     "footerIcp",
     "footerLinks",
+    // 版权行：支持 {year} / {site} 占位，留空用「© {year} {site}」
+    "footerCopyright",
+    // 页脚品牌下面的一段介绍（纯文本，换行即分段）
+    "footerDesc",
+    // 页脚「联系我们」：每行「标签|内容|链接」，链接可省
+    "footerContacts",
     "meGuestText",
     "loginHint",
     "registerHint",
@@ -159,6 +165,9 @@ pub fn defaults(cfg: &Config) -> Map<String, Value> {
     put("footerText", json!(""));
     put("footerIcp", json!(""));
     put("footerLinks", json!(""));
+    put("footerCopyright", json!(""));
+    put("footerDesc", json!(""));
+    put("footerContacts", json!(""));
     put("meGuestText", json!(""));
     put("loginHint", json!(""));
     put("registerHint", json!(""));

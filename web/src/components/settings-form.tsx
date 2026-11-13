@@ -127,6 +127,9 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         footerText: form.footerText,
         footerIcp: form.footerIcp,
         footerLinks: form.footerLinks,
+        footerCopyright: form.footerCopyright,
+        footerDesc: form.footerDesc,
+        footerContacts: form.footerContacts,
         meGuestText: form.meGuestText,
         loginHint: form.loginHint,
         registerHint: form.registerHint,
@@ -1082,15 +1085,59 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
         <h3 style={{ fontSize: 13 }}>页脚</h3>
         <label className="field" style={{ marginTop: 10, maxWidth: 460 }}>
           <span>
-            页脚文案
+            页脚一句话
             {isOverride('footerText') && <em className="ovr">已覆盖</em>}
           </span>
           <input
             className="input"
             value={form.footerText}
             onChange={(e) => setForm({ ...form, footerText: e.target.value })}
-            placeholder={`留空显示「${form.siteName} · 玩家社区与赛事确权」`}
+            placeholder="留空显示「玩家社区与赛事确权」" 
             maxLength={60}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            页脚介绍<em className="field-opt">品牌名下面的一段话，换行即分段</em>
+            {isOverride('footerDesc') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={2}
+            value={form.footerDesc}
+            onChange={(e) => setForm({ ...form, footerDesc: e.target.value })}
+            placeholder="留空显示内置介绍；建议 1–2 句，说明社区是做什么的"
+            maxLength={200}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 520 }}>
+          <span>
+            联系我们<em className="field-opt">每行「标签|内容|链接」，链接可省略，最多 6 条</em>
+            {isOverride('footerContacts') && <em className="ovr">已覆盖</em>}
+          </span>
+          <textarea
+            className="input"
+            rows={4}
+            value={form.footerContacts}
+            onChange={(e) => setForm({ ...form, footerContacts: e.target.value })}
+            placeholder={'反馈邮箱|hi@example.com|mailto:hi@example.com\nQQ 群|123456789'}
+            maxLength={400}
+          />
+        </label>
+
+        <label className="field" style={{ marginTop: 10, maxWidth: 460 }}>
+          <span>
+            版权行<em className="field-opt">支持 {'{year}'} 与 {'{site}'} 占位</em>
+            {isOverride('footerCopyright') && <em className="ovr">已覆盖</em>}
+          </span>
+          <input
+            className="input"
+            value={form.footerCopyright}
+            onChange={(e) => setForm({ ...form, footerCopyright: e.target.value })}
+            placeholder={`留空显示「© {year} ${form.siteName}」`}
+            maxLength={80}
           />
         </label>
 
@@ -1123,7 +1170,8 @@ export function SettingsForm({ settings, overrides, runtime, section = 'site' }:
           />
         </label>
         <p className="small muted" style={{ marginTop: 6, lineHeight: 1.7 }}>
-          留空则使用默认链接（赞助者 / 公约 / 登录）。只接受站内路径与 http(s) 地址。
+          留空则使用默认链接（赞助者 / 公约 / 政策 / 客户端 / 登录，登录后「登录」会变成「我的」）。
+          只接受站内路径与 http(s) 地址。
         </p>
 
       </div>

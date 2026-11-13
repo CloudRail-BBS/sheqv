@@ -61,6 +61,12 @@ export interface SiteSettings {
   footerText: string;
   footerIcp: string;
   footerLinks: string;
+  /** 版权行文案，支持 {year} / {site} 占位；留空用「© {year} {site}」 */
+  footerCopyright: string;
+  /** 页脚品牌下面的一段介绍，换行即分段 */
+  footerDesc: string;
+  /** 页脚「联系我们」：每行「标签|内容|链接」，链接可省 */
+  footerContacts: string;
   meGuestText: string;
   /** 关于社区：介绍正文与加入说明（纯文本，空行分段） */
   aboutIntro: string;
@@ -152,6 +158,9 @@ const DEFAULTS: SiteSettings = {
   footerText: '',
   footerIcp: '',
   footerLinks: '',
+  footerCopyright: '',
+  footerDesc: '',
+  footerContacts: '',
   meGuestText: '',
   aboutIntro: '',
   aboutJoin: '',
