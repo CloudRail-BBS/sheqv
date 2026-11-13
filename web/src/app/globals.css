@@ -9127,8 +9127,8 @@ body::before { display: none; }
 .chip[data-cat] {
   --cat-h: 220;
   gap: 6px;
-  height: 34px;
-  padding: 0 14px 0 10px;
+  height: 32px;
+  padding: 0 13px 0 10px;
   font-weight: 550;
   background: hsl(var(--cat-h) 34% 15%);
   border-color: hsl(var(--cat-h) 26% 26%);
@@ -9166,7 +9166,7 @@ body::before { display: none; }
 }
 @media (max-width: 860px) {
   /* 手机上加图标后要留够高度，手指才好按 */
-  .chip[data-cat] { height: 36px; padding: 0 15px 0 11px; }
+  .chip[data-cat] { height: 34px; padding: 0 14px 0 11px; }
 }
 /* ── 按钮：实体感（参考登录/注册那版：实心 + 同色底影，白底描边并排） ── */
 .btn-primary {
@@ -9468,4 +9468,302 @@ body::before { display: none; }
   .footer-cta { height: 44px; }
   .footer-bottom { padding: 12px 14px; gap: 10px; }
   .footer-bottom-link { margin-left: 0; }
+}
+
+/* ══ MUI System 外观层 ══════════════════════════════════════
+   按 Material UI 的 System 令牌重新对齐整套组件的几何与层级，不再逐个组件拍脑袋：
+
+   - spacing：theme.spacing(n) = n × 8px，横向节奏统一到 --mui-1..8
+   - shape：theme.shape.borderRadius → --mui-radius（按钮 / 输入 / 卡片 / 弹窗同一套）
+   - elevation：theme.shadows[1|2|4|8|16|24]，卡片 1、悬浮动作 4、浮层 8、弹窗 24
+   - action：hover 6% / selected 10% / focus 14% / disabled 38% 文字
+   - palette：success / warning / error / info 语义色（含 soft 底）
+
+   注意：Chip 在 MUI 里本来就是胶囊（16px），所以分类胶囊、标签、底栏不变形。 */
+
+:root {
+  /* spacing（8px 基准） */
+  --mui-1: 8px;
+  --mui-2: 16px;
+  --mui-3: 24px;
+  --mui-4: 32px;
+  --mui-5: 40px;
+  --mui-6: 48px;
+  --mui-8: 64px;
+
+  /* shape */
+  --mui-radius: 8px;
+  --mui-radius-sm: 6px;
+  --mui-radius-pill: 16px;
+
+  /* action 状态层（深色主题用白色加亮） */
+  --mui-hover: rgba(255, 255, 255, 0.06);
+  --mui-selected: rgba(255, 255, 255, 0.10);
+  --mui-focus: rgba(255, 255, 255, 0.14);
+  --mui-disabled-bg: rgba(255, 255, 255, 0.10);
+  --mui-disabled-ink: rgba(255, 255, 255, 0.38);
+
+  /* 语义色 */
+  --mui-success: #6cc97a;
+  --mui-success-soft: rgba(108, 201, 122, 0.14);
+  --mui-warning: #f2b45e;
+  --mui-warning-soft: rgba(242, 180, 94, 0.14);
+  --mui-error: #f4726f;
+  --mui-error-soft: rgba(244, 114, 111, 0.14);
+  --mui-info: #6fc7e8;
+  --mui-info-soft: rgba(111, 199, 232, 0.14);
+
+  /* elevation：深色底反射少，必须比浅色更重才看得出层级 */
+  --mui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px 1px rgba(0, 0, 0, 0.28);
+  --mui-shadow-2: 0 2px 4px -1px rgba(0, 0, 0, 0.46), 0 4px 8px 0 rgba(0, 0, 0, 0.30),
+    0 1px 10px 0 rgba(0, 0, 0, 0.24);
+  --mui-shadow-4: 0 4px 6px -2px rgba(0, 0, 0, 0.48), 0 6px 12px 0 rgba(0, 0, 0, 0.32),
+    0 2px 16px 1px rgba(0, 0, 0, 0.24);
+  --mui-shadow-8: 0 5px 8px -4px rgba(0, 0, 0, 0.52), 0 8px 14px 1px rgba(0, 0, 0, 0.34),
+    0 3px 18px 3px rgba(0, 0, 0, 0.26);
+  --mui-shadow-16: 0 8px 12px -5px rgba(0, 0, 0, 0.56), 0 16px 26px 2px rgba(0, 0, 0, 0.36),
+    0 6px 32px 5px rgba(0, 0, 0, 0.28);
+  --mui-shadow-24: 0 11px 18px -7px rgba(0, 0, 0, 0.6), 0 24px 40px 3px rgba(0, 0, 0, 0.4),
+    0 9px 48px 8px rgba(0, 0, 0, 0.3);
+
+  /* typography：Material 的字级比例，字号按社区的信息密度收一档 */
+  --mui-text-h4: 24px;
+  --mui-text-h5: 21px;
+  --mui-text-h6: 16.5px;
+  --mui-text-subtitle1: 15px;
+  --mui-text-subtitle2: 13.5px;
+  --mui-text-body1: 14px;
+  --mui-text-body2: 13px;
+  --mui-text-caption: 12px;
+
+  /* 主按钮改成 Material 的 flat contained：单色，不再用渐变 */
+  --btn-bg: var(--blue);
+  --btn-bg-hover: color-mix(in srgb, var(--blue) 86%, #ffffff);
+  --btn-glow: none;
+
+  /* 全站的卡片 / 浮层投影统一交给 elevation */
+  --shadow: var(--mui-shadow-1);
+  --shadow-lift: var(--mui-shadow-8);
+  --radius: var(--mui-radius);
+  --radius-lg: var(--mui-radius);
+}
+
+[data-theme="light"] {
+  --mui-hover: rgba(21, 26, 35, 0.05);
+  --mui-selected: rgba(21, 26, 35, 0.08);
+  --mui-focus: rgba(21, 26, 35, 0.12);
+  --mui-disabled-bg: rgba(21, 26, 35, 0.10);
+  --mui-disabled-ink: rgba(21, 26, 35, 0.38);
+
+  --mui-success: #2e7d32;
+  --mui-success-soft: rgba(46, 125, 50, 0.10);
+  --mui-warning: #b26a00;
+  --mui-warning-soft: rgba(178, 106, 0, 0.10);
+  --mui-error: #c62828;
+  --mui-error-soft: rgba(198, 40, 40, 0.09);
+  --mui-info: #0277bd;
+  --mui-info-soft: rgba(2, 119, 189, 0.09);
+
+  /* 浅色底用 Material 的原始三段阴影（柔和、不脏） */
+  --mui-shadow-1: 0 1px 3px rgba(21, 26, 35, 0.10), 0 1px 2px rgba(21, 26, 35, 0.06);
+  --mui-shadow-2: 0 2px 4px -1px rgba(21, 26, 35, 0.12), 0 4px 5px 0 rgba(21, 26, 35, 0.07),
+    0 1px 10px 0 rgba(21, 26, 35, 0.06);
+  --mui-shadow-4: 0 4px 6px -2px rgba(21, 26, 35, 0.12), 0 6px 10px 0 rgba(21, 26, 35, 0.08),
+    0 2px 14px 1px rgba(21, 26, 35, 0.06);
+  --mui-shadow-8: 0 5px 5px -3px rgba(21, 26, 35, 0.14), 0 8px 10px 1px rgba(21, 26, 35, 0.09),
+    0 3px 14px 2px rgba(21, 26, 35, 0.06);
+  --mui-shadow-16: 0 8px 10px -5px rgba(21, 26, 35, 0.16), 0 16px 24px 2px rgba(21, 26, 35, 0.10),
+    0 6px 30px 5px rgba(21, 26, 35, 0.07);
+  --mui-shadow-24: 0 11px 15px -7px rgba(21, 26, 35, 0.18), 0 24px 38px 3px rgba(21, 26, 35, 0.11),
+    0 9px 46px 8px rgba(21, 26, 35, 0.08);
+
+  --btn-bg: var(--blue);
+  --btn-bg-hover: #2f6ef5;
+  --btn-glow: none;
+}
+
+/* 键盘焦点：统一 2px 主色环（MUI 的 focus-visible 视觉） */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: var(--mui-radius-sm);
+}
+
+/* ── Button ───────────────────────────────────────────────
+   Material Button：高 36 / 内边距 16 / 圆角取 shape / 字重 600；
+   contained 默认 elevation 2，悬停 4，按下 8；disabled 用 12% 底 + 38% 字。 */
+.btn {
+  height: 36px;
+  padding: 0 var(--mui-2);
+  border-radius: var(--mui-radius);
+  font-size: var(--mui-text-body2);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  gap: var(--mui-1);
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease),
+    box-shadow 0.16s var(--ease), color 0.16s var(--ease);
+}
+.btn:active { transform: none; }
+.btn:hover { background: var(--panel-3); }
+.btn-sm { height: 30px; padding: 0 12px; font-size: 12.5px; border-radius: var(--mui-radius-sm); }
+.btn-lg { height: 48px; font-size: 15px; border-radius: var(--mui-radius); }
+
+.btn-primary {
+  background: var(--btn-bg);
+  color: var(--accent-ink);
+  border-color: transparent;
+  box-shadow: var(--mui-shadow-2);
+}
+.btn-primary:hover { box-shadow: var(--mui-shadow-4); }
+.btn-primary:active:not(:disabled) { box-shadow: var(--mui-shadow-8); }
+.btn:disabled,
+.btn:disabled:hover {
+  background: var(--mui-disabled-bg);
+  border-color: transparent;
+  color: var(--mui-disabled-ink);
+  box-shadow: none;
+  opacity: 1;
+}
+/* 描边按钮：MUI OutlinedButton，悬停只加 6% 状态层，不换底色 */
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--blue);
+  box-shadow: none;
+}
+.btn-outline:hover { background: var(--blue-soft); border-color: var(--blue-line); }
+.btn-ghost:hover { background: var(--mui-hover); }
+.btn-quiet:hover { background: var(--mui-hover); }
+
+/* ── TextField / Select ───────────────────────────────────
+   OutlinedInput：高 38 / 圆角 shape / 1px 分隔线；聚焦换成主色描边 + 3px 柔光。 */
+.input {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--mui-radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: var(--mui-text-body2);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.input:hover { border-color: var(--hover-bd); }
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+textarea.input {
+  height: auto;
+  min-height: 88px;
+  padding: 10px 12px;
+  line-height: 1.7;
+  resize: vertical;
+}
+.field { gap: var(--mui-1); font-size: var(--mui-text-caption); font-weight: 500; }
+
+/* ── Chip ─────────────────────────────────────────────────
+   MUI Chip 是 32 高、16 圆角的胶囊：选中态用 8% 状态层 + 主色字。
+   分类胶囊的彩色皮肤（.chip[data-cat]）在下面继续生效，这里只管基础几何。 */
+.chip {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--mui-radius-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease), color 0.16s var(--ease);
+}
+.chip[data-on="true"] { font-weight: 600; }
+.badge { border-radius: 4px; }
+
+/* ── Card / Paper ─────────────────────────────────────────
+   卡片 = Paper elevation 1：圆角取 shape，投影走 elevation，边框只做 1px 抗锯齿描边。 */
+.card {
+  border-radius: var(--mui-radius);
+  border-color: var(--line);
+  box-shadow: var(--mui-shadow-1);
+}
+.card-pad { padding: var(--mui-2); }
+.modal { border-radius: var(--mui-radius); box-shadow: var(--mui-shadow-24); }
+.wiki-main::before { box-shadow: none; }
+
+/* 浮层（下拉 / 悬浮卡 / 提示）：elevation 8 起，圆角同 shape */
+.menu,
+.popover,
+.hover-card,
+.res-discover-menu,
+[data-popover] {
+  border-radius: var(--mui-radius);
+  box-shadow: var(--mui-shadow-8);
+}
+
+/* ── Typography ───────────────────────────────────────────
+   标题 / 小节标题 / 卡片标题按 Material 的 h4-h6、subtitle、body2 定级，字号只收不放大。 */
+.page-title {
+  font-size: var(--mui-text-h4);
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+}
+.rail-title { font-size: var(--mui-text-subtitle2); font-weight: 600; letter-spacing: 0.01em; }
+.fc-title { font-size: var(--mui-text-h6); font-weight: 600; line-height: 1.45; letter-spacing: 0; }
+.section-h h2 { font-size: var(--mui-text-subtitle1); font-weight: 600; letter-spacing: 0.01em; }
+.small { font-size: var(--mui-text-caption); line-height: 1.65; }
+.mono { font-size: var(--mui-text-caption); }
+h1,
+h2,
+h3 {
+  line-height: 1.35;
+}
+
+/* ── 语义色工具类 ─────────────────────────────────────────
+   之前各处直接写 --ok / --danger，这里给三个语义底，供标签与提示复用。 */
+.is-success { color: var(--mui-success); }
+.is-warning { color: var(--mui-warning); }
+.is-error { color: var(--mui-error); }
+.is-info { color: var(--mui-info); }
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mui-1);
+  padding: 10px 12px;
+  border-radius: var(--mui-radius);
+  border: 1px solid transparent;
+  font-size: var(--mui-text-caption);
+  line-height: 1.65;
+}
+.alert-success { background: var(--mui-success-soft); color: var(--mui-success); }
+.alert-warning { background: var(--mui-warning-soft); color: var(--mui-warning); }
+.alert-error { background: var(--mui-error-soft); color: var(--mui-error); }
+.alert-info { background: var(--mui-info-soft); color: var(--mui-info); }
+
+/* ── List（侧栏导航）/ Table ──────────────────────────────
+   MUI ListItemButton：内边距 8 + shape 圆角；悬停 6% 状态层、选中 10% + 主色字。
+   表格行同样用状态层，表头抬成 caption 字级的小字距标题。 */
+.side-item {
+  padding: 6px 10px;
+  border-radius: var(--mui-radius);
+  gap: var(--mui-1);
+}
+.side-item:hover { background: var(--mui-hover); color: var(--text); }
+.side-item[data-active="true"] {
+  background: var(--mui-selected);
+  color: var(--blue);
+}
+.side-ico { border-radius: var(--mui-radius-sm); }
+
+.table th { font-weight: 600; letter-spacing: 0.04em; }
+.table td { padding: 12px 14px; }
+.table tbody tr:hover td { background: var(--mui-hover); color: var(--text); }
+
+@media (max-width: 860px) {
+  /* Material 建议点击区 ≥ 48：手机上按钮与输入都抬到 40 */
+  .btn { height: 38px; padding: 0 14px; }
+  .btn-sm { height: 32px; padding: 0 12px; }
+  .input { height: 40px; font-size: 14px; }
+  .chip { height: 34px; }
+  .page-title { font-size: var(--mui-text-h5); }
 }
