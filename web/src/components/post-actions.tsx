@@ -101,6 +101,33 @@ export function CommentComposer({
   const [captchaOpen, setCaptchaOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const draftKey = `ba-comment-${postId}`;
+
+  // 刷新页面或跳走再回来，没发出去的回复还在（会话级，关掉标签页就清）
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(draftKey);
+      if (saved) setText(saved);
+    } catch {
+      /* 隐私模式下 sessionStorage 可能被禁 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 输入框跟着内容长高，长回复不用在小框里滚
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 260)}px`;
+    try {
+      if (text) sessionStorage.setItem(draftKey, text);
+      else sessionStorage.removeItem(draftKey);
+    } catch {
+      /* 同上 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
 
   // 楼层里的「回复」按钮发事件过来：填好引用前缀并聚焦，用户接着写
   useEffect(() => {

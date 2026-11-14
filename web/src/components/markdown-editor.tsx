@@ -92,6 +92,9 @@ export function MarkdownEditor({
   const [uploading, setUploading] = useState<{ done: number; total: number; pct: number } | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** 文件悬停在编辑区上方：整块高亮，告诉用户「松手就上传」 */
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
 
   function replaceSelection(before: string, after = '', placeholderText = '') {
     const el = ref.current;
@@ -197,15 +200,59 @@ export function MarkdownEditor({
     void uploadAll(files);
   }
 
-  function onDrop(e: React.DragEvent<HTMLTextAreaElement>) {
-    const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'));
-    if (files.length === 0) return;
+  /* ── 拖拽上传：整块接手，工具栏上松手也算 ── */
+  const hasFiles = (e: React.DragEvent) => [...e.dataTransfer.types].includes('Files');
+  function dragEnter(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
     e.preventDefault();
-    void uploadAll(files);
+    dragDepth.current += 1;
+    setDragging(true);
+  }
+  function dragOver(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }
+  function dragLeave(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragging(false);
+  }
+  function dragDrop(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current = 0;
+    setDragging(false);
+    const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'));
+    if (files.length > 0) void uploadAll(files);
+    else setErr('只能上传图片');
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     const mod = e.ctrlKey || e.metaKey;
+    const el = ref.current;
+
+    // 选中多行时 Tab 缩进、Shift+Tab 反缩进（改列表/代码块用）；
+    // 单行时 Tab 仍然交给浏览器跳焦点，别把键盘锁在输入框里
+    if (e.key === 'Tab' && el && el.selectionStart !== el.selectionEnd) {
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const block = value.slice(start, end);
+      if (block.includes('\n')) {
+        e.preventDefault();
+        const lines = block.split('\n');
+        const next = e.shiftKey
+          ? lines.map((l) => l.replace(/^ {1,2}/, '')).join('\n')
+          : lines.map((l) => `  ${l}`).join('\n');
+        onChange(value.slice(0, start) + next + value.slice(end));
+        requestAnimationFrame(() => {
+          el.focus();
+          el.setSelectionRange(start, start + next.length);
+        });
+        return;
+      }
+    }
+
     if (!mod) return;
     if (e.key.toLowerCase() === 'b') {
       e.preventDefault();
@@ -347,14 +394,20 @@ export function MarkdownEditor({
         onChange={(e) => onChange(e.target.value)}
         maxLength={maxLength}
         onPaste={onPaste}
-        onDrop={onDrop}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
       />
       {tab === 'preview' && (
         <div className="md-preview">
           <div className="md-preview-inner">
-            {value.trim() ? <Markdown text={value} /> : <p className="muted">还没有内容。</p>}
+            {value.trim() ? (
+              <Markdown text={value} />
+            ) : (
+              <div className="md-empty">
+                <MdIcon name="image" />
+                <span>还没有内容，切回「写」开始吧。</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -363,7 +416,20 @@ export function MarkdownEditor({
 
   if (variant === 'composer') {
     return (
-      <div className="md-editor md-composer-editor">
+      <div
+        className="md-editor md-composer-editor"
+        data-drag={dragging ? 'true' : undefined}
+        onDragEnter={dragEnter}
+        onDragOver={dragOver}
+        onDragLeave={dragLeave}
+        onDrop={dragDrop}
+      >
+        {dragging && (
+          <div className="md-drop" aria-hidden="true">
+            <MdIcon name="image" />
+            <span>松手上传图片</span>
+          </div>
+        )}
         {panes}
         {beforeFooter}
         <div className="md-toolbar md-toolbar-bottom">
@@ -379,17 +445,34 @@ export function MarkdownEditor({
     );
   }
 
+  const near = maxLength ? value.length >= maxLength * 0.9 : false;
+
   return (
-    <div className="md-editor">
+    <div
+      className="md-editor"
+      data-drag={dragging ? 'true' : undefined}
+      onDragEnter={dragEnter}
+      onDragOver={dragOver}
+      onDragLeave={dragLeave}
+      onDrop={dragDrop}
+    >
+      {dragging && (
+        <div className="md-drop" aria-hidden="true">
+          <MdIcon name="image" />
+          <span>松手上传图片</span>
+        </div>
+      )}
       <div className="md-toolbar">
         <div className="md-tools">{tools}</div>
         {tabs}
       </div>
       {panes}
       <div className="md-foot">
-        <span>{value.length} 字</span>
-        <span>支持 Markdown · 可拖入图片 · Ctrl+B / I / K</span>
-        {err && <span style={{ color: 'var(--danger)' }}>{err}</span>}
+        <span className="md-count" data-near={near ? 'true' : undefined}>
+          {maxLength ? `${value.length} / ${maxLength}` : value.length} 字
+        </span>
+        <span className="md-tips">支持 Markdown · 可拖入图片 · Ctrl+B / I / K</span>
+        {err && <span className="md-err">{err}</span>}
       </div>
     </div>
   );
