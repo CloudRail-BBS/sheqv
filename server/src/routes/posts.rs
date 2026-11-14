@@ -223,6 +223,9 @@ pub async fn create(
     let s = settings::load(&st.pool, &st.cfg).await;
     let pre = audit::precheck(&s, &st.ai_http, &title, &content).await;
 
+    // 归属地：发帖时查一次（800ms 上限）；查不到就留空，不影响发布
+    let ip_region = crate::geo::region(&st.http, crate::geo::client_ip(&headers)).await;
+
     let id = forum::add(
         &st.pool,
         &user.id,
@@ -232,6 +235,7 @@ pub async fn create(
             section: &section,
             tags,
             status: pre.status,
+            ip_region: ip_region.as_deref(),
         },
     )
     .await
@@ -310,7 +314,10 @@ pub async fn comment(
         return Err(ApiError::invalid_input("评论不超过 300 字"));
     }
 
-    let comment = forum::add_comment(&st.pool, &post_id, &user.id, &text)
+    // 归属地：只查一次（800ms 上限），查不到就留空，接口照常返回
+    let ip_region = crate::geo::region(&st.http, crate::geo::client_ip(&headers)).await;
+
+    let comment = forum::add_comment(&st.pool, &post_id, &user.id, &text, ip_region.as_deref())
         .await
         .map_err(ApiError::internal)?;
     let Some(comment) = comment else {

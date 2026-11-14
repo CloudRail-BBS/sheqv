@@ -17,6 +17,8 @@ export interface CommentItem {
   /** 楼层号：楼主是 1，第一条回复是 2 */
   floor: number;
   at: number;
+  /** 发这条回复时的 IP 归属地（省级）；老数据没有 */
+  ipRegion?: string;
 }
 
 export interface PostView {
@@ -46,6 +48,8 @@ export interface PostView {
   comments: number;
   /** 浏览数（详情页每次打开 +1） */
   views: number;
+  /** 发帖时的 IP 归属地（省级）；历史帖没有，前端不显示 */
+  ipRegion?: string;
   commentsList: CommentItem[];
   createdAt: number;
   isNew?: boolean;

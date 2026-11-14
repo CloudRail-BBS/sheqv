@@ -23,6 +23,9 @@ pub struct CommentView {
     pub body: String,
     /// 楼层号：楼主是 1，第一条评论是 2
     pub floor: i64,
+    /// 发评论时的 IP 归属地（省级）；没记到就不下发
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ip_region: Option<String>,
     /// 毫秒时间戳
     pub at: i64,
 }
@@ -65,6 +68,9 @@ pub struct PostView {
     pub created_at: i64,
     pub is_new: bool,
     pub href: String,
+    /// 发帖时的 IP 归属地（省级）；历史帖为空，前端不显示
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ip_region: Option<String>,
     /// pending / published / rejected；前端据此显示「审核中」等提示
     pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -96,6 +102,7 @@ struct PostRow {
     status: String,
     reject_reason: Option<String>,
     reviewed_at: Option<DateTime<Utc>>,
+    ip_region: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -107,12 +114,13 @@ struct CommentRow {
     verify_kind: String,
     body: String,
     created_at: DateTime<Utc>,
+    ip_region: Option<String>,
 }
 
 const POST_SQL: &str = "SELECT p.id, p.title, p.body, p.guild, p.section, p.tags, p.author_id,
         u.nickname AS author, u.verify_kind, p.created_at, p.like_count, p.views,
         p.pinned, p.featured, p.admin_note, p.admin_note_at,
-        p.edited_at, p.status, p.reject_reason, p.reviewed_at
+        p.edited_at, p.status, p.reject_reason, p.reviewed_at, p.ip_region
    FROM posts p JOIN users u ON u.id = p.author_id";
 
 fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
@@ -152,6 +160,7 @@ fn to_view(row: PostRow, comments: Vec<CommentView>) -> PostView {
         status: row.status,
         reject_reason: row.reject_reason,
         reviewed_at: row.reviewed_at.map(|t| t.timestamp_millis()),
+        ip_region: row.ip_region,
     }
 }
 
@@ -170,7 +179,8 @@ pub async fn set_notice(
                    (SELECT nickname FROM users WHERE id = author_id) AS author,
                    (SELECT verify_kind FROM users WHERE id = author_id) AS verify_kind,
                    created_at, like_count, views, pinned, featured,
-                   admin_note, admin_note_at, edited_at, status, reject_reason, reviewed_at"
+                   admin_note, admin_note_at, edited_at, status, reject_reason, reviewed_at,
+                   ip_region"
     ))
     .bind(post_id)
     .bind(clean)
@@ -266,7 +276,8 @@ pub async fn list(
     // 只捞本次结果集的评论，避免全表扫描后大部分被丢掉
     let ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
     let comments: Vec<CommentRow> = sqlx::query_as(
-        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, u.verify_kind, c.body, c.created_at
+        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, u.verify_kind, c.body, c.created_at,
+                  c.ip_region
            FROM comments c JOIN users u ON u.id = c.author_id
           WHERE c.post_id = ANY($1)
           ORDER BY c.created_at ASC",
@@ -288,6 +299,7 @@ pub async fn list(
             body: c.body,
             floor,
             at: c.created_at.timestamp_millis(),
+            ip_region: c.ip_region,
         });
     }
 
@@ -377,7 +389,8 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
     }
 
     let comments: Vec<CommentRow> = sqlx::query_as(
-        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, u.verify_kind, c.body, c.created_at
+        "SELECT c.id, c.post_id, c.author_id, u.nickname AS author, u.verify_kind, c.body, c.created_at,
+                  c.ip_region
            FROM comments c JOIN users u ON u.id = c.author_id
           WHERE c.post_id = $1 ORDER BY c.created_at ASC",
     )
@@ -397,6 +410,7 @@ pub async fn get(pool: &PgPool, id: &str) -> Result<Option<PostView>, sqlx::Erro
             body: c.body,
             floor: i as i64 + 2,
             at: c.created_at.timestamp_millis(),
+            ip_region: c.ip_region,
         })
         .collect();
 
@@ -426,6 +440,8 @@ pub struct NewPost<'a> {
     pub tags: Vec<String>,
     /// pending / published：由审核策略在写库前决定
     pub status: &'a str,
+    /// 发帖时的 IP 归属地；查不到就 None
+    pub ip_region: Option<&'a str>,
 }
 
 pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<String, sqlx::Error> {
@@ -433,8 +449,8 @@ pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<Str
     let tags = Value::Array(input.tags.into_iter().take(3).map(Value::String).collect());
 
     sqlx::query(
-        "INSERT INTO posts (id, title, body, guild, section, tags, author_id, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())",
+        "INSERT INTO posts (id, title, body, guild, section, tags, author_id, status, ip_region, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())",
     )
     .bind(&id)
     .bind(input.title)
@@ -445,6 +461,7 @@ pub async fn add(pool: &PgPool, user_id: &str, input: NewPost<'_>) -> Result<Str
     .bind(tags)
     .bind(user_id)
     .bind(input.status)
+    .bind(input.ip_region)
     .execute(pool)
     .await?;
 
@@ -456,6 +473,7 @@ pub async fn add_comment(
     post_id: &str,
     user_id: &str,
     body: &str,
+    ip_region: Option<&str>,
 ) -> Result<Option<CommentView>, sqlx::Error> {
     let exists: Option<String> = sqlx::query_scalar("SELECT id FROM posts WHERE id = $1")
         .bind(post_id)
@@ -472,17 +490,24 @@ pub async fn add_comment(
         .await?;
 
     let id = crate::ids::next('c');
-    let (created_at, author, verify_kind): (DateTime<Utc>, String, String) = sqlx::query_as(
+    let (created_at, author, verify_kind, ip_region): (
+        DateTime<Utc>,
+        String,
+        String,
+        Option<String>,
+    ) = sqlx::query_as(
         "WITH ins AS (
-             INSERT INTO comments (id, post_id, author_id, body, created_at)
-             VALUES ($1, $2, $3, $4, now()) RETURNING created_at
+             INSERT INTO comments (id, post_id, author_id, body, ip_region, created_at)
+             VALUES ($1, $2, $3, $4, $5, now()) RETURNING created_at, ip_region
          )
-         SELECT ins.created_at, u.nickname, u.verify_kind FROM ins, users u WHERE u.id = $3",
+         SELECT ins.created_at, u.nickname, u.verify_kind, ins.ip_region
+           FROM ins, users u WHERE u.id = $3",
     )
     .bind(&id)
     .bind(post_id)
     .bind(user_id)
     .bind(body)
+    .bind(ip_region)
     .fetch_one(pool)
     .await?;
 
@@ -494,6 +519,7 @@ pub async fn add_comment(
         body: body.to_string(),
         floor: existing + 2,
         at: created_at.timestamp_millis(),
+        ip_region,
     }))
 }
 

@@ -36,6 +36,7 @@ pub mod email_login;
 pub mod errors;
 pub mod forum;
 pub mod gacha;
+pub mod geo;
 pub mod shop;
 pub mod events;
 pub mod rank;

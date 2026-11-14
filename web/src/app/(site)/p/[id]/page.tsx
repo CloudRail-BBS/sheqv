@@ -204,16 +204,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     <span className="pb-flag" data-flag="featured">精华</span>
                   )}
                   <span>发表于 {post.time}</span>
-                  {post.section && (
+                  {post.ipRegion && (
                     <>
                       <i className="pb-dot" aria-hidden="true" />
-                      <Link
-                        href={`/?section=${encodeURIComponent(post.section)}`}
-                        className="pb-sub-link"
-                        title="查看这个版块的其他帖子"
-                      >
-                        {catLabel(sections, post.section)}
-                      </Link>
+                      <span className="pb-ip" title="发帖时的 IP 归属地">
+                        IP:{post.ipRegion}
+                      </span>
                     </>
                   )}
                   {post.editedAt ? (
@@ -222,9 +218,6 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                       <span title={new Date(post.editedAt).toLocaleString('zh-CN')}>已编辑</span>
                     </>
                   ) : null}
-                  {post.tags.map((t) => (
-                    <span key={t} className="pb-tag">#{t}</span>
-                  ))}
                 </div>
               </div>
               <div className="pb-stats">
@@ -301,7 +294,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                       <span className="pb-floor">#{c.floor}</span>
                     </div>
                     <div className="pb-sub">
-                      <time>{fmtAt(c.at)}</time>
+                      <time>回复于 {fmtAt(c.at)}</time>
+                      {c.ipRegion ? (
+                        <>
+                          <i className="pb-dot" aria-hidden="true" />
+                          <span className="pb-ip" title="回复时的 IP 归属地">
+                            IP:{c.ipRegion}
+                          </span>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                   <FloorReply author={c.author} />
