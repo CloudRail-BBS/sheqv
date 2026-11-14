@@ -6589,6 +6589,11 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .gtag[data-size="sm"] { height: 16px; }
 /* 成就只留文字与描边，作者行里不要一堆糖色底 */
 .pb-name .bz { background: transparent; }
+/* 作者行是信息行，不是浮起来的控件：头像与标签一律不投影。
+   浅色面板上一点点外投影就是一圈灰晕，头像和「成员」胶囊看着像脏了；
+   身份组的 glow 是 inline style，只能用 !important 压掉。 */
+.pb-head .pb-avatar { box-shadow: none; }
+.pb-head :is(.ut, .gtag, .bz) { box-shadow: none !important; }
 
 /* 「楼主」是位置标记，不是身份：用中性色，别和头衔抢 */
 .pb-op {
