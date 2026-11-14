@@ -3531,40 +3531,51 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .md-drop svg { width: 26px; height: 26px; }
 .md-toolbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 5px 8px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--panel-2);
   flex-wrap: nowrap;
 }
 
-/* 工具区：按「文本 / 块 / 插入」分组，组间用一根淡分割线，不靠间距硬猜。
-   工具栏永远单行：排版工具横向滚动，写/预览与插入组钉在右端不跟着滚。 */
-.md-tools { display: flex; align-items: center; gap: 2px; flex-wrap: nowrap; min-width: 0; flex: 1 1 auto; }
+/* 工具区按「文本 / 块 / 插入」分成几个小岛：白底 + 细描边 + 10 圆角。
+   组与组之间靠间距区分，不再插竖线——竖线在白底上像表格，岛更好读。
+   工具栏永远单行：排版工具横向滚动，插入组钉在右端不跟着滚。 */
+.md-tools { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; min-width: 0; flex: 1 1 auto; }
 .md-tools-scroll {
-  display: flex; align-items: center; gap: 2px; flex-wrap: nowrap;
+  display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
   min-width: 0; flex: 1 1 auto;
   overflow-x: auto; scrollbar-width: none;
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 4px), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 4px), transparent);
 }
 .md-tools-scroll::-webkit-scrollbar { display: none; }
-.md-group { display: flex; align-items: center; gap: 2px; }
+.md-group {
+  display: flex; align-items: center; gap: 1px; flex: none;
+  padding: 2px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line-soft);
+}
 /* 图片/表情属于「插入」，和上面的排版工具有点不一样，靠右站 */
-.md-group-end { margin-left: auto; padding-left: 2px; }
+.md-group-end { margin-left: auto; }
 .md-tools button {
   display: grid; place-items: center;
   width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px;
   background: transparent; color: var(--text-2); cursor: pointer;
   font-family: inherit;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease), transform 0.1s var(--ease);
+  transition: background 0.14s var(--ease), color 0.14s var(--ease),
+    box-shadow 0.14s var(--ease), transform 0.1s var(--ease);
 }
-.md-tools button:hover { background: var(--panel-3); color: var(--text); }
-.md-tools button:active:not(:disabled) { transform: scale(0.94); }
+.md-tools button svg { width: 17px; height: 17px; }
+.md-tools button:hover {
+  background: var(--panel-3); color: var(--text);
+  box-shadow: 0 1px 2px rgba(10, 12, 18, 0.10);
+}
+.md-tools button:active:not(:disabled) { transform: scale(0.94); box-shadow: none; }
 .md-tools button:disabled { opacity: 0.55; cursor: default; }
 .md-tools button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
 .md-upload { font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 /* 上传进度要显示「2/3 45%」，按钮临时放宽，别把字挤出按钮外 */
 .md-tools button.md-uploading { width: auto; min-width: 30px; padding: 0 7px; }
-.md-sep { width: 1px; height: 18px; background: var(--line); margin: 0 6px; flex: none; }
+/* 分组已经用小岛表达，竖线全部退场（JSX 里还留着，样式上隐藏） */
+.md-sep { display: none; }
 
 /* 写 / 预览：分段控件（轨道 + 滑块），一眼看出当前在哪一档 */
 .md-tabs {
@@ -3621,7 +3632,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 @media (max-width: 860px) {
   .md-toolbar { gap: 6px; padding: 5px 6px; }
   .md-tools button { width: 34px; height: 34px; }
-  .md-sep { margin: 0 5px; }
   .md-input { font-size: 15px; }
 }
 .md-foot {
@@ -5554,14 +5564,26 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
    这里必须先关掉，否则桌面端会以浏览器默认样式裸着占一行（按钮还是灰底黑框）。 */
 .reply-dock { display: none; }
 .comment-form .console-h3 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
-.comment-form .textarea {
+/* 回复框做成「整块」：写作区 + 状态条同在一个圆角框里，聚焦时整块亮边，
+   跟 Markdown 编辑器是同一套壳，不再是一个裸 textarea 加一行按钮 */
+.comment-box {
   margin-top: 10px;
-  min-height: 104px;
-  border-radius: 12px;
-  background: var(--bg-soft);
-  font-size: 13.5px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--bg-soft); overflow: hidden;
+  transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease), background 0.16s var(--ease);
 }
-.comment-form .textarea:focus { background: var(--panel); }
+.comment-box:focus-within {
+  border-color: var(--blue-line); box-shadow: 0 0 0 3px var(--ring);
+  background: var(--panel);
+}
+.comment-box .textarea {
+  margin: 0; border: 0; border-radius: 0;
+  min-height: 96px; background: transparent; box-shadow: none;
+  font-size: 14px; line-height: 1.75;
+  /* 高度跟着内容自动长，右下角的手柄会压在状态条上，关掉 */
+  resize: none;
+}
+.comment-box .textarea:focus { background: transparent; box-shadow: none; border: 0; }
 .comment-form-foot { padding-top: 2px; }
 .comment-form-foot .count {
   font-variant-numeric: tabular-nums;
@@ -5611,7 +5633,9 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 0;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--line-soft);
 }
 .comment-form-foot .btn { margin-left: auto; }
 

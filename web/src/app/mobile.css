@@ -475,8 +475,7 @@
   .composer-panel .md-toolbar-bottom .md-tools button { width: 34px; height: 34px; }
   /* 组内不留缝：34px 的触控区挨着排，分隔线自己撑开分组 */
   .composer-panel .md-toolbar-bottom .md-group { gap: 0; }
-  .composer-panel .md-toolbar-bottom .md-sep { margin: 0 4px; }
-  .composer-panel .md-group-end { gap: 2px; padding-left: 6px; border-left: 1px solid var(--line-soft); }
+  .composer-panel .md-group-end { gap: 1px; }
   .composer-panel .md-tools-scroll {
     flex: 1 1 auto; min-width: 0;
     flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;

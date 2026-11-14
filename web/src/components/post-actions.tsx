@@ -237,33 +237,35 @@ export function CommentComposer({
               </button>
             </div>
           )}
-          <textarea
-            ref={inputRef}
-            className="input textarea"
-            rows={4}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              // ⌘/Ctrl + Enter 直接发送：长回复不用再去点按钮
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault();
-                if (!busy && text.trim().length >= 2) void comment();
-              }
-            }}
-            placeholder="说点什么…（点某楼的「回复」会自动引用）"
-            maxLength={300}
-          />
-          <div className="comment-form-foot">
-            <span className="count" data-near={text.length >= 260 ? 'true' : undefined}>
-              {text.length} / 300
-            </span>
-            <span className="kbd-hint">
-              <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 发送
-            </span>
-            {err && <span className="small" style={{ color: 'var(--danger)' }}>{err}</span>}
-            <button type="button" className="btn btn-primary btn-sm" onClick={comment} disabled={busy}>
-              {busy ? '发送中…' : '发表回复'}
-            </button>
+          <div className="comment-box">
+            <textarea
+              ref={inputRef}
+              className="textarea"
+              rows={3}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                // ⌘/Ctrl + Enter 直接发送：长回复不用再去点按钮
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!busy && text.trim().length >= 2) void comment();
+                }
+              }}
+              placeholder="说点什么…（点某楼的「回复」会自动引用）"
+              maxLength={300}
+            />
+            <div className="comment-form-foot">
+              <span className="count" data-near={text.length >= 260 ? 'true' : undefined}>
+                {text.length} / 300
+              </span>
+              <span className="kbd-hint">
+                <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 发送
+              </span>
+              {err && <span className="small" style={{ color: 'var(--danger)' }}>{err}</span>}
+              <button type="button" className="btn btn-primary btn-sm" onClick={comment} disabled={busy}>
+                {busy ? '发送中…' : '发表回复'}
+              </button>
+            </div>
           </div>
         </>
       )}

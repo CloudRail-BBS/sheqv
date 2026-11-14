@@ -207,7 +207,6 @@ export function WikiEditor({
         <div className="we-label">
           <b>正文</b>
           <span>支持 Markdown，可直接粘贴或拖入图片</span>
-          <em>{bodyLen} 字</em>
         </div>
         <MarkdownEditor
           value={body}
