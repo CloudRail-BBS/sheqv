@@ -165,53 +165,9 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   adminNote={post.adminNote ?? ''}
                 />
               </div>
-              <div className="pb-title-meta">
-                {post.pinned && (
-                  <span className="post-flag" data-flag="pinned">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="M9 3h6l-1 6 4 3v2H6v-2l4-3zM12 14v7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-                    </svg>
-                    置顶
-                  </span>
-                )}
-                {post.featured && (
-                  <span className="post-flag" data-flag="featured">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="m12 3 2.6 5.4 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.3l5.9-.9z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-                    </svg>
-                    精华
-                  </span>
-                )}
-                <time>{post.time}</time>
-                <span>·</span>
-                <span>{post.views} 次浏览</span>
-                {post.editedAt ? (
-                  <>
-                    <span>·</span>
-                    <span title={new Date(post.editedAt).toLocaleString('zh-CN')}>已编辑</span>
-                  </>
-                ) : null}
-                {post.section && (
-                  <Link
-                    href={`/?section=${encodeURIComponent(post.section)}`}
-                    className="badge"
-                    title="查看这个版块的其他帖子"
-                  >
-                    {catLabel(sections, post.section)}
-                  </Link>
-                )}
-                {post.tags.length > 0 && (
-                  <span className="pb-title-tags">
-                    {post.tags.map((t) => (
-                      <span key={t} className="badge badge-ghost">
-                        #{t}
-                      </span>
-                    ))}
-                  </span>
-                )}
-              </div>
             </div>
 
+            {/* 作者行与标题同一块白面：头像 / 昵称 + 身份 / 发表信息 / 右侧浏览与回复 */}
             <header className="pb-head">
               <span className="pb-avatar">
                 {op.avatar ? (
@@ -241,8 +197,50 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   <span className="pb-op">楼主</span>
                 </div>
                 <div className="pb-sub">
-                  <time>{post.time}</time>
+                  {post.pinned && (
+                    <span className="pb-flag" data-flag="pinned">置顶</span>
+                  )}
+                  {post.featured && (
+                    <span className="pb-flag" data-flag="featured">精华</span>
+                  )}
+                  <span>发表于 {post.time}</span>
+                  {post.section && (
+                    <>
+                      <i className="pb-dot" aria-hidden="true" />
+                      <Link
+                        href={`/?section=${encodeURIComponent(post.section)}`}
+                        className="pb-sub-link"
+                        title="查看这个版块的其他帖子"
+                      >
+                        {catLabel(sections, post.section)}
+                      </Link>
+                    </>
+                  )}
+                  {post.editedAt ? (
+                    <>
+                      <i className="pb-dot" aria-hidden="true" />
+                      <span title={new Date(post.editedAt).toLocaleString('zh-CN')}>已编辑</span>
+                    </>
+                  ) : null}
+                  {post.tags.map((t) => (
+                    <span key={t} className="pb-tag">#{t}</span>
+                  ))}
                 </div>
+              </div>
+              <div className="pb-stats">
+                <span className="pb-stat" title={`${post.views} 次浏览`}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                    <path d="M2.3 12S6 5.6 12 5.6 21.7 12 21.7 12 18 18.4 12 18.4 2.3 12 2.3 12Z" />
+                    <circle cx="12" cy="12" r="2.7" />
+                  </svg>
+                  {post.views}
+                </span>
+                <span className="pb-stat" title={`${post.comments} 条回复`}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                    <path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-5.5A8 8 0 1 1 21 12Z" />
+                  </svg>
+                  {post.comments}
+                </span>
               </div>
             </header>
 
@@ -279,7 +277,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             const u = who(c.author, c.authorId);
             return (
               <article className="card post-block" id={`post-${c.floor}`} key={c.id}>
-                <header className="pb-head">
+                <header className="pb-head" data-reply="true">
                   <span className="pb-avatar">
                     {u.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
