@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CoverImage } from './cover-image';
+import { ImportDialog } from './import-dialog';
+import type { ContentCategory } from '@/lib/category-types';
 
 /**
  * 外部站点条目（Modrinth）。
@@ -16,7 +18,7 @@ import { CoverImage } from './cover-image';
  * 混进来会让筛选结果说不通）。
  */
 
-interface RemoteItem {
+export interface RemoteItem {
   source: string;
   sourceId: string;
   title: string;
@@ -63,6 +65,7 @@ export function RemoteCells({
   game,
   category,
   canImport,
+  categories = [],
 }: {
   /** 资源库搜索词：有词就按词搜，没词就取热门 */
   q?: string;
@@ -70,12 +73,13 @@ export function RemoteCells({
   game?: string;
   /** 当前分类筛选：只有「模组」板块收外部模组，别的分类不混进来 */
   category?: string;
-  /** 能不能收录进资源库：只有管理员可以，其他人点卡片去原站 */
+  /** 能不能收录进资源库：只有管理员可以，其他人点卡片去站内预览页 */
   canImport?: boolean;
+  /** 收录弹窗里的分类下拉，由服务端取好传进来 */
+  categories?: ContentCategory[];
 }) {
   const router = useRouter();
   const [items, setItems] = useState<RemoteItem[]>([]);
-  const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   /** 拉取失败的原因（网络、限流、镜像挂了），别静默清空 */
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -83,6 +87,8 @@ export function RemoteCells({
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  /** 点开收录弹窗的条目：先编辑、再入库 */
+  const [draft, setDraft] = useState<RemoteItem | null>(null);
   /** 快速切关键词时，旧响应不能盖掉新结果 */
   const seq = useRef(0);
   /** 追加要拿「最新的完整列表」，回调里的 state 是旧的 */
@@ -144,24 +150,9 @@ export function RemoteCells({
     void load(q ?? '', 0, false);
   }, [enabled, q, load]);
 
-  async function collect(item: RemoteItem) {
-    setBusy(item.sourceId);
+  function collect(item: RemoteItem) {
     setMsg(null);
-    const res = await fetch('/api/v1/resources/import', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(item),
-    }).catch(() => null);
-    const data = (await res?.json().catch(() => null)) as
-      | { ok?: boolean; id?: string; message?: string }
-      | null;
-    setBusy(null);
-    if (!res?.ok || !data?.id) {
-      setMsg(data?.message ?? '收录失败，请先登录或稍后再试');
-      return;
-    }
-    router.push(`/resources/${data.id}`);
-    router.refresh();
+    setDraft(item);
   }
 
   if (!enabled) return null;
@@ -207,11 +198,7 @@ export function RemoteCells({
               </span>
               <span className="res-foot">
                 <span className="res-foot-ver">
-                  {canImport
-                    ? busy === item.sourceId
-                      ? '正在收录…'
-                      : '点卡片收录'
-                    : '查看详情'}
+                  {canImport ? '点卡片收录（可先改）' : '查看详情'}
                 </span>
                 <span className="res-foot-dl mono">
                   <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
@@ -251,9 +238,8 @@ export function RemoteCells({
             key={key}
             type="button"
             className="card res-card res-card-btn"
-            disabled={busy === item.sourceId}
-            title={`点一下把「${item.title}」收入资源库`}
-            onClick={() => void collect(item)}
+            title={`点一下先看「${item.title}」的收录表单`}
+            onClick={() => collect(item)}
           >
             {body}
           </button>
@@ -275,6 +261,9 @@ export function RemoteCells({
       )}
 
       {msg && <p className="small res-cells-msg">{msg}</p>}
+      {draft && (
+        <ImportDialog item={draft} categories={categories} onClose={() => setDraft(null)} />
+      )}
       {!msg && items.length === 0 && loadError && (
         <p className="small res-cells-msg">Modrinth：{loadError}</p>
       )}

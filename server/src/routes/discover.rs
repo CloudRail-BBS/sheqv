@@ -232,8 +232,19 @@ pub async fn import(
     .await
     .unwrap_or_default();
 
-    // 简介：详情优先，其次搜索结果的描述，最后兜底一句来源说明（上限 200 字）
-    let raw_summary = if !detail.summary.is_empty() {
+    // 管理员在收录弹窗里改过的字段以请求体为准；没改的仍按「详情 → 搜索结果 → 兜底」取
+    let override_text = |key: &str| -> Option<String> {
+        obj.get(key)
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+            .map(str::to_string)
+    };
+
+    // 简介：手填优先，其次详情，其次搜索结果的描述，最后兜底一句来源说明（上限 200 字）
+    let raw_summary = if let Some(v) = override_text("summary") {
+        v
+    } else if !detail.summary.is_empty() {
         detail.summary.clone()
     } else if !item.summary.is_empty() {
         item.summary.clone()
@@ -253,30 +264,60 @@ pub async fn import(
     // 原站标题偶尔超长（>60 字会被本站校验拒掉），截断总比整条导入失败好
     let title: String = item.title.trim().chars().take(60).collect();
 
-    // 封面：详情里的 icon/logo 优先，搜索结果的 icon 兜底（都是原站图床地址）
-    let cover = if !detail.icon.trim().is_empty() {
+    // 正文：管理员改过就用改过的，否则用详情里抓来的介绍
+    let body_override = override_text("body");
+    let body_text: &str = body_override
+        .as_deref()
+        .unwrap_or(detail.body.as_str());
+
+    // 封面：手动贴的优先，其次详情里的 icon/logo，最后搜索结果的 icon（都是原站图床地址）
+    let cover_override = override_text("cover");
+    let cover = if let Some(v) = cover_override.as_deref() {
+        v
+    } else if !detail.icon.trim().is_empty() {
         detail.icon.trim()
     } else {
         item.icon.trim()
     };
 
-    // rtsbox 是铁锈战争的模组站，其余两个站都是 Minecraft
-    let game = if source == "rtsbox" { "rusted_warfare" } else { item.game() };
+    // rtsbox 是铁锈战争的模组站，其余两个站都是 Minecraft；弹窗里能改
+    let default_game = if source == "rtsbox" { "rusted_warfare" } else { item.game() };
+    let game_override = override_text("game");
+    let game = match game_override.as_deref() {
+        Some("minecraft") => "minecraft",
+        Some("rusted_warfare") => "rusted_warfare",
+        _ => default_game,
+    };
+
+    // 标签 / 支持版本 / 加载器同样允许在收录前调整
+    let tags_override: Option<Vec<String>> = obj.get("tags").and_then(|v| v.as_array()).map(|a| {
+        a.iter()
+            .filter_map(|t| t.as_str())
+            .map(|t| t.trim().to_string())
+            .filter(|t| !t.is_empty())
+            .take(6)
+            .collect::<Vec<_>>()
+    });
+    let tags_final = tags_override
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| detail.tags.clone());
+    let versions_override = override_text("gameVersions");
+    let loaders_override = override_text("loaders");
 
     let input = NewResource {
         title: &title,
         summary: &summary,
-        body: &detail.body,
+        body: body_text,
         game,
         category: &category,
-        tags: detail.tags.clone(),
+        tags: tags_final,
         team_id: None,
         url: &item.url,
         version: "",
         license,
         size_bytes: 0,
-        game_versions: &detail.game_versions,
-        loaders: &detail.loaders,
+        game_versions: versions_override.as_deref().unwrap_or(detail.game_versions.as_str()),
+        loaders: loaders_override.as_deref().unwrap_or(detail.loaders.as_str()),
         deps: "",
         source_url: &src_page,
         cover,

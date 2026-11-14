@@ -113,9 +113,13 @@ async fn serve() -> anyhow::Result<()> {
         .await
         .with_context(|| format!("端口 {} 绑定失败", cfg.port))?;
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    // 带上连接信息：反代没透传 X-Forwarded-For 时，还能退回对端地址（发帖记 IP 归属地用）
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
 
     tracing::info!("已优雅退出");
     Ok(())

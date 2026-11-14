@@ -243,7 +243,13 @@ export default async function ResourcesPage({
           {sp.game === 'rusted_warfare' ? (
             <RwCells q={sp.q} category={sp.category} canImport={canImport} />
           ) : (
-            <RemoteCells q={sp.q} game={sp.game} category={sp.category} canImport={canImport} />
+            <RemoteCells
+              q={sp.q}
+              game={sp.game}
+              category={sp.category}
+              canImport={canImport}
+              categories={cats}
+            />
           )}
         </div>
       </div>

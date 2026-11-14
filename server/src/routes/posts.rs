@@ -2,7 +2,7 @@ use axum::Json;
 use axum::body::Bytes;
 use std::collections::HashMap;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use serde_json::{Value, json};
@@ -126,6 +126,7 @@ pub async fn list(
 pub async fn create(
     State(st): State<AppState>,
     MaybeUser(maybe): MaybeUser,
+    ConnectInfo(peer): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
     body: Bytes,
 ) -> ApiResult<Response> {
@@ -224,7 +225,8 @@ pub async fn create(
     let pre = audit::precheck(&s, &st.ai_http, &title, &content).await;
 
     // 归属地：发帖时查一次（800ms 上限）；查不到就留空，不影响发布
-    let ip_region = crate::geo::region(&st.http, crate::geo::client_ip(&headers)).await;
+    let ip = crate::geo::client_ip(&headers).or(Some(peer.ip()));
+    let ip_region = crate::geo::region(&st.http, ip).await;
 
     let id = forum::add(
         &st.pool,
@@ -267,6 +269,7 @@ pub async fn comment(
     State(st): State<AppState>,
     Path(post_id): Path<String>,
     MaybeUser(maybe): MaybeUser,
+    ConnectInfo(peer): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
     body: Bytes,
 ) -> ApiResult<Response> {
@@ -315,7 +318,8 @@ pub async fn comment(
     }
 
     // 归属地：只查一次（800ms 上限），查不到就留空，接口照常返回
-    let ip_region = crate::geo::region(&st.http, crate::geo::client_ip(&headers)).await;
+    let ip = crate::geo::client_ip(&headers).or(Some(peer.ip()));
+    let ip_region = crate::geo::region(&st.http, ip).await;
 
     let comment = forum::add_comment(&st.pool, &post_id, &user.id, &text, ip_region.as_deref())
         .await

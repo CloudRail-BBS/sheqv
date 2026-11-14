@@ -13,6 +13,7 @@ import {
   sourcesForGame,
 } from '@/lib/resource-types';
 import type { ContentCategory } from '@/lib/category-types';
+import type { ResourceView } from '@/lib/resource-types';
 import { compressImage, formatBytes, imageTypeError, uploadWithProgress } from '@/lib/upload';
 import { MarkdownEditor } from './markdown-editor';
 
@@ -46,6 +47,31 @@ const EMPTY = {
   sourceKind: 'mods',
 };
 
+/** 编辑已发布资源：把库里那条回填进同一套表单 */
+function fromResource(r: ResourceView) {
+  return {
+    title: r.title,
+    summary: r.summary,
+    body: r.body ?? '',
+    game: r.game,
+    category: r.category,
+    tags: r.tags.join(', '),
+    teamId: r.teamId ?? '',
+    url: r.url,
+    version: r.version,
+    license: r.license || '作者保留',
+    sizeMb: r.sizeBytes > 0 ? (r.sizeBytes / 1024 / 1024).toFixed(1) : '',
+    gameVersions: r.gameVersions,
+    loaders: r.loaders,
+    deps: r.deps,
+    sourceUrl: r.sourceUrl,
+    cover: r.cover,
+    source: r.source,
+    sourceId: r.sourceId,
+    sourceKind: r.sourceKind || 'mods',
+  };
+}
+
 /**
  * 发布资源：与发帖共用同一个悬浮弹窗外壳。
  *
@@ -59,7 +85,9 @@ export function ResourceUpload({
   avatar,
   categories = [],
   defaultOpen = false,
-  triggerLabel = '发布资源',
+  triggerLabel,
+  editing = null,
+  triggerClass,
 }: {
   teams: TeamOption[];
   nickname: string;
@@ -68,13 +96,20 @@ export function ResourceUpload({
   categories?: ContentCategory[];
   defaultOpen?: boolean;
   triggerLabel?: string;
+  /** 传入即「编辑已发布资源」：表单回填、提交走 PATCH、保存后原地刷新 */
+  editing?: ResourceView | null;
+  /** 触发器按钮的 class（详情页用描边按钮，别和下载抢主色） */
+  triggerClass?: string;
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
   const [expanded, setExpanded] = useState(false);
   const [more, setMore] = useState(false);
-  const [form, setForm] = useState(() => ({ ...EMPTY, category: categories[0]?.key ?? '' }));
+  const [form, setForm] = useState(() =>
+    editing ? fromResource(editing) : { ...EMPTY, category: categories[0]?.key ?? '' },
+  );
+  const isEdit = Boolean(editing);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -236,7 +271,7 @@ export function ResourceUpload({
       setErr('标题需为 2–60 字');
       return;
     }
-    if (!url && attachments.length === 0) {
+    if (!isEdit && !url && attachments.length === 0) {
       setErr('请至少上传一个文件，或填写外部下载地址');
       return;
     }
@@ -259,8 +294,10 @@ export function ResourceUpload({
     const attachedBytes = attachments.reduce((n, a) => n + a.size, 0);
     const sizeMb = attachedBytes > 0 ? attachedBytes / 1024 / 1024 : Number(form.sizeMb);
     setBusy(true);
-    const res = await fetch('/api/v1/resources', {
-      method: 'POST',
+    const res = await fetch(
+      isEdit ? `/api/v1/resources/${encodeURIComponent(editing!.id)}` : '/api/v1/resources',
+      {
+      method: isEdit ? 'PATCH' : 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         title,
@@ -282,15 +319,22 @@ export function ResourceUpload({
         source: form.source,
         sourceId: parseSourceRef(form.sourceId),
         sourceKind: form.source === 'rtsbox' ? '' : form.sourceKind,
-        fileIds: attachments.map((a) => a.id),
+        // 编辑时没传新文件就别动附件（PATCH 收到空数组会把已有文件摘掉）
+        ...(attachments.length > 0 ? { fileIds: attachments.map((a) => a.id) } : {}),
       }),
-    }).catch(() => null);
+      },
+    ).catch(() => null);
     const data = (await res?.json().catch(() => null)) as
       | { item?: { id: string }; message?: string }
       | null;
     setBusy(false);
     if (!res?.ok || !data?.item) {
-      setErr(data?.message ?? '发布失败，稍后再试');
+      setErr(data?.message ?? (isEdit ? '保存失败，稍后再试' : '发布失败，稍后再试'));
+      return;
+    }
+    if (isEdit) {
+      setOpen(false);
+      router.refresh();
       return;
     }
     router.push(`/resources/${data.item.id}`);
@@ -324,13 +368,22 @@ export function ResourceUpload({
   return (
     <>
       {!defaultOpen && (
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => setOpen(true)}>
-          {triggerLabel}
+        <button
+          type="button"
+          className={triggerClass ?? 'btn btn-primary btn-sm'}
+          onClick={() => setOpen(true)}
+        >
+          {triggerLabel ?? (isEdit ? '编辑' : '发布资源')}
         </button>
       )}
 
       {mounted && open && createPortal(
-        <div className="composer-modal" role="dialog" aria-modal="true" aria-label="发布资源">
+        <div
+          className="composer-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isEdit ? '编辑资源' : '发布资源'}
+        >
           <button
             type="button"
             className="composer-backdrop"
@@ -352,7 +405,7 @@ export function ResourceUpload({
                 </svg>
               </span>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <b className="composer-head-title">发布资源</b>
+                <b className="composer-head-title">{isEdit ? '编辑资源' : '发布资源'}</b>
                 <div className="composer-head-sub">
                   以 {nickname} 的身份发布 · 第一个资源会自动获得开发者身份
                 </div>
@@ -772,9 +825,9 @@ export function ResourceUpload({
                         form.title.trim().length < 2 ||
                         (attachments.length === 0 && !form.url.trim())
                       }
-                      title="发布资源（⌘/Ctrl + Enter）"
+                      title={isEdit ? '保存修改（⌘/Ctrl + Enter）' : '发布资源（⌘/Ctrl + Enter）'}
                     >
-                      {busy ? '发布中…' : '发布资源'}
+                      {busy ? (isEdit ? '保存中…' : '发布中…') : isEdit ? '保存修改' : '发布资源'}
                     </button>
                   </span>
                 </>

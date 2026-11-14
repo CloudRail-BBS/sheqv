@@ -29,11 +29,23 @@ pub fn client_ip(headers: &HeaderMap) -> Option<IpAddr> {
 }
 
 fn is_private(ip: &IpAddr) -> bool {
+    let ip = canonical(*ip);
     match ip {
         IpAddr::V4(v4) => {
             v4.is_private() || v4.is_loopback() || v4.is_link_local() || v4.is_unspecified()
         }
-        IpAddr::V6(v6) => v6.is_loopback() || v6.is_unspecified(),
+        IpAddr::V6(v6) => {
+            v6.is_loopback() || v6.is_unspecified() || (v6.segments()[0] & 0xffc0) == 0xfe80
+        }
+    }
+}
+
+/// IPv4-mapped IPv6（`::ffff:127.0.0.1`）在双栈监听下很常见，
+/// 不还原成 v4 会被当成公网地址，白跑一次查询还得不到结果。
+fn canonical(ip: IpAddr) -> IpAddr {
+    match ip {
+        IpAddr::V6(v6) => v6.to_ipv4_mapped().map(IpAddr::V4).unwrap_or(IpAddr::V6(v6)),
+        v4 => v4,
     }
 }
 
@@ -41,7 +53,7 @@ fn is_private(ip: &IpAddr) -> bool {
 ///
 /// 局域网与内网地址直接标「本地」，省一次网络请求。
 pub async fn region(http: &reqwest::Client, ip: Option<IpAddr>) -> Option<String> {
-    let ip = ip?;
+    let ip = canonical(ip?);
     if is_private(&ip) {
         return Some("本地".to_string());
     }

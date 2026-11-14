@@ -6640,8 +6640,13 @@ a.about-partner:hover { border-color: var(--hover-bd); transform: translateY(-1p
 .pb-who { flex: 1; min-width: 0; padding-top: 1px; }
 .pb-name {
   display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  justify-content: flex-start;
   font-size: 15px; line-height: 1.35; font-weight: 700;
 }
+/* 名字之后的标签一律「不长大、不缩水」：任何一条 flex:1 / auto margin
+   都会把成就和「楼主」甩到行尾，看着像徽章裂开了 */
+.pb-name > * { flex: 0 0 auto; }
+.pb-name > :first-child { flex: 0 1 auto; min-width: 0; }
 .pb-sub {
   margin-top: 5px;
   display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
@@ -10008,4 +10013,26 @@ h3 {
   }
   .res-sort::-webkit-scrollbar { display: none; }
   .res-sort > .chip { flex: none; }
+}
+
+/* ── 收录外部资源：先编辑再入库 ─────────── */
+.res-import-panel {
+  width: min(720px, calc(100vw - 32px));
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+}
+.res-import-body {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  padding: 14px 18px 6px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.res-import-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.res-import-foot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px 14px; border-top: 1px solid var(--line-soft);
+}
+.res-import-foot .small { margin-right: auto; }
+@media (max-width: 700px) {
+  .res-import-panel { width: 100%; max-height: 100%; border-radius: 0; }
+  .res-import-row { grid-template-columns: 1fr; }
 }

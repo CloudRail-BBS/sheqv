@@ -6,6 +6,8 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getResource } from '@/lib/resource-store';
 import { ResourceActions } from '@/components/resource-actions';
 import { ResourceCover } from '@/components/resource-cover';
+import { ResourceUpload } from '@/components/resource-upload';
+import { listMyDevTeams } from '@/lib/dev-team-store';
 import { breadcrumbJsonLd, buildMetadata, resourceJsonLd } from '@/lib/seo';
 import { AuditProgress } from '@/components/audit-progress';
 import {
@@ -51,6 +53,7 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
 
   const tone = gameTone(item.game);
   const canDelete = Boolean(user && (user.id === item.authorId || user.isAdmin));
+  const teams = canDelete ? await listMyDevTeams() : [];
   const jsonLd =
     item.status === 'published'
       ? await resourceJsonLd({
@@ -166,6 +169,17 @@ export default async function ResourceDetail({ params }: { params: Promise<{ id:
               canDelete={canDelete}
               directDownload={directDownload}
             />
+            {canDelete && user && (
+              <ResourceUpload
+                editing={item}
+                teams={teams.map((t) => ({ id: t.id, name: t.name, tag: t.tag }))}
+                nickname={user.nickname}
+                avatar={user.avatar}
+                categories={cats}
+                triggerLabel="编辑"
+                triggerClass="btn btn-sm btn-ghost"
+              />
+            )}
           </div>
 
           {!directDownload && externalBrowserHint && (
