@@ -84,7 +84,7 @@
      深底灰、深色边这类硬伤。 */
   --sp-1: 4px; --sp-2: 6px; --sp-3: 8px; --sp-4: 12px;
   --sp-5: 16px; --sp-6: 20px; --sp-7: 24px; --sp-8: 32px;
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-pill: 999px;
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
   /* 悬停边框：深浅主题浅一档，替代各处写死的 #3a3a40 */
   --hover-bd: #3a3a40;
   /* 第三级文字：比 --muted 再弱一档，用于计数、单位、辅助说明 */
@@ -107,11 +107,9 @@ html, body { padding: 0; margin: 0; }
 html { scrollbar-color: #2f2f34 transparent; }
 
 body {
-  background:
-    radial-gradient(820px 420px at 10% -10%, rgba(255, 255, 255, 0.09), transparent 60%),
-    radial-gradient(700px 380px at 95% -8%, rgba(255, 255, 255, 0.08), transparent 58%),
-    var(--bg);
-  background-attachment: fixed;
+  /* 纯表面色。之前那两层固定的径向光斑是「模板感」最重的装饰，
+     滚动时贴着视口不动，和新内容叠在一起只会显脏。 */
+  background: var(--bg);
   color: var(--text);
   /* 站点指定字体：自托管的思源黑体分片排第一位。
      安卓换主题字体会顶替 system-ui / sans-serif，自托管字体不参与系统替换，
@@ -571,8 +569,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* ── post card ───────────────────────────── */
 
 .post {
-  padding: 16px 18px; transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 42%);
+  padding: 16px 18px; transition: border-color 0.18s, box-shadow 0.18s;
 }
 .post:hover { border-color: var(--hover-bd); box-shadow: var(--shadow-lift); }
 .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -639,10 +636,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .section-h { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 0; }
 .section-h h2 {
   font-size: 15px; display: flex; align-items: center; gap: 7px;
-}
-.section-h h2::before {
-  content: ""; width: 3px; height: 13px; border-radius: 2px;
-  background: var(--blue); flex: none;
 }
 .section-h .hint { color: var(--muted); font-size: 11.5px; }
 .section-h .more { margin-left: auto; font-size: 12px; color: var(--blue); }
@@ -818,7 +811,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   overflow: hidden; display: flex; flex-direction: column;
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
-.res-card:hover { border-color: var(--hover-bd); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.res-card:hover { border-color: var(--hover-bd); box-shadow: var(--shadow-lift); }
 /* 资源卡封面：参考资源广场的竖版卡，16:10 大图。没有封面时回落到「游戏配色 + 细网格」。 */
 .res-cover {
   position: relative; aspect-ratio: 16 / 10;
@@ -1044,7 +1037,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .gcard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .guild-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .gcard { padding: 16px; transition: border-color 0.16s, transform 0.16s; }
-.gcard:hover { border-color: var(--hover-bd); transform: translateY(-1px); }
+.gcard:hover { border-color: var(--hover-bd); }
 .gcard-top { display: flex; align-items: center; gap: 12px; }
 .gstat { display: flex; gap: 22px; margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--line-soft); }
 .gstat div { font-size: 10.5px; color: var(--muted); }
@@ -1122,7 +1115,14 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 @media (max-width: 560px) {
   .topbar .search { display: none; }
-  .res-grid { grid-template-columns: 1fr; }
+  /* 资源库在手机上也保持两列：一列时一张卡占满屏，翻十条要滑很久；
+     两列更像资源站的浏览列表，封面 + 标题的识别成本也更低。 */
+  .res-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .res-body { padding: 10px 11px 11px; gap: 6px; }
+  .res-title { font-size: 14px; }
+  .res-desc { font-size: 12px; line-height: 1.6; }
+  .res-chip { height: 22px; padding: 0 7px; font-size: 11px; }
+  .res-foot { padding-top: 8px; font-size: 11px; }
   .gcard-grid { grid-template-columns: 1fr; }
   .guild-grid { grid-template-columns: 1fr; }
   .score { font-size: 22px; }
@@ -1202,7 +1202,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .me-stats span { font-size: 10.5px; color: var(--muted); }
 
 .an-item { padding: 15px 17px; display: flex; flex-direction: column; gap: 7px; transition: border-color 0.16s, transform 0.16s; }
-.an-item:hover { border-color: var(--hover-bd); transform: translateY(-1px); }
+.an-item:hover { border-color: var(--hover-bd); }
 .an-title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.012em; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .an-body {
   font-size: 12.5px; color: var(--text-2); line-height: 1.75;
@@ -2020,7 +2020,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* ── 轮播 ───────────────────────────────── */
 
 .carousel {
-  position: relative; border-radius: 14px; overflow: hidden;
+  position: relative; border-radius: var(--r-lg); overflow: hidden;
   border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow);
 }
 .slides { display: flex; transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -2143,7 +2143,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   padding: 14px 15px; display: flex; flex-direction: column; gap: 9px;
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
-.srv-card:hover, .room-card:hover { border-color: var(--blue-line); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.srv-card:hover, .room-card:hover { border-color: var(--blue-line); box-shadow: var(--shadow-lift); }
 
 .srv-head { display: flex; align-items: center; gap: 10px; }
 .srv-ava {
@@ -2720,7 +2720,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   position: relative; overflow: hidden; display: flex; flex-direction: column;
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
-.rwmap:hover { border-color: var(--hover-bd); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.rwmap:hover { border-color: var(--hover-bd); box-shadow: var(--shadow-lift); }
 .rwmap-thumb {
   position: relative; display: block; aspect-ratio: 16 / 9;
   background: var(--panel-2); border-bottom: 1px solid var(--line); overflow: hidden;
@@ -2867,7 +2867,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   position: relative; overflow: hidden; padding: 16px 16px 14px;
   transition: border-color 0.18s, transform 0.18s;
 }
-.dev-team-card:hover { transform: translateY(-1px); border-color: var(--line-strong); }
+.dev-team-card:hover { border-color: var(--line-strong); }
 .dt-head { display: flex; align-items: center; gap: 10px; }
 .dt-mark {
   width: 42px; height: 42px; border-radius: 11px; flex: none;
@@ -4263,7 +4263,7 @@ body:has(.auth-page) .app {
 }
 
 /* 帖子卡片预览：标题与摘要的层级再拉开一点 */
-.post { border-radius: 14px; padding: 18px 20px; }
+.post { border-radius: var(--r-lg); padding: 18px 20px; }
 .post-title { font-size: 16px; margin: 1px 0 6px; line-height: 1.5; }
 .post-title a:hover { color: var(--blue); }
 .post-body { line-height: 1.82; }
@@ -9792,7 +9792,7 @@ h3 {
 
 @media (max-width: 860px) {
   /* Material 建议点击区 ≥ 48：手机上按钮与输入都抬到 40 */
-  .btn { height: 38px; padding: 0 14px; }
+  .btn { height: 40px; padding: 0 14px; }
   .btn-sm { height: 32px; padding: 0 12px; }
   .input { height: 40px; font-size: 14px; }
   .chip { height: 34px; }
@@ -9883,4 +9883,34 @@ h3 {
   .feed-tab { height: 34px; padding: 0 13px; }
   .feed-tabs .sort { display: none; }
   .feed-tabs .feed-tab-pill { border-radius: var(--mui-radius-pill); }
+}
+
+/* ── 横向滚动列表的右缘渐隐 ───────────────────────────
+   胶囊行、最近更新、版块筛选在窄屏都靠横向滚动；
+   直接切一半会像布局坏了，加一层 24px 的遮罩，暗示「还能往右滑」。 */
+@media (max-width: 860px) {
+  /* 只在窄屏加：桌面上这些行一般不会溢出，遮罩反而会吃掉最后一个胶囊 */
+  .chip-row,
+  .feed-sections,
+  .res-recent-row,
+  .row.wrap:has(> .chip) {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  }
+}
+
+@media (max-width: 560px) {
+  /* 资源库工具栏：搜索独占一行，排序胶囊一行横滚，别互相挤 */
+  .res-toolbar { gap: 8px; margin: 10px 0 8px; }
+  .res-search { flex: 1 1 100%; }
+  .res-sort {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+  .res-sort::-webkit-scrollbar { display: none; }
+  .res-sort > .chip { flex: none; }
 }
