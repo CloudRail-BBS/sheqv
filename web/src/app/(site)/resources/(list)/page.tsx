@@ -172,7 +172,7 @@ export default async function ResourcesPage({
         </div>
 
         <div className="row wrap" style={{ gap: 6, marginTop: 8, alignItems: 'center' }}>
-          <span className="small muted" style={{ marginRight: 2 }}>游戏</span>
+          <span className="small muted res-filter-label">游戏</span>
           <Link
             href={buildQuery(base, { game: undefined })}
             className="chip"

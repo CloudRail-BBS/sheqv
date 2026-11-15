@@ -470,20 +470,15 @@
   }
   .composer-panel .md-composer-editor .md-preview-inner { padding: 14px 16px; }
 
-  /* 工具栏：一排 34px 图标，横向滚动；右端图片/表情固定不滚 */
-  .composer-panel .md-toolbar-bottom .md-tools { flex-wrap: nowrap; gap: 4px; }
+  /* 工具栏：13 个图标在 390px 一行放不下，索性分两排全摊开。
+     之前是横向滚动，滚到一半会把中间的小岛切成半截，看着像图标缺了一块 */
+  .composer-panel .md-toolbar-bottom .md-tools { flex-wrap: wrap; gap: 4px; row-gap: 4px; }
   .composer-panel .md-toolbar-bottom .md-tools button { width: 34px; height: 34px; }
-  /* 组内不留缝：34px 的触控区挨着排，分隔线自己撑开分组 */
+  /* 组内不留缝：34px 的触控区挨着排，小岛自己的描边撑开分组 */
   .composer-panel .md-toolbar-bottom .md-group { gap: 0; }
-  .composer-panel .md-group-end { gap: 1px; }
-  .composer-panel .md-tools-scroll {
-    flex: 1 1 auto; min-width: 0;
-    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
-    /* 右端只柔化 4px：下一个图标露出大半截，才看得出「还能滑」 */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 4px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 4px), transparent);
-  }
-  .composer-panel .md-tools-scroll::-webkit-scrollbar { display: none; }
+  .composer-panel .md-group-end { gap: 1px; margin-left: 0; }
+  /* 小岛直接参与换行，滚动容器退场 */
+  .composer-panel .md-tools-scroll { display: contents; }
 
   .composer-panel .md-tabs button { height: 26px; padding: 0 12px; }
   .composer-discard, .composer-submit { height: 34px; }

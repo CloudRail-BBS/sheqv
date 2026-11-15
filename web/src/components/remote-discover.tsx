@@ -198,7 +198,7 @@ export function RemoteCells({
               </span>
               <span className="res-foot">
                 <span className="res-foot-ver">
-                  {canImport ? '点卡片收录（可先改）' : '查看详情'}
+                  {canImport ? '点卡片收录' : '查看详情'}
                 </span>
                 <span className="res-foot-dl mono">
                   <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
