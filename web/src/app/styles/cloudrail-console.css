@@ -1,0 +1,114 @@
+/* Admin console: grouped navigation and quiet, clearly bounded work surfaces. */
+.console {
+  grid-template-columns: var(--cr-shell-sidebar-width) minmax(0, 1fr);
+  background: var(--cr-shell-bg);
+}
+
+.console-side {
+  border-right-color: var(--cr-shell-border);
+  background: var(--cr-shell-surface);
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.console-brand {
+  padding-bottom: 13px;
+  border-bottom-color: var(--cr-shell-divider);
+}
+
+.console-brand em { color: var(--cr-shell-accent-secondary); }
+
+.console-nav { gap: 13px; }
+
+.console-nav-group + .console-nav-group {
+  padding-top: 9px;
+  border-top: 1px solid var(--cr-shell-divider);
+}
+
+.console-nav-label {
+  padding-bottom: 5px;
+  color: var(--muted);
+}
+
+.console-nav-item {
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--cr-shell-radius);
+  color: var(--cr-shell-muted);
+}
+
+.console-nav-item:hover {
+  background: var(--cr-shell-surface-raised);
+  color: var(--cr-shell-text);
+}
+
+.console-nav-item[data-active="true"] {
+  border-color: var(--cr-shell-accent-border);
+  background: var(--cr-shell-accent-soft);
+  color: var(--cr-shell-accent);
+}
+
+.console-side-foot { border-top-color: var(--cr-shell-divider); }
+.console-side-link { border-radius: 4px; }
+.console-side-link:hover { color: var(--cr-shell-accent); }
+
+.console-topbar {
+  border-bottom-color: var(--cr-shell-border);
+  background: var(--cr-shell-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.console-crumb-root { color: var(--muted); }
+.console-crumb-sep { color: var(--line-strong); }
+.console-crumb b { color: var(--cr-shell-text); }
+
+.console-main {
+  max-width: var(--cr-shell-content-width);
+  padding-top: 24px;
+}
+
+.console-main .card {
+  border-color: var(--cr-shell-border);
+}
+
+.console-main .chip {
+  border-color: var(--cr-shell-border);
+  background: var(--cr-shell-surface);
+  color: var(--cr-shell-muted);
+}
+
+.console-main .chip[data-on="true"] {
+  border-color: var(--cr-shell-accent-border);
+  background: var(--cr-shell-accent-soft);
+  color: var(--cr-shell-accent);
+}
+
+.console-main .input:focus-visible {
+  border-color: var(--cr-shell-accent);
+  box-shadow: 0 0 0 3px var(--cr-shell-focus);
+}
+
+.console-main .table th { background: var(--bg-soft); }
+.console-main .table td { border-bottom-color: var(--cr-shell-divider); }
+.console-main .table tbody tr:hover td { background: var(--cr-shell-surface-raised); }
+
+.console-burger {
+  border-color: var(--cr-shell-border);
+  border-radius: var(--cr-shell-radius);
+  background: var(--cr-shell-surface);
+}
+
+.console-drawer {
+  background: var(--cr-shell-surface);
+  border-right-color: var(--cr-shell-border);
+}
+
+.console :is(a, button, input, select, textarea):focus-visible,
+.console-drawer :is(a, button, input, select, textarea):focus-visible {
+  outline-color: var(--cr-shell-focus);
+}
+
+@media (max-width: 960px) {
+  .console { grid-template-columns: minmax(0, 1fr); }
+  .console-main { padding-top: 18px; }
+}

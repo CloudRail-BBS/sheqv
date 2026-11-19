@@ -1,0 +1,19 @@
+/* Shared shell tokens inherit the active site theme from the document root. */
+:root {
+  --cr-shell-bg: var(--bg);
+  --cr-shell-surface: var(--panel);
+  --cr-shell-surface-raised: var(--panel-2);
+  --cr-shell-border: var(--line);
+  --cr-shell-divider: var(--line-soft);
+  --cr-shell-text: var(--text);
+  --cr-shell-muted: var(--text-2);
+  --cr-shell-accent: var(--blue);
+  --cr-shell-accent-soft: var(--blue-soft);
+  --cr-shell-accent-border: var(--blue-line);
+  --cr-shell-accent-secondary: var(--cyan);
+  --cr-shell-focus: var(--ring);
+  --cr-shell-sidebar-width: 234px;
+  --cr-shell-content-width: 1280px;
+  --cr-shell-ops-width: 1080px;
+  --cr-shell-radius: var(--r-md);
+}
