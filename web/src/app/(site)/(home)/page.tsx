@@ -31,6 +31,7 @@ import { FeedFade } from '@/components/feed-fade';
 import { ComposeFab } from '@/components/compose-fab';
 import { isFeedTab } from '@/lib/feed-types';
 import { catLabel, listCategories } from '@/lib/category-store';
+import { ScrollReveal } from '@/components/scroll-reveal';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,9 +99,9 @@ export default async function HomePage({
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <div className="col-main">
-        <Carousel slides={slides} />
+        <ScrollReveal><Carousel slides={slides} /></ScrollReveal>
 
-        <div id="composer">
+        <ScrollReveal id="composer" className="home-reveal-composer">
           <Composer
             nickname={user?.nickname ?? null}
             signed={communitySigned}
@@ -109,12 +110,12 @@ export default async function HomePage({
             sections={sections}
             tagOptions={postTags}
           />
-        </div>
+        </ScrollReveal>
 
-        <FeedTabs value={tab} loggedIn={Boolean(user)} />
+        <ScrollReveal><FeedTabs value={tab} loggedIn={Boolean(user)} /></ScrollReveal>
 
         {sections.length > 1 && (
-          <div className="feed-sections" aria-label="按版块筛选">
+          <ScrollReveal><div className="feed-sections" aria-label="按版块筛选">
             <Link href={feedHref(tab, '')} className="chip" data-on={!section}>
               全部版块
             </Link>
@@ -129,7 +130,7 @@ export default async function HomePage({
                 {s.label}
               </Link>
             ))}
-          </div>
+          </div></ScrollReveal>
         )}
 
         <FeedFade key={tab}>
@@ -249,9 +250,9 @@ export default async function HomePage({
       </div>
 
       <aside className="rail">
-        {user && pointsSnap ? <CheckinCard initial={pointsSnap} /> : <CheckinGuest />}
+        <ScrollReveal>{user && pointsSnap ? <CheckinCard initial={pointsSnap} /> : <CheckinGuest />}</ScrollReveal>
 
-        <div className="card rail-card">
+        <ScrollReveal><div className="card rail-card">
           <div className="rail-title">社区概览</div>
           <div className="mini-stats">
             <div className="mini-stat">
@@ -271,18 +272,18 @@ export default async function HomePage({
               <span>待确认</span>
             </div>
           </div>
-        </div>
+        </div></ScrollReveal>
 
         {/* 首页也给一个订阅入口：速览与公告属于站点级消息，不需要先登录 */}
-        <div className="card rail-card">
+        <ScrollReveal><div className="card rail-card">
           <div className="rail-title">速览推送</div>
           <p className="small muted" style={{ lineHeight: 1.8 }}>
             新公告、赛季速览会直接弹到系统通知里，关掉页面也能收到。
           </p>
           <PushToggle variant="wide" />
-        </div>
+        </div></ScrollReveal>
 
-        <div className="card rail-card">
+        <ScrollReveal><div className="card rail-card">
           <div className="between" style={{ marginBottom: 10 }}>
             <div className="rail-title" style={{ margin: 0 }}>活跃公会</div>
             <Link href="/guilds" className="small" style={{ color: 'var(--blue)' }}>
@@ -320,9 +321,9 @@ export default async function HomePage({
               </Link>
             ))}
           </div>
-        </div>
+        </div></ScrollReveal>
 
-        <div className="card rail-card">
+        <ScrollReveal><div className="card rail-card">
           <div className="between" style={{ marginBottom: 10 }}>
             <div className="rail-title" style={{ margin: 0 }}>活跃战队</div>
             <Link href="/teams" className="small" style={{ color: 'var(--blue)' }}>
@@ -360,10 +361,10 @@ export default async function HomePage({
                 </Link>
               ))}
           </div>
-        </div>
+        </div></ScrollReveal>
 
         {settings.homeShowAnnouncements && (
-          <div className="card rail-card">
+          <ScrollReveal><div className="card rail-card">
             <div className="between" style={{ marginBottom: 10 }}>
               <div className="rail-title" style={{ margin: 0 }}>最新公告</div>
               <Link href="/announcements" className="small" style={{ color: 'var(--blue)' }}>
@@ -390,10 +391,10 @@ export default async function HomePage({
                 ))}
               </div>
             )}
-          </div>
+          </div></ScrollReveal>
         )}
 
-        <div className="card rail-card">
+        <ScrollReveal><div className="card rail-card">
           <div className="between" style={{ marginBottom: 10 }}>
             <div className="rail-title" style={{ margin: 0 }}>赞助者</div>
             <Link href="/sponsors" className="small" style={{ color: 'var(--blue)' }}>
@@ -457,9 +458,9 @@ export default async function HomePage({
               </div>
             </>
           )}
-        </div>
+        </div></ScrollReveal>
 
-        <div className="card rail-card">
+        <ScrollReveal><div className="card rail-card">
           <div className="rail-title">热门标签</div>
           <div className="tag-cloud">
             {postTags.length === 0 && <span className="small muted">还没有配置标签</span>}
@@ -473,9 +474,9 @@ export default async function HomePage({
               </Link>
             ))}
           </div>
-        </div>
+        </div></ScrollReveal>
 
-        <FoldCard title="社区规则">
+        <ScrollReveal><FoldCard title="社区规则">
           <div className="rule-list">
             <div className="rule-row">
               <span className="n">1</span>
@@ -493,7 +494,7 @@ export default async function HomePage({
           <Link href="/matches" className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }}>
             查看完整规则
           </Link>
-        </FoldCard>
+        </FoldCard></ScrollReveal>
       </aside>
     </div>
     {/* 手机端：发帖入口改成右下角悬浮按钮（桌面由顶栏的「发帖」承担） */}

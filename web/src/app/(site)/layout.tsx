@@ -6,6 +6,7 @@ import { AnnouncementModal } from '@/components/announcement-modal';
 import { Sidebar } from '@/components/sidebar';
 import { TabBar } from '@/components/tabbar';
 import { ScrollReset } from '@/components/scroll-reset';
+import { StickyHeaderShadow } from '@/components/sticky-header-shadow';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentUser } from '@/lib/current-user';
 import { isCommunitySigned } from '@/lib/agreement-state';
@@ -440,6 +441,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </div>
 
       <ScrollReset />
+      <StickyHeaderShadow />
       <TabBar items={settings.tabbarItems} />
     </>
   );

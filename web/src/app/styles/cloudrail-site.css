@@ -1,0 +1,129 @@
+/* CloudRail community surface and motion polish. */
+.site-scroll .topbar {
+  box-shadow:
+    0 1px 0 var(--glass-brd),
+    0 12px 24px rgba(10, 16, 30, var(--topbar-scroll-alpha, 0));
+}
+
+.slide-parallax-stack {
+  position: absolute;
+  inset: -48px 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.slide .slide-parallax-stack > span {
+  position: absolute;
+  inset: -5% -2%;
+  display: block;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.slide .slide-parallax-image {
+  background-position: center;
+  background-size: cover;
+  opacity: 0.68;
+}
+
+.slide .slide-parallax-atmosphere {
+  background:
+    radial-gradient(ellipse at 82% 18%, color-mix(in srgb, var(--cyan) 24%, transparent), transparent 42%),
+    linear-gradient(116deg, color-mix(in srgb, var(--blue) 26%, transparent), transparent 66%);
+}
+
+.slide .slide-parallax-rails {
+  inset: 8% -8% -8% 38%;
+  opacity: 0.36;
+  background:
+    linear-gradient(154deg, transparent 47.8%, color-mix(in srgb, var(--cyan) 74%, transparent) 48%, transparent 48.25%),
+    linear-gradient(154deg, transparent 55.8%, color-mix(in srgb, var(--blue) 64%, transparent) 56%, transparent 56.2%),
+    repeating-linear-gradient(90deg, transparent 0 45px, color-mix(in srgb, white 7%, transparent) 46px 47px, transparent 48px 92px);
+  mask-image: linear-gradient(90deg, transparent, #000 38%, #000 88%, transparent);
+}
+
+.slide > .slide-parallax-stack { z-index: 0; }
+.slide::before { z-index: 2; }
+.slide::after { z-index: 3; }
+.slide > :not(.slide-parallax-stack) { z-index: 4; }
+
+.scroll-reveal {
+  min-width: 0;
+}
+
+.scroll-reveal[data-ready='true'][data-visible='false'] {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  pointer-events: none;
+}
+
+.scroll-reveal[data-ready='true'][data-armed='true'] {
+  transition: opacity 0.7s cubic-bezier(0.333333, 1, 0.666667, 1), transform 0.7s cubic-bezier(0.333333, 1, 0.666667, 1);
+}
+
+.site-scroll .dots { align-items: center; gap: 1px; }
+.site-scroll .cd {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+.site-scroll .cd::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  transition: width 0.2s, border-radius 0.2s, background 0.2s;
+}
+.site-scroll .cd[data-on='true']::before {
+  width: 18px;
+  border-radius: 3px;
+  background: #fff;
+}
+.site-scroll .cd:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -1px;
+}
+.site-scroll .carousel:focus-within .cnav { opacity: 1; }
+.site-scroll .carousel-pause {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  z-index: 3;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.24);
+  color: #fff;
+  cursor: pointer;
+}
+.site-scroll .carousel-pause svg { width: 16px; height: 16px; }
+.site-scroll .carousel-pause:hover { background: rgba(0, 0, 0, 0.45); }
+.site-scroll .carousel-pause:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.scroll-reveal[data-ready='true'][data-visible='true'] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.scroll-reveal:focus-within {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-parallax-stack > span { transform: none !important; will-change: auto; }
+  .scroll-reveal,
+  .scroll-reveal[data-ready='true'] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    pointer-events: auto;
+  }
+}
